@@ -2,7 +2,6 @@
 
 namespace TeamNiftyGmbH\DataTable;
 
-use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use App\Models\User;
 use App\Services\SettingService;
 use Illuminate\Contracts\Foundation\Application;
@@ -23,6 +22,7 @@ use Spatie\ModelInfo\Attributes\Attribute;
 use Spatie\ModelInfo\Relations\Relation;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
+use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use WireUi\Traits\Actions;
 
 class DataTable extends Component
