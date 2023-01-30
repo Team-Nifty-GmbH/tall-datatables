@@ -43,8 +43,8 @@ class MakeDataTableCommand extends Command
         $this->stubDirectory = rtrim('stubs' . DIRECTORY_SEPARATOR . $stubSubDirectory, DIRECTORY_SEPARATOR) . '/';
 
         $this->parser = new ComponentParser(
-            config('livewire.data_table_namespace'),
-            config('livewire.view_path'),
+            config('tall-datatables.data_table_namespace'),
+            config('tall-datatables.view_path'),
             $this->argument('name'),
         );
 
