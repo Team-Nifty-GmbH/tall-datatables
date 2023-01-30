@@ -1,0 +1,12 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "concat_space": {
+            "spacing": "one"
+        },
+        "Laravel/laravel_phpdoc_alignment": false
+    },
+    "exclude": [
+        "modules"
+    ]
+}

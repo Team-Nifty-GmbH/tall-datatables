@@ -1,0 +1,19 @@
+<?php
+
+namespace [namespace];
+
+use App\Http\Livewire\DataTable;
+use [model_import];
+
+class [class] extends DataTable
+{
+    public string $model = [model]::class;
+
+    /**
+     * @return void
+     */
+    public function mount(): void
+    {
+        parent::mount();
+    }
+}
