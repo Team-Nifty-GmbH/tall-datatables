@@ -1,0 +1,15 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+
+class {{ class }} extends BaseSetup
+{
+    use DatabaseTransactions;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+    }
+}
