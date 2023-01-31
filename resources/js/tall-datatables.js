@@ -1,9 +1,234 @@
 import {Sortable} from 'sortablejs';
-import Alpine from 'alpinejs'
-import focus from '@alpinejs/focus'
+import _ from 'lodash';
+window._ = _;
 
-Alpine.plugin(focus)
-Sortable.mount();
+document.addEventListener('alpine:init', () => {
+    window.Alpine.data('data_table',
+    ($wire) => ({
+        init() {
+            window.Sortable = Sortable;
+            {
+                this.$wire.getConfig().then(
+                    result => {
+                        this.cols = result.cols;
+                        this.enabledCols = result.enabledCols;
+                        this.colLabels = result.colLabels;
+                        this.sortable = result.sortable;
+                        this.selectable = result.selectable;
+                        this.stretchCol = result.stretchCol;
+                        this.formatters = result.formatters;
+                        this.searchRoute = result.searchRoute;
+
+                        this.$watch('cols', () => {
+                            this.$wire.storeColLayout(this.cols);
+                        });
+                    }
+                ),
+                new Sortable(document.querySelector('#table-cols'), {
+                    animation: 150,
+                    delay: 100,
+                    onEnd: (e) => {
+                        const el = this.enabledCols[e.oldIndex];
+                        let oldCols = Object.values(this.enabledCols);
+                        // move element from e.oldIndex to e.newIndex
+                        oldCols.splice(e.oldIndex, 1);
+                        oldCols.splice(e.newIndex, 0, el);
+
+                        this.enabledCols = oldCols;
+                        this.cols = this.enabledCols.filter(value => this.cols.includes(value));
+                    }
+                }),
+                this.loadFilterable(),
+                this.$watch('newFilter.column', () => {
+                    if (! Boolean(this.newFilter.column)) {
+                        return;
+                    }
+
+                    let valueList = this.filterValueLists.hasOwnProperty(this.newFilter.column);
+
+                    if (! valueList) {
+                        $wire.resolveForeignKey(this.newFilter.column, this.newFilter.relation).then(
+                            result => {
+                                if (result === null) {
+                                    this.filterSelectType = 'text';
+                                    return;
+                                }
+
+                                if (typeof result === 'string') {
+                                    this.filterSelectType = 'search';
+                                    this.newFilter.operator = '=';
+                                    Alpine.$data(document.querySelector('#filter-select-search')).asyncData.api = this.searchRoute + '/' + result;
+                                } else if (typeof result === 'array' || typeof result === 'object') {
+                                    this.filterSelectType = 'valueList';
+                                    this.newFilter.operator = '=';
+                                    this.filterValueLists[this.newFilter.column] = result;
+                                    valueList = true;
+                                }
+                            });
+                    }
+
+                    if (valueList) {
+                        this.filterSelectType = 'valueList';
+                        this.newFilter.operator = '=';
+                    }
+                }),
+                this.$watch('newFilter.relation', () => {
+                    this.loadFilterable(this.newFilter.relation);
+                })
+            }
+        },
+        data: $wire.entangle('data'),
+        showSidebar: false,
+        cols: [],
+        enabledCols: [],
+        colLabels: [],
+        sortable: [],
+        selectable: [],
+        stretchCol: [],
+        formatters: [],
+        searchRoute: '',
+        intendentedCols: [],
+        tab: 'edit-filters',
+        showSavedFilters: false,
+        filterValueLists: $wire.entangle('filterValueLists'),
+        filters: $wire.entangle('userFilters'),
+        orderByCol: $wire.entangle('orderBy'),
+        orderAsc: $wire.entangle('orderAsc'),
+        initialized: $wire.entangle('initialized'),
+        search: $wire.entangle('search'),
+        selected: $wire.entangle('selected').defer,
+        filterBadge(filter) {
+            const label = this.colLabels[filter.column] ?? filter.column;
+            const value = filter.value;
+            return label + ' ' + filter.operator + ' ' + value;
+        },
+        getData() {
+            if (this.data.hasOwnProperty('data')) {
+                return this.data.data;
+            }
+
+            return this.data;
+        },
+        filterSelectType: 'text',
+        loadSidebar(newFilter = null) {
+            if (newFilter) {
+                this.newFilter = newFilter;
+            } else {
+                this.resetFilter();
+            }
+
+            this.loadRelations(this.newFilter.relation);
+
+            this.getSavedFilters();
+
+            if (Boolean(this.newFilter.column)) {
+                this.$nextTick(() => this.$refs.filterOperator.focus());
+            } else if(Boolean(this.newFilter.operator)) {
+                this.$nextTick(() => this.$refs.filterValue.focus());
+            } else {
+                this.$nextTick(() => this.$refs.filterColumn.focus());
+            }
+
+            this.showSidebar = true;
+            this.showSavedFilters = false;
+        },
+        filterable: [],
+        loadFilterable(table = null) {
+            $wire.loadFields(table)
+                .then(
+                    result => {
+                        this.filterable = result;
+                    }
+                );
+        },
+        loadRelations(table = null) {
+            $wire.loadRelations(table)
+                .then(
+                    result => {
+                        this.relations = result;
+                    }
+                );
+        },
+        filterIndex: 0,
+        newFilter: {column: '', operator: '', value: '', relation: ''},
+        addFilter() {
+            if (this.filters.length === 0) {
+                this.filters.push([]);
+                this.filterIndex = 0;
+            }
+
+            if (this.newFilter.relation) {
+                this.newFilter.column = this.newFilter.relation + '.' + this.newFilter.column;
+                this.newFilter.relation = '';
+            }
+
+            this.filters[this.filterIndex].push(this.newFilter);
+            this.resetFilter();
+            this.filterSelectType = 'text';
+
+            this.$nextTick(() => this.$refs.filterColumn.focus());
+        },
+        addOrFilter() {
+            if (this.filters[this.filters.length - 1].length === 0) {
+                this.filterIndex = this.filters.length - 1;
+                return;
+            }
+
+            this.filterIndex = this.filters.length;
+            this.filters.push([]);
+        },
+        removeFilter(index, groupIndex) {
+            this.filters[groupIndex].splice(this.filters[groupIndex].indexOf(index), 1);
+
+            if(this.filters[groupIndex].length === 0) {
+                this.filters.splice(this.filters.indexOf(groupIndex), 1);
+            }
+        },
+        removeFilterGroup(index) {
+            this.filters.splice(this.filters.indexOf(index), 1);
+        },
+        clearFilters() {
+            this.filters = [];
+            this.filterIndex = 0;
+            $wire.sortTable('');
+        },
+        resetFilter() {
+            this.filterSelectType = 'text';
+            this.newFilter = {column: '', operator: '', value: '', relation: ''};
+        },
+        filterName: '',
+        permanent: false,
+        columns: [],
+        getColumns() {
+            $wire.getExportColumns().then(result => {this.columns = result})
+        },
+        relations: [],
+        savedFilters: [],
+        getSavedFilters() {
+            $wire.getSavedFilters().then(result => {this.savedFilters = result})
+        },
+        formatter(col, record) {
+            const val = _.get(record, col, null);
+
+            if (this.intendentedCols.includes(col)) {
+                return `<span class='${ record.depth >= 1 ? 'indent-icon' : '' }' style='text-indent:${ record.depth * 10 }px;'>` + val + '</span>';
+            }
+
+            if (this.formatters.hasOwnProperty(col)) {
+                const type = this.formatters[col];
+
+                return formatters.format({value: val, type: type, context: record});
+            }
+
+            return val;
+        },
+        disabled() {
+            return false;
+        },
+    })
+    )
+
+});
 
 window.formatters = {
     format: function ({value, type, options, context}) {
@@ -210,6 +435,3 @@ window.formatters = {
         }
     }
 }
-
-window.Alpine = Alpine;
-Alpine.start();

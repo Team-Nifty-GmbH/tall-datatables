@@ -1,204 +1,6 @@
 <div
     wire:init="loadData()"
-    x-init="() => {
-        new Sortable(document.querySelector('#table-cols'), {
-            animation: 150,
-            delay: 100,
-            onEnd: (e) => {
-                const el = enabledCols[e.oldIndex];
-                let oldCols = Object.values(enabledCols);
-                // move element from e.oldIndex to e.newIndex
-                oldCols.splice(e.oldIndex, 1);
-                oldCols.splice(e.newIndex, 0, el);
-
-                enabledCols = oldCols;
-                cols = enabledCols.filter(value => cols.includes(value));
-            }
-        }),
-        loadFilterable(),
-        $watch('cols', () => {
-            $wire.storeColLayout(cols);
-        }),
-        $watch('newFilter.column', () => {
-            if (! Boolean(newFilter.column)) {
-                return;
-            }
-
-            let valueList = filterValueLists.hasOwnProperty(newFilter.column);
-
-            if (! valueList) {
-                $wire.resolveForeignKey(newFilter.column, newFilter.relation).then(
-                    result => {
-                        if (result === null) {
-                            filterSelectType = 'text';
-                            return;
-                        }
-
-                        if (typeof result === 'string') {
-                            filterSelectType = 'search';
-                            newFilter.operator = '=';
-                            Alpine.$data(document.querySelector('#filter-select-search')).asyncData.api = '{{ route('search', '') }}/' + result;
-                        } else if (typeof result === 'array' || typeof result === 'object') {
-                            filterSelectType = 'valueList';
-                            newFilter.operator = '=';
-                            filterValueLists[newFilter.column] = result;
-                            valueList = true;
-                        }
-                    });
-            }
-
-            if (valueList) {
-                filterSelectType = 'valueList';
-                newFilter.operator = '=';
-            }
-        }),
-        $watch('newFilter.relation', () => {
-            loadFilterable(newFilter.relation);
-        })
-    }"
-    x-data="{
-        data: $wire.entangle('data'),
-        getData() {
-            if (this.data.hasOwnProperty('data')) {
-                return this.data.data;
-            }
-
-            return this.data;
-        },
-        initialized: $wire.entangle('initialized'),
-        search: $wire.entangle('search'),
-        selected: $wire.entangle('selected').defer,
-        filterSelectType: 'text',
-        loadSidebar(newFilter = null) {
-            if (newFilter) {
-                this.newFilter = newFilter;
-            } else {
-                this.resetFilter();
-            }
-
-            this.loadRelations(this.newFilter.relation);
-
-            this.getSavedFilters();
-
-            if (Boolean(this.newFilter.column)) {
-                $nextTick(() => this.$refs.filterOperator.focus());
-            } else if(Boolean(this.newFilter.operator)) {
-                $nextTick(() => this.$refs.filterValue.focus());
-            } else {
-                $nextTick(() => this.$refs.filterColumn.focus());
-            }
-
-            this.showSidebar = true;
-            this.showSavedFilters = false;
-        },
-        tab: 'edit-filters',
-        showSavedFilters: false,
-        filterValueLists: $wire.entangle('filterValueLists'),
-        filters: $wire.entangle('userFilters'),
-        orderByCol: $wire.entangle('orderBy'),
-        orderAsc: $wire.entangle('orderAsc'),
-        filterable: [],
-        loadFilterable(table = null) {
-            $wire.loadFields(table)
-            .then(
-                result => {
-                    this.filterable = result;
-                }
-            );
-        },
-        loadRelations(table = null) {
-            $wire.loadRelations(table)
-            .then(
-                result => {
-                    this.relations = result;
-                }
-            );
-        },
-        filterIndex: 0,
-        newFilter: {column: '', operator: '', value: '', relation: ''},
-        addFilter() {
-            if (this.filters.length === 0) {
-                this.filters.push([]);
-                this.filterIndex = 0;
-            }
-
-            if (this.newFilter.relation) {
-                this.newFilter.column = this.newFilter.relation + '.' + this.newFilter.column;
-                this.newFilter.relation = '';
-            }
-
-            this.filters[this.filterIndex].push(this.newFilter);
-            this.resetFilter();
-            this.filterSelectType = 'text';
-
-            $nextTick(() => this.$refs.filterColumn.focus());
-        },
-        addOrFilter() {
-            if (this.filters[this.filters.length - 1].length === 0) {
-                this.filterIndex = this.filters.length - 1;
-                return;
-            }
-
-            this.filterIndex = this.filters.length;
-            this.filters.push([]);
-        },
-        removeFilter(index, groupIndex) {
-            this.filters[groupIndex].splice(this.filters[groupIndex].indexOf(index), 1);
-
-            if(this.filters[groupIndex].length === 0) {
-                this.filters.splice(this.filters.indexOf(groupIndex), 1);
-            }
-        },
-        removeFilterGroup(index) {
-            this.filters.splice(this.filters.indexOf(index), 1);
-        },
-        clearFilters() {
-            this.filters = [];
-            this.filterIndex = 0;
-            $wire.sortTable('');
-        },
-        resetFilter() {
-            this.filterSelectType = 'text';
-            this.newFilter = {column: '', operator: '', value: '', relation: ''};
-        },
-        filterName: '',
-        permanent: false,
-        columns: [],
-        getColumns() {
-            $wire.getExportColumns().then(result => {this.columns = result})
-        },
-        relations: [],
-        savedFilters: [],
-        getSavedFilters() {
-            $wire.getSavedFilters().then(result => {this.savedFilters = result})
-        },
-        showSidebar: false,
-        cols: @js($enabledCols),
-        enabledCols: @js($availableCols),
-        colLabels: @js($colLabels),
-        sortable: @js($sortable),
-        selectable: @js($selectable),
-        stretchCol: @js($stretchCol),
-        formatters: @js($formatters),
-        formatter(col, record) {
-            const val = _.get(record, col, null);
-
-            if (@js($indentedCols).includes(col)) {
-                return `<span class='${ record.depth >= 1 ? 'indent-icon' : '' }' style='text-indent:${ record.depth * 10 }px;'>` + val + '</span>';
-            }
-
-            if (this.formatters.hasOwnProperty(col)) {
-                const type = this.formatters[col];
-
-                return formatters.format({value: val, type: type, context: record});
-            }
-
-            return val;
-        },
-        disabled() {
-            return false;
-        },
-    }"
+    x-data="data_table($wire)"
 >
     <x-dialog id="save-filter" :title="__('Save filter')">
         <x-input required :label="__('Filter name')" x-model="filterName" />
@@ -211,7 +13,7 @@
         wire:ignore
         x-data="{}"
     >
-        <x-sidebar x-on:keydown.esc="showSidebar = false" x-show="showSidebar">
+        <x-tall-datatables::sidebar x-on:keydown.esc="showSidebar = false" x-show="showSidebar">
             <div class="mt-2">
                 <div class="pb-2.5">
                     <div class="border-b border-gray-200 dark:border-secondary-700">
@@ -258,8 +60,7 @@
                                         <x-label class="mr-2">
                                             {{ __('Saved filters') }}
                                         </x-label>
-                                        <x-icon
-                                            name="chevron-right"
+                                        <x-heroicons::outline.chevron-right
                                             class="transform transition-transform h-4 w-4"
                                             x-bind:class="{'rotate-90': showSavedFilters}"
                                         />
@@ -269,7 +70,7 @@
                                         x-show="showSavedFilters"
                                         x-cloak
                                     >
-                                        <x-spinner />
+                                        <x-tall-datatables::spinner />
                                         <div
                                             class="grid grid-cols-1 gap-3 justify-center items-center"
                                             x-data="{
@@ -333,7 +134,7 @@
                                                                                 <div>
                                                                                     <x-badge flat primary>
                                                                                         <x-slot:label>
-                                                                                            <span x-text="Object.values(filter).join(' ')"></span>
+                                                                                            <span x-text="filterBadge(filter)"></span>
                                                                                         </x-slot:label>
                                                                                     </x-badge>
                                                                                     <template x-if="(orFilters.length - 1) !== index">
@@ -443,7 +244,7 @@
                                     option-label="name"
                                     option-description="description"
                                     :clearable="false"
-                                    :async-data="route('search', \App\Models\Address::class)"
+                                    async-data=""
                                 />
                             </div>
                             <div
@@ -487,7 +288,7 @@
                                                     <div>
                                                         <x-badge flat primary>
                                                             <x-slot:label>
-                                                                <span x-text="Object.values(filter).join(' ')"></span>
+                                                                <span x-text="filterBadge(filter)"></span>
                                                             </x-slot:label>
                                                             <x-slot
                                                                 name="append"
@@ -627,17 +428,19 @@
             <x-slot:footer>
                 <x-button x-on:click="showSidebar = false">{{ __('Close') }}</x-button>
             </x-slot:footer>
-        </x-sidebar>
-        <div class="flex w-full">
-            <div class="flex-1">
-                <x-input
-                    icon="search"
-                    x-model.debounce.500ms="search"
-                    placeholder="{{ __('Search in :model…', ['model' => __(\Illuminate\Support\Str::plural(class_basename($model)))]) }}"
-                >
-                </x-input>
+        </x-tall-datatables::sidebar>
+        @if($isSearchable)
+            <div class="flex w-full">
+                <div class="flex-1">
+                    <x-input
+                        icon="search"
+                        x-model.debounce.500ms="search"
+                        placeholder="{{ __('Search in :model…', ['model' => __(\Illuminate\Support\Str::plural(class_basename($model)))]) }}"
+                    >
+                    </x-input>
+                </div>
             </div>
-        </div>
+        @endif
         <div class="flex pt-3 items-center gap-1.5" x-cloak x-show="filters.length > 0 || orderByCol">
             <template x-for="(orFilters, orIndex) in filters">
                 <div class="flex justify-center items-center">
@@ -659,7 +462,7 @@
                                     <div>
                                         <x-badge flat primary>
                                             <x-slot:label>
-                                                <span x-text="Object.values(filter).join(' ')"></span>
+                                                <span x-text="filterBadge(filter)"></span>
                                             </x-slot:label>
                                             <x-slot
                                                 name="append"
@@ -737,27 +540,27 @@
                 {{ $actions }}
             </x-dropdown>
         @endif
-        <x-table class="relative">
+        <x-tall-datatables::table class="relative">
             <tr wire:loading.delay class="absolute bottom-0 top-0 right-0 w-full">
                 <td>
-                    <x-spinner />
+                    <x-tall-datatables::spinner />
                 </td>
             </tr>
             <x-slot:header>
                 <template x-if="selectable">
-                    <x-table.head-cell class="w-4">
+                    <x-tall-datatables::table.head-cell class="w-4">
                         <x-checkbox x-on:change="function (e) {
                             if (e.target.checked) {
-                                selected = records.map(record => record.id);
+                                selected = getData().map(record => record.id);
                                 selected.push('*');
                             } else {
                                 selected = [];
                             }
                         }" value="*" x-model="selected"/>
-                    </x-table.head-cell>
+                    </x-tall-datatables::table.head-cell>
                 </template>
                 <template x-for="(col, index) in cols">
-                    <x-table.head-cell x-bind:class="stretchCol.length && ! stretchCol.includes(col) ? 'w-[1%]' : ''">
+                    <x-tall-datatables::table.head-cell x-bind:class="stretchCol.length && ! stretchCol.includes(col) ? 'w-[1%]' : ''">
                         <div class="flex">
                             <div
                                 type="button"
@@ -775,28 +578,27 @@
                                     class="h-4 w-4 transition-all"
                                 />
                             </div>
-                            <x-heroicons
+                            <x-heroicons::outline.funnel
                                 x-show="filterable.includes(col)"
-                                name="funnel"
                                 class="h-4 w-4 cursor-pointer"
                                 x-on:click="loadSidebar({column: col, operator: '', value: '', relation: ''})"
                             />
                         </div>
-                    </x-table.head-cell>
+                    </x-tall-datatables::table.head-cell>
                 </template>
                 @if($rowActions ?? false)
-                    <x-table.head-cell class="w-[1%]">
+                    <x-tall-datatables::table.head-cell class="w-[1%]">
                         {{ __('Actions') }}
-                    </x-table.head-cell>
+                    </x-tall-datatables::table.head-cell>
                 @endif
-                <x-table.head-cell class="w-4 flex w-full flex-row-reverse">
+                <x-tall-datatables::table.head-cell class="w-4 flex w-full flex-row-reverse">
                     <div class="flex w-full flex-row-reverse items-center">
                         <x-button
                             icon="cog"
                             x-on:click="loadSidebar()"
                         />
                     </div>
-                </x-table.head-cell>
+                </x-tall-datatables::table.head-cell>
             </x-slot:header>
             <template x-if="! getData().length && initialized">
                 <tr>
@@ -818,7 +620,7 @@
                 </td>
             </tr>
             <template x-for="(record, index) in getData()">
-                <x-table.row
+                <x-tall-datatables::table.row
                     x-bind:data-slug="record.slug_position"
                     x-bind:data-parent-id="record.parent_id"
                     x-bind:data-id="record.id"
@@ -835,13 +637,13 @@
                         </div>
                     </template>
                     <template x-for="col in cols">
-                        <x-table.cell class="cursor-pointer" x-bind:href="record?.href">
+                        <x-tall-datatables::table.cell class="cursor-pointer" x-bind:href="record?.href">
                             <div
                                 class="flex"
                                 x-html="formatter(col, record)"
                             >
                             </div>
-                        </x-table.cell>
+                        </x-tall-datatables::table.cell>
                     </template>
                     @if($rowActions ?? false)
                         <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4">
@@ -855,7 +657,7 @@
                     {{-- Empty cell for the col selection--}}
                     <td class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
                     </td>
-                </x-table.row>
+                </x-tall-datatables::table.row>
             </template>
             <x-slot:footer>
                 <template x-if="data.hasOwnProperty('current_page') ">
@@ -921,6 +723,6 @@
                     </td>
                 </template>
             </x-slot:footer>
-        </x-table>
+        </x-tall-datatables::table>
     </div>
 </div>

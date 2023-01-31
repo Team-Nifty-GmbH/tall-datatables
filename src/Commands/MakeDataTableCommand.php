@@ -14,7 +14,7 @@ class MakeDataTableCommand extends Command
 
     protected string $model;
 
-    protected string $stubDirectory = 'stubs';
+    protected string $stubDirectory = 'vendor/team-nifty-gmbh/tall-datatables/stubs';
 
     /**
      * The name and signature of the console command.
@@ -39,8 +39,8 @@ class MakeDataTableCommand extends Command
      */
     public function handle()
     {
-        $stubSubDirectory = $this->option('stub') ?? $this->stubDirectory;
-        $this->stubDirectory = rtrim('stubs' . DIRECTORY_SEPARATOR . $stubSubDirectory, DIRECTORY_SEPARATOR) . '/';
+//        $stubSubDirectory = $this->option('stub') ?? $this->stubDirectory;
+//        $this->stubDirectory = rtrim('stubs' . DIRECTORY_SEPARATOR . $stubSubDirectory, DIRECTORY_SEPARATOR);
 
         $this->parser = new ComponentParser(
             config('tall-datatables.data_table_namespace'),

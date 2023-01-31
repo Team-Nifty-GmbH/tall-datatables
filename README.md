@@ -17,10 +17,63 @@ We highly appreciate you sending us a postcard from your hometown, mentioning wh
 
 ## Installation
 
-You can install the package via composer:
+1. You can install the package via composer:
 
 ```bash
 composer require team-nifty-gmbh/tall-datatables
+```
+2. add the scripts tag to your layout BEFORE alpinejs
+```html
+...
+<livewire:scripts/>
+<datatable:scripts />
+@vite(['resources/js/alpine.js'])
+...
+```
+
+alternative you can add the script to your vite config, but again keep in mind to load the
+script BEFORE alpinejs as it needs to listen on the alpine:init event
+
+```js
+export default defineConfig({
+    plugins: [
+        laravel({
+            input: [
+                ...
+                'vendor/team-nifty-gmbh/tall-datatables/resources/js/tall-datatables.js',
+            ],
+        }),
+    ],
+    ...
+})
+```
+
+in your layout add the vite import:
+```html
+...
+@vite([
+    ...
+    'vendor/team-nifty-gmbh/tall-datatables/resources/js/tall-datatables.js',
+    ...
+])
+@vite(['resources/js/alpine.js'])
+...
+```
+3. Add the folowing to your tailwind.config.js
+
+```js
+module.exports = {
+    presets: [
+        ...
+        require('./vendor/team-nifty-gmbh/tall-datatables/tailwind.config.js')
+    ]
+}
+```
+
+4. run vite build to compile the javascript files
+
+```bash
+vite build
 ```
 
 You can publish and run the migrations with:
@@ -36,25 +89,113 @@ You can publish the config file with:
 php artisan vendor:publish --tag="tall-datatables-config"
 ```
 
-This is the contents of the published config file:
-
-```php
-return [
-];
-```
-
 Optionally, you can publish the views using
 
 ```bash
 php artisan vendor:publish --tag="tall-datatables-views"
 ```
 
-## Usage
+# Usage
+
+This command creates a new DataTable class.
+```shell
+php artisan make:data-table UserDataTable "App\Models\User"
+```
+
+inside this class you should define at least the columns you want to display
 
 ```php
-$dataTable = new TeamNiftyGmbH\DataTable();
-echo $dataTable->echoPhrase('Hello, TeamNiftyGmbH!');
+public array $enabledCols = [
+    'id',
+    'name',
+    'email',
+    'email_verified_at',
+    'created_at',
+    'updated_at',
+];
 ```
+
+if you need to eager load additional data you can override the getBuilder method
+
+```php
+public function getBuilder(Builder $builder): Builder
+{
+    return $builder->with('roles');
+}
+```
+
+The datatable component will only return the columns you defined in the enabledCols property.
+In case you need a specific column to be always returned you can override the getReturnKeys method.
+
+This is especially needed when you want to format money values in the frontend.
+
+```php
+public function getReturnKeys(): array
+{
+    return array_merge(parent::getReturnKeys(), ['currency.iso']);
+}
+```
+
+# Models
+
+## HasFrontendFormatter Conern
+
+When you want to format the data for the frontend you should use the HasFrontendAttributes trait
+in your model. This trait will add a method to your model called `getFrontendAttributes()`
+
+Also you should define a detailRouteName property in your model which points to a view showing the details of the model.
+
+```php
+use TeamNifty\TallDatatables\Traits\HasFrontendAttributes;
+
+class User extends Authenticatable
+{
+    use HasFrontendAttributes;
+    
+    protected string $detailRouteName = 'users.id';
+    ...
+}
+```
+
+if your detail route needs additional parameters you can override the `getDetailRouteParameters()` method in your model class.
+
+```php
+public function getDetailRouteParameters(): array
+{
+    return [
+        'id' => $this->id,
+        'foo' => 'bar',
+    ];
+}
+```
+
+the trait adds an attribute accessor to your model which contains the detailroute for a single model instance.
+
+```php
+$user = User::first();
+$user->href; // returns the detail route for the user
+```
+
+you can set an iconName property in your model which will be used to display an icon in the table.
+You can set any icon from the [heroicons](https://heroicons.com/) library.
+
+```php
+protected string $iconName = 'user';
+```
+
+## Casts
+
+The Package uses casts to format the data for the frontend. You can define your own casts in the `casts` property of your model.
+Aside of the primitive cast you can add your own casts. These cast classes should implement the `TeamNifty\TallDatatables\Contracts\HasFrontendFormatter` interface
+which brings the `getFrontendFormatter()` method.
+
+```php
+use TeamNifty\TallDatatables\Casts\Date;
+```
+
+## Searchable
+
+When you want to search in your datatable you should use the Searchable trait from laravel scut
 
 ## Testing
 

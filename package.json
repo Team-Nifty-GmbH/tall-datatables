@@ -21,6 +21,8 @@
     "vite": "^4.0.4"
   },
   "dependencies": {
-    "laravel-vite-plugin": "^0.7.3"
+    "laravel-vite-plugin": "^0.7.3",
+    "lodash": "^4.17.21",
+    "lodash.get": "^4.4.2"
   }
 }

@@ -2,7 +2,6 @@
 
 namespace TeamNiftyGmbH\DataTable;
 
-use App\Models\User;
 use App\Services\SettingService;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
@@ -41,6 +40,8 @@ class DataTable extends Component
 
     public array $exportColumns = [];
 
+    public bool $isSearchable = false;
+
     public string $search = '';
 
     public string $orderBy = '';
@@ -57,6 +58,10 @@ class DataTable extends Component
 
     public array $colLabels = [];
 
+    public array $stretchCol = [];
+
+    public array $indentedCols = [];
+
     public array $sortable = [];
 
     public bool $selectable = false;
@@ -65,26 +70,36 @@ class DataTable extends Component
 
     public array $filterValueLists = [];
 
-    public array $indentedCols = [];
-
-    public array $stretchCol = [];
-
     public array $formatters = [];
 
     public array $data = [];
-
-    public string $detailRoute = '#';
 
     public string $detailEvent = '';
 
     protected $listeners = ['loadData'];
 
     /**
+     * @return array
+     */
+    public function getConfig(): array
+    {
+        return [
+            'cols' => $this->enabledCols,
+            'enabledCols' => $this->availableCols,
+            'colLabels' => $this->colLabels,
+            'sortable' => $this->sortable,
+            'stretchCol' => $this->stretchCol,
+            'formatters' => $this->formatters,
+            'searchRoute' => $this->getSearchRoute(),
+        ];
+    }
+
+    /**
      * @return void
      */
     public function mount(): void
     {
-        $cachedFilters = Session::get('filter:' . get_called_class());
+        $cachedFilters = Session::get(config('tall-datatables.cache_key') . '.filter:' . get_called_class());
         $this->loadFilter(
             $cachedFilters ?: data_get(
                 collect(data_get($this->getSavedFilters(), 'settings'))
@@ -109,6 +124,8 @@ class DataTable extends Component
             ? array_fill_keys($this->availableCols, true)
             : $this->sortable;
 
+        $this->isSearchable = in_array(Searchable::class, class_uses_recursive($this->model));
+
         $this->getFormatters();
     }
 
@@ -117,7 +134,7 @@ class DataTable extends Component
      */
     public function render(): View|Factory|Application
     {
-        return view('livewire.data-table');
+        return view('tall-datatables::livewire.data-table');
     }
 
     /**
@@ -167,10 +184,14 @@ class DataTable extends Component
      */
     public function storeColLayout(array $cols): void
     {
+        $reload = count($cols) > count($this->enabledCols);
+
         $this->enabledCols = $cols;
 
         $this->cacheState();
-        $this->loadData();
+        if ($reload) {
+            $this->loadData();
+        }
 
         $this->skipRender();
     }
@@ -505,7 +526,7 @@ class DataTable extends Component
         if ($this->orderBy) {
             $query->orderBy($this->orderBy, $this->orderAsc ? 'asc' : 'desc');
         } else {
-            $query->orderBy('id', 'desc');
+            $query->orderBy((new $this->model)->getKeyName(), 'desc');
         }
 
         $query = $this->getBuilder($query);
@@ -648,15 +669,17 @@ class DataTable extends Component
             'selected' => $this->selected,
         ];
 
-        Session::put('filter:' . get_called_class(), $filter);
+        Session::put(config('tall-datatables.cache_key') . '.filter:' . get_called_class(), $filter);
     }
 
     /**
-     * @param string $key
+     * Resolves a foreign key to a relation.
+     *
+     * @param string $localKey
      * @param string|null $relation
-     * @return array|null
+     * @return string|array|null
      */
-    public function resolveForeignKey(string $localKey, string $relation = null): array|null
+    public function resolveForeignKey(string $localKey, string $relation = null): string|array|null
     {
         $model = new ($relation ? ModelInfo::forModel($this->model)->relation($relation)->related : $this->model);
 
@@ -683,7 +706,7 @@ class DataTable extends Component
             return null;
         }
 
-        $relatedModel = \App\Helpers\ModelInfo::forAllModels()
+        $relatedModel = ModelInfo::forAllModels()
             ->where('tableName', $relatedTable)
             ->first()
             ?->class;
@@ -692,7 +715,7 @@ class DataTable extends Component
             return null;
         }
 
-        if (in_array(Searchable::class, class_uses($relatedModel))) {
+        if (in_array(Searchable::class, class_uses_recursive($relatedModel))) {
             return $relatedModel;
         }
 
@@ -706,5 +729,19 @@ class DataTable extends Component
                 'label' => $item->name,
             ];
         })->toArray();
+    }
+
+    /**
+     * You should set the name of the route in your .env file.
+     * e.g. TALL_DATATABLES_SEARCH_ROUTE=datatables.search
+     * The route should lead to the SearchController from this package.
+     *
+     * @return string
+     */
+    private function getSearchRoute(): string
+    {
+        return config('tall-datatables.search_route')
+            ? route(config('tall-datatables.search_route'), '')
+            : '';
     }
 }

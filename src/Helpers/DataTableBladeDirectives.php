@@ -1,0 +1,61 @@
+<?php
+
+namespace TeamNiftyGmbH\DataTable\Helpers;
+
+use Illuminate\View\ComponentAttributeBag;
+
+class DataTableBladeDirectives
+{
+    /**
+     * @param bool $absolute
+     * @param array $attributes
+     * @return string
+     */
+    public function scripts(bool $absolute = false, array $attributes = []): string
+    {
+        $route = route('tall-datatables.assets.scripts', $parameters = [], $absolute);
+        $this->getManifestVersion('resources/js/tall-datatables.js', $route);
+
+        $attributes = new ComponentAttributeBag($attributes);
+
+        return <<<HTML
+        <script src="{$route}" defer {$attributes->toHtml()}></script>
+        HTML;
+    }
+
+    /**
+     * @param bool $absolute
+     * @return string
+     */
+    public function styles(bool $absolute = false): string
+    {
+        $route = route('tall-datatables.assets.styles', $parameters = [], $absolute);
+        $this->getManifestVersion('resources/css/tall-datatables.css', $route);
+
+        return "<link href=\"{$route}\" rel=\"stylesheet\" type=\"text/css\">";
+    }
+
+    /**
+     * @param string $file
+     * @param string|null $route
+     * @return string|null
+     */
+    public function getManifestVersion(string $file, ?string &$route = null): ?string
+    {
+        $manifestPath = dirname(__DIR__, 2) . '/dist/build/manifest.json';
+
+        if (!file_exists($manifestPath)) {
+            return null;
+        }
+
+        $manifest = json_decode(file_get_contents($manifestPath), $assoc = true);
+
+        $version  = last(explode('-', $manifest[$file]['file']));
+
+        if ($route) {
+            $route .= "?id={$version}";
+        }
+
+        return $version;
+    }
+}

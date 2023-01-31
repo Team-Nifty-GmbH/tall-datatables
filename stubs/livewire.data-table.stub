@@ -2,7 +2,7 @@
 
 namespace [namespace];
 
-use App\Http\Livewire\DataTable;
+use TeamNiftyGmbH\DataTable\DataTable;
 use [model_import];
 
 class [class] extends DataTable

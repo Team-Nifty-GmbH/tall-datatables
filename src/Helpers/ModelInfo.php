@@ -25,7 +25,7 @@ class ModelInfo extends BaseModelInfo
 
         return $cache
             ->rememberForever(
-                cache_key(self::class, md5((string) $model)),
+                config('tall-datatables.cache_key') . '.modelInfo:' . md5((string) $model),
                 function () use ($model) {
                     $modelInfo = parent::forModel($model);
                     $modelInfo->attributes = $modelInfo
