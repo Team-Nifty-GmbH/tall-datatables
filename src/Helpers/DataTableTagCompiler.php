@@ -4,7 +4,6 @@ namespace TeamNiftyGmbH\DataTable\Helpers;
 
 use Illuminate\View\Compilers\ComponentTagCompiler;
 use TeamNiftyGmbH\DataTable\Facades\DataTableDirectives;
-use WireUi\Facades\WireUiDirectives;
 
 class DataTableTagCompiler extends ComponentTagCompiler
 {

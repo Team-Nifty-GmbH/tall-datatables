@@ -2,8 +2,6 @@
 
 namespace TeamNiftyGmbH\DataTable\Traits;
 
-use TeamNiftyGmbH\DataTable\Casts\Links\Image;
-use TeamNiftyGmbH\DataTable\Casts\Links\Link;
 use TeamNiftyGmbH\DataTable\Helpers\Icon;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 

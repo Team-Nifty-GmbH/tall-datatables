@@ -40,7 +40,8 @@ class DataTableServiceProvider extends PackageServiceProvider
         $this->registerMacros();
     }
 
-    protected function registerTagCompiler() {
+    protected function registerTagCompiler()
+    {
         Blade::precompiler(static function (string $string): string {
             return app(DataTableTagCompiler::class)->compile($string);
         });
@@ -49,7 +50,7 @@ class DataTableServiceProvider extends PackageServiceProvider
     protected function registerBladeDirectives()
     {
         Blade::directive('dataTablesScripts', static function (?string $attributes = ''): string {
-            if (!$attributes) {
+            if (! $attributes) {
                 $attributes = '[]';
             }
 

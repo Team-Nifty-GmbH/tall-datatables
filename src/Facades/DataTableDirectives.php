@@ -14,7 +14,6 @@ use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
  * @method static string boolean(string $value)
  * @method static string entangleable(string $property, mixed $value = null)
  */
-
 class DataTableDirectives extends Facade
 {
     protected static function getFacadeAccessor(): string
