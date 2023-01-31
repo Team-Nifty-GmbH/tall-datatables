@@ -2,8 +2,8 @@
 
 namespace TeamNiftyGmbH\DataTable\Controllers;
 
-use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Arr;
 use Laravel\Scout\Searchable;
 

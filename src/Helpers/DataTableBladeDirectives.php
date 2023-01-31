@@ -44,13 +44,13 @@ class DataTableBladeDirectives
     {
         $manifestPath = dirname(__DIR__, 2) . '/dist/build/manifest.json';
 
-        if (!file_exists($manifestPath)) {
+        if (! file_exists($manifestPath)) {
             return null;
         }
 
         $manifest = json_decode(file_get_contents($manifestPath), $assoc = true);
 
-        $version  = last(explode('-', $manifest[$file]['file']));
+        $version = last(explode('-', $manifest[$file]['file']));
 
         if ($route) {
             $route .= "?id={$version}";
