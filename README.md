@@ -7,6 +7,16 @@
 
 This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
 
+## Requirements
+
+- PHP >= 8.1
+- Laravel >= 9.46
+- AlpineJS >= 3.0
+- TailwindCSS >= 3.0
+- Livewire >= 2.11
+- Vite >= 4.0
+- MeiliSearch >= 0.30
+
 ## Installation
 
 1. You can install the package via composer:

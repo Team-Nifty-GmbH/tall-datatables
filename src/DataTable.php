@@ -22,6 +22,7 @@ use Spatie\ModelInfo\Relations\Relation;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
+use TeamNiftyGmbH\DataTable\Traits\HasFrontendAttributes;
 use WireUi\Traits\Actions;
 
 class DataTable extends Component
@@ -77,6 +78,8 @@ class DataTable extends Component
     public string $detailEvent = '';
 
     protected $listeners = ['loadData'];
+
+    public array $appends = [];
 
     /**
      * @return array
@@ -267,7 +270,7 @@ class DataTable extends Component
         if (property_exists($query, 'hits')) {
             $mapped = $resultCollection->map(
                 function ($item) use ($query, $returnKeys) {
-                    $itemArray = Arr::only(Arr::dot($item->append('href')->toArray()), $returnKeys);
+                    $itemArray = Arr::only(Arr::dot($this->itemToArray($item)), $returnKeys);
 
                     foreach ($itemArray as $key => $value) {
                         $itemArray[$key] = data_get($query->hits, $item->getKey() . '._formatted.' . $key, $value);
@@ -281,7 +284,7 @@ class DataTable extends Component
             $mapped = $resultCollection->map(
                 function ($item) use ($returnKeys) {
                     return Arr::only(
-                        Arr::dot($item->append('href')->toArray()),
+                        Arr::dot($this->itemToArray($item)),
                         $returnKeys
                     );
                 }
@@ -307,6 +310,30 @@ class DataTable extends Component
                 (new $this->model)->getKeyName(),
                 'href',
             ]
+        );
+    }
+
+    /**
+     * @param $item
+     * @return array
+     */
+    public function itemToArray($item): array
+    {
+        if ($this->appends) {
+            $item->append($this->getAppends());
+        }
+
+        return $item->toArray();
+    }
+
+    /**
+     * @return array
+     */
+    public function getAppends(): array
+    {
+        return array_merge(
+            $this->appends,
+            in_array(HasFrontendAttributes::class, class_uses_recursive($this->model)) ? ['href'] : []
         );
     }
 
