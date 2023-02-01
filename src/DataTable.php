@@ -368,7 +368,6 @@ class DataTable extends Component
             'is_permanent' => $permanent,
         ]);
 
-
         $this->skipRender();
     }
 
