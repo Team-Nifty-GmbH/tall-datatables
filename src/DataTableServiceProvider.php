@@ -11,6 +11,8 @@ use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Spatie\ModelInfo\Attributes\Attribute;
 use TeamNiftyGmbH\DataTable\Commands\MakeDataTableCommand;
+use TeamNiftyGmbH\DataTable\Commands\ModelInfoCache;
+use TeamNiftyGmbH\DataTable\Commands\ModelInfoCacheReset;
 use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
@@ -29,8 +31,13 @@ class DataTableServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->hasRoute('web')
-            ->hasMigration('create_tall-datatables_table')
-            ->hasCommand(MakeDataTableCommand::class);
+            ->hasMigration('create_datatable_user_settings_table')
+            ->runsMigrations()
+            ->hasCommands([
+                MakeDataTableCommand::class,
+                ModelInfoCache::class,
+                ModelInfoCacheReset::class,
+            ]);
     }
 
     public function bootingPackage()
