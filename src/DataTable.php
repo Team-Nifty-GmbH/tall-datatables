@@ -33,7 +33,13 @@ class DataTable extends Component
 
     protected string $model;
 
-    protected array $filters = [];
+    public array $filters = [];
+
+    public array $availableCols = [];
+
+    public string $modelName;
+
+    public array $enabledCols = [];
 
     public array $userFilters = [];
 
@@ -53,9 +59,6 @@ class DataTable extends Component
 
     public int $perPage = 15;
 
-    public array $enabledCols = [];
-
-    public array $availableCols = [];
 
     public array $colLabels = [];
 
@@ -74,8 +77,6 @@ class DataTable extends Component
     public array $formatters = [];
 
     public array $data = [];
-
-    public string $detailEvent = '';
 
     protected $listeners = ['loadData'];
 
@@ -128,6 +129,8 @@ class DataTable extends Component
             : $this->sortable;
 
         $this->isSearchable = in_array(Searchable::class, class_uses_recursive($this->model));
+
+        $this->modelName = class_basename($this->model);
 
         $this->getFormatters();
     }
@@ -319,8 +322,8 @@ class DataTable extends Component
      */
     public function itemToArray($item): array
     {
-        if ($this->appends) {
-            $item->append($this->getAppends());
+        if ($appends = $this->getAppends()) {
+            $item->append($appends);
         }
 
         return $item->toArray();

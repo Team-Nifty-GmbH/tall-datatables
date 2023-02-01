@@ -435,7 +435,7 @@
                     <x-input
                         icon="search"
                         x-model.debounce.500ms="search"
-                        placeholder="{{ __('Search in :model…', ['model' => __(\Illuminate\Support\Str::plural(class_basename($model)))]) }}"
+                        placeholder="{{ __('Search in :model…', ['model' => __(\Illuminate\Support\Str::plural($modelName))]) }}"
                     >
                     </x-input>
                 </div>

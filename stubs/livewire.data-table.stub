@@ -7,7 +7,7 @@ use [model_import];
 
 class [class] extends DataTable
 {
-    public string $model = [model]::class;
+    protected string $model = [model]::class;
 
     /**
      * @return void
