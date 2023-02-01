@@ -35,10 +35,12 @@ class DataTable extends Component
 
     /** @locked  */
     public array $filters = [];
+
     protected array $filtersCached;
 
     /** @locked  */
     public array $availableCols = [];
+
     protected array $availableColsCached;
 
     public string $modelName;
@@ -62,7 +64,6 @@ class DataTable extends Component
     public string $page = '1';
 
     public int $perPage = 15;
-
 
     public array $colLabels = [];
 
@@ -804,7 +805,6 @@ class DataTable extends Component
     {
         $this->filters = $this->filtersCached;
     }
-
 
     /**
      * This is just to protect the available cols from beeing modified in the frontend.
