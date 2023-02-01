@@ -9,7 +9,10 @@ use Illuminate\Support\Facades\Facade;
  */
 class DataTable extends Facade
 {
-    protected static function getFacadeAccessor()
+    /**
+     * @return string
+     */
+    protected static function getFacadeAccessor(): string
     {
         return \TeamNiftyGmbH\DataTable\DataTable::class;
     }

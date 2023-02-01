@@ -10,6 +10,29 @@ trait HasFrontendAttributes
     public array $detailRouteParams = [];
 
     /**
+     * @return Icon
+     *
+     * @throws \Exception
+     */
+    public static function icon(): Icon
+    {
+        $iconName = property_exists(self::class, 'iconName') ? self::$iconName : 'no-symbol';
+
+        return Icon::make($iconName);
+    }
+
+    /**
+     * @return array
+     */
+    public static function typeScriptAttributes(): array
+    {
+        return ModelInfo::forModel(self::class)
+            ->attributes
+            ->pluck('formatter', 'name')
+            ->toArray();
+    }
+
+    /**
      * @param array $routeParams
      * @return $this
      */
@@ -56,28 +79,5 @@ trait HasFrontendAttributes
     private function getDetailRouteName(): string|null
     {
         return $this->detailRouteName ?? null;
-    }
-
-    /**
-     * @return array
-     */
-    public static function typeScriptAttributes(): array
-    {
-        return ModelInfo::forModel(self::class)
-            ->attributes
-            ->pluck('formatter', 'name')
-            ->toArray();
-    }
-
-    /**
-     * @return Icon
-     *
-     * @throws \Exception
-     */
-    public static function icon(): Icon
-    {
-        $iconName = property_exists(self::class, 'iconName') ? self::$iconName : 'no-symbol';
-
-        return Icon::make($iconName);
     }
 }

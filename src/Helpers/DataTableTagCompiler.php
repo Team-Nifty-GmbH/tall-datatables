@@ -7,12 +7,20 @@ use TeamNiftyGmbH\DataTable\Facades\DataTableDirectives;
 
 class DataTableTagCompiler extends ComponentTagCompiler
 {
-    public function compile($value)
+    /**
+     * @param string $value
+     * @return string
+     */
+    public function compile(string $value)
     {
         return $this->compileDataTableSelfClosingTags($value);
     }
 
-    protected function compileDataTableSelfClosingTags($value)
+    /**
+     * @param string $value
+     * @return string
+     */
+    protected function compileDataTableSelfClosingTags(string $value)
     {
         $pattern = '/<\s*datatable\:(scripts|styles)\s*\/?>/';
 

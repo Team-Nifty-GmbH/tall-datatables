@@ -42,6 +42,11 @@ class DataTable extends Component
 
     protected array $availableColsCached;
 
+    /** @locked  */
+    public array $availableRelations = [];
+
+    protected array $availableRelationsCached;
+
     public string $modelName;
 
     public array $enabledCols = [];
@@ -368,7 +373,6 @@ class DataTable extends Component
             'is_permanent' => $permanent,
         ]);
 
-
         $this->skipRender();
     }
 
@@ -460,11 +464,7 @@ class DataTable extends Component
 
         $this->skipRender();
 
-        if (Auth::user() instanceof User) {
-            return array_values($tableCols);
-        } else {
-            return array_values(array_intersect($this->availableCols, $tableCols));
-        }
+        return array_values(array_intersect($this->availableCols, $tableCols));
     }
 
     /**
@@ -472,14 +472,13 @@ class DataTable extends Component
      */
     public function loadRelations(): array
     {
-        if (! Auth::user() instanceof User) {
-            return [];
-        }
-
         $basis = __(class_basename($this->model));
 
         return array_values(ModelInfo::forModel($this->model)
             ->relations
+            ->filter(function ($relation) {
+                return in_array($relation->name, $this->availableRelations) || $this->availableRelations === ['*'];
+            })
             ->map(function (Relation $relation) use ($basis) {
                 return [
                     'value' => $relation->name,
@@ -806,5 +805,28 @@ class DataTable extends Component
     public function updatedAvailableCols(): void
     {
         $this->filters = $this->availableColsCached;
+    }
+
+    /**
+     * This is just to protect the available cols from beeing modified in the frontend.
+     * TODO: remove when livewire v3 is released.
+     *
+     * @param $value
+     * @return void
+     */
+    public function updatingAvailableRelations($value): void
+    {
+        $this->availableRelationsCached = $value;
+    }
+
+    /**
+     * This is just to protect the available cols from beeing modified in the frontend.
+     * TODO: remove when livewire v3 is released.
+     *
+     * @return void
+     */
+    public function updatedAvailableRelations(): void
+    {
+        $this->availableRelations = $this->availableRelationsCached;
     }
 }

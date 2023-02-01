@@ -29,8 +29,7 @@ class ModelInfo extends BaseModelInfo
         $cachedModelInfoCollection = Cache::get(config('tall-datatables.cache_key') . '.modelInfo');
 
         if ($cachedModelInfo = $cachedModelInfoCollection
-            ?->first(fn(BaseModelInfo $modelInfo) => $modelInfo->class === $model::class)) {
-
+            ?->first(fn (BaseModelInfo $modelInfo) => $modelInfo->class === $model::class)) {
             return $cachedModelInfo;
         }
 
@@ -51,6 +50,12 @@ class ModelInfo extends BaseModelInfo
         return $modelInfo;
     }
 
+    /**
+     * @param string|null $directory
+     * @param string|null $basePath
+     * @param string|null $baseNamespace
+     * @return Collection
+     */
     public static function forAllModels(
         string $directory = null,
         string $basePath = null,
