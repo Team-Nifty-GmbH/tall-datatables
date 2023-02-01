@@ -33,9 +33,13 @@ class DataTable extends Component
 
     protected string $model;
 
+    /** @locked  */
     public array $filters = [];
+    protected array $filtersCached;
 
+    /** @locked  */
     public array $availableCols = [];
+    protected array $availableColsCached;
 
     public string $modelName;
 
@@ -413,8 +417,11 @@ class DataTable extends Component
         }
 
         if ($skipRender) {
-            $this->loadData();
             $this->skipRender();
+        }
+
+        if ($this->initialized) {
+            $this->loadData();
         }
     }
 
@@ -773,5 +780,52 @@ class DataTable extends Component
         return config('tall-datatables.search_route')
             ? route(config('tall-datatables.search_route'), '')
             : '';
+    }
+
+    /**
+     * This is just to protect the available cols from beeing modified in the frontend.
+     * TODO: remove when livewire v3 is released.
+     *
+     * @param $value
+     * @return void
+     */
+    public function updatingFilters($value): void
+    {
+        $this->filtersCached = $value;
+    }
+
+    /**
+     * This is just to protect the available cols from beeing modified in the frontend.
+     * TODO: remove when livewire v3 is released.
+     *
+     * @return void
+     */
+    public function updatedFilters(): void
+    {
+        $this->filters = $this->filtersCached;
+    }
+
+
+    /**
+     * This is just to protect the available cols from beeing modified in the frontend.
+     * TODO: remove when livewire v3 is released.
+     *
+     * @param $value
+     * @return void
+     */
+    public function updatingAvailableCols($value): void
+    {
+        $this->availableColsCached = $value;
+    }
+
+    /**
+     * This is just to protect the available cols from beeing modified in the frontend.
+     * TODO: remove when livewire v3 is released.
+     *
+     * @return void
+     */
+    public function updatedAvailableCols(): void
+    {
+        $this->filters = $this->availableColsCached;
     }
 }
