@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Scout\Builder;
-use Spatie\LaravelPackageTools\Package;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Spatie\ModelInfo\Attributes\Attribute;
 use TeamNiftyGmbH\DataTable\Commands\MakeDataTableCommand;
 use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
@@ -158,7 +156,7 @@ class DataTableServiceProvider extends ServiceProvider
     protected function offerPublishing(): void
     {
         $this->publishes([
-            __DIR__.'/../database/migrations' => database_path('migrations'),
+            __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], 'tall-datatables-migrations');
 
         $this->publishes([
@@ -166,11 +164,11 @@ class DataTableServiceProvider extends ServiceProvider
         ], 'tall-datatables-config');
 
         $this->publishes([
-            __DIR__.'/../resources/views' => resource_path('views/vendor/tall-datatables'),
+            __DIR__ . '/../resources/views' => resource_path('views/vendor/tall-datatables'),
         ], 'tall-datatables-views');
 
         $this->publishes([
-            __DIR__ . '/../stubs/livewire.data-table.stub' => base_path('stubs/livewire.data-table.stub')
+            __DIR__ . '/../stubs/livewire.data-table.stub' => base_path('stubs/livewire.data-table.stub'),
         ], 'tall-datatables-stub');
     }
 }
