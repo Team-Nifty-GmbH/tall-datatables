@@ -28,6 +28,7 @@ class DataTableServiceProvider extends ServiceProvider
         $this->registerBladeDirectives();
         $this->registerTagCompiler();
         $this->registerMacros();
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
         $this->mergeConfigFrom(
             __DIR__ . '/../config/tall-datatables.php',
@@ -66,7 +67,7 @@ class DataTableServiceProvider extends ServiceProvider
     {
         Blade::directive('dataTablesScripts', static function (?string $attributes = ''): string {
             if (! $attributes) {
-                $attributes = '[]';
+                $attributes = [];
             }
 
             return (new DataTableBladeDirectives())->scripts(attributes: $attributes);
