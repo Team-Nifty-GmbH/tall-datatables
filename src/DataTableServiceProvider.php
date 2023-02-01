@@ -10,6 +10,8 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Scout\Builder;
 use Spatie\ModelInfo\Attributes\Attribute;
 use TeamNiftyGmbH\DataTable\Commands\MakeDataTableCommand;
+use TeamNiftyGmbH\DataTable\Commands\ModelInfoCache;
+use TeamNiftyGmbH\DataTable\Commands\ModelInfoCacheReset;
 use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
@@ -42,7 +44,11 @@ class DataTableServiceProvider extends ServiceProvider
     {
         $this->offerPublishing();
 
-        $this->commands(MakeDataTableCommand::class);
+        $this->commands([
+            MakeDataTableCommand::class,
+            ModelInfoCache::class,
+            ModelInfoCacheReset::class,
+        ]);
 
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'tall-datatables');
 

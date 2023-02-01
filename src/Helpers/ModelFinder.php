@@ -19,11 +19,8 @@ class ModelFinder extends BaseModelFinder
         string $basePath = null,
         string $baseNamespace = null,
     ): Collection {
-        $cache = Cache::supportsTags() ? Cache::tags(self::class) : Cache::store();
-
-        return $cache
-            ->rememberForever(
-                cache_key(self::class),
+        return Cache::rememberForever(
+                config('tall-datatables.cache_key') . '.modelFinder',
                 function () use ($directory, $basePath, $baseNamespace) {
                     return parent::all($directory, $basePath, $baseNamespace);
                 }

@@ -49,7 +49,7 @@
                     <div x-cloak x-show="tab === 'edit-filters'">
                         <form class="grid grid-cols-1 gap-3"
                               x-on:submit.prevent="addFilter();">
-                            <template x-if="savedFilters.settings?.length > 0">
+                            <template x-if="savedFilters?.length > 0">
                                 <div>
                                     <div class="flex justify-between block w-full px-3 py-2 text-base sm:text-sm shadow-sm
                                         rounded-md border bg-white focus:ring-1 focus:outline-none cursor-pointer
@@ -77,7 +77,7 @@
                                                detail: null,
                                             }"
                                         >
-                                            <template x-for="(filter, index) in savedFilters.settings">
+                                            <template x-for="(filter, index) in savedFilters">
                                                 <x-card>
                                                     <x-slot:title>
                                                         <span x-text="filter.name"></span>
@@ -88,9 +88,9 @@
                                                             2xs
                                                             icon="x"
                                                             x-on:click="
-                                            savedFilters.settings.splice(savedFilters.settings.indexOf(index), 1);
-                                            $wire.updateSavedFilters(savedFilters)
-                                        "
+                                                                savedFilters.splice(savedFilters.indexOf(index), 1);
+                                                                $wire.deleteSavedFilter(filter.id)
+                                                            "
                                                         />
                                                     </x-slot:action>
                                                     <div class="flex justify-between">
@@ -124,9 +124,9 @@
                                                     >
                                                         <div
                                                             class="flex flex-col space-y-4 justify-center items-center"
-                                                            x-show="filter.filters.userFilters.length > 0"
+                                                            x-show="filter.settings.userFilters.length > 0"
                                                         >
-                                                            <template x-for="(orFilters, orIndex) in filter.filters.userFilters">
+                                                            <template x-for="(orFilters, orIndex) in filter.settings.userFilters">
                                                                 <div class="flex flex-col justify-center items-center">
                                                                     <div class="flex justify-between">
                                                                         <div class="pt-1 flex gap-1">
@@ -148,7 +148,7 @@
                                                                             </template>
                                                                         </div>
                                                                     </div>
-                                                                    <template x-if="(filter.filters.userFilters.length - 1) !== orIndex">
+                                                                    <template x-if="(filter.settings.userFilters.length - 1) !== orIndex">
                                                                         <div class="pt-3">
                                                                             <x-badge
                                                                                 flat positive
@@ -158,11 +158,11 @@
                                                                     </template>
                                                                 </div>
                                                             </template>
-                                                            <x-badge x-show="filter.filters.orderBy" flat amber>
+                                                            <x-badge x-show="filter.settings.orderBy" flat amber>
                                                                 <x-slot:label>
                                                                     <span>{{ __('Order by') }}</span>
-                                                                    <span x-text="filter.filters.orderBy"></span>
-                                                                    <span x-text="filter.filters.orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
+                                                                    <span x-text="filter.settings.orderBy"></span>
+                                                                    <span x-text="filter.settings.orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
                                                                 </x-slot:label>
                                                             </x-badge>
                                                         </div>

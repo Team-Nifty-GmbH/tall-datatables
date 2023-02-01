@@ -2,7 +2,6 @@
 
 namespace TeamNiftyGmbH\DataTable;
 
-use App\Services\SettingService;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -111,10 +110,10 @@ class DataTable extends Component
         $cachedFilters = Session::get(config('tall-datatables.cache_key') . '.filter:' . get_called_class());
         $this->loadFilter(
             $cachedFilters ?: data_get(
-                collect(data_get($this->getSavedFilters(), 'settings'))
+                collect($this->getSavedFilters())
                     ->where('is_permanent', true)
                     ->first(),
-                'filters',
+                'settings',
                 []
             ),
             false
@@ -352,52 +351,34 @@ class DataTable extends Component
      */
     public function saveFilter(string $name, bool $permanent = false): void
     {
-        $savedFilters = $this->getSavedFilters();
-
-        $filterSetting = [
-            'model_type' => Auth::user()->getMorphClass(),
-            'model_id' => Auth::id(),
-            'key' => 'filter:' . get_called_class(),
-            'settings' => [
-                [
-                    'name' => $name,
-                    'is_permanent' => $permanent,
-                    'filters' => [
-                        'enabledCols' => $this->enabledCols,
-                        'userFilters' => $this->userFilters,
-                        'orderBy' => $this->orderBy,
-                        'orderAsc' => $this->orderAsc,
-                        'perPage' => $this->perPage,
-                    ],
-                ],
-            ],
-        ];
-
-        $settingService = new SettingService();
-        if ($savedFilters['id'] ?? false) {
-            if ($filterSetting['settings'][0]['is_permanent']) {
-                foreach ($savedFilters['settings'] as &$setting) {
-                    $setting['is_permanent'] = false;
-                }
-            }
-
-            $savedFilters['settings'][] = $filterSetting['settings'][0];
-            $settingService->update($savedFilters);
-        } else {
-            $settingService->create($filterSetting);
+        if ($permanent) {
+            Auth::user()->datatableUserSettings()->update(['is_permanent' => false]);
         }
+
+        Auth::user()->datatableUserSettings()->create([
+            'name' => $name,
+            'component' => get_called_class(),
+            'settings' => [
+                'enabledCols' => $this->enabledCols,
+                'userFilters' => $this->userFilters,
+                'orderBy' => $this->orderBy,
+                'orderAsc' => $this->orderAsc,
+                'perPage' => $this->perPage,
+            ],
+            'is_permanent' => $permanent,
+        ]);
+
 
         $this->skipRender();
     }
 
     /**
-     * @param array $savedFilters
+     * @param string $id
      * @return void
      */
-    public function updateSavedFilters(array $savedFilters): void
+    public function deleteSavedFilter(string $id): void
     {
-        $settingService = new SettingService();
-        $settingService->update($savedFilters);
+        Auth::user()->datatableUserSettings()->whereKey($id)->delete();
 
         $this->skipRender();
     }
@@ -513,11 +494,9 @@ class DataTable extends Component
      */
     public function getSavedFilters(): array
     {
-        if (method_exists(Auth::user(), 'settings')) {
+        if (method_exists(Auth::user(), 'datatableUserSettings')) {
             return Auth::user()
-                ->settings()
-                ->where('key', 'filter:' . get_called_class())
-                ->first()
+                ->getDataTableSettings()
                 ?->toArray() ?: [];
         } else {
             return [];

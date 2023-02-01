@@ -21,24 +21,34 @@ class ModelInfo extends BaseModelInfo
             $model = $model->getName();
         }
 
-        $cache = Cache::supportsTags() ? Cache::tags(self::class) : Cache::store();
+        if (is_string($model)) {
+            $model = new $model;
+        }
 
-        return $cache
-            ->rememberForever(
-                config('tall-datatables.cache_key') . '.modelInfo:' . md5((string) $model),
-                function () use ($model) {
-                    $modelInfo = parent::forModel($model);
-                    $modelInfo->attributes = $modelInfo
-                        ->attributes
-                        ->map(function (Attribute $attribute) use ($model) {
-                            $attribute->formatter = $attribute->getFormatterType($model);
+        /** @var Collection $cachedModelInfo */
+        $cachedModelInfoCollection = Cache::get(config('tall-datatables.cache_key') . '.modelInfo');
 
-                            return $attribute;
-                        });
+        if ($cachedModelInfo = $cachedModelInfoCollection
+            ?->first(fn(BaseModelInfo $modelInfo) => $modelInfo->class === $model::class)) {
 
-                    return $modelInfo;
-                }
-            );
+            return $cachedModelInfo;
+        }
+
+        $modelInfo = parent::forModel($model);
+        $modelInfo->attributes = $modelInfo
+            ->attributes
+            ->map(function (Attribute $attribute) use ($model) {
+                $attribute->formatter = $attribute->getFormatterType($model);
+
+                return $attribute;
+            });
+
+        if ($cachedModelInfoCollection) {
+            $cachedModelInfoCollection->push($modelInfo);
+            Cache::forever(config('tall-datatables.cache_key') . '.modelInfo', $cachedModelInfoCollection);
+        }
+
+        return $modelInfo;
     }
 
     /**
@@ -52,9 +62,14 @@ class ModelInfo extends BaseModelInfo
         string $basePath = null,
         string $baseNamespace = null
     ): Collection {
-        return ModelFinder::all($directory, $basePath, $baseNamespace)
-            ->map(function (string $model) {
-                return self::forModel($model);
-            });
+        return Cache::rememberForever(
+            config('tall-datatables.cache_key') . '.modelInfo',
+            function () use ($directory, $basePath, $baseNamespace) {
+                return ModelFinder::all($directory, $basePath, $baseNamespace)
+                    ->map(function (string $model) {
+                        return self::forModel($model);
+                    });
+            }
+        );
     }
 }
