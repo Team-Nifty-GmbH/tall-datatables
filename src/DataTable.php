@@ -39,11 +39,12 @@ class DataTable extends Component
 
     /** @locked  */
     public array $availableCols = [];
+
     protected array $availableColsCached;
 
     /** @locked  */
-
     public array $availableRelations = [];
+
     protected array $availableRelationsCached;
 
     public string $modelName;
