@@ -24,7 +24,7 @@ This is where your description should go. Limit it to a paragraph or two. Consid
 ```bash
 composer require team-nifty-gmbh/tall-datatables
 ```
-2. add the scripts tag to your layout BEFORE alpinejs
+2. Add the scripts tag to your layout BEFORE alpinejs
 ```html
 ...
 <livewire:scripts/>
@@ -33,7 +33,7 @@ composer require team-nifty-gmbh/tall-datatables
 ...
 ```
 
-alternative you can add the script to your vite config, but again keep in mind to load the
+Alternative you can add the script to your vite config, but again keep in mind to load the
 script BEFORE alpinejs as it needs to listen on the alpine:init event
 
 ```js
@@ -50,7 +50,7 @@ export default defineConfig({
 })
 ```
 
-in your layout add the vite import:
+In your layout add the vite import:
 ```html
 ...
 @vite([
@@ -72,7 +72,7 @@ module.exports = {
 }
 ```
 
-4. run vite build to compile the javascript files
+4. Run vite build to compile the javascript files
 
 ```bash
 vite build
@@ -104,7 +104,7 @@ This command creates a new DataTable class.
 php artisan make:data-table UserDataTable "App\Models\User"
 ```
 
-inside this class you should define at least the columns you want to display
+Inside this class you should define at least the columns you want to display
 
 ```php
 public array $enabledCols = [
@@ -117,7 +117,7 @@ public array $enabledCols = [
 ];
 ```
 
-if you need to eager load additional data you can override the getBuilder method
+If you need to eager load additional data you can override the getBuilder method
 
 ```php
 public function getBuilder(Builder $builder): Builder
@@ -152,7 +152,7 @@ You can listen to this event in your AlpineJS.
     <livewire:data-tables.user-data-table />
 </div>
 ```
-If you want to use your clicked row with livewire my reccomendation is to use the `$wire` property from alpinejs.
+If you want to use your clicked row with livewire my recommendation is to use the `$wire` property from alpinejs.
 
 ```html
 <div x-data="{ ... }" x-on:data-table-row-clicked="$wire.set('user', $event.detail)">
@@ -162,12 +162,12 @@ If you want to use your clicked row with livewire my reccomendation is to use th
 
 # Prepare your model
 
-## HasFrontendFormatter Conern
+## HasFrontendFormatter Concern
 
-When you want to format the data for the frontend you should use the HasFrontendAttributes trait
+If you want to format the data for the frontend you should use the HasFrontendAttributes trait
 in your model. This trait will add a method to your model called `getFrontendAttributes()`
 
-Also you should define a detailRouteName property in your model which points to a view showing the details of the model.
+Also, you should define a detailRouteName property in your model which points to a view showing the details of the model.
 
 ```php
 use TeamNifty\TallDatatables\Traits\HasFrontendAttributes;
@@ -181,7 +181,7 @@ class User extends Authenticatable
 }
 ```
 
-if your detail route needs additional parameters you can override the `getDetailRouteParameters()` method in your model class.
+If your detail route needs additional parameters you can override the `getDetailRouteParameters()` method in your model class.
 
 ```php
 public function getDetailRouteParameters(): array
@@ -193,14 +193,14 @@ public function getDetailRouteParameters(): array
 }
 ```
 
-the trait adds an attribute accessor to your model which contains the detailroute for a single model instance.
+The trait adds an attribute accessor to your model which contains the detail route for a single model instance.
 
 ```php
 $user = User::first();
 $user->href; // returns the detail route for the user
 ```
 
-you can set an iconName property in your model which will be used to display an icon in the table.
+You can set an iconName property in your model which will be used to display an icon in the table.
 You can set any icon from the [heroicons](https://heroicons.com/) library.
 
 ```php
@@ -210,7 +210,7 @@ protected string $iconName = 'user';
 ## Casts
 
 The Package uses casts to format the data for the frontend. You can define your own casts in the `casts` property of your model.
-Aside of the primitive cast you can add your own casts. These cast classes should implement the `TeamNifty\TallDatatables\Contracts\HasFrontendFormatter` interface
+Aside from the primitive cast you can add your own casts. These cast classes should implement the `TeamNifty\TallDatatables\Contracts\HasFrontendFormatter` interface
 which brings the `getFrontendFormatter()` method.
 
 ```php
@@ -219,7 +219,7 @@ use TeamNifty\TallDatatables\Casts\Date;
 
 ## Searchable
 
-When you want to search in your datatable you should use the Searchable trait from laravel scut
+If you want to search in your datatable you should use the Searchable trait from laravel scout
 
 ## Testing
 

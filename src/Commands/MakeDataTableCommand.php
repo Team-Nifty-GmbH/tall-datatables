@@ -39,9 +39,6 @@ class MakeDataTableCommand extends Command
      */
     public function handle()
     {
-//        $stubSubDirectory = $this->option('stub') ?? $this->stubDirectory;
-//        $this->stubDirectory = rtrim('stubs' . DIRECTORY_SEPARATOR . $stubSubDirectory, DIRECTORY_SEPARATOR);
-
         $this->parser = new ComponentParser(
             config('tall-datatables.data_table_namespace'),
             config('tall-datatables.view_path'),
@@ -75,7 +72,7 @@ class MakeDataTableCommand extends Command
      * @param bool $force
      * @return string|bool
      */
-    protected function createClass(bool $force = false): string|bool
+    private function createClass(bool $force = false): string|bool
     {
         $classPath = $this->parser->classPath();
 
@@ -95,7 +92,7 @@ class MakeDataTableCommand extends Command
     /**
      * @param string $path
      */
-    protected function ensureDirectoryExists(string $path): void
+    private function ensureDirectoryExists(string $path): void
     {
         if (! File::isDirectory(dirname($path))) {
             File::makeDirectory(dirname($path), 0777, true, true);

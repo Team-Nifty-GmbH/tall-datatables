@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\ServiceProvider;
 use Laravel\Scout\Builder;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -15,46 +16,56 @@ use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
 
-class DataTableServiceProvider extends PackageServiceProvider
+class DataTableServiceProvider extends ServiceProvider
 {
-    public function configurePackage(Package $package): void
-    {
-        /*
-         * This class is a Package Service Provider
-         *
-         * More info: https://github.com/spatie/laravel-package-tools
-         */
-        $package
-            ->name('tall-datatables')
-            ->hasConfigFile()
-            ->hasViews()
-            ->hasRoute('web')
-            ->hasMigration('create_tall-datatables_table')
-            ->hasCommand(MakeDataTableCommand::class);
-    }
-
-    public function bootingPackage()
+    /**
+     * Register the service provider.
+     *
+     * @return void
+     */
+    public function register(): void
     {
         $this->registerBladeDirectives();
         $this->registerTagCompiler();
         $this->registerMacros();
+
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/tall-datatables.php',
+            'tall-datatables'
+        );
     }
 
-    protected function registerTagCompiler()
+    /**
+     * Bootstrap the application services.
+     *
+     * @return void
+     */
+    public function boot(): void
+    {
+        $this->offerPublishing();
+
+        $this->commands(MakeDataTableCommand::class);
+
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'tall-datatables');
+
+        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+    }
+
+    protected function registerTagCompiler(): void
     {
         Blade::precompiler(static function (string $string): string {
             return app(DataTableTagCompiler::class)->compile($string);
         });
     }
 
-    protected function registerBladeDirectives()
+    protected function registerBladeDirectives(): void
     {
         Blade::directive('dataTablesScripts', static function (?string $attributes = ''): string {
             if (! $attributes) {
                 $attributes = '[]';
             }
 
-            return (new DataTableBladeDirectives())->scripts($attributes);
+            return (new DataTableBladeDirectives())->scripts(attributes: $attributes);
         });
 
         Blade::directive('dataTableStyles', static function (): string {
@@ -142,5 +153,24 @@ class DataTableServiceProvider extends PackageServiceProvider
                 }
             );
         }
+    }
+
+    protected function offerPublishing(): void
+    {
+        $this->publishes([
+            __DIR__.'/../database/migrations' => database_path('migrations'),
+        ], 'tall-datatables-migrations');
+
+        $this->publishes([
+            __DIR__ . '/../config/tall-datatables.php' => config_path('tall-datatables.php'),
+        ], 'tall-datatables-config');
+
+        $this->publishes([
+            __DIR__.'/../resources/views' => resource_path('views/vendor/tall-datatables'),
+        ], 'tall-datatables-views');
+
+        $this->publishes([
+            __DIR__ . '/../stubs/livewire.data-table.stub' => base_path('stubs/livewire.data-table.stub')
+        ], 'tall-datatables-stub');
     }
 }

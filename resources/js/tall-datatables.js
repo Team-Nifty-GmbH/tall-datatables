@@ -227,7 +227,6 @@ document.addEventListener('alpine:init', () => {
         },
     })
     )
-
 });
 
 window.formatters = {

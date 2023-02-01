@@ -46,9 +46,9 @@ class DataTableExport implements FromQuery, ShouldAutoSize, WithHeadings
     public function headings(): array
     {
         return collect($this->exportColumns ?: array_keys($this->builder->first()->toArray()))
-        ->map(function ($column) {
-            return __($column);
-        })
-        ->toArray();
+            ->map(function ($column) {
+                return __($column);
+            })
+            ->toArray();
     }
 }

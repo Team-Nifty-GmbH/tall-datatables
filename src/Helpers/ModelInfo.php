@@ -41,6 +41,12 @@ class ModelInfo extends BaseModelInfo
             );
     }
 
+    /**
+     * @param string|null $directory
+     * @param string|null $basePath
+     * @param string|null $baseNamespace
+     * @return Collection
+     */
     public static function forAllModels(
         string $directory = null,
         string $basePath = null,
