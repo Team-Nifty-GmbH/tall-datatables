@@ -2,12 +2,14 @@
     wire:init="loadData()"
     x-data="data_table($wire)"
 >
+    @if(method_exists(auth()->user(), 'datatableUserSettings'))
     <x-dialog id="save-filter" :title="__('Save filter')">
         <x-input required :label="__('Filter name')" x-model="filterName" />
         <div class="pt-3">
             <x-checkbox :label="__('Permanent')" x-model="permanent" />
         </div>
     </x-dialog>
+    @endif
     <div
         class="relative"
         wire:ignore
@@ -49,130 +51,132 @@
                     <div x-cloak x-show="tab === 'edit-filters'">
                         <form class="grid grid-cols-1 gap-3"
                               x-on:submit.prevent="addFilter();">
-                            <template x-if="savedFilters?.length > 0">
-                                <div>
-                                    <div class="flex justify-between block w-full px-3 py-2 text-base sm:text-sm shadow-sm
+                            @if(method_exists(auth()->user(), 'datatableUserSettings'))
+                                <template x-if="savedFilters?.length > 0">
+                                    <div>
+                                        <div class="flex justify-between block w-full px-3 py-2 text-base sm:text-sm shadow-sm
                                         rounded-md border bg-white focus:ring-1 focus:outline-none cursor-pointer
                                         dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-400
                                         border-secondary-300 focus:ring-primary-500 focus:border-primary-500"
-                                         x-on:click="showSavedFilters = ! showSavedFilters"
-                                    >
-                                        <x-label class="mr-2">
-                                            {{ __('Saved filters') }}
-                                        </x-label>
-                                        <x-heroicons::outline.chevron-right
-                                            class="transform transition-transform h-4 w-4"
-                                            x-bind:class="{'rotate-90': showSavedFilters}"
-                                        />
-                                    </div>
-                                    <div
-                                        class="relative py-3"
-                                        x-show="showSavedFilters"
-                                        x-cloak
-                                    >
-                                        <x-tall-datatables::spinner />
+                                             x-on:click="showSavedFilters = ! showSavedFilters"
+                                        >
+                                            <x-label class="mr-2">
+                                                {{ __('Saved filters') }}
+                                            </x-label>
+                                            <x-heroicons::outline.chevron-right
+                                                class="transform transition-transform h-4 w-4"
+                                                x-bind:class="{'rotate-90': showSavedFilters}"
+                                            />
+                                        </div>
                                         <div
-                                            class="grid grid-cols-1 gap-3 justify-center items-center"
-                                            x-data="{
+                                            class="relative py-3"
+                                            x-show="showSavedFilters"
+                                            x-cloak
+                                        >
+                                            <x-tall-datatables::spinner />
+                                            <div
+                                                class="grid grid-cols-1 gap-3 justify-center items-center"
+                                                x-data="{
                                                detail: null,
                                             }"
-                                        >
-                                            <template x-for="(filter, index) in savedFilters">
-                                                <x-card>
-                                                    <x-slot:title>
-                                                        <span x-text="filter.name"></span>
-                                                    </x-slot:title>
-                                                    <x-slot:action>
-                                                        <x-button.circle
-                                                            negative
-                                                            2xs
-                                                            icon="x"
-                                                            x-on:click="
+                                            >
+                                                <template x-for="(filter, index) in savedFilters">
+                                                    <x-card>
+                                                        <x-slot:title>
+                                                            <span x-text="filter.name"></span>
+                                                        </x-slot:title>
+                                                        <x-slot:action>
+                                                            <x-button.circle
+                                                                negative
+                                                                2xs
+                                                                icon="x"
+                                                                x-on:click="
                                                                 savedFilters.splice(savedFilters.indexOf(index), 1);
                                                                 $wire.deleteSavedFilter(filter.id)
                                                             "
-                                                        />
-                                                    </x-slot:action>
-                                                    <div class="flex justify-between">
-                                                        <div class="flex gap-1">
-                                                            <x-badge
-                                                                flat
-                                                                primary
-                                                            >
-                                                                <x-slot:label>
-                                                                    <span x-text="filter.is_permanent ? '{{ __('Permanent') }}' : '{{ __('Temporary') }}'"></span>
-                                                                </x-slot:label>
-                                                            </x-badge>
-                                                        </div>
-                                                        <div class="flex gap-1 items-center">
-                                                            <x-button
-                                                                :label="__('Apply')"
-                                                                primary
-                                                                x-on:click="$wire.loadFilter(filter.filters), detail = null, showSavedFilters = false"
                                                             />
-                                                            <x-icon
-                                                                name="chevron-left"
-                                                                class="w-4 h-4 cursor-pointer"
-                                                                x-bind:class="{'-rotate-90': detail === index}"
-                                                                x-on:click="detail === index ? detail = null : detail = index"
-                                                            />
+                                                        </x-slot:action>
+                                                        <div class="flex justify-between">
+                                                            <div class="flex gap-1">
+                                                                <x-badge
+                                                                    flat
+                                                                    primary
+                                                                >
+                                                                    <x-slot:label>
+                                                                        <span x-text="filter.is_permanent ? '{{ __('Permanent') }}' : '{{ __('Temporary') }}'"></span>
+                                                                    </x-slot:label>
+                                                                </x-badge>
+                                                            </div>
+                                                            <div class="flex gap-1 items-center">
+                                                                <x-button
+                                                                    :label="__('Apply')"
+                                                                    primary
+                                                                    x-on:click="$wire.loadFilter(filter.filters), detail = null, showSavedFilters = false"
+                                                                />
+                                                                <x-icon
+                                                                    name="chevron-left"
+                                                                    class="w-4 h-4 cursor-pointer"
+                                                                    x-bind:class="{'-rotate-90': detail === index}"
+                                                                    x-on:click="detail === index ? detail = null : detail = index"
+                                                                />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div
-                                                        x-transition
-                                                        x-show="detail === index"
-                                                    >
                                                         <div
-                                                            class="flex flex-col space-y-4 justify-center items-center"
-                                                            x-show="filter.settings.userFilters.length > 0"
+                                                            x-transition
+                                                            x-show="detail === index"
                                                         >
-                                                            <template x-for="(orFilters, orIndex) in filter.settings.userFilters">
-                                                                <div class="flex flex-col justify-center items-center">
-                                                                    <div class="flex justify-between">
-                                                                        <div class="pt-1 flex gap-1">
-                                                                            <template x-for="(filter, index) in orFilters">
-                                                                                <div>
-                                                                                    <x-badge flat primary>
-                                                                                        <x-slot:label>
-                                                                                            <span x-text="filterBadge(filter)"></span>
-                                                                                        </x-slot:label>
-                                                                                    </x-badge>
-                                                                                    <template x-if="(orFilters.length - 1) !== index">
-                                                                                        <x-badge
-                                                                                            flat
-                                                                                            negative
-                                                                                            :label="__('and')"
-                                                                                        />
-                                                                                    </template>
-                                                                                </div>
-                                                                            </template>
+                                                            <div
+                                                                class="flex flex-col space-y-4 justify-center items-center"
+                                                                x-show="filter.settings.userFilters.length > 0"
+                                                            >
+                                                                <template x-for="(orFilters, orIndex) in filter.settings.userFilters">
+                                                                    <div class="flex flex-col justify-center items-center">
+                                                                        <div class="flex justify-between">
+                                                                            <div class="pt-1 flex gap-1">
+                                                                                <template x-for="(filter, index) in orFilters">
+                                                                                    <div>
+                                                                                        <x-badge flat primary>
+                                                                                            <x-slot:label>
+                                                                                                <span x-text="filterBadge(filter)"></span>
+                                                                                            </x-slot:label>
+                                                                                        </x-badge>
+                                                                                        <template x-if="(orFilters.length - 1) !== index">
+                                                                                            <x-badge
+                                                                                                flat
+                                                                                                negative
+                                                                                                :label="__('and')"
+                                                                                            />
+                                                                                        </template>
+                                                                                    </div>
+                                                                                </template>
+                                                                            </div>
                                                                         </div>
+                                                                        <template x-if="(filter.settings.userFilters.length - 1) !== orIndex">
+                                                                            <div class="pt-3">
+                                                                                <x-badge
+                                                                                    flat positive
+                                                                                    :label="__('or')"
+                                                                                />
+                                                                            </div>
+                                                                        </template>
                                                                     </div>
-                                                                    <template x-if="(filter.settings.userFilters.length - 1) !== orIndex">
-                                                                        <div class="pt-3">
-                                                                            <x-badge
-                                                                                flat positive
-                                                                                :label="__('or')"
-                                                                            />
-                                                                        </div>
-                                                                    </template>
-                                                                </div>
-                                                            </template>
-                                                            <x-badge x-show="filter.settings.orderBy" flat amber>
-                                                                <x-slot:label>
-                                                                    <span>{{ __('Order by') }}</span>
-                                                                    <span x-text="filter.settings.orderBy"></span>
-                                                                    <span x-text="filter.settings.orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
-                                                                </x-slot:label>
-                                                            </x-badge>
+                                                                </template>
+                                                                <x-badge x-show="filter.settings.orderBy" flat amber>
+                                                                    <x-slot:label>
+                                                                        <span>{{ __('Order by') }}</span>
+                                                                        <span x-text="filter.settings.orderBy"></span>
+                                                                        <span x-text="filter.settings.orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
+                                                                    </x-slot:label>
+                                                                </x-badge>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </x-card>
-                                            </template>
+                                                    </x-card>
+                                                </template>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </template>
+                                </template>
+                            @endif
                             <x-native-select
                                 wire:target="loadFields"
                                 wire:loading.attr="disabled"
@@ -354,10 +358,11 @@
                                 :label="__('Add or')"
                                 x-on:click="addOrFilter()"
                             />
-                            <x-button
-                                primary
-                                class="w-full"
-                                x-on:click="
+                            @if(method_exists(auth()->user(), 'datatableUserSettings'))
+                                <x-button
+                                    primary
+                                    class="w-full"
+                                    x-on:click="
                                     $wireui.confirmDialog({
                                         id: 'save-filter',
                                         icon: 'question',
@@ -372,9 +377,10 @@
                                             }
                                         }
                                     })"
-                            >
-                                {{ __('Save') }}
-                            </x-button>
+                                >
+                                    {{ __('Save') }}
+                                </x-button>
+                            @endif
                         </div>
                     </div>
                     <div x-show="tab === 'columns'">
