@@ -144,7 +144,23 @@ To use this new Data table you can add a livewire tag in your blade file:
 <livewire:data-tables.user-data-table />
 ```
 
-# Models
+Every row click dispatches a `data-table-row-clicked` event with the model as payload.
+You can listen to this event in your AlpineJS.
+
+```html
+<div x-data="{ ... }" x-on:data-table-row-clicked="console.log($event.detail)">
+    <livewire:data-tables.user-data-table />
+</div>
+```
+If you want to use your clicked row with livewire my reccomendation is to use the `$wire` property from alpinejs.
+
+```html
+<div x-data="{ ... }" x-on:data-table-row-clicked="$wire.set('user', $event.detail)">
+    <livewire:data-tables.user-data-table />
+</div>
+```
+
+# Prepare your model
 
 ## HasFrontendFormatter Conern
 
