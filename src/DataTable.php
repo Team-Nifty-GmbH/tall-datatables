@@ -57,7 +57,7 @@ class DataTable extends Component
 
     public array $exportColumns = [];
 
-    public array $summarizeCols = [
+    public array $aggregatableCols = [
         'sum' => [],
         'avg' => [],
         'min' => [],
@@ -84,7 +84,7 @@ class DataTable extends Component
 
     public array $sortable = [];
 
-    public array $summarizable = [];
+    public array $aggregatable = [];
 
     public bool $selectable = false;
 
@@ -110,7 +110,7 @@ class DataTable extends Component
             'enabledCols' => $this->availableCols,
             'colLabels' => $this->colLabels,
             'sortable' => $this->sortable,
-            'summarizable' => $this->summarizable,
+            'aggregatable' => $this->aggregatable,
             'stretchCol' => $this->stretchCol,
             'formatters' => $this->formatters,
             'searchRoute' => $this->getSearchRoute(),
@@ -155,7 +155,7 @@ class DataTable extends Component
             ? array_fill_keys($tableFields->pluck('name')->toArray(), true)
             : $this->sortable;
 
-        $this->summarizable = $this->summarizable === ['*']
+        $this->aggregatable = $this->aggregatable === ['*']
             ? $tableFields
                 ->filter(function (Attribute $attribute) {
                     return in_array($attribute->phpType, ['int', 'float'])
@@ -163,7 +163,7 @@ class DataTable extends Component
                 })
                 ->pluck('name')
                 ->toArray()
-            : $this->summarizable;
+            : $this->aggregatable;
 
         $this->isSearchable = is_null($this->isSearchable)
             ? in_array(Searchable::class, class_uses_recursive($this->model))
@@ -208,7 +208,7 @@ class DataTable extends Component
     /**
      * @return void
      */
-    public function updatedSummarizeCols(): void
+    public function updatedaggregatableCols(): void
     {
         $this->skipRender();
 
@@ -321,7 +321,7 @@ class DataTable extends Component
 
         $returnKeys = $this->getReturnKeys();
 
-        $sums = [];
+        $aggregates = [];
         if (property_exists($query, 'hits')) {
             $mapped = $resultCollection->map(
                 function ($item) use ($query, $returnKeys) {
@@ -345,13 +345,13 @@ class DataTable extends Component
                 }
             );
 
-            $sums = $this->getSums($baseQuery);
+            $aggregates = $this->getAggregate($baseQuery);
         }
 
         $result->setCollection($mapped ?? $resultCollection);
 
         $result = $result->toArray();
-        $result['sums'] = $sums;
+        $result['aggregates'] = $aggregates;
         $this->setData($result);
 
         array_pop($this->data['links']);
@@ -362,10 +362,10 @@ class DataTable extends Component
      * @param Builder $builder
      * @return array
      */
-    public function getSums(Builder $builder): array
+    public function getAggregate(Builder $builder): array
     {
-        $sums = [];
-        foreach ($this->summarizeCols as $type => $columns) {
+        $aggregates = [];
+        foreach ($this->aggregatableCols as $type => $columns) {
             if (! in_array($type, ['sum', 'avg', 'min', 'max'])) {
                 continue;
             }
@@ -380,7 +380,7 @@ class DataTable extends Component
                 }
 
                 try {
-                    $sums[$type][$column] = $builder->{$type}($column);
+                    $aggregates[$type][$column] = $builder->{$type}($column);
                 } catch (QueryException $e) {
                     $this->notification()->error($e->getMessage());
 
@@ -389,7 +389,7 @@ class DataTable extends Component
             }
         }
 
-        return $sums;
+        return $aggregates;
     }
 
     /**
@@ -446,7 +446,7 @@ class DataTable extends Component
             'component' => get_called_class(),
             'settings' => [
                 'enabledCols' => $this->enabledCols,
-                'summarizeCols' => $this->summarizeCols,
+                'aggregatableCols' => $this->aggregatableCols,
                 'userFilters' => $this->userFilters,
                 'orderBy' => $this->orderBy,
                 'orderAsc' => $this->orderAsc,
@@ -759,7 +759,7 @@ class DataTable extends Component
         $filter = [
             'userFilters' => $this->userFilters,
             'enabledCols' => $this->enabledCols,
-            'summarizeCols' => $this->summarizeCols,
+            'aggregatableCols' => $this->aggregatableCols,
             'orderBy' => $this->orderBy,
             'orderAsc' => $this->orderAsc,
             'perPage' => $this->perPage,

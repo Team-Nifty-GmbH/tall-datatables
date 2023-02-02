@@ -15,7 +15,7 @@ document.addEventListener('alpine:init', () => {
                         this.enabledCols = result.enabledCols;
                         this.colLabels = result.colLabels;
                         this.sortable = result.sortable;
-                        this.summarizable = result.summarizable;
+                        this.aggregatable = result.aggregatable;
                         this.selectable = result.selectable;
                         this.stretchCol = result.stretchCol;
                         this.formatters = result.formatters;
@@ -85,7 +85,7 @@ document.addEventListener('alpine:init', () => {
         enabledCols: [],
         colLabels: [],
         sortable: [],
-        summarizable: [],
+        aggregatable: [],
         selectable: [],
         stretchCol: [],
         formatters: [],
@@ -95,7 +95,7 @@ document.addEventListener('alpine:init', () => {
         showSavedFilters: false,
         filterValueLists: $wire.entangle('filterValueLists'),
         filters: $wire.entangle('userFilters'),
-        summarizeCols: $wire.entangle('summarizeCols'),
+        aggregatableCols: $wire.entangle('aggregatableCols'),
         orderByCol: $wire.entangle('orderBy'),
         orderAsc: $wire.entangle('orderAsc'),
         initialized: $wire.entangle('initialized'),
