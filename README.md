@@ -71,7 +71,7 @@ php artisan vendor:publish --tag="tall-datatables-migrations"
 php artisan migrate
 ```
 
-Optionally, ou can publish the config file with:
+Optionally, you can publish the config file with:
 
 ```bash
 php artisan vendor:publish --tag="tall-datatables-config"
