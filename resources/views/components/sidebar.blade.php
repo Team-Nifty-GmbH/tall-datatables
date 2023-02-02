@@ -3,7 +3,7 @@
     </div>
     <aside
         x-cloak
-        {{ $attributes->merge(['class' => 'fixed right-0 top-0 bottom-0 w-full sm:w-96 h-full backdrop-blur sm:backdrop-blur-none z-30 overflow-auto max-h-full soft-scrollbar shadow-md rounded-xl bg-white dark:bg-secondary-800']) }}
+        {{ $attributes->merge(['class' => 'fixed right-0 top-0 bottom-0 w-full sm:w-auto h-full backdrop-blur sm:backdrop-blur-none z-30 overflow-auto max-h-full soft-scrollbar shadow-md rounded-xl bg-white dark:bg-secondary-800']) }}
         x-transition:enter="transform transition ease-in-out duration-500"
         x-transition:enter-start="translate-x-full"
         x-transition:enter-end="translate-x-0"

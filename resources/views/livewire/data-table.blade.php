@@ -26,7 +26,15 @@
                                 x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'edit-filters'}"
                                 class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
                             >
-                                {{ __('Edit filters') }}
+                                {{ __('Filters') }}
+                            </button>
+                            <button
+                                wire:loading.attr="disabled"
+                                x-on:click.prevent="sortCols = cols; tab = 'summarize';"
+                                x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'summarize'}"
+                                class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                            >
+                                {{ __('Summarize') }}
                             </button>
                             <button
                                 wire:loading.attr="disabled"
@@ -383,6 +391,39 @@
                             @endif
                         </div>
                     </div>
+                    <div x-cloak x-show="tab === 'summarize'">
+                        <div class="grid grid-cols-1 gap-3">
+                            <template x-for="col in summarizable">
+                                <div>
+
+                                    <x-label>
+                                        <span x-text="colLabels[col]">
+                                        </span>
+                                    </x-label>
+                                    <x-checkbox
+                                        :label="__('Sum')"
+                                        x-bind:value="col"
+                                        x-model="summarizeCols.sum"
+                                    />
+                                    <x-checkbox
+                                        :label="__('Average')"
+                                        x-bind:value="col"
+                                        x-model="summarizeCols.avg"
+                                    />
+                                    <x-checkbox
+                                        :label="__('Minimum')"
+                                        x-bind:value="col"
+                                        x-model="summarizeCols.min"
+                                    />
+                                    <x-checkbox
+                                        :label="__('Maximum')"
+                                        x-bind:value="col"
+                                        x-model="summarizeCols.max"
+                                    />
+                                </div>
+                            </template>
+                        </div>
+                    </div>
                     <div x-show="tab === 'columns'">
                         <div x-ref="cols" id="table-cols">
                             <template x-for="col in @js($availableCols)" :key="col">
@@ -553,18 +594,18 @@
                 </td>
             </tr>
             <x-slot:header>
-                <template x-if="selectable">
-                    <x-tall-datatables::table.head-cell class="w-4">
-                        <x-checkbox x-on:change="function (e) {
-                            if (e.target.checked) {
-                                selected = getData().map(record => record.id);
-                                selected.push('*');
-                            } else {
-                                selected = [];
-                            }
-                        }" value="*" x-model="selected"/>
-                    </x-tall-datatables::table.head-cell>
-                </template>
+                <td>
+                    <template x-if="selectable">
+                            <x-checkbox x-on:change="function (e) {
+                                if (e.target.checked) {
+                                    selected = getData().map(record => record.id);
+                                    selected.push('*');
+                                } else {
+                                    selected = [];
+                                }
+                            }" value="*" x-model="selected"/>
+                    </template>
+                </td>
                 <template x-for="(col, index) in cols">
                     <x-tall-datatables::table.head-cell x-bind:class="stretchCol.length && ! stretchCol.includes(col) ? 'w-[1%]' : ''">
                         <div class="flex">
@@ -634,14 +675,16 @@
                     x-bind:key="record.id"
                     x-on:click="$dispatch('data-table-row-clicked', record)"
                 >
-                    <template x-if="selectable">
-                        <div class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
-                            <x-checkbox
-                                x-bind:value="record.id"
-                                x-model="selected"
-                            />
-                        </div>
-                    </template>
+                    <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
+                        <template x-if="selectable">
+                            <div class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
+                                <x-checkbox
+                                    x-bind:value="record.id"
+                                    x-model="selected"
+                                />
+                            </div>
+                        </template>
+                    </td>
                     <template x-for="col in cols">
                         <x-tall-datatables::table.cell class="cursor-pointer" x-bind:href="record?.href">
                             <div
@@ -664,6 +707,22 @@
                     <td class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
                     </td>
                 </x-tall-datatables::table.row>
+            </template>
+            <template x-for="(summarize, name) in data.sums">
+                <tr class="hover:bg-gray-100 bg-gray-50 dark:hover:bg-secondary-800 dark:bg-secondary-900">
+                    <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm font-bold" x-text="name"></td>
+                    <template x-for="col in cols">
+                        <x-tall-datatables::table.cell>
+                            <div
+                                class="flex font-semibold"
+                                x-text="formatter(col, summarize)"
+                            >
+                            </div>
+                        </x-tall-datatables::table.cell>
+                    </template>
+                    <td class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
+                    </td>
+                </tr>
             </template>
             <x-slot:footer>
                 <template x-if="data.hasOwnProperty('current_page') ">

@@ -13,6 +13,7 @@
                         {{ $slot ?? '' }}
                     </tbody>
                     <tfoot>
+                        {{ $footerSlot ?? '' }}
                         <tr>
                             {{ $footer ?? '' }}
                         </tr>

@@ -1,16 +1,10 @@
 module.exports = {
-    presets: [
-        require('../../wireui/wireui/tailwind.config.js')
-    ],
     content: [
-        './resources/**/*.blade.php',
-        './resources/**/*.js',
-        './resources/**/*.vue',
-
-        '../../wireui/wireui/resources/**/*.blade.php',
-        '../../wireui/wireui/ts/**/*.ts',
-        '../../wireui/wireui/src/View/**/*.php'
+        './js/**/*.js',
+        './resources/views/**/*.blade.php',
+        './src/**/*.php'
     ],
+    darkMode: 'class',
     plugins: [
         require('@tailwindcss/forms'),
     ],

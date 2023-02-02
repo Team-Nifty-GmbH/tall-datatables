@@ -57,7 +57,14 @@ class DataTable extends Component
 
     public array $exportColumns = [];
 
-    public bool $isSearchable = false;
+    public array $summarizeCols = [
+        'sum' => [],
+        'avg' => [],
+        'min' => [],
+        'max' => [],
+    ];
+
+    public ?bool $isSearchable = null;
 
     public string $search = '';
 
@@ -76,6 +83,8 @@ class DataTable extends Component
     public array $indentedCols = [];
 
     public array $sortable = [];
+
+    public array $summarizable = [];
 
     public bool $selectable = false;
 
@@ -101,6 +110,7 @@ class DataTable extends Component
             'enabledCols' => $this->availableCols,
             'colLabels' => $this->colLabels,
             'sortable' => $this->sortable,
+            'summarizable' => $this->summarizable,
             'stretchCol' => $this->stretchCol,
             'formatters' => $this->formatters,
             'searchRoute' => $this->getSearchRoute(),
@@ -128,16 +138,36 @@ class DataTable extends Component
             array_unique(array_merge($this->enabledCols, $this->availableCols, ['id']))
         );
 
+        $tableFields = ModelInfo::forModel($this->model)
+            ->attributes
+            ->filter(function (Attribute $attribute) {
+                return ! $attribute->virtual
+                    && ! $attribute->appended
+                    && in_array($attribute->name, $this->availableCols);
+            });
+
         $this->colLabels = array_flip($this->availableCols);
         array_walk($this->colLabels, function (&$value, $key) {
             $value = __(Str::headline($key));
         });
 
         $this->sortable = $this->sortable === ['*']
-            ? array_fill_keys($this->availableCols, true)
+            ? array_fill_keys($tableFields->pluck('name')->toArray(), true)
             : $this->sortable;
 
-        $this->isSearchable = in_array(Searchable::class, class_uses_recursive($this->model));
+        $this->summarizable = $this->summarizable === ['*']
+            ? $tableFields
+                ->filter(function (Attribute $attribute) {
+                    return in_array($attribute->phpType, ['int', 'float'])
+                        || Str::contains($attribute->type, ['decimal', 'float', 'double']);
+                })
+                ->pluck('name')
+                ->toArray()
+            : $this->summarizable;
+
+        $this->isSearchable = is_null($this->isSearchable)
+            ? in_array(Searchable::class, class_uses_recursive($this->model))
+            : $this->isSearchable;
 
         $this->modelName = class_basename($this->model);
 
@@ -173,6 +203,17 @@ class DataTable extends Component
         $this->skipRender();
 
         $this->updatedSearch();
+    }
+
+    /**
+     * @return void
+     */
+    public function updatedSummarizeCols(): void
+    {
+        $this->skipRender();
+
+        $this->cacheState();
+        $this->loadData();
     }
 
     /**
@@ -250,7 +291,8 @@ class DataTable extends Component
     {
         $this->initialized = true;
 
-        $query = $this->buildSearch();
+        $baseQuery = $this->buildSearch();
+        $query = $baseQuery->clone();
 
         try {
             if (property_exists($query, 'scout_pagination')) {
@@ -279,6 +321,7 @@ class DataTable extends Component
 
         $returnKeys = $this->getReturnKeys();
 
+        $sums = [];
         if (property_exists($query, 'hits')) {
             $mapped = $resultCollection->map(
                 function ($item) use ($query, $returnKeys) {
@@ -301,14 +344,52 @@ class DataTable extends Component
                     );
                 }
             );
+
+            $sums = $this->getSums($baseQuery);
         }
 
         $result->setCollection($mapped ?? $resultCollection);
 
-        $this->setData($result->toArray());
+        $result = $result->toArray();
+        $result['sums'] = $sums;
+        $this->setData($result);
 
         array_pop($this->data['links']);
         array_shift($this->data['links']);
+    }
+
+    /**
+     * @param Builder $builder
+     * @return array
+     */
+    public function getSums(Builder $builder): array
+    {
+        $sums = [];
+        foreach ($this->summarizeCols as $type => $columns) {
+            if (! in_array($type, ['sum', 'avg', 'min', 'max'])) {
+                continue;
+            }
+
+            if (! is_array($columns)) {
+                $columns = [$columns];
+            }
+
+            foreach ($columns as $column) {
+                if (! in_array($column, $this->enabledCols)) {
+                    continue;
+                }
+
+                try {
+                    $sums[$type][$column] = $builder->{$type}($column);
+                } catch (QueryException $e) {
+                    $this->notification()->error($e->getMessage());
+
+                    continue;
+                }
+            }
+        }
+
+        return $sums;
     }
 
     /**
@@ -365,6 +446,7 @@ class DataTable extends Component
             'component' => get_called_class(),
             'settings' => [
                 'enabledCols' => $this->enabledCols,
+                'summarizeCols' => $this->summarizeCols,
                 'userFilters' => $this->userFilters,
                 'orderBy' => $this->orderBy,
                 'orderAsc' => $this->orderAsc,
@@ -677,6 +759,7 @@ class DataTable extends Component
         $filter = [
             'userFilters' => $this->userFilters,
             'enabledCols' => $this->enabledCols,
+            'summarizeCols' => $this->summarizeCols,
             'orderBy' => $this->orderBy,
             'orderAsc' => $this->orderAsc,
             'perPage' => $this->perPage,
