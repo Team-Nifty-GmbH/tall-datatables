@@ -28,39 +28,17 @@ composer require team-nifty-gmbh/tall-datatables
 ```html
 ...
 <livewire:scripts/>
+
+<wireui:scripts />
 <datatable:scripts />
+
 @vite(['resources/js/alpine.js'])
 ...
 ```
 
-Alternative you can add the script to your vite config, but again keep in mind to load the
-script BEFORE alpinejs as it needs to listen on the alpine:init event
+Keep in mind to follow the wireui installation instructions starting at step 2:
+https://livewire-wireui.com/docs/get-started
 
-```js
-export default defineConfig({
-    plugins: [
-        laravel({
-            input: [
-                ...
-                'vendor/team-nifty-gmbh/tall-datatables/resources/js/tall-datatables.js',
-            ],
-        }),
-    ],
-    ...
-})
-```
-
-In your layout add the vite import:
-```html
-...
-@vite([
-    ...
-    'vendor/team-nifty-gmbh/tall-datatables/resources/js/tall-datatables.js',
-    ...
-])
-@vite(['resources/js/alpine.js'])
-...
-```
 3. Add the folowing to your tailwind.config.js
 
 ```js
@@ -68,24 +46,32 @@ module.exports = {
     presets: [
         ...
         require('./vendor/team-nifty-gmbh/tall-datatables/tailwind.config.js')
-    ]
+    ],
+    content: [
+        ...
+        './vendor/team-nifty-gmbh/tall-datatables/resources/views/**/*.blade.php',
+        './vendor/team-nifty-gmbh/tall-datatables/resources/js/**/*.js',
+    ],
+    ...
 }
 ```
 
-4. Run vite build to compile the javascript files
+4. Run vite build to compile the javascript and css files
 
 ```bash
 vite build
 ```
 
-You can publish and run the migrations with:
+5. Publishing the views is optional. If you want to use the default views you can skip this step.
+
+Optionally, you can publish and run the migrations with:
 
 ```bash
 php artisan vendor:publish --tag="tall-datatables-migrations"
 php artisan migrate
 ```
 
-You can publish the config file with:
+Optionally, you can publish the config file with:
 
 ```bash
 php artisan vendor:publish --tag="tall-datatables-config"
@@ -219,7 +205,14 @@ use TeamNifty\TallDatatables\Casts\Date;
 
 ## Searchable
 
-If you want to search in your datatable you should use the Searchable trait from laravel scout
+If you want to search in your datatable you should use the Searchable trait from laravel scout.
+The package will automatically detect if your model is searchable and will add a search input to the datatable.
+
+If you dont want to use the search input you can set the isSearchable property to false in your DataTable.
+    
+```php
+public bool $isSearchable = false;
+```
 
 ## Testing
 

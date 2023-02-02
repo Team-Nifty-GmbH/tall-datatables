@@ -1,11 +1,11 @@
 {
   "resources/css/tall-datatables.css": {
-    "file": "assets/tall-datatables-4ec10618.css",
+    "file": "assets/tall-datatables-9ec5ac0f.css",
     "src": "resources/css/tall-datatables.css",
     "isEntry": true
   },
   "resources/js/tall-datatables.js": {
-    "file": "assets/tall-datatables-73226f04.js",
+    "file": "assets/tall-datatables-8a42908c.js",
     "src": "resources/js/tall-datatables.js",
     "isEntry": true
   }
