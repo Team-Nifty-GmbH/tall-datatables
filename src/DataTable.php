@@ -348,7 +348,7 @@ class DataTable extends Component
             $aggregates = $this->getAggregate($baseQuery);
         }
 
-        $result->setCollection($mapped ?? $resultCollection);
+        $result->setCollection($mapped ?: $resultCollection);
 
         $result = $result->toArray();
         $result['aggregates'] = $aggregates;
