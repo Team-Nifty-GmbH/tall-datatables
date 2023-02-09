@@ -3,12 +3,12 @@
     x-data="data_table($wire)"
 >
     @if(method_exists(auth()->user(), 'datatableUserSettings'))
-    <x-dialog id="save-filter" :title="__('Save filter')">
-        <x-input required :label="__('Filter name')" x-model="filterName" />
-        <div class="pt-3">
-            <x-checkbox :label="__('Permanent')" x-model="permanent" />
-        </div>
-    </x-dialog>
+        <x-dialog id="save-filter" :title="__('Save filter')">
+            <x-input required :label="__('Filter name')" x-model="filterName" />
+            <div class="pt-3">
+                <x-checkbox :label="__('Permanent')" x-model="permanent" />
+            </div>
+        </x-dialog>
     @endif
     <div
         class="relative"
@@ -20,22 +20,26 @@
                 <div class="pb-2.5">
                     <div class="border-b border-gray-200 dark:border-secondary-700">
                         <nav class="flex gap-x-8 overflow-x-auto soft-scrollbar">
-                            <button
-                                wire:loading.attr="disabled"
-                                x-on:click.prevent="tab = 'edit-filters'"
-                                x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'edit-filters'}"
-                                class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
-                            >
-                                {{ __('Filters') }}
-                            </button>
-                            <button
-                                wire:loading.attr="disabled"
-                                x-on:click.prevent="sortCols = cols; tab = 'summarize';"
-                                x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'summarize'}"
-                                class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
-                            >
-                                {{ __('Summarize') }}
-                            </button>
+                            @if($isFilterable)
+                                <button
+                                    wire:loading.attr="disabled"
+                                    x-on:click.prevent="tab = 'edit-filters'"
+                                    x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'edit-filters'}"
+                                    class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                                >
+                                    {{ __('Filters') }}
+                                </button>
+                            @endif
+                            @if($aggregatable)
+                                <button
+                                    wire:loading.attr="disabled"
+                                    x-on:click.prevent="sortCols = cols; tab = 'summarize';"
+                                    x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'summarize'}"
+                                    class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                                >
+                                    {{ __('Summarize') }}
+                                </button>
+                            @endif
                             <button
                                 wire:loading.attr="disabled"
                                 x-on:click.prevent="sortCols = cols; tab = 'columns';"
@@ -44,19 +48,22 @@
                             >
                                 {{ __('Columns') }}
                             </button>
-                            <button
-                                wire:loading.attr="disabled"
-                                x-on:click.prevent="getColumns(); tab = 'export'"
-                                x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'export'}"
-                                class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
-                            >
-                                {{ __('Export') }}
-                            </button>
+                            @if($isExportable)
+                                <button
+                                    wire:loading.attr="disabled"
+                                    x-on:click.prevent="getColumns(); tab = 'export'"
+                                    x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'export'}"
+                                    class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                                >
+                                    {{ __('Export') }}
+                                </button>
+                            @endif
                         </nav>
                     </div>
                 </div>
                 <div class="relative">
-                    <div x-cloak x-show="tab === 'edit-filters'">
+                    @if($isFilterable)
+                        <div x-cloak x-show="tab === 'edit-filters'">
                         <form class="grid grid-cols-1 gap-3"
                               x-on:submit.prevent="addFilter();">
                             @if(method_exists(auth()->user(), 'datatableUserSettings'))
@@ -391,7 +398,9 @@
                             @endif
                         </div>
                     </div>
-                    <div x-cloak x-show="tab === 'summarize'">
+                    @endif
+                    @if($aggregatable)
+                        <div x-cloak x-show="tab === 'summarize'">
                         <div class="grid grid-cols-1 gap-3">
                             <template x-for="col in aggregatable">
                                 <div>
@@ -423,6 +432,7 @@
                             </template>
                         </div>
                     </div>
+                    @endif
                     <div x-show="tab === 'columns'">
                         <div x-ref="cols" id="table-cols">
                             <template x-for="col in @js($availableCols)" :key="col">
@@ -450,7 +460,8 @@
                             </template>
                         </div>
                     </div>
-                    <div x-show="tab === 'export'">
+                    @if($isExportable)
+                        <div x-show="tab === 'export'">
                         <template x-for="(columnValue, columnName) in columns">
                             <x-checkbox x-bind:value="columnName" x-model="columns[columnName]">
                                 <x-slot:label>
@@ -469,6 +480,7 @@
                             </x-button>
                         </div>
                     </div>
+                    @endif
                 </div>
             </div>
             <x-slot:footer>
@@ -593,9 +605,9 @@
                 </td>
             </tr>
             <x-slot:header>
-                <td>
+                <x-tall-datatables::table.head-cell>
                     <template x-if="selectable">
-                            <x-checkbox x-on:change="function (e) {
+                        <x-checkbox x-on:change="function (e) {
                                 if (e.target.checked) {
                                     selected = getData().map(record => record.id);
                                     selected.push('*');
@@ -604,7 +616,7 @@
                                 }
                             }" value="*" x-model="selected"/>
                     </template>
-                </td>
+                </x-tall-datatables::table.head-cell>
                 <template x-for="(col, index) in cols">
                     <x-tall-datatables::table.head-cell x-bind:class="stretchCol.length && ! stretchCol.includes(col) ? 'w-[1%]' : ''">
                         <div class="flex">
@@ -624,11 +636,13 @@
                                     class="h-4 w-4 transition-all"
                                 />
                             </div>
-                            <x-heroicons::outline.funnel
-                                x-show="filterable.includes(col)"
-                                class="h-4 w-4 cursor-pointer"
-                                x-on:click="loadSidebar({column: col, operator: '', value: '', relation: ''})"
-                            />
+                            @if($isFilterable)
+                                <x-heroicons::outline.funnel
+                                    x-show="filterable.includes(col)"
+                                    class="h-4 w-4 cursor-pointer"
+                                    x-on:click="loadSidebar({column: col, operator: '', value: '', relation: ''})"
+                                />
+                            @endif
                         </div>
                     </x-tall-datatables::table.head-cell>
                 </template>
@@ -666,26 +680,22 @@
                 </td>
             </tr>
             <template x-for="(record, index) in getData()">
-                <x-tall-datatables::table.row
-                    x-bind:data-slug="record.slug_position"
-                    x-bind:data-parent-id="record.parent_id"
+                <tr
                     x-bind:data-id="record.id"
-                    x-bind:data-level="record.slug_position?.split('.').length - 1"
                     x-bind:key="record.id"
                     x-on:click="$dispatch('data-table-row-clicked', record)"
+                    {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
                 >
                     <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
                         <template x-if="selectable">
-                            <div class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
-                                <x-checkbox
-                                    x-bind:value="record.id"
-                                    x-model="selected"
-                                />
-                            </div>
+                            <x-checkbox
+                                x-bind:value="record.id"
+                                x-model="selected"
+                            />
                         </template>
                     </td>
                     <template x-for="col in cols">
-                        <x-tall-datatables::table.cell class="cursor-pointer" x-bind:href="record?.href">
+                        <x-tall-datatables::table.cell class="cursor-pointer" x-bind:href="record?.href ?? false">
                             <div
                                 class="flex"
                                 x-html="formatter(col, record)"
@@ -695,17 +705,17 @@
                     </template>
                     @if($rowActions ?? false)
                         <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4">
-                            <template x-if="disabled(record)">
-                                <div class="flex">
-                                    {{ $rowActions }}
-                                </div>
-                            </template>
+                            <div class="flex">
+                                @foreach($rowActions as $rowAction)
+                                    {{ $rowAction }}
+                                @endforeach
+                            </div>
                         </td>
                     @endif
                     {{-- Empty cell for the col selection--}}
                     <td class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
                     </td>
-                </x-tall-datatables::table.row>
+                </tr>
             </template>
             <template x-for="(aggregate, name) in data.aggregates">
                 <tr class="hover:bg-gray-100 bg-gray-50 dark:hover:bg-secondary-800 dark:bg-secondary-900">

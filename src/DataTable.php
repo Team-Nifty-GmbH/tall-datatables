@@ -14,6 +14,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
+use Illuminate\View\ComponentAttributeBag;
 use Laravel\Scout\Searchable;
 use Livewire\Component;
 use Spatie\ModelInfo\Attributes\Attribute;
@@ -40,12 +41,8 @@ class DataTable extends Component
     /** @locked  */
     public array $availableCols = [];
 
-    protected array $availableColsCached;
-
     /** @locked  */
     public array $availableRelations = [];
-
-    protected array $availableRelationsCached;
 
     public string $modelName;
 
@@ -66,6 +63,12 @@ class DataTable extends Component
 
     public ?bool $isSearchable = null;
 
+    /** @locked  */
+    public bool $isExportable = true;
+
+    /** @locked  */
+    public bool $isFilterable = true;
+
     public string $search = '';
 
     public string $orderBy = '';
@@ -80,8 +83,6 @@ class DataTable extends Component
 
     public array $stretchCol = [];
 
-    public array $indentedCols = [];
-
     public array $sortable = [];
 
     public array $aggregatable = [];
@@ -94,11 +95,17 @@ class DataTable extends Component
 
     public array $formatters = [];
 
+    public array $appends = [];
+
     public array $data = [];
 
     protected $listeners = ['loadData'];
 
-    public array $appends = [];
+    protected array $availableColsCached;
+
+    protected array $availableRelationsCached;
+
+    protected bool $isFilterableCached;
 
     /**
      * @return array
@@ -109,6 +116,7 @@ class DataTable extends Component
             'cols' => $this->enabledCols,
             'enabledCols' => $this->availableCols,
             'colLabels' => $this->colLabels,
+            'selectable' => $this->selectable,
             'sortable' => $this->sortable,
             'aggregatable' => $this->aggregatable,
             'stretchCol' => $this->stretchCol,
@@ -118,11 +126,32 @@ class DataTable extends Component
     }
 
     /**
+     * @return ComponentAttributeBag
+     */
+    public function getRowAttributes(): ComponentAttributeBag
+    {
+        return new ComponentAttributeBag();
+    }
+
+    /**
+     * @return array
+     */
+    public function getRowActions(): array
+    {
+        return [];
+    }
+
+    /**
      * @return void
      */
     public function mount(): void
     {
-        $cachedFilters = Session::get(config('tall-datatables.cache_key') . '.filter:' . get_called_class());
+        if (config('tall-datatables.should_cache')) {
+            $cachedFilters = Session::get(config('tall-datatables.cache_key') . '.filter:' . get_called_class());
+        } else {
+            $cachedFilters = null;
+        }
+
         $this->loadFilter(
             $cachedFilters ?: data_get(
                 collect($this->getSavedFilters())
@@ -179,7 +208,12 @@ class DataTable extends Component
      */
     public function render(): View|Factory|Application
     {
-        return view('tall-datatables::livewire.data-table');
+        return view('tall-datatables::livewire.data-table',
+            [
+                'rowAttributes' => $this->getRowAttributes(),
+                'rowActions' => $this->getRowActions(),
+            ]
+        );
     }
 
     /**
@@ -768,7 +802,9 @@ class DataTable extends Component
             'selected' => $this->selected,
         ];
 
-        Session::put(config('tall-datatables.cache_key') . '.filter:' . get_called_class(), $filter);
+        if (config('tall-datatables.should_cache')) {
+            Session::put(config('tall-datatables.cache_key') . '.filter:' . get_called_class(), $filter);
+        }
     }
 
     /**
@@ -845,7 +881,7 @@ class DataTable extends Component
     }
 
     /**
-     * This is just to protect the available cols from beeing modified in the frontend.
+     * This is just to protect the filters from beeing modified in the frontend.
      * TODO: remove when livewire v3 is released.
      *
      * @param $value
@@ -853,11 +889,11 @@ class DataTable extends Component
      */
     public function updatingFilters($value): void
     {
-        $this->filtersCached = $value;
+        $this->filtersCached = $this->filters;
     }
 
     /**
-     * This is just to protect the available cols from beeing modified in the frontend.
+     * This is just to protect the filters from beeing modified in the frontend.
      * TODO: remove when livewire v3 is released.
      *
      * @return void
@@ -876,7 +912,7 @@ class DataTable extends Component
      */
     public function updatingAvailableCols($value): void
     {
-        $this->availableColsCached = $value;
+        $this->availableColsCached = $this->availableCols;
     }
 
     /**
@@ -887,11 +923,11 @@ class DataTable extends Component
      */
     public function updatedAvailableCols(): void
     {
-        $this->filters = $this->availableColsCached;
+        $this->availableCols = $this->availableColsCached;
     }
 
     /**
-     * This is just to protect the available cols from beeing modified in the frontend.
+     * This is just to protect the available relations from beeing modified in the frontend.
      * TODO: remove when livewire v3 is released.
      *
      * @param $value
@@ -899,11 +935,11 @@ class DataTable extends Component
      */
     public function updatingAvailableRelations($value): void
     {
-        $this->availableRelationsCached = $value;
+        $this->availableRelationsCached = $this->availableRelations;
     }
 
     /**
-     * This is just to protect the available cols from beeing modified in the frontend.
+     * This is just to protect the available relations from beeing modified in the frontend.
      * TODO: remove when livewire v3 is released.
      *
      * @return void
