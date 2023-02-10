@@ -137,14 +137,6 @@ class DataTable extends Component
     }
 
     /**
-     * @return string|null
-     */
-    public function getSearchRoute(): ?string
-    {
-        return null;
-    }
-
-    /**
      * @return void
      */
     public function mount(): void
@@ -867,5 +859,19 @@ class DataTable extends Component
                 'label' => $item->name,
             ];
         })->toArray();
+    }
+
+    /**
+     * You should set the name of the route in your .env file.
+     * e.g. TALL_DATATABLES_SEARCH_ROUTE=datatables.search
+     * The route should lead to the SearchController from this package.
+     *
+     * @return string
+     */
+    private function getSearchRoute(): string
+    {
+        return config('tall-datatables.search_route')
+            ? route(config('tall-datatables.search_route'), '')
+            : '';
     }
 }
