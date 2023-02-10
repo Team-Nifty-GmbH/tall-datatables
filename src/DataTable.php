@@ -22,6 +22,7 @@ use Spatie\ModelInfo\Relations\Relation;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
+use TeamNiftyGmbH\DataTable\Traits\HasDatatableUserSettings;
 use TeamNiftyGmbH\DataTable\Traits\HasFrontendAttributes;
 use TeamNiftyGmbH\DataTable\Tratis\WithLockedPublicPropertiesTrait;
 use WireUi\Traits\Actions;
@@ -886,7 +887,7 @@ class DataTable extends Component
      */
     private function ensureAuthHasTrait()
     {
-        if (! method_exists(Auth::user(), 'datatableUserSettings')) {
+        if (! in_array(HasDatatableUserSettings::class, class_uses_recursive(Auth::user()))) {
             throw new \Exception(Auth::user()->getMorphClass() . ' must use HasDatatableUserSettings trait');
         }
     }
