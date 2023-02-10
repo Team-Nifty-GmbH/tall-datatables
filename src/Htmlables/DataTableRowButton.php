@@ -106,7 +106,13 @@ class DataTableRowButton implements Htmlable
      */
     public function toHtml(): string
     {
-        $buttonClass = $this->circle ? CircleButton::class : Button::class;
+        if ($this->circle) {
+            $buttonClass = CircleButton::class;
+            $this->icon = is_null($this->icon) ? 'pencil' : $this->icon;
+        } else {
+            $buttonClass = Button::class;
+            $this->label = is_null($this->label) ? '' : $this->label;
+        }
 
         $button = new $buttonClass(
             rounded: $this->rounded,
