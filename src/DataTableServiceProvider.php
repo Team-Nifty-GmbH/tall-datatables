@@ -144,6 +144,7 @@ class DataTableServiceProvider extends ServiceProvider
                 function (Model|string $model): string|array {
                     $modelInstance = is_string($model) ? new $model() : $model;
 
+                    /** @var Attribute $this */
                     if (in_array($this->cast, ['accessor', 'attribute']) && $modelInstance->hasCast($this->name)) {
                         $this->cast = $modelInstance->getCasts()[$this->name];
                     } elseif (in_array($this->cast, ['accessor', 'attribute']) && class_exists($this->phpType)) {
