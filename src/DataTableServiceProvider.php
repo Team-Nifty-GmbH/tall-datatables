@@ -80,7 +80,6 @@ class DataTableServiceProvider extends ServiceProvider
 
     protected function registerMacros(): void
     {
-
         if (! Builder::hasMacro('getScoutResults')) {
             Builder::macro('getScoutResults',
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
