@@ -890,9 +890,9 @@ class DataTable extends Component
             : '';
     }
 
-
     /**
      * @return void
+     *
      * @throws MissingTraitException
      */
     private function ensureAuthHasTrait(): void
