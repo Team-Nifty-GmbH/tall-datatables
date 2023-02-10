@@ -23,11 +23,12 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Traits\HasFrontendAttributes;
+use TeamNiftyGmbH\DataTable\Tratis\WithLockedPublicPropertiesTrait;
 use WireUi\Traits\Actions;
 
 class DataTable extends Component
 {
-    use Actions;
+    use Actions, WithLockedPublicPropertiesTrait;
 
     public bool $initialized = false;
 
@@ -101,12 +102,6 @@ class DataTable extends Component
 
     protected $listeners = ['loadData'];
 
-    protected array $availableColsCached;
-
-    protected array $availableRelationsCached;
-
-    protected bool $isFilterableCached;
-
     /**
      * @return array
      */
@@ -139,6 +134,14 @@ class DataTable extends Component
     public function getRowActions(): array
     {
         return [];
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getSearchRoute(): ?string
+    {
+        return null;
     }
 
     /**
@@ -864,88 +867,5 @@ class DataTable extends Component
                 'label' => $item->name,
             ];
         })->toArray();
-    }
-
-    /**
-     * You should set the name of the route in your .env file.
-     * e.g. TALL_DATATABLES_SEARCH_ROUTE=datatables.search
-     * The route should lead to the SearchController from this package.
-     *
-     * @return string
-     */
-    private function getSearchRoute(): string
-    {
-        return config('tall-datatables.search_route')
-            ? route(config('tall-datatables.search_route'), '')
-            : '';
-    }
-
-    /**
-     * This is just to protect the filters from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
-     *
-     * @param $value
-     * @return void
-     */
-    public function updatingFilters($value): void
-    {
-        $this->filtersCached = $this->filters;
-    }
-
-    /**
-     * This is just to protect the filters from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
-     *
-     * @return void
-     */
-    public function updatedFilters(): void
-    {
-        $this->filters = $this->filtersCached;
-    }
-
-    /**
-     * This is just to protect the available cols from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
-     *
-     * @param $value
-     * @return void
-     */
-    public function updatingAvailableCols($value): void
-    {
-        $this->availableColsCached = $this->availableCols;
-    }
-
-    /**
-     * This is just to protect the available cols from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
-     *
-     * @return void
-     */
-    public function updatedAvailableCols(): void
-    {
-        $this->availableCols = $this->availableColsCached;
-    }
-
-    /**
-     * This is just to protect the available relations from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
-     *
-     * @param $value
-     * @return void
-     */
-    public function updatingAvailableRelations($value): void
-    {
-        $this->availableRelationsCached = $this->availableRelations;
-    }
-
-    /**
-     * This is just to protect the available relations from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
-     *
-     * @return void
-     */
-    public function updatedAvailableRelations(): void
-    {
-        $this->availableRelations = $this->availableRelationsCached;
     }
 }
