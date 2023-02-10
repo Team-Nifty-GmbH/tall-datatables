@@ -80,38 +80,11 @@ class DataTableServiceProvider extends ServiceProvider
 
     protected function registerMacros(): void
     {
-        if (! Builder::hasMacro('toQueryBuilder')) {
-            Builder::macro('toQueryBuilder',
-                function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
-                    $searchResult = $this->getScoutResults($highlight, $perPage, $page);
-
-                    return DB::table($this->model->getTable())
-                        ->whereIn($this->model->getKeyName(), $searchResult['ids'])
-                        ->tap(function ($builder) use ($searchResult) {
-                            $builder->hits = $searchResult['hits'];
-                            $builder->scout_pagination = $searchResult['searchResult'];
-                        });
-                });
-        }
-
-        if (! Builder::hasMacro('toEloquentBuilder')) {
-            Builder::macro('toEloquentBuilder',
-                function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
-                    $searchResult = $this->getScoutResults($highlight, $perPage, $page);
-
-                    return $this->model::query()
-                        ->whereIn($this->model->getKeyName(), $searchResult['ids'])
-                        ->tap(function ($builder) use ($searchResult) {
-                            $builder->hits = $searchResult['hits'];
-                            $builder->scout_pagination = $searchResult['searchResult'];
-                        });
-                }
-            );
-        }
 
         if (! Builder::hasMacro('getScoutResults')) {
             Builder::macro('getScoutResults',
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
+                    /** @var Builder $this **/
                     $searchResult = $this->options(
                         [
                             'attributesToHighlight' => $highlight,
@@ -132,6 +105,37 @@ class DataTableServiceProvider extends ServiceProvider
                         'ids' => $ids,
                         'searchResult' => $searchResult,
                     ];
+                }
+            );
+        }
+
+        if (! Builder::hasMacro('toQueryBuilder')) {
+            Builder::macro('toQueryBuilder',
+                function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
+                    /** @var Builder $this **/
+                    $searchResult = $this->getScoutResults($highlight, $perPage, $page);
+
+                    return DB::table($this->model->getTable())
+                        ->whereIn($this->model->getKeyName(), $searchResult['ids'])
+                        ->tap(function ($builder) use ($searchResult) {
+                            $builder->hits = $searchResult['hits'];
+                            $builder->scout_pagination = $searchResult['searchResult'];
+                        });
+                });
+        }
+
+        if (! Builder::hasMacro('toEloquentBuilder')) {
+            Builder::macro('toEloquentBuilder',
+                function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
+                    /** @var Builder $this **/
+                    $searchResult = $this->getScoutResults($highlight, $perPage, $page);
+
+                    return $this->model::query()
+                        ->whereIn($this->model->getKeyName(), $searchResult['ids'])
+                        ->tap(function ($builder) use ($searchResult) {
+                            $builder->hits = $searchResult['hits'];
+                            $builder->scout_pagination = $searchResult['searchResult'];
+                        });
                 }
             );
         }

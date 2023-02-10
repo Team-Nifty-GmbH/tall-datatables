@@ -635,7 +635,7 @@ class DataTable extends Component
     {
         $query = $this->buildSearch();
 
-        return (new DataTableExport($query, $this->model, array_keys(array_filter($columns, fn ($value) => $value))))
+        return (new DataTableExport($query, array_keys(array_filter($columns, fn ($value) => $value))))
             ->download(class_basename($this->model) . '_' . now()->toDateTimeLocalString('minute') . '.xlsx');
     }
 
@@ -644,18 +644,20 @@ class DataTable extends Component
      */
     public function buildSearch(): Builder
     {
-        if ($this->search) {
-            /* @var $query Builder */
-            $query = $this->model::search($this->search)
+        /** @var $model Model **/
+        $model = $this->model;
+
+        if ($this->search && method_exists($model, 'search')) {
+            $query = $model::search($this->search)
                 ->toEloquentBuilder($this->enabledCols, $this->perPage, $this->page);
         } else {
-            $query = $this->model::query();
+            $query = $model::query();
         }
 
         if ($this->orderBy) {
             $query->orderBy($this->orderBy, $this->orderAsc ? 'asc' : 'desc');
         } else {
-            $query->orderBy((new $this->model)->getKeyName(), 'desc');
+            $query->orderBy((new $model)->getKeyName(), 'desc');
         }
 
         $query = $this->getBuilder($query);
