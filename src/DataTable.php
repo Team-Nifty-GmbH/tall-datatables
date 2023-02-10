@@ -884,6 +884,8 @@ class DataTable extends Component
 
     /**
      * @throws \Exception
+     *
+     * @return void
      */
     private function ensureAuthHasTrait(): void
     {
