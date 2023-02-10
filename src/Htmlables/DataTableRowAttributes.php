@@ -2,10 +2,9 @@
 
 namespace TeamNiftyGmbH\DataTable\Htmlables;
 
-use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\ComponentAttributeBag;
 
-class DataTableRowAttributes extends ComponentAttributeBag implements Htmlable
+class DataTableRowAttributes extends ComponentAttributeBag
 {
     /**
      * @return self
@@ -37,13 +36,5 @@ class DataTableRowAttributes extends ComponentAttributeBag implements Htmlable
         $this->attributes['x-on:' . $event] = $callback;
 
         return $this;
-    }
-
-    /**
-     * @return string
-     */
-    public function __toString(): string
-    {
-        return $this->toHtml();
     }
 }
