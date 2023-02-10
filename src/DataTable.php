@@ -463,6 +463,7 @@ class DataTable extends Component
      * @param string $name
      * @param bool $permanent
      * @return void
+     *
      * @throws \Exception
      */
     public function saveFilter(string $name, bool $permanent = false): void
@@ -493,6 +494,7 @@ class DataTable extends Component
     /**
      * @param string $id
      * @return void
+     *
      * @throws \Exception
      */
     public function deleteSavedFilter(string $id): void
@@ -884,7 +886,7 @@ class DataTable extends Component
      */
     private function ensureAuthHasTrait()
     {
-        if ( !method_exists(Auth::user(), 'datatableUserSettings') ) {
+        if (! method_exists(Auth::user(), 'datatableUserSettings')) {
             throw new \Exception(Auth::user()->getMorphClass() . ' must use HasDatatableUserSettings trait');
         }
     }

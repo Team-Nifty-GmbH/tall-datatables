@@ -34,6 +34,7 @@ class MakeDataTableCommand extends GeneratorCommand
 
     /**
      * Execute the console command.
+     *
      * @return bool
      */
     public function handle(): bool
