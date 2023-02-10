@@ -34,8 +34,9 @@ class MakeDataTableCommand extends GeneratorCommand
 
     /**
      * Execute the console command.
+     * @return bool
      */
-    public function handle()
+    public function handle(): bool
     {
         $this->parser = new ComponentParser(
             config('tall-datatables.data_table_namespace'),
@@ -48,7 +49,7 @@ class MakeDataTableCommand extends GeneratorCommand
         if ($livewireMakeCommand->isReservedClassName($name = $this->parser->className())) {
             $this->line('<fg=red;options=bold>Class is reserved:</>' . $name);
 
-            return;
+            return false;
         }
 
         $this->model = ModelFinder::all()
@@ -58,12 +59,14 @@ class MakeDataTableCommand extends GeneratorCommand
                         || $modelInfo === $this->argument('model');
                 }
             )
-            ?->first();
+            ->first();
         $force = $this->option('force');
 
         if ($classPath = $this->createClass($force)) {
             $this->info('Livewire Datatable Created: ' . $classPath);
         }
+
+        return true;
     }
 
     /**

@@ -7,9 +7,9 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\View;
 use Illuminate\View\ComponentAttributeBag;
-use Symfony\Component\HttpFoundation\Response;
 
 class Icon implements Htmlable, Responsable
 {

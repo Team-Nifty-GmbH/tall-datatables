@@ -377,7 +377,7 @@ class DataTable extends Component
             $aggregates = $this->getAggregate($baseQuery);
         }
 
-        $result->setCollection($mapped ?: $resultCollection);
+        $result->setCollection($mapped);
 
         $result = $result->toArray();
         $result['aggregates'] = $aggregates;
@@ -463,9 +463,12 @@ class DataTable extends Component
      * @param string $name
      * @param bool $permanent
      * @return void
+     * @throws \Exception
      */
     public function saveFilter(string $name, bool $permanent = false): void
     {
+        $this->ensureAuthHasTrait();
+
         if ($permanent) {
             Auth::user()->datatableUserSettings()->update(['is_permanent' => false]);
         }
@@ -490,9 +493,12 @@ class DataTable extends Component
     /**
      * @param string $id
      * @return void
+     * @throws \Exception
      */
     public function deleteSavedFilter(string $id): void
     {
+        $this->ensureAuthHasTrait();
+
         Auth::user()->datatableUserSettings()->whereKey($id)->delete();
 
         $this->skipRender();
@@ -604,7 +610,7 @@ class DataTable extends Component
      */
     public function getSavedFilters(): array
     {
-        if (method_exists(Auth::user(), 'datatableUserSettings')) {
+        if (method_exists(Auth::user(), 'getDataTableSettings')) {
             return Auth::user()
                 ->getDataTableSettings()
                 ?->toArray() ?: [];
@@ -618,11 +624,7 @@ class DataTable extends Component
      */
     public function getExportColumns(): array
     {
-        return array_fill_keys(
-            Auth::user() instanceof User
-                ? (new DataTableExport($this->buildSearch(), $this->model))->headings()
-                : array_intersect($this->availableCols, $this->enabledCols),
-            true);
+        return $this->availableCols;
     }
 
     /**
@@ -873,5 +875,15 @@ class DataTable extends Component
         return config('tall-datatables.search_route')
             ? route(config('tall-datatables.search_route'), '')
             : '';
+    }
+
+    /**
+     * @throws \Exception
+     */
+    private function ensureAuthHasTrait()
+    {
+        if ( !method_exists(Auth::user(), 'datatableUserSettings') ) {
+            throw new \Exception(Auth::user()->getMorphClass() . ' must use HasDatatableUserSettings trait');
+        }
     }
 }
