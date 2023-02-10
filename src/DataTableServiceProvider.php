@@ -13,7 +13,6 @@ use TeamNiftyGmbH\DataTable\Commands\MakeDataTableCommand;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCache;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCacheReset;
 use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
-use TeamNiftyGmbH\DataTable\Helpers\AttributeFormatterMixin;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
 
