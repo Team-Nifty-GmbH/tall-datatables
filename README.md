@@ -223,7 +223,7 @@ If you want to use your clicked row with livewire my recommendation is to use th
 
 # Prepare your model
 
-## HasFrontendFormatter Concern
+## HasFrontendFormatter trait
 
 If you want to format the data for the frontend you should use the HasFrontendAttributes trait
 in your model. This trait will add a method to your model called `getFrontendAttributes()`
@@ -261,11 +261,37 @@ $user = User::first();
 $user->href; // returns the detail route for the user
 ```
 
+### Icons
+
 You can set an iconName property in your model which will be used to display an icon in the table.
 You can set any icon from the [heroicons](https://heroicons.com/) library.
 
 ```php
 protected string $iconName = 'user';
+```
+
+## InteractsWithDataTables interface
+
+If a model is used in a relation of a model that has a datatable you should implement the `TeamNifty\TallDatatables\Contracts\InteractsWithDataTables` interface.
+This interface will add two methods to your model.
+
+```php
+use TeamNifty\TallDatatables\Contracts\InteractsWithDataTables;
+
+class User extends Authenticatable implements InteractsWithDataTables
+{
+    ...
+    
+    public function getLabel(): string
+    {
+        return $this->name;
+    }
+    
+    public function getDescription(): string
+    {
+        return $this->email;
+    }
+}
 ```
 
 ## Casts

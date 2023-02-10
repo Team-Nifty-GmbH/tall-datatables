@@ -9,7 +9,9 @@ use TeamNiftyGmbH\DataTable\Exceptions\LockedPublicPropertyTamperException;
 trait WithLockedPublicPropertiesTrait
 {
     /**
-     * @throws LockedPublicPropertyTamperException|ReflectionException
+     * @param $name
+     * @throws LockedPublicPropertyTamperException
+     * @throws ReflectionException
      */
     public function updatingWithLockedPublicPropertiesTrait($name): void
     {
@@ -17,7 +19,7 @@ trait WithLockedPublicPropertiesTrait
         $reflectionProperty = new \ReflectionProperty($this, $propertyName);
 
         if (Str::of($reflectionProperty->getDocComment())->contains('@locked')) {
-            throw new LockedPublicPropertyTamperException($propertyName);
+            throw LockedPublicPropertyTamperException::create($propertyName);
         }
     }
 }

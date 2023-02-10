@@ -20,6 +20,8 @@ use Livewire\Component;
 use Spatie\ModelInfo\Attributes\Attribute;
 use Spatie\ModelInfo\Relations\Relation;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
+use TeamNiftyGmbH\DataTable\Exceptions\MissingTraitException;
 use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Traits\HasDatatableUserSettings;
@@ -860,10 +862,16 @@ class DataTable extends Component
             return null;
         }
 
-        return $relatedModel::all()->map(function (Model $item) {
+        $hasLabel = false;
+        if (class_implements($relatedModel, InteractsWithDataTables::class)) {
+            $hasLabel = true;
+        }
+
+        return $relatedModel::all()->map(function (Model $item) use ($hasLabel) {
             return [
                 'value' => $item->getKey(),
-                'label' => $item->name,
+                'label' => $hasLabel ? $item->getLabel() : $item->getKey(),
+                'description' => $hasLabel ? $item->getDescription() : null,
             ];
         })->toArray();
     }
@@ -882,15 +890,15 @@ class DataTable extends Component
             : '';
     }
 
+
     /**
-     * @throws \Exception
-     *
      * @return void
+     * @throws MissingTraitException
      */
     private function ensureAuthHasTrait(): void
     {
         if (! in_array(HasDatatableUserSettings::class, class_uses_recursive(Auth::user()))) {
-            throw new \Exception(Auth::user()->getMorphClass() . ' must use HasDatatableUserSettings trait');
+            throw MissingTraitException::create(Auth::user()->getMorphClass(), HasDatatableUserSettings::class);
         }
     }
 }
