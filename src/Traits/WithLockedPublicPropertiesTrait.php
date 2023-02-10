@@ -10,6 +10,7 @@ trait WithLockedPublicPropertiesTrait
 {
     /**
      * @param $name
+     *
      * @throws LockedPublicPropertyTamperException
      * @throws ReflectionException
      */
