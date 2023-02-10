@@ -189,7 +189,7 @@ To use this new Data table you can add a livewire tag in your blade file:
 <livewire:data-tables.user-data-table />
 ```
 
-you can pass contextual attributes when you call the component like this:
+You can pass contextual attributes when you call the component like this:
 
 ```html
 <livewire:data-tables.user-data-table 
