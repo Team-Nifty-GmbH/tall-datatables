@@ -26,7 +26,7 @@ class DataTableRowButton implements Htmlable
      * @param string|null $loadingDelay
      * @param string|null $href
      * @param array|null $attributes
-     * @return static
+     * @return self
      */
     public static function make(
         bool $rounded = false,

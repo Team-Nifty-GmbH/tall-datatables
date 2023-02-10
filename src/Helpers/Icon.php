@@ -25,7 +25,7 @@ class Icon implements Htmlable, Responsable
      * @param string $name
      * @param string $variant
      * @param array|ComponentAttributeBag $attributes
-     * @return static
+     * @return self
      *
      * @throws \Exception
      */

@@ -8,7 +8,7 @@ use Illuminate\View\ComponentAttributeBag;
 class DataTableRowAttributes extends ComponentAttributeBag implements Htmlable
 {
     /**
-     * @return static
+     * @return self
      */
     public static function make(): self
     {

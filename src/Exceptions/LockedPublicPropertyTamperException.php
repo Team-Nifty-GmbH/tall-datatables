@@ -2,14 +2,14 @@
 
 namespace TeamNiftyGmbH\DataTable\Exceptions;
 
-class LockedPublicPropertyTamperException extends \Exception
+final class LockedPublicPropertyTamperException extends \Exception
 {
     /**
      * @param string $propertyName
      * @return static
      */
-    public static function create(string $propertyName = ''): static
+    public static function create(string $propertyName = ''): self
     {
-        return new static('You are not allowed to tamper with the protected property ' . $propertyName);
+        return new self('You are not allowed to tamper with the protected property ' . $propertyName);
     }
 }
