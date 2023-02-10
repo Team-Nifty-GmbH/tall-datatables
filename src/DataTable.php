@@ -26,7 +26,7 @@ use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Traits\HasDatatableUserSettings;
 use TeamNiftyGmbH\DataTable\Traits\HasFrontendAttributes;
-use TeamNiftyGmbH\DataTable\Tratis\WithLockedPublicPropertiesTrait;
+use TeamNiftyGmbH\DataTable\Traits\WithLockedPublicPropertiesTrait;
 use WireUi\Traits\Actions;
 
 class DataTable extends Component

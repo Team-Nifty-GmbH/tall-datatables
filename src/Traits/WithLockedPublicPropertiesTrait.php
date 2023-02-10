@@ -1,6 +1,6 @@
 <?php
 
-namespace TeamNiftyGmbH\DataTable\Tratis;
+namespace TeamNiftyGmbH\DataTable\Traits;
 
 use Illuminate\Support\Str;
 use ReflectionException;
@@ -9,13 +9,13 @@ use TeamNiftyGmbH\DataTable\Exceptions\LockedPublicPropertyTamperException;
 trait WithLockedPublicPropertiesTrait
 {
     /**
-     * @param $name
+     * @param string $name
      * @return void
      *
      * @throws LockedPublicPropertyTamperException
      * @throws ReflectionException
      */
-    public function updatingWithLockedPublicPropertiesTrait($name): void
+    public function updatingWithLockedPublicPropertiesTrait(string $name): void
     {
         $propertyName = Str::of($name)->explode('.')->first();
         $reflectionProperty = new \ReflectionProperty($this, $propertyName);
