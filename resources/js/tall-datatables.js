@@ -76,6 +76,9 @@ document.addEventListener('alpine:init', () => {
                 }),
                 this.$watch('newFilter.relation', () => {
                     this.loadFilterable(this.newFilter.relation);
+                }),
+                this.$watch('selected', () => {
+                    this.$dispatch('tall-datatables-selected', this.selected);
                 })
             }
         },
@@ -86,7 +89,7 @@ document.addEventListener('alpine:init', () => {
         colLabels: [],
         sortable: [],
         aggregatable: [],
-        selectable: [],
+        selectable: false,
         stretchCol: [],
         formatters: [],
         searchRoute: '',

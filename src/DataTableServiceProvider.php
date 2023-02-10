@@ -80,38 +80,10 @@ class DataTableServiceProvider extends ServiceProvider
 
     protected function registerMacros(): void
     {
-        if (! Builder::hasMacro('toQueryBuilder')) {
-            Builder::macro('toQueryBuilder',
-                function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
-                    $searchResult = $this->getScoutResults($highlight, $perPage, $page);
-
-                    return DB::table($this->model->getTable())
-                        ->whereIn($this->model->getKeyName(), $searchResult['ids'])
-                        ->tap(function ($builder) use ($searchResult) {
-                            $builder->hits = $searchResult['hits'];
-                            $builder->scout_pagination = $searchResult['searchResult'];
-                        });
-                });
-        }
-
-        if (! Builder::hasMacro('toEloquentBuilder')) {
-            Builder::macro('toEloquentBuilder',
-                function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
-                    $searchResult = $this->getScoutResults($highlight, $perPage, $page);
-
-                    return $this->model::query()
-                        ->whereIn($this->model->getKeyName(), $searchResult['ids'])
-                        ->tap(function ($builder) use ($searchResult) {
-                            $builder->hits = $searchResult['hits'];
-                            $builder->scout_pagination = $searchResult['searchResult'];
-                        });
-                }
-            );
-        }
-
         if (! Builder::hasMacro('getScoutResults')) {
             Builder::macro('getScoutResults',
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
+                    /** @var Builder $this */
                     $searchResult = $this->options(
                         [
                             'attributesToHighlight' => $highlight,
@@ -136,11 +108,43 @@ class DataTableServiceProvider extends ServiceProvider
             );
         }
 
+        if (! Builder::hasMacro('toQueryBuilder')) {
+            Builder::macro('toQueryBuilder',
+                function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
+                    /** @var Builder $this */
+                    $searchResult = $this->getScoutResults($highlight, $perPage, $page);
+
+                    return DB::table($this->model->getTable())
+                        ->whereIn($this->model->getKeyName(), $searchResult['ids'])
+                        ->tap(function ($builder) use ($searchResult) {
+                            $builder->hits = $searchResult['hits'];
+                            $builder->scout_pagination = $searchResult['searchResult'];
+                        });
+                });
+        }
+
+        if (! Builder::hasMacro('toEloquentBuilder')) {
+            Builder::macro('toEloquentBuilder',
+                function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
+                    /** @var Builder $this */
+                    $searchResult = $this->getScoutResults($highlight, $perPage, $page);
+
+                    return $this->model::query()
+                        ->whereIn($this->model->getKeyName(), $searchResult['ids'])
+                        ->tap(function ($builder) use ($searchResult) {
+                            $builder->hits = $searchResult['hits'];
+                            $builder->scout_pagination = $searchResult['searchResult'];
+                        });
+                }
+            );
+        }
+
         if (! Attribute::hasMacro('getFormatterType')) {
             Attribute::macro('getFormatterType',
                 function (Model|string $model): string|array {
                     $modelInstance = is_string($model) ? new $model() : $model;
 
+                    /** @var Attribute $this */
                     if (in_array($this->cast, ['accessor', 'attribute']) && $modelInstance->hasCast($this->name)) {
                         $this->cast = $modelInstance->getCasts()[$this->name];
                     } elseif (in_array($this->cast, ['accessor', 'attribute']) && class_exists($this->phpType)) {

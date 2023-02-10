@@ -14,19 +14,24 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
+use Illuminate\View\ComponentAttributeBag;
 use Laravel\Scout\Searchable;
 use Livewire\Component;
 use Spatie\ModelInfo\Attributes\Attribute;
 use Spatie\ModelInfo\Relations\Relation;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
+use TeamNiftyGmbH\DataTable\Exceptions\MissingTraitException;
 use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
+use TeamNiftyGmbH\DataTable\Traits\HasDatatableUserSettings;
 use TeamNiftyGmbH\DataTable\Traits\HasFrontendAttributes;
+use TeamNiftyGmbH\DataTable\Traits\WithLockedPublicPropertiesTrait;
 use WireUi\Traits\Actions;
 
 class DataTable extends Component
 {
-    use Actions;
+    use Actions, WithLockedPublicPropertiesTrait;
 
     public bool $initialized = false;
 
@@ -40,12 +45,8 @@ class DataTable extends Component
     /** @locked  */
     public array $availableCols = [];
 
-    protected array $availableColsCached;
-
     /** @locked  */
     public array $availableRelations = [];
-
-    protected array $availableRelationsCached;
 
     public string $modelName;
 
@@ -66,6 +67,12 @@ class DataTable extends Component
 
     public ?bool $isSearchable = null;
 
+    /** @locked  */
+    public bool $isExportable = true;
+
+    /** @locked  */
+    public bool $isFilterable = true;
+
     public string $search = '';
 
     public string $orderBy = '';
@@ -80,8 +87,6 @@ class DataTable extends Component
 
     public array $stretchCol = [];
 
-    public array $indentedCols = [];
-
     public array $sortable = [];
 
     public array $aggregatable = [];
@@ -94,11 +99,11 @@ class DataTable extends Component
 
     public array $formatters = [];
 
+    public array $appends = [];
+
     public array $data = [];
 
     protected $listeners = ['loadData'];
-
-    public array $appends = [];
 
     /**
      * @return array
@@ -109,6 +114,7 @@ class DataTable extends Component
             'cols' => $this->enabledCols,
             'enabledCols' => $this->availableCols,
             'colLabels' => $this->colLabels,
+            'selectable' => $this->selectable,
             'sortable' => $this->sortable,
             'aggregatable' => $this->aggregatable,
             'stretchCol' => $this->stretchCol,
@@ -118,11 +124,32 @@ class DataTable extends Component
     }
 
     /**
+     * @return ComponentAttributeBag
+     */
+    public function getRowAttributes(): ComponentAttributeBag
+    {
+        return new ComponentAttributeBag();
+    }
+
+    /**
+     * @return array
+     */
+    public function getRowActions(): array
+    {
+        return [];
+    }
+
+    /**
      * @return void
      */
     public function mount(): void
     {
-        $cachedFilters = Session::get(config('tall-datatables.cache_key') . '.filter:' . get_called_class());
+        if (config('tall-datatables.should_cache')) {
+            $cachedFilters = Session::get(config('tall-datatables.cache_key') . '.filter:' . get_called_class());
+        } else {
+            $cachedFilters = null;
+        }
+
         $this->loadFilter(
             $cachedFilters ?: data_get(
                 collect($this->getSavedFilters())
@@ -179,7 +206,12 @@ class DataTable extends Component
      */
     public function render(): View|Factory|Application
     {
-        return view('tall-datatables::livewire.data-table');
+        return view('tall-datatables::livewire.data-table',
+            [
+                'rowAttributes' => $this->getRowAttributes(),
+                'rowActions' => $this->getRowActions(),
+            ]
+        );
     }
 
     /**
@@ -348,7 +380,7 @@ class DataTable extends Component
             $aggregates = $this->getAggregate($baseQuery);
         }
 
-        $result->setCollection($mapped ?: $resultCollection);
+        $result->setCollection($mapped);
 
         $result = $result->toArray();
         $result['aggregates'] = $aggregates;
@@ -434,9 +466,13 @@ class DataTable extends Component
      * @param string $name
      * @param bool $permanent
      * @return void
+     *
+     * @throws MissingTraitException
      */
     public function saveFilter(string $name, bool $permanent = false): void
     {
+        $this->ensureAuthHasTrait();
+
         if ($permanent) {
             Auth::user()->datatableUserSettings()->update(['is_permanent' => false]);
         }
@@ -461,9 +497,13 @@ class DataTable extends Component
     /**
      * @param string $id
      * @return void
+     *
+     * @throws MissingTraitException
      */
     public function deleteSavedFilter(string $id): void
     {
+        $this->ensureAuthHasTrait();
+
         Auth::user()->datatableUserSettings()->whereKey($id)->delete();
 
         $this->skipRender();
@@ -575,7 +615,7 @@ class DataTable extends Component
      */
     public function getSavedFilters(): array
     {
-        if (method_exists(Auth::user(), 'datatableUserSettings')) {
+        if (method_exists(Auth::user(), 'getDataTableSettings')) {
             return Auth::user()
                 ->getDataTableSettings()
                 ?->toArray() ?: [];
@@ -589,11 +629,7 @@ class DataTable extends Component
      */
     public function getExportColumns(): array
     {
-        return array_fill_keys(
-            Auth::user() instanceof User
-                ? (new DataTableExport($this->buildSearch(), $this->model))->headings()
-                : array_intersect($this->availableCols, $this->enabledCols),
-            true);
+        return $this->availableCols;
     }
 
     /**
@@ -604,7 +640,7 @@ class DataTable extends Component
     {
         $query = $this->buildSearch();
 
-        return (new DataTableExport($query, $this->model, array_keys(array_filter($columns, fn ($value) => $value))))
+        return (new DataTableExport($query, array_keys(array_filter($columns, fn ($value) => $value))))
             ->download(class_basename($this->model) . '_' . now()->toDateTimeLocalString('minute') . '.xlsx');
     }
 
@@ -613,18 +649,20 @@ class DataTable extends Component
      */
     public function buildSearch(): Builder
     {
-        if ($this->search) {
-            /* @var $query Builder */
-            $query = $this->model::search($this->search)
+        /** @var Model $model */
+        $model = $this->model;
+
+        if ($this->search && method_exists($model, 'search')) {
+            $query = $model::search($this->search)
                 ->toEloquentBuilder($this->enabledCols, $this->perPage, $this->page);
         } else {
-            $query = $this->model::query();
+            $query = $model::query();
         }
 
         if ($this->orderBy) {
             $query->orderBy($this->orderBy, $this->orderAsc ? 'asc' : 'desc');
         } else {
-            $query->orderBy((new $this->model)->getKeyName(), 'desc');
+            $query->orderBy((new $model)->getKeyName(), 'desc');
         }
 
         $query = $this->getBuilder($query);
@@ -768,7 +806,9 @@ class DataTable extends Component
             'selected' => $this->selected,
         ];
 
-        Session::put(config('tall-datatables.cache_key') . '.filter:' . get_called_class(), $filter);
+        if (config('tall-datatables.should_cache')) {
+            Session::put(config('tall-datatables.cache_key') . '.filter:' . get_called_class(), $filter);
+        }
     }
 
     /**
@@ -822,10 +862,16 @@ class DataTable extends Component
             return null;
         }
 
-        return $relatedModel::all()->map(function (Model $item) {
+        $hasLabel = false;
+        if (class_implements($relatedModel, InteractsWithDataTables::class)) {
+            $hasLabel = true;
+        }
+
+        return $relatedModel::all()->map(function (Model $item) use ($hasLabel) {
             return [
                 'value' => $item->getKey(),
-                'label' => $item->name,
+                'label' => $hasLabel ? $item->getLabel() : $item->getKey(),
+                'description' => $hasLabel ? $item->getDescription() : null,
             ];
         })->toArray();
     }
@@ -845,71 +891,14 @@ class DataTable extends Component
     }
 
     /**
-     * This is just to protect the available cols from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
-     *
-     * @param $value
      * @return void
-     */
-    public function updatingFilters($value): void
-    {
-        $this->filtersCached = $value;
-    }
-
-    /**
-     * This is just to protect the available cols from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
      *
-     * @return void
+     * @throws MissingTraitException
      */
-    public function updatedFilters(): void
+    private function ensureAuthHasTrait(): void
     {
-        $this->filters = $this->filtersCached;
-    }
-
-    /**
-     * This is just to protect the available cols from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
-     *
-     * @param $value
-     * @return void
-     */
-    public function updatingAvailableCols($value): void
-    {
-        $this->availableColsCached = $value;
-    }
-
-    /**
-     * This is just to protect the available cols from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
-     *
-     * @return void
-     */
-    public function updatedAvailableCols(): void
-    {
-        $this->filters = $this->availableColsCached;
-    }
-
-    /**
-     * This is just to protect the available cols from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
-     *
-     * @param $value
-     * @return void
-     */
-    public function updatingAvailableRelations($value): void
-    {
-        $this->availableRelationsCached = $value;
-    }
-
-    /**
-     * This is just to protect the available cols from beeing modified in the frontend.
-     * TODO: remove when livewire v3 is released.
-     *
-     * @return void
-     */
-    public function updatedAvailableRelations(): void
-    {
-        $this->availableRelations = $this->availableRelationsCached;
+        if (! in_array(HasDatatableUserSettings::class, class_uses_recursive(Auth::user()))) {
+            throw MissingTraitException::create(Auth::user()->getMorphClass(), HasDatatableUserSettings::class);
+        }
     }
 }

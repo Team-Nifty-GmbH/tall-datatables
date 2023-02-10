@@ -26,6 +26,8 @@ return [
 
     'cache_key' => 'team-nifty.tall-datatables',
 
+    'should_cache' => env('TALL_DATATABLES_CACHE', true),
+
     /*
     |--------------------------------------------------------------------------
     | Search Route

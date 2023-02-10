@@ -2,19 +2,17 @@
 
 namespace TeamNiftyGmbH\DataTable\Commands;
 
-use Illuminate\Console\Command;
+use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Facades\File;
 use Livewire\Commands\ComponentParser;
 use Livewire\Commands\MakeCommand as LivewireMakeCommand;
 use Spatie\ModelInfo\ModelFinder;
 
-class MakeDataTableCommand extends Command
+class MakeDataTableCommand extends GeneratorCommand
 {
     protected ComponentParser $parser;
 
     protected string $model;
-
-    protected string $stubDirectory = 'vendor/team-nifty-gmbh/tall-datatables/stubs';
 
     /**
      * The name and signature of the console command.
@@ -22,7 +20,7 @@ class MakeDataTableCommand extends Command
      * @var string
      */
     protected $signature = 'make:data-table
-        {name}
+        {name : The name of the component}
         {model : The name of the model you want to use in this table}
         {--force}
         {--stub}';
@@ -36,8 +34,10 @@ class MakeDataTableCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return bool
      */
-    public function handle()
+    public function handle(): bool
     {
         $this->parser = new ComponentParser(
             config('tall-datatables.data_table_namespace'),
@@ -48,9 +48,9 @@ class MakeDataTableCommand extends Command
         $livewireMakeCommand = new LivewireMakeCommand();
 
         if ($livewireMakeCommand->isReservedClassName($name = $this->parser->className())) {
-            $this->line("<fg=red;options=bold>Class is reserved:</> {$name}");
+            $this->line('<fg=red;options=bold>Class is reserved:</>' . $name);
 
-            return;
+            return false;
         }
 
         $this->model = ModelFinder::all()
@@ -60,12 +60,14 @@ class MakeDataTableCommand extends Command
                         || $modelInfo === $this->argument('model');
                 }
             )
-            ?->first();
+            ->first();
         $force = $this->option('force');
 
         if ($classPath = $this->createClass($force)) {
             $this->info('Livewire Datatable Created: ' . $classPath);
         }
+
+        return true;
     }
 
     /**
@@ -77,7 +79,7 @@ class MakeDataTableCommand extends Command
         $classPath = $this->parser->classPath();
 
         if (! $force && File::exists($classPath)) {
-            $this->line("<fg=red;options=bold>Class already exists:</> {$this->parser->relativeClassPath()}");
+            $this->line('<fg=red;options=bold>Class already exists:</> ' . $this->parser->relativeClassPath());
 
             return false;
         }
@@ -107,7 +109,21 @@ class MakeDataTableCommand extends Command
         return str_replace(
             ['[namespace]', '[class]', '[model]', '[model_import]', '[columns]'],
             [$this->parser->classNamespace(), $this->parser->className(), class_basename($this->model), $this->model],
-            file_get_contents(base_path($this->stubDirectory . DIRECTORY_SEPARATOR . 'livewire.data-table.stub'))
+            $this->getStub()
         );
+    }
+
+    /**
+     * Get the stub file for the generator.
+     *
+     * @return string
+     */
+    protected function getStub(): string
+    {
+        if (File::exists($stubPath = base_path('stubs' . DIRECTORY_SEPARATOR . 'livewire.data-table.stub'))) {
+            return file_get_contents($stubPath);
+        }
+
+        return file_get_contents(__DIR__ . '/../../stubs/livewire.data-table.stub');
     }
 }

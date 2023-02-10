@@ -5,7 +5,9 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/team-nifty-gmbh/tall-datatables/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/team-nifty-gmbh/tall-datatables/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/team-nifty-gmbh/tall-datatables.svg?style=flat-square)](https://packagist.org/packages/team-nifty-gmbh/tall-datatables)
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+This package aims to provide a simple way to create datatables using alpinejs, tailwind, livewire and laravel.
+
+It relies mainly on alpinejs to avoid re-rendering the whole table when something changed.
 
 ## Requirements
 
@@ -103,6 +105,61 @@ public array $enabledCols = [
 ];
 ```
 
+### Adding Buttons to a row
+
+> **_NOTE:_** Keep in mind that tall-datatables relies on alpinejs to render the data.
+> 
+> Each row is rendered using the `x-for` directive. This means that every record is available as a variable called `record`.
+> 
+> Remember that the record variable contains only the columns that are returned by the `getReturnKeys` php method.
+> The Model key is always available.
+
+You can add buttons to a row by overriding the getRowActions method.
+Check the WireUi documentation for the available options.
+
+
+```php
+use TeamNiftyGmbH\DataTable\Htmlables\DataTableRowButton;
+
+...
+
+public function getRowActions(): array
+{
+    return [
+        \TeamNiftyGmbH\DataTable\Htmlables\DataTableRowButton::make()
+            ->label('Edit')
+            ->icon('eye')
+            ->color('primary')
+            ->attributes([
+                'x-on:click' => '$wire.edit(record.id)',
+                'x-bind:class' => 'record.is_locked ? \'hidden\' : \'\''
+            ]),
+        \TeamNiftyGmbH\DataTable\Htmlables\DataTableRowButton::make()
+            ->label('Delete')
+            ->icon('trash')
+            ->color('negative'),
+    ];
+}
+```
+
+### Adding Attributes to a row
+You can add attributes to a row by overriding the getRowAttributes method.
+
+```php
+use TeamNiftyGmbH\DataTable\Htmlables\DataTableRowAttributes;
+
+...
+
+public function getRowAttributes(): array
+{
+    return DataTableRowAttributes::make()
+        ->bind('class', 'record.is_active ? \'bg-green-100\' : \'bg-red-100\'')
+        ->on('click', 'alert($event.detail.record.id)')
+        ->class('cursor-pointer')
+}
+```
+
+### Eager Loading
 If you need to eager load additional data you can override the getBuilder method
 
 ```php
@@ -112,6 +169,7 @@ public function getBuilder(Builder $builder): Builder
 }
 ```
 
+### Minimized Network traffic
 The datatable component will only return the columns you defined in the enabledCols property.
 In case you need a specific column to be always returned you can override the getReturnKeys method.
 
@@ -124,11 +182,28 @@ public function getReturnKeys(): array
 }
 ```
 
+### Using your DataTable inside another component
 To use this new Data table you can add a livewire tag in your blade file:
     
 ```html
 <livewire:data-tables.user-data-table />
 ```
+
+You can pass contextual attributes when you call the component like this:
+
+```html
+<livewire:data-tables.user-data-table 
+    :searchable="false" 
+    :filters="[['is_active' => true]]" 
+/>
+```
+This keeps your component reusable and you can use it in different contexts.
+
+### Row clicked
+> **_NOTE:_** The data-table-row-clicked event is always dispatched, however if your record has an href attribute the click will open the link.
+> 
+> If you just need the click event you should set the href attribute to `javascript:void(0);` or completely remove from your record.
+
 
 Every row click dispatches a `data-table-row-clicked` event with the model as payload.
 You can listen to this event in your AlpineJS.
@@ -148,7 +223,7 @@ If you want to use your clicked row with livewire my recommendation is to use th
 
 # Prepare your model
 
-## HasFrontendFormatter Concern
+## HasFrontendFormatter trait
 
 If you want to format the data for the frontend you should use the HasFrontendAttributes trait
 in your model. This trait will add a method to your model called `getFrontendAttributes()`
@@ -186,11 +261,37 @@ $user = User::first();
 $user->href; // returns the detail route for the user
 ```
 
+### Icons
+
 You can set an iconName property in your model which will be used to display an icon in the table.
 You can set any icon from the [heroicons](https://heroicons.com/) library.
 
 ```php
 protected string $iconName = 'user';
+```
+
+## InteractsWithDataTables interface
+
+If a model is used in a relation of a model that has a datatable you should implement the `TeamNifty\TallDatatables\Contracts\InteractsWithDataTables` interface.
+This interface will add two methods to your model.
+
+```php
+use TeamNifty\TallDatatables\Contracts\InteractsWithDataTables;
+
+class User extends Authenticatable implements InteractsWithDataTables
+{
+    ...
+    
+    public function getLabel(): string
+    {
+        return $this->name;
+    }
+    
+    public function getDescription(): string
+    {
+        return $this->email;
+    }
+}
 ```
 
 ## Casts

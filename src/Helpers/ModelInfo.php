@@ -25,7 +25,7 @@ class ModelInfo extends BaseModelInfo
             $model = new $model;
         }
 
-        /** @var Collection $cachedModelInfo */
+        /** @var Collection|null $cachedModelInfoCollection * */
         $cachedModelInfoCollection = Cache::get(config('tall-datatables.cache_key') . '.modelInfo');
 
         if ($cachedModelInfo = $cachedModelInfoCollection
