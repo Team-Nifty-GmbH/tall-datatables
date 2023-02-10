@@ -84,7 +84,7 @@ class DataTableServiceProvider extends ServiceProvider
         if (! Builder::hasMacro('getScoutResults')) {
             Builder::macro('getScoutResults',
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
-                    /** @var Builder $this **/
+                    /** @var Builder $this */
                     $searchResult = $this->options(
                         [
                             'attributesToHighlight' => $highlight,
@@ -112,7 +112,7 @@ class DataTableServiceProvider extends ServiceProvider
         if (! Builder::hasMacro('toQueryBuilder')) {
             Builder::macro('toQueryBuilder',
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
-                    /** @var Builder $this **/
+                    /** @var Builder $this */
                     $searchResult = $this->getScoutResults($highlight, $perPage, $page);
 
                     return DB::table($this->model->getTable())
@@ -127,7 +127,7 @@ class DataTableServiceProvider extends ServiceProvider
         if (! Builder::hasMacro('toEloquentBuilder')) {
             Builder::macro('toEloquentBuilder',
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
-                    /** @var Builder $this **/
+                    /** @var Builder $this */
                     $searchResult = $this->getScoutResults($highlight, $perPage, $page);
 
                     return $this->model::query()

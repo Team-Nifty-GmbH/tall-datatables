@@ -646,7 +646,7 @@ class DataTable extends Component
      */
     public function buildSearch(): Builder
     {
-        /** @var $model Model **/
+        /** @var $model Model */
         $model = $this->model;
 
         if ($this->search && method_exists($model, 'search')) {
