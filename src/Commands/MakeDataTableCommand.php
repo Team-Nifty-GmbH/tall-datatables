@@ -2,13 +2,13 @@
 
 namespace TeamNiftyGmbH\DataTable\Commands;
 
-use Illuminate\Console\Command;
+use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Facades\File;
 use Livewire\Commands\ComponentParser;
 use Livewire\Commands\MakeCommand as LivewireMakeCommand;
 use Spatie\ModelInfo\ModelFinder;
 
-class MakeDataTableCommand extends Command
+class MakeDataTableCommand extends GeneratorCommand
 {
     protected ComponentParser $parser;
 
@@ -22,7 +22,7 @@ class MakeDataTableCommand extends Command
      * @var string
      */
     protected $signature = 'make:data-table
-        {name}
+        {name : The name of the component}
         {model : The name of the model you want to use in this table}
         {--force}
         {--stub}';
@@ -109,5 +109,15 @@ class MakeDataTableCommand extends Command
             [$this->parser->classNamespace(), $this->parser->className(), class_basename($this->model), $this->model],
             file_get_contents(base_path($this->stubDirectory . DIRECTORY_SEPARATOR . 'livewire.data-table.stub'))
         );
+    }
+
+    /**
+     * Get the stub file for the generator.
+     *
+     * @return string
+     */
+    protected function getStub()
+    {
+        // TODO: Implement getStub() method.
     }
 }
