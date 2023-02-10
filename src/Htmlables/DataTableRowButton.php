@@ -28,21 +28,22 @@ class DataTableRowButton implements Htmlable
      * @param array|null $attributes
      * @return static
      */
-    public static function make(bool $rounded = false,
-                                bool $squared = false,
-                                bool $outline = false,
-                                bool $flat = false,
-                                bool $full = false,
-                                bool $circle = false,
-                                ?string $color = null,
-                                ?string $size = null,
-                                ?string $label = null,
-                                ?string $icon = null,
-                                ?string $rightIcon = null,
-                                ?string $spinner = null,
-                                ?string $loadingDelay = null,
-                                ?string $href = null,
-                                ?array $attributes = []
+    public static function make(
+        bool $rounded = false,
+        bool $squared = false,
+        bool $outline = false,
+        bool $flat = false,
+        bool $full = false,
+        bool $circle = false,
+        ?string $color = null,
+        ?string $size = null,
+        ?string $label = null,
+        ?string $icon = null,
+        ?string $rightIcon = null,
+        ?string $spinner = null,
+        ?string $loadingDelay = null,
+        ?string $href = null,
+        ?array $attributes = []
     ): self {
         return new self(rounded: $rounded,
             squared: $squared,

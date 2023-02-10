@@ -14,8 +14,6 @@ class MakeDataTableCommand extends GeneratorCommand
 
     protected string $model;
 
-    protected string $stubDirectory = 'vendor/team-nifty-gmbh/tall-datatables/stubs';
-
     /**
      * The name and signature of the console command.
      *
@@ -48,7 +46,7 @@ class MakeDataTableCommand extends GeneratorCommand
         $livewireMakeCommand = new LivewireMakeCommand();
 
         if ($livewireMakeCommand->isReservedClassName($name = $this->parser->className())) {
-            $this->line("<fg=red;options=bold>Class is reserved:</> {$name}");
+            $this->line('<fg=red;options=bold>Class is reserved:</>' . $name);
 
             return;
         }
@@ -77,7 +75,7 @@ class MakeDataTableCommand extends GeneratorCommand
         $classPath = $this->parser->classPath();
 
         if (! $force && File::exists($classPath)) {
-            $this->line("<fg=red;options=bold>Class already exists:</> {$this->parser->relativeClassPath()}");
+            $this->line('<fg=red;options=bold>Class already exists:</> ' . $this->parser->relativeClassPath());
 
             return false;
         }
@@ -107,7 +105,7 @@ class MakeDataTableCommand extends GeneratorCommand
         return str_replace(
             ['[namespace]', '[class]', '[model]', '[model_import]', '[columns]'],
             [$this->parser->classNamespace(), $this->parser->className(), class_basename($this->model), $this->model],
-            file_get_contents(base_path($this->stubDirectory . DIRECTORY_SEPARATOR . 'livewire.data-table.stub'))
+            $this->getStub()
         );
     }
 
@@ -116,8 +114,12 @@ class MakeDataTableCommand extends GeneratorCommand
      *
      * @return string
      */
-    protected function getStub()
+    protected function getStub(): string
     {
-        // TODO: Implement getStub() method.
+        if (File::exists($stubPath = base_path('stubs' . DIRECTORY_SEPARATOR . 'livewire.data-table.stub'))) {
+            return file_get_contents($stubPath);
+        }
+
+        return file_get_contents(__DIR__ . '/../../stubs/livewire.data-table.stub');
     }
 }

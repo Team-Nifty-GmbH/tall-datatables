@@ -5,7 +5,9 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/team-nifty-gmbh/tall-datatables/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/team-nifty-gmbh/tall-datatables/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/team-nifty-gmbh/tall-datatables.svg?style=flat-square)](https://packagist.org/packages/team-nifty-gmbh/tall-datatables)
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+This package aims to provide a simple way to create datatables using alpinejs, tailwind, livewire and laravel.
+
+It relies mainly on alpinejs to avoid re-rendering the whole table when something changed.
 
 ## Requirements
 
