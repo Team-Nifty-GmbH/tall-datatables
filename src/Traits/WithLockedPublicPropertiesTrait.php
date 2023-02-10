@@ -10,6 +10,8 @@ trait WithLockedPublicPropertiesTrait
 {
     /**
      * @param $name
+     * @return void
+     *
      * @throws LockedPublicPropertyTamperException
      * @throws ReflectionException
      */

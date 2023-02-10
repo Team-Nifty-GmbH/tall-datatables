@@ -467,7 +467,7 @@ class DataTable extends Component
      * @param bool $permanent
      * @return void
      *
-     * @throws \Exception
+     * @throws MissingTraitException
      */
     public function saveFilter(string $name, bool $permanent = false): void
     {
@@ -498,7 +498,7 @@ class DataTable extends Component
      * @param string $id
      * @return void
      *
-     * @throws \Exception
+     * @throws MissingTraitException
      */
     public function deleteSavedFilter(string $id): void
     {
