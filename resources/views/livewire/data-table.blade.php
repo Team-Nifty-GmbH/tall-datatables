@@ -1,21 +1,22 @@
 <div
     wire:init="loadData()"
-    x-data="data_table($wire)"
+    x-data
+    x-id="['save-filter', 'cols', 'operators', 'filter-select-search', 'table-cols']"
 >
-    @if(method_exists(auth()->user(), 'datatableUserSettings'))
-        <x-dialog id="save-filter" :title="__('Save filter')">
-            <x-input required :label="__('Filter name')" x-model="filterName" />
-            <div class="pt-3">
-                <x-checkbox :label="__('Permanent')" x-model="permanent" />
-            </div>
-        </x-dialog>
-    @endif
     <div
         class="relative"
         wire:ignore
-        x-data="{}"
+        x-data="data_table($wire)"
     >
         <x-tall-datatables::sidebar x-on:keydown.esc="showSidebar = false" x-show="showSidebar">
+            @if(method_exists(auth()->user(), 'datatableUserSettings'))
+                <x-dialog id="save-filter" :title="__('Save filter')">
+                    <x-input required :label="__('Filter name')" x-model="filterName" />
+                    <div class="pt-3">
+                        <x-checkbox :label="__('Permanent')" x-model="permanent" />
+                    </div>
+                </x-dialog>
+            @endif
             <div class="mt-2">
                 <div class="pb-2.5">
                     <div class="border-b border-gray-200 dark:border-secondary-700">
@@ -209,9 +210,9 @@
                                 required
                                 x-model.lazy="newFilter.column"
                                 placeholder="{{ __('Column') }}"
-                                list="cols"
+                                x-bind:list="$id('cols')"
                             />
-                            <datalist id="cols">
+                            <datalist x-bind:id="$id('cols')">
                                 <template x-for="col in filterable">
                                     <option x-bind:value="col" x-text="colLabels[col]"></option>
                                 </template>
@@ -222,9 +223,9 @@
                                     required
                                     x-model="newFilter.operator"
                                     placeholder="{{ __('Operator') }}"
-                                    list="operators"
+                                    x-bind:list="$id('operators')"
                                 />
-                                <datalist id="operators">
+                                <datalist x-bind:id="$id('operators')">
                                     <option value="=">{{ __('=') }}</option>
                                     <option value="!=">{{ __('!=') }}</option>
                                     <option value=">">{{ __('>') }}</option>
@@ -256,7 +257,7 @@
                             </div>
                             <div x-show="filterSelectType === 'search'">
                                 <x-select
-                                    id="filter-select-search"
+                                    x-bind:id="$id('filter-select-search')"
                                     class="pb-4"
                                     x-on:selected="newFilter.value = $event.detail.value"
                                     option-value="id"
@@ -434,7 +435,7 @@
                     </div>
                     @endif
                     <div x-show="tab === 'columns'">
-                        <div x-ref="cols" id="table-cols">
+                        <div x-bind:id="$id('table-cols')">
                             <template x-for="col in @js($availableCols)" :key="col">
                                 <div x-bind:data-column="col">
                                     <label x-bind:for="col" class="flex items-center">
@@ -487,116 +488,125 @@
                 <x-button x-on:click="showSidebar = false">{{ __('Close') }}</x-button>
             </x-slot:footer>
         </x-tall-datatables::sidebar>
-        @if($isSearchable)
-            <div class="flex w-full">
-                <div class="flex-1">
-                    <x-input
-                        icon="search"
-                        x-model.debounce.500ms="search"
-                        placeholder="{{ __('Search in :model…', ['model' => __(\Illuminate\Support\Str::plural($modelName))]) }}"
-                    >
-                    </x-input>
-                </div>
+        @if($hasHead)
+            <div class="flex w-full gap-5 justify-end">
+                @if($isSearchable)
+                    <div class="flex-1">
+                        <x-input
+                            icon="search"
+                            x-model.debounce.500ms="search"
+                            placeholder="{{ __('Search in :model…', ['model' => __(\Illuminate\Support\Str::plural($modelName))]) }}"
+                        >
+                        </x-input>
+                    </div>
+                @endif
+                @if($tableActions)
+                    <div class="flex gap-3">
+                        @foreach($tableActions as $tableAction)
+                            {{$tableAction}}
+                        @endforeach
+                    </div>
+                @endif
             </div>
-        @endif
-        <div class="flex pt-3 items-center gap-1.5" x-cloak x-show="filters.length > 0 || orderByCol">
-            <template x-for="(orFilters, orIndex) in filters">
-                <div class="flex justify-center items-center">
-                    <div class="relative pr-6.5 pointer-events-auto w-full rounded-lg bg-white p-1.5
+            <div class="flex pt-3 items-center gap-1.5" x-cloak x-show="filters.length > 0 || orderByCol">
+                <template x-for="(orFilters, orIndex) in filters">
+                    <div class="flex justify-center items-center">
+                        <div class="relative pr-6.5 pointer-events-auto w-full rounded-lg bg-white p-1.5
                                         text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 ring-1
                                         ring-slate-700/10 dark:bg-secondary-800"
-                    >
-                        <div class="absolute top-0.5 right-0.5">
-                            <x-button.circle
-                                negative
-                                2xs
-                                icon="x"
-                                x-on:click="removeFilterGroup(orIndex)"
-                            />
-                        </div>
-                        <div class="flex justify-between">
-                            <div class="pt-1 flex gap-1">
-                                <template x-for="(filter, index) in orFilters">
-                                    <div>
-                                        <x-badge flat primary>
-                                            <x-slot:label>
-                                                <span x-text="filterBadge(filter)"></span>
-                                            </x-slot:label>
-                                            <x-slot
-                                                name="append"
-                                                class="relative flex items-center w-2 h-2"
-                                            >
-                                                <button
-                                                    type="button"
-                                                    x-on:click="removeFilter(index, orIndex)"
+                        >
+                            <div class="absolute top-0.5 right-0.5">
+                                <x-button.circle
+                                    negative
+                                    2xs
+                                    icon="x"
+                                    x-on:click="removeFilterGroup(orIndex)"
+                                />
+                            </div>
+                            <div class="flex justify-between">
+                                <div class="pt-1 flex gap-1">
+                                    <template x-for="(filter, index) in orFilters">
+                                        <div>
+                                            <x-badge flat primary>
+                                                <x-slot:label>
+                                                    <span x-text="filterBadge(filter)"></span>
+                                                </x-slot:label>
+                                                <x-slot
+                                                    name="append"
+                                                    class="relative flex items-center w-2 h-2"
                                                 >
-                                                    <x-icon
-                                                        name="x"
-                                                        class="w-4 h-4"
-                                                    />
-                                                </button>
-                                            </x-slot>
-                                        </x-badge>
-                                        <template x-if="(orFilters.length - 1) !== index">
-                                            <x-badge
-                                                flat negative
-                                                :label="__('and')"
-                                            />
-                                        </template>
-                                    </div>
-                                </template>
+                                                    <button
+                                                        type="button"
+                                                        x-on:click="removeFilter(index, orIndex)"
+                                                    >
+                                                        <x-icon
+                                                            name="x"
+                                                            class="w-4 h-4"
+                                                        />
+                                                    </button>
+                                                </x-slot>
+                                            </x-badge>
+                                            <template x-if="(orFilters.length - 1) !== index">
+                                                <x-badge
+                                                    flat negative
+                                                    :label="__('and')"
+                                                />
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div
-                        class="pl-1"
-                        x-claok
-                        x-show="(filters.length - 1) !== orIndex"
-                    >
-                        <x-badge
-                            flat
-                            positive
-                            :label="__('or')"
-                        />
-                    </div>
-                </div>
-            </template>
-            <div x-cloak x-show="orderByCol">
-                <x-badge flat amber>
-                    <x-slot:label>
-                        <span>{{ __('Order by') }}</span>
-                        <span x-text="orderByCol"></span>
-                        <span x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
-                    </x-slot:label>
-                    <x-slot
-                        name="append"
-                        class="relative flex items-center w-2 h-2"
-                    >
-                        <button
-                            type="button"
-                            x-on:click="$wire.sortTable('')"
+                        <div
+                            class="pl-1"
+                            x-claok
+                            x-show="(filters.length - 1) !== orIndex"
                         >
-                            <x-icon
-                                name="x"
-                                class="w-4 h-4"
+                            <x-badge
+                                flat
+                                positive
+                                :label="__('or')"
                             />
-                        </button>
-                    </x-slot>
-                </x-badge>
+                        </div>
+                    </div>
+                </template>
+                <div x-cloak x-show="orderByCol">
+                    <x-badge flat amber>
+                        <x-slot:label>
+                            <span>{{ __('Order by') }}</span>
+                            <span x-text="orderByCol"></span>
+                            <span x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
+                        </x-slot:label>
+                        <x-slot
+                            name="append"
+                            class="relative flex items-center w-2 h-2"
+                        >
+                            <button
+                                type="button"
+                                x-on:click="$wire.sortTable('')"
+                            >
+                                <x-icon
+                                    name="x"
+                                    class="w-4 h-4"
+                                />
+                            </button>
+                        </x-slot>
+                    </x-badge>
+                </div>
+                <x-button
+                    rounded
+                    negative
+                    x-on:click="clearFilters"
+                    class="h-8"
+                >
+                    {{ __('Clear') }}
+                </x-button>
             </div>
-            <x-button
-                rounded
-                negative
-                x-on:click="clearFilters"
-                class="h-8"
-            >
-                {{ __('Clear') }}
-            </x-button>
-        </div>
-        @if($actions ?? false)
-            <x-dropdown>
-                {{ $actions }}
-            </x-dropdown>
+            @if($actions ?? false)
+                <x-dropdown>
+                    {{ $actions }}
+                </x-dropdown>
+            @endif
         @endif
         <x-tall-datatables::table class="relative">
             <tr wire:loading.delay class="absolute bottom-0 top-0 right-0 w-full">
@@ -604,10 +614,11 @@
                     <x-tall-datatables::spinner />
                 </td>
             </tr>
-            <x-slot:header>
-                <x-tall-datatables::table.head-cell>
-                    <template x-if="selectable">
-                        <x-checkbox x-on:change="function (e) {
+            @if($hasHead)
+                <x-slot:header>
+                    <x-tall-datatables::table.head-cell>
+                        <template x-if="selectable">
+                            <x-checkbox x-on:change="function (e) {
                                 if (e.target.checked) {
                                     selected = getData().map(record => record.id);
                                     selected.push('*');
@@ -615,51 +626,52 @@
                                     selected = [];
                                 }
                             }" value="*" x-model="selected"/>
-                    </template>
-                </x-tall-datatables::table.head-cell>
-                <template x-for="(col, index) in cols">
-                    <x-tall-datatables::table.head-cell x-bind:class="stretchCol.length && ! stretchCol.includes(col) ? 'w-[1%]' : ''">
-                        <div class="flex">
-                            <div
-                                type="button"
-                                wire:loading.attr="disabled"
-                                class="flex flex-row items-center space-x-1.5"
-                                x-on:click="sortable[col] && $wire.sortTable(col)"
-                                x-bind:class="sortable[col] ? 'cursor-pointer' : ''"
-                            >
-                                <span x-text="colLabels[col]"></span>
-                                <x-icon
-                                    x-bind:class="Object.keys(sortable).length && orderByCol === col
+                        </template>
+                    </x-tall-datatables::table.head-cell>
+                    <template x-for="(col, index) in cols">
+                        <x-tall-datatables::table.head-cell x-bind:class="stretchCol.length && ! stretchCol.includes(col) ? 'w-[1%]' : ''">
+                            <div class="flex">
+                                <div
+                                    type="button"
+                                    wire:loading.attr="disabled"
+                                    class="flex flex-row items-center space-x-1.5"
+                                    x-on:click="sortable.includes(col) && $wire.sortTable(col)"
+                                    x-bind:class="sortable.includes(col) ? 'cursor-pointer' : ''"
+                                >
+                                    <span x-text="colLabels[col]"></span>
+                                    <x-icon
+                                        x-bind:class="Object.keys(sortable).length && orderByCol === col
                                         ? (orderAsc || 'rotate-180')
                                         : 'opacity-0'"
-                                    name="chevron-down"
-                                    class="h-4 w-4 transition-all"
-                                />
+                                        name="chevron-down"
+                                        class="h-4 w-4 transition-all"
+                                    />
+                                </div>
+                                @if($isFilterable)
+                                    <x-heroicons::outline.funnel
+                                        x-show="filterable.includes(col)"
+                                        class="h-4 w-4 cursor-pointer"
+                                        x-on:click="loadSidebar({column: col, operator: '', value: '', relation: ''})"
+                                    />
+                                @endif
                             </div>
-                            @if($isFilterable)
-                                <x-heroicons::outline.funnel
-                                    x-show="filterable.includes(col)"
-                                    class="h-4 w-4 cursor-pointer"
-                                    x-on:click="loadSidebar({column: col, operator: '', value: '', relation: ''})"
-                                />
-                            @endif
+                        </x-tall-datatables::table.head-cell>
+                    </template>
+                    @if($rowActions ?? false)
+                        <x-tall-datatables::table.head-cell class="w-[1%]">
+                            {{ __('Actions') }}
+                        </x-tall-datatables::table.head-cell>
+                    @endif
+                    <x-tall-datatables::table.head-cell class="w-4 flex w-full flex-row-reverse">
+                        <div class="flex w-full flex-row-reverse items-center">
+                            <x-button
+                                icon="cog"
+                                x-on:click="loadSidebar()"
+                            />
                         </div>
                     </x-tall-datatables::table.head-cell>
-                </template>
-                @if($rowActions ?? false)
-                    <x-tall-datatables::table.head-cell class="w-[1%]">
-                        {{ __('Actions') }}
-                    </x-tall-datatables::table.head-cell>
-                @endif
-                <x-tall-datatables::table.head-cell class="w-4 flex w-full flex-row-reverse">
-                    <div class="flex w-full flex-row-reverse items-center">
-                        <x-button
-                            icon="cog"
-                            x-on:click="loadSidebar()"
-                        />
-                    </div>
-                </x-tall-datatables::table.head-cell>
-            </x-slot:header>
+                </x-slot:header>
+            @endif
             <template x-if="! getData().length && initialized">
                 <tr>
                     <td colspan="100%" class="p-8 w-24 h-24">
@@ -717,85 +729,97 @@
                     </td>
                 </tr>
             </template>
-            <template x-for="(aggregate, name) in data.aggregates">
-                <tr class="hover:bg-gray-100 bg-gray-50 dark:hover:bg-secondary-800 dark:bg-secondary-900">
-                    <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm font-bold" x-text="name"></td>
-                    <template x-for="col in cols">
-                        <x-tall-datatables::table.cell>
-                            <div
-                                class="flex font-semibold"
-                                x-text="formatter(col, aggregate)"
-                            >
-                            </div>
-                        </x-tall-datatables::table.cell>
-                    </template>
-                    <td class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
-                    </td>
-                </tr>
-            </template>
             <x-slot:footer>
-                <template x-if="data.hasOwnProperty('current_page') ">
-                    <td colspan="100%">
-                        <div class="flex items-center justify-between px-4 py-3 sm:px-6">
-                            <div class="flex flex-1 justify-between sm:hidden">
-                                <x-button
-                                    x-bind:disabled="data.current_page === 1"
-                                    x-on:click="$wire.set('page', data.current_page - 1)"
-                                >{{ __('Previous') }}</x-button>
-                                <x-button
-                                    x-bind:disabled="data.current_page === data.last_page"
-                                    x-on:click="$wire.set('page', data.current_page + 1)"
-                                >{{ __('Next') }}</x-button>
-                            </div>
-                            <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                                <div>
-                                    <div class="text-sm text-slate-400 flex gap-1">
-                                        {{ __('Showing') }}
-                                        <div x-text="data.from" class="font-medium align-middle"></div>
-                                        {{ __('to') }}
-                                        <div x-text="data.to" class="font-medium"></div>
-                                        {{ __('of') }}
-                                        <div x-text="data.total" class="font-medium"></div>
-                                        {{ __('results') }}
-                                        @if($this->perPage ?? false)
-                                            <x-select class="pl-4" wire:model="perPage" :clearable="false"
-                                                      option-value="value"
-                                                      option-label="label"
-                                                      :options="[
+                <template x-for="(aggregate, name) in data.aggregates">
+                    <tr class="hover:bg-gray-100 bg-gray-50 dark:hover:bg-secondary-800 dark:bg-secondary-900">
+                        <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm font-bold" x-text="name"></td>
+                        <template x-for="col in cols">
+                            <x-tall-datatables::table.cell>
+                                <div
+                                    class="flex font-semibold"
+                                    x-text="formatter(col, aggregate)"
+                                >
+                                </div>
+                            </x-tall-datatables::table.cell>
+                        </template>
+                        <td class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
+                        </td>
+                    </tr>
+                </template>
+                @if(! $hasInfiniteScroll)
+                    <template x-if="data.hasOwnProperty('current_page') ">
+                        <tr>
+                            <td colspan="100%">
+                                <div class="flex items-center justify-between px-4 py-3 sm:px-6">
+                                    <div class="flex flex-1 justify-between sm:hidden">
+                                        <x-button
+                                            x-bind:disabled="data.current_page === 1"
+                                            x-on:click="$wire.set('page', data.current_page - 1)"
+                                        >{{ __('Previous') }}</x-button>
+                                        <x-button
+                                            x-bind:disabled="data.current_page === data.last_page"
+                                            x-on:click="$wire.set('page', data.current_page + 1)"
+                                        >{{ __('Next') }}</x-button>
+                                    </div>
+                                    <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                                        <div>
+                                            <div class="text-sm text-slate-400 flex gap-1">
+                                                {{ __('Showing') }}
+                                                <div x-text="data.from" class="font-medium align-middle"></div>
+                                                {{ __('to') }}
+                                                <div x-text="data.to" class="font-medium"></div>
+                                                {{ __('of') }}
+                                                <div x-text="data.total" class="font-medium"></div>
+                                                {{ __('results') }}
+                                                @if($this->perPage ?? false)
+                                                    <x-select class="pl-4" wire:model="perPage" :clearable="false"
+                                                              option-value="value"
+                                                              option-label="label"
+                                                              :options="[
                                                         ['value' => 15, 'label' => '15'],
                                                         ['value' => 50, 'label' => '50'],
                                                         ['value' => 100, 'label' => '100'],
                                                     ]"
-                                            />
-                                        @endif
+                                                    />
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <nav class="isolate inline-flex space-x-1 rounded-md shadow-sm" aria-label="Pagination">
+                                                <x-button
+                                                    x-bind:disabled="data.current_page === 1"
+                                                    x-on:click="$wire.set('page', data.current_page - 1)"
+                                                    icon="chevron-left"
+                                                />
+                                                <template x-for="link in data.links">
+                                                    <x-button
+                                                        x-bind:disabled="link.active"
+                                                        x-html="link.label"
+                                                        x-on:click="$wire.set('page', link.label)"
+                                                        x-bind:class="link.active && 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'"
+                                                    />
+                                                </template>
+                                                <x-button
+                                                    x-bind:disabled="data.current_page === data.last_page"
+                                                    x-on:click="$wire.set('page', data.current_page + 1)"
+                                                    icon="chevron-right"
+                                                />
+                                            </nav>
+                                        </div>
                                     </div>
                                 </div>
-                                <div>
-                                    <nav class="isolate inline-flex space-x-1 rounded-md shadow-sm" aria-label="Pagination">
-                                        <x-button
-                                            x-bind:disabled="data.current_page === 1"
-                                            x-on:click="$wire.set('page', data.current_page - 1)"
-                                            icon="chevron-left"
-                                        />
-                                        <template x-for="link in data.links">
-                                            <x-button
-                                                x-bind:disabled="link.active"
-                                                x-html="link.label"
-                                                x-on:click="$wire.set('page', link.label)"
-                                                x-bind:class="link.active && 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'"
-                                            />
-                                        </template>
-                                        <x-button
-                                            x-bind:disabled="data.current_page === data.last_page"
-                                            x-on:click="$wire.set('page', data.current_page + 1)"
-                                            icon="chevron-right"
-                                        />
-                                    </nav>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                </template>
+                            </td>
+                        </tr>
+                    </template>
+                @else
+                    <tr>
+                        <td x-intersect:enter="$wire.get('initialized') && $wire.loadMore()" colspan="100%">
+                            <x-button flat spinner wire:loading wire:target="loadMore" class="w-full">
+                                {{ __('Loading...') }}
+                            </x-button>
+                        </td>
+                    </tr>
+                @endif
             </x-slot:footer>
         </x-tall-datatables::table>
     </div>

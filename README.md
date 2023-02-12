@@ -105,6 +105,36 @@ public array $enabledCols = [
 ];
 ```
 
+### Adding Buttons to the table
+
+You can add buttons to the table by overriding the getTableActions method.
+Check the WireUi documentation for the available options.
+
+These buttons will be rendered above the table on the right side.
+If your table has search enabled, the buttons will be rendered on the right side of the search input.
+
+> **_NOTE:_** My advice is to embed the datatable inside an other component and use the `wire:ignore` directive to avoid re-rendering the whole page.
+> The "Create" button could dispatch an alpinejs event to the parent component. The listener could trigger a livewire function to render the create form.
+
+```php
+use TeamNiftyGmbH\DataTable\Htmlables\DataTableButton;
+
+...
+
+public function getTableActions(): array
+{
+    return [
+        DataTableButton::make()
+            ->label('Create')
+            ->icon('plus')
+            ->color('primary')
+            ->attributes([
+                'x-on:click' => '$dispatch(\'create-user\')',
+            ]),
+    ];
+}
+```
+
 ### Adding Buttons to a row
 
 > **_NOTE:_** Keep in mind that tall-datatables relies on alpinejs to render the data.
@@ -117,16 +147,15 @@ public array $enabledCols = [
 You can add buttons to a row by overriding the getRowActions method.
 Check the WireUi documentation for the available options.
 
-
 ```php
-use TeamNiftyGmbH\DataTable\Htmlables\DataTableRowButton;
+use TeamNiftyGmbH\DataTable\Htmlables\DataTableButton;
 
 ...
 
 public function getRowActions(): array
 {
     return [
-        \TeamNiftyGmbH\DataTable\Htmlables\DataTableRowButton::make()
+        \TeamNiftyGmbH\DataTable\Htmlables\DataTableButton::make()
             ->label('Edit')
             ->icon('eye')
             ->color('primary')
@@ -134,28 +163,11 @@ public function getRowActions(): array
                 'x-on:click' => '$wire.edit(record.id)',
                 'x-bind:class' => 'record.is_locked ? \'hidden\' : \'\''
             ]),
-        \TeamNiftyGmbH\DataTable\Htmlables\DataTableRowButton::make()
+        \TeamNiftyGmbH\DataTable\Htmlables\DataTableButton::make()
             ->label('Delete')
             ->icon('trash')
             ->color('negative'),
     ];
-}
-```
-
-### Adding Attributes to a row
-You can add attributes to a row by overriding the getRowAttributes method.
-
-```php
-use TeamNiftyGmbH\DataTable\Htmlables\DataTableRowAttributes;
-
-...
-
-public function getRowAttributes(): array
-{
-    return DataTableRowAttributes::make()
-        ->bind('class', 'record.is_active ? \'bg-green-100\' : \'bg-red-100\'')
-        ->on('click', 'alert($event.detail.record.id)')
-        ->class('cursor-pointer')
 }
 ```
 
@@ -199,11 +211,26 @@ You can pass contextual attributes when you call the component like this:
 ```
 This keeps your component reusable and you can use it in different contexts.
 
-### Row clicked
-> **_NOTE:_** The data-table-row-clicked event is always dispatched, however if your record has an href attribute the click will open the link.
-> 
-> If you just need the click event you should set the href attribute to `javascript:void(0);` or completely remove from your record.
+### Using your DataTable as a full page component
+To use this new Data table as a full page component you can just point a route to the component.
+See the [Livewire documentation](https://laravel-livewire.com/docs/2.x/rendering-components#page-components) for more information.
 
+```php
+Route::get('/users', \App\Http\Livewire\DataTables\UserDataTable::class);
+```
+
+### Row clicked
+> **_NOTE:_** The data-table-row-clicked event is always dispatched, however if your record has the InteractsWithDataTables 
+> interface implemented the getUrl() method will be called to get the url to redirect to.
+> 
+> If you just need the click event without a redirect you can set the `$hasNoRedirect` property to true.
+
+```php
+public function getUrl(): string
+{
+    return route('users.show', $this->id);
+}
+```
 
 Every row click dispatches a `data-table-row-clicked` event with the model as payload.
 You can listen to this event in your AlpineJS.
@@ -260,6 +287,58 @@ The trait adds an attribute accessor to your model which contains the detail rou
 $user = User::first();
 $user->href; // returns the detail route for the user
 ```
+
+## Styling the table
+
+### Adding Attributes to a row
+You can add attributes to a row by overriding the getRowAttributes method.
+
+```php
+use TeamNiftyGmbH\DataTable\Htmlables\DataTableRowAttributes;
+
+...
+
+public function getRowAttributes(): array
+{
+    return DataTableRowAttributes::make()
+        ->bind('class', 'record.is_active ? \'bg-green-100\' : \'bg-red-100\'')
+        ->on('click', 'alert($event.detail.record.id)')
+        ->class('cursor-pointer')
+}
+```
+
+### Infinite Scrolling
+By default the table shows pagination. If you want to use infinite scrolling you can set the `hasInfiniteScroll` property to true.
+
+```php
+public bool $hasInfiniteScroll = true;
+```
+
+When the end of the table comes into viewport the table adds the amount of records you defined in the `perPage` property.
+Please keep in mind that the network traffic grows each time as livewire has to hydrate the whole data not just add the new records.
+
+> **_NOTE:_** If you use infinite scrolling you need to import the alpinejs intersect plugin in your
+> main projects js file.
+
+```js
+import Alpine from 'alpinejs';
+import intersect from '@alpinejs/intersect';
+
+Alpine.plugin(intersect);
+
+window.Alpine = Alpine;
+
+Alpine.start();
+```
+
+### Hiding the header
+If you want to hide the header you can set the `hasHeader` property to false.
+
+```php
+public bool $hasHeader = false;
+```
+
+The sidebar with the filters are still available but you have to add your own button to show it.
 
 ### Icons
 

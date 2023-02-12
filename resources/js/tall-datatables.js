@@ -26,19 +26,21 @@ document.addEventListener('alpine:init', () => {
                         });
                     }
                 ),
-                new Sortable(document.querySelector('#table-cols'), {
-                    animation: 150,
-                    delay: 100,
-                    onEnd: (e) => {
-                        const el = this.enabledCols[e.oldIndex];
-                        let oldCols = Object.values(this.enabledCols);
-                        // move element from e.oldIndex to e.newIndex
-                        oldCols.splice(e.oldIndex, 1);
-                        oldCols.splice(e.newIndex, 0, el);
+                this.$nextTick(() => {
+                    new Sortable(document.getElementById(this.$id('table-cols')), {
+                        animation: 150,
+                        delay: 100,
+                        onEnd: (e) => {
+                            const el = this.enabledCols[e.oldIndex];
+                            let oldCols = Object.values(this.enabledCols);
+                            // move element from e.oldIndex to e.newIndex
+                            oldCols.splice(e.oldIndex, 1);
+                            oldCols.splice(e.newIndex, 0, el);
 
-                        this.enabledCols = oldCols;
-                        this.cols = this.enabledCols.filter(value => this.cols.includes(value));
-                    }
+                            this.enabledCols = oldCols;
+                            this.cols = this.enabledCols.filter(value => this.cols.includes(value));
+                        }
+                    });
                 }),
                 this.loadFilterable(),
                 this.$watch('newFilter.column', () => {
@@ -223,10 +225,12 @@ document.addEventListener('alpine:init', () => {
             }
 
             if (this.formatters.hasOwnProperty(col)) {
-                const type = this.formatters[col];
-
+                let type = this.formatters[col];
                 return formatters.format({value: val, type: type, context: record});
+            } else {
+                return formatters.format({value: val, context: record});
             }
+
 
             return val;
         },
@@ -250,6 +254,11 @@ window.formatters = {
 
         if (this[type]) {
             return this[type](value, options, context);
+        }
+
+        const guessedType = this.guessType(value);
+        if (this[guessedType]) {
+            return this[guessedType](value, options, context);
         }
 
         return value;
@@ -319,14 +328,28 @@ window.formatters = {
         }
     },
     array: (value) => {
-        if (typeof value === 'array'){
-            return value.join(', ');
+        if (typeof value === 'object') {
+            const items = [];
+            value.forEach(item => {
+                items.push(formatters.object(item));
+            });
+
+            return items.join('<br /><br />');
+        }
+
+        if (typeof value === 'array') {
+            return value.join('<, >');
         }
 
         return value;
     },
     object: (value) => {
-        return JSON.stringify(value);
+        return Object.keys(value).map(key => {
+            const type = formatters.guessType(value[key]);
+            const val = formatters.format({value: value[key], type: type});
+
+            return `${key}: ${val}`;
+        }).join('<br />');
     },
     boolean: (value) => {
         return formatters.bool(value);
@@ -440,5 +463,60 @@ window.formatters = {
             default:
                 return 'text';
         }
+    },
+    guessType: (value) => {
+        if (value === null) {
+            return 'null';
+        }
+
+        if (typeof value === 'object') {
+            return 'object';
+        }
+
+        if (typeof value === 'boolean') {
+            return 'boolean';
+        }
+
+        if (typeof value === 'string') {
+            if (value.includes('://')) {
+                return 'url';
+            }
+
+            if (value.includes('@')) {
+                return 'email';
+            }
+
+            if (value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                return 'datetime';
+            }
+
+            if (value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                return 'date';
+            }
+
+            if (value.match(/^\d{2}:\d{2}:\d{2}$/)) {
+                return 'time';
+            }
+
+            if (value.match(/^\d+$/)) {
+                return 'int';
+            }
+
+            if (value.match(/^\d+\.\d+$/)) {
+                return 'float';
+            }
+
+            return 'string';
+        }
+
+        if (typeof value === 'number') {
+            if (value % 1 === 0) {
+                return 'int';
+            }
+
+            return 'float';
+        }
+
+        return 'string';
     }
 }
