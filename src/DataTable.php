@@ -523,9 +523,9 @@ class DataTable extends Component
 
         $itemArray = Arr::only(array_merge(Arr::dot($itemArray), $preserved), $returnKeys);
         $itemArray['href'] = in_array(InteractsWithDataTables::class, class_implements($this->model))
-        && ! $this->hasNoRedirect
-            ? $item->getUrl()
-            : null;
+            && ! $this->hasNoRedirect
+                ? $item->getUrl()
+                : null;
 
         return $itemArray;
     }
@@ -737,13 +737,14 @@ class DataTable extends Component
 
         if (Str::contains($this->orderBy, '.')) {
             $relationPath = explode('.', $this->orderBy);
+            $table = $relationPath[0];
             $orderByColumn = array_pop($relationPath);
             $localModel = new $model;
             $query->addSelect($localModel->getTable() . '.*');
 
             foreach ($relationPath as $key => $relation) {
                 $class = new ReflectionClass($localModel);
-                /** @var HasOne|BelongsTo $relationInstance */
+                /** @var \Illuminate\Database\Eloquent\Relations\Relation $relationInstance */
                 $relationInstance = $class->getMethod(Str::camel($relation))->invoke($localModel);
 
                 if (! $relationInstance instanceof BelongsTo && ! $relationInstance instanceof HasOne) {
@@ -753,7 +754,8 @@ class DataTable extends Component
                 }
 
                 if ($key === count($relationPath) - 1) {
-                    $query->addSelect($relationInstance->getRelated()->getTable() . '.' . $orderByColumn);
+                    $select = $relationInstance->getRelated()->getTable() . '.' . $orderByColumn;
+                    $query->addSelect($select);
                 }
 
                 $table = $relationInstance->getRelated()->getTable();
@@ -764,7 +766,9 @@ class DataTable extends Component
 
                 $localModel = $relationInstance->getRelated();
             }
-            $query->orderBy($table . '.' . $orderByColumn, $this->orderAsc ? 'ASC' : 'DESC');
+
+            $orderBy = $table . '.' . $orderByColumn;
+            $query->orderBy($orderBy, $this->orderAsc ? 'ASC' : 'DESC');
         } else {
             if ($this->orderBy) {
                 $query->orderBy($this->orderBy, $this->orderAsc ? 'DESC' : 'ASC');
