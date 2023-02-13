@@ -103,7 +103,7 @@ class DataTable extends Component
     public bool $hasHead = true;
 
     /**
-     * if set to true the table will show no pagination but
+     * If set to true the table will show no pagination but
      * load more rows as soon as the table footer comes into viewport.
      */
     public bool $hasInfiniteScroll = false;
