@@ -7,6 +7,8 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -17,6 +19,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 use Laravel\Scout\Searchable;
 use Livewire\Component;
+use ReflectionClass;
 use Spatie\ModelInfo\Attributes\Attribute;
 use Spatie\ModelInfo\Relations\Relation;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -25,7 +28,6 @@ use TeamNiftyGmbH\DataTable\Exceptions\MissingTraitException;
 use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Traits\HasDatatableUserSettings;
-use TeamNiftyGmbH\DataTable\Traits\HasFrontendAttributes;
 use TeamNiftyGmbH\DataTable\Traits\WithLockedPublicPropertiesTrait;
 use WireUi\Traits\Actions;
 
@@ -37,18 +39,25 @@ class DataTable extends Component
 
     protected string $model;
 
-    /** @locked  */
+    /**
+     * The default filters for the table, these will be applied on every query.
+     * e.g. ['is_active' => true]
+     * This will only show active records, no matter what userFilters will be set.
+     * See it as a globalScope.
+     *
+     * @locked
+     */
     public array $filters = [];
 
-    protected array $filtersCached;
-
-    /** @locked  */
+    /**
+     * These are the the columns that will be available to the user.
+     *
+     * @locked
+     */
     public array $availableCols = [];
 
     /** @locked  */
     public array $availableRelations = [];
-
-    public string $modelName;
 
     public array $enabledCols = [];
 
@@ -65,13 +74,45 @@ class DataTable extends Component
         'max' => [],
     ];
 
+    /**
+     * This is set automatically by the component if its null.
+     * If $this->model uses the Scout Searchable trait, this will be set to true.
+     * You can force enable or disable the search by setting this to true or false.
+     */
     public ?bool $isSearchable = null;
 
-    /** @locked  */
+    /**
+     * If set to false the table will not show the export tab in the sidebar.
+     *
+     * @locked
+     */
     public bool $isExportable = true;
 
-    /** @locked  */
+    /**
+     * If set to false the table will not be filterable.
+     *
+     * @locked
+     */
     public bool $isFilterable = true;
+
+    /**
+     * If set to false the table will have no head, so no captions for the cols.
+     *
+     * @locked
+     */
+    public bool $hasHead = true;
+
+    /**
+     * If set to true the table will show no pagination but
+     * load more rows as soon as the table footer comes into viewport.
+     */
+    public bool $hasInfiniteScroll = false;
+
+    /**
+     * If set to true the table will not redirect to the detail page.
+     * The alpinejs data-table-row-clicked event will be dispatched anyway.
+     */
+    public bool $hasNoRedirect = false;
 
     public string $search = '';
 
@@ -91,10 +132,22 @@ class DataTable extends Component
 
     public array $aggregatable = [];
 
+    /**
+     * If set to true the table rows will be selectable.
+     *
+     * @locked
+     */
     public bool $selectable = false;
 
+    /**
+     * Contains the selected ids of the table rows.
+     */
     public array $selected = [];
 
+    /**
+     * If some of your cols have available values this variable contains the lists.
+     * e.g. ['status' => ['active', 'inactive']]
+     */
     public array $filterValueLists = [];
 
     public array $formatters = [];
@@ -140,6 +193,14 @@ class DataTable extends Component
     }
 
     /**
+     * @return array
+     */
+    public function getTableActions(): array
+    {
+        return [];
+    }
+
+    /**
      * @return void
      */
     public function mount(): void
@@ -179,7 +240,7 @@ class DataTable extends Component
         });
 
         $this->sortable = $this->sortable === ['*']
-            ? array_fill_keys($tableFields->pluck('name')->toArray(), true)
+            ? $tableFields->pluck('name')->toArray()
             : $this->sortable;
 
         $this->aggregatable = $this->aggregatable === ['*']
@@ -196,8 +257,6 @@ class DataTable extends Component
             ? in_array(Searchable::class, class_uses_recursive($this->model))
             : $this->isSearchable;
 
-        $this->modelName = class_basename($this->model);
-
         $this->getFormatters();
     }
 
@@ -210,6 +269,8 @@ class DataTable extends Component
             [
                 'rowAttributes' => $this->getRowAttributes(),
                 'rowActions' => $this->getRowActions(),
+                'tableActions' => $this->getTableActions(),
+                'modelName' => class_basename($this->model),
             ]
         );
     }
@@ -319,6 +380,16 @@ class DataTable extends Component
     /**
      * @return void
      */
+    public function loadMore()
+    {
+        $this->perPage += $this->perPage;
+
+        $this->loadData();
+    }
+
+    /**
+     * @return void
+     */
     public function loadData(): void
     {
         $this->initialized = true;
@@ -347,17 +418,14 @@ class DataTable extends Component
 
             return;
         }
-
         $result = $this->getPaginator($result);
         $resultCollection = $result->getCollection();
-
-        $returnKeys = $this->getReturnKeys();
 
         $aggregates = [];
         if (property_exists($query, 'hits')) {
             $mapped = $resultCollection->map(
-                function ($item) use ($query, $returnKeys) {
-                    $itemArray = Arr::only(Arr::dot($this->itemToArray($item)), $returnKeys);
+                function (Model $item) use ($query) {
+                    $itemArray = $this->itemToArray($item);
 
                     foreach ($itemArray as $key => $value) {
                         $itemArray[$key] = data_get($query->hits, $item->getKey() . '._formatted.' . $key, $value);
@@ -369,11 +437,8 @@ class DataTable extends Component
         } else {
             // only return the columns that are available
             $mapped = $resultCollection->map(
-                function ($item) use ($returnKeys) {
-                    return Arr::only(
-                        Arr::dot($this->itemToArray($item)),
-                        $returnKeys
-                    );
+                function (Model $item) {
+                    return $this->itemToArray($item);
                 }
             );
 
@@ -431,10 +496,7 @@ class DataTable extends Component
     {
         return array_merge(
             $this->enabledCols,
-            [
-                (new $this->model)->getKeyName(),
-                'href',
-            ]
+            [(new $this->model)->getKeyName()]
         );
     }
 
@@ -444,11 +506,28 @@ class DataTable extends Component
      */
     public function itemToArray($item): array
     {
+        $returnKeys = $this->getReturnKeys();
+
         if ($appends = $this->getAppends()) {
             $item->append($appends);
         }
 
-        return $item->toArray();
+        $itemArray = $item->toArray();
+        $preserved = [];
+        foreach ($returnKeys as $key) {
+            $value = $itemArray[$key] ?? false;
+            if ($value && is_array($value) && ! Arr::isAssoc($value)) {
+                $preserved[$key] = Arr::pull($itemArray, $key);
+            }
+        }
+
+        $itemArray = Arr::only(array_merge(Arr::dot($itemArray), $preserved), $returnKeys);
+        $itemArray['href'] = in_array(InteractsWithDataTables::class, class_implements($this->model))
+            && ! $this->hasNoRedirect
+                ? $item->getUrl()
+                : null;
+
+        return $itemArray;
     }
 
     /**
@@ -456,10 +535,7 @@ class DataTable extends Component
      */
     public function getAppends(): array
     {
-        return array_merge(
-            $this->appends,
-            in_array(HasFrontendAttributes::class, class_uses_recursive($this->model)) ? ['href'] : []
-        );
+        return $this->appends;
     }
 
     /**
@@ -659,10 +735,46 @@ class DataTable extends Component
             $query = $model::query();
         }
 
-        if ($this->orderBy) {
-            $query->orderBy($this->orderBy, $this->orderAsc ? 'asc' : 'desc');
+        if (Str::contains($this->orderBy, '.')) {
+            $relationPath = explode('.', $this->orderBy);
+            $table = $relationPath[0];
+            $orderByColumn = array_pop($relationPath);
+            $localModel = new $model;
+            $query->addSelect($localModel->getTable() . '.*');
+
+            foreach ($relationPath as $key => $relation) {
+                $class = new ReflectionClass($localModel);
+                /** @var \Illuminate\Database\Eloquent\Relations\Relation $relationInstance */
+                $relationInstance = $class->getMethod(Str::camel($relation))->invoke($localModel);
+
+                if (! $relationInstance instanceof BelongsTo && ! $relationInstance instanceof HasOne) {
+                    throw new \InvalidArgumentException(
+                        'Only belongsTo and hasOne relations are supported for sorting.'
+                    );
+                }
+
+                if ($key === count($relationPath) - 1) {
+                    $select = $relationInstance->getRelated()->getTable() . '.' . $orderByColumn;
+                    $query->addSelect($select);
+                }
+
+                $table = $relationInstance->getRelated()->getTable();
+                $first = $relationInstance instanceof BelongsTo ? $relationInstance->getQualifiedOwnerKeyName() : $relationInstance->getQualifiedParentKeyName();
+                $second = $relationInstance->getQualifiedForeignKeyName();
+
+                $query->join($table, $first, '=', $second)->where($second, '!=', null);
+
+                $localModel = $relationInstance->getRelated();
+            }
+
+            $orderBy = $table . '.' . $orderByColumn;
+            $query->orderBy($orderBy, $this->orderAsc ? 'ASC' : 'DESC');
         } else {
-            $query->orderBy((new $model)->getKeyName(), 'desc');
+            if ($this->orderBy) {
+                $query->orderBy($this->orderBy, $this->orderAsc ? 'DESC' : 'ASC');
+            } else {
+                $query->orderBy((new $model)->getKeyName(), 'DESC');
+            }
         }
 
         $query = $this->getBuilder($query);
@@ -863,7 +975,7 @@ class DataTable extends Component
         }
 
         $hasLabel = false;
-        if (class_implements($relatedModel, InteractsWithDataTables::class)) {
+        if (in_array(InteractsWithDataTables::class, class_implements($relatedModel))) {
             $hasLabel = true;
         }
 

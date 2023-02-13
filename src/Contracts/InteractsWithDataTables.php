@@ -23,4 +23,11 @@ interface InteractsWithDataTables
      * @return string
      */
     public function getDescription(): string;
+
+    /**
+     * This should return a url to the detail page of the model.
+     *
+     * @return string
+     */
+    public function getUrl(): string;
 }

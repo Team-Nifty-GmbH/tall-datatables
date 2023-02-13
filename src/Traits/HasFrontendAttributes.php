@@ -68,14 +68,6 @@ trait HasFrontendAttributes
     /**
      * @return string|null
      */
-    public function getHrefAttribute(): ?string
-    {
-        return $this->detailRoute();
-    }
-
-    /**
-     * @return string|null
-     */
     private function getDetailRouteName(): string|null
     {
         return $this->detailRouteName ?? null;

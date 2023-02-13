@@ -8,7 +8,7 @@ use Illuminate\View\ComponentAttributeBag;
 use WireUi\View\Components\Button;
 use WireUi\View\Components\CircleButton;
 
-class DataTableRowButton implements Htmlable
+class DataTableButton implements Htmlable
 {
     /**
      * @param bool $rounded
