@@ -717,7 +717,7 @@
                     </template>
                     @if($rowActions ?? false)
                         <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4">
-                            <div class="flex">
+                            <div class="flex gap-1.5">
                                 @foreach($rowActions as $rowAction)
                                     {{ $rowAction }}
                                 @endforeach
