@@ -7,12 +7,14 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
-
+    env:
+      PAT: ${{ secrets.PAT }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           ref: main
+          token: ${{ env.PAT }}
 
       - name: Update Changelog
         uses: stefanzweifel/changelog-updater-action@v1
@@ -26,3 +28,4 @@ jobs:
           branch: main
           commit_message: Update CHANGELOG
           file_pattern: CHANGELOG.md
+          push_options: --force
