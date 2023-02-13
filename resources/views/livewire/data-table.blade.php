@@ -92,9 +92,7 @@
                                             <x-tall-datatables::spinner />
                                             <div
                                                 class="grid grid-cols-1 gap-3 justify-center items-center"
-                                                x-data="{
-                                               detail: null,
-                                            }"
+                                                x-data="{detail: null}"
                                             >
                                                 <template x-for="(filter, index) in savedFilters">
                                                     <x-card>
@@ -708,10 +706,19 @@
                     </td>
                     <template x-for="col in cols">
                         <x-tall-datatables::table.cell class="cursor-pointer" x-bind:href="record?.href ?? false">
-                            <div
-                                class="flex"
-                                x-html="formatter(col, record)"
-                            >
+                            <div class="flex gap-1.5">
+                                <div x-html="formatter(leftAppend[col], record)">
+                                </div>
+                                <div>
+                                    <div x-html="formatter(topAppend[col], record)">
+                                    </div>
+                                    <div x-html="formatter(col, record)">
+                                    </div>
+                                    <div x-html="formatter(bottomAppend[col], record)">
+                                    </div>
+                                </div>
+                                <div x-html="formatter(rightAppend[col], record)">
+                                </div>
                             </div>
                         </x-tall-datatables::table.cell>
                     </template>

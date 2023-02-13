@@ -19,6 +19,10 @@ document.addEventListener('alpine:init', () => {
                         this.selectable = result.selectable;
                         this.stretchCol = result.stretchCol;
                         this.formatters = result.formatters;
+                        this.leftAppend = result.leftAppend;
+                        this.rightAppend = result.rightAppend;
+                        this.topAppend = result.topAppend;
+                        this.bottomAppend = result.bottomAppend;
                         this.searchRoute = result.searchRoute;
 
                         this.$watch('cols', () => {
@@ -94,6 +98,10 @@ document.addEventListener('alpine:init', () => {
         selectable: false,
         stretchCol: [],
         formatters: [],
+        leftAppend: [],
+        rightAppend: [],
+        topAppend: [],
+        bottomAppend: [],
         searchRoute: '',
         intendentedCols: [],
         tab: 'edit-filters',

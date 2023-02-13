@@ -172,6 +172,10 @@ class DataTable extends Component
             'aggregatable' => $this->aggregatable,
             'stretchCol' => $this->stretchCol,
             'formatters' => $this->formatters,
+            'leftAppend' => $this->getLeftAppends(),
+            'rightAppend' => $this->getRightAppends(),
+            'topAppend' => $this->getTopAppends(),
+            'bottomAppend' => $this->getBottomAppends(),
             'searchRoute' => $this->getSearchRoute(),
         ];
     }
@@ -196,6 +200,38 @@ class DataTable extends Component
      * @return array
      */
     public function getTableActions(): array
+    {
+        return [];
+    }
+
+    /**
+     * @return array
+     */
+    public function getLeftAppends(): array
+    {
+        return [];
+    }
+
+    /**
+     * @return array
+     */
+    public function getRightAppends(): array
+    {
+        return [];
+    }
+
+    /**
+     * @return array
+     */
+    public function getTopAppends(): array
+    {
+        return [];
+    }
+
+    /**
+     * @return array
+     */
+    public function getBottomAppends(): array
     {
         return [];
     }

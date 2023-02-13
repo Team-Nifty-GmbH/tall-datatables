@@ -10,9 +10,9 @@ interface InteractsWithDataTables
      * An address model would return something like "John Doe".
      * return $this->first_name . ' ' . $this->last_name;
      *
-     * @return string
+     * @return string|null
      */
-    public function getLabel(): string;
+    public function getLabel(): ?string;
 
     /**
      * This should return a short description of the model.
@@ -20,14 +20,22 @@ interface InteractsWithDataTables
      * An address model would return something like "John Doe, 123 Main Street, 12345 New York".
      * return $this->first_name . ' ' . $this->last_name . ', ' . $this->street . ', ' . $this->zip . ' ' . $this->city;
      *
-     * @return string
+     * @return string|null
      */
-    public function getDescription(): string;
+    public function getDescription(): ?string;
 
     /**
      * This should return a url to the detail page of the model.
      *
-     * @return string
+     * @return string|null
      */
-    public function getUrl(): string;
+    public function getUrl(): ?string;
+
+    /**
+     * This should return a url to the avatar of the model.
+     * Can be a icon url, see the icons route.
+     *
+     * @return string|null
+     */
+    public function getAvatarUrl(): ?string;
 }
