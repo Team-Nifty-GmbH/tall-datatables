@@ -1,11 +1,5 @@
 module.exports = {
-    content: [
-        './js/**/*.js',
-        './resources/views/**/*.blade.php',
-        './src/**/*.php'
-    ],
+    content: ['./js/**/*.js', './resources/views/**/*.blade.php', './src/**/*.php'],
     darkMode: 'class',
-    plugins: [
-        require('@tailwindcss/forms'),
-    ],
+    plugins: [require('@tailwindcss/forms')],
 }
