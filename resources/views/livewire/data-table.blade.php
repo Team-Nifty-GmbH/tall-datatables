@@ -660,7 +660,7 @@
                             {{ __('Actions') }}
                         </x-tall-datatables::table.head-cell>
                     @endif
-                    <x-tall-datatables::table.head-cell class="w-4 flex w-full flex-row-reverse">
+                    <x-tall-datatables::table.head-cell class="w-4 flex flex-row-reverse">
                         <div class="flex w-full flex-row-reverse items-center">
                             <x-button
                                 icon="cog"
