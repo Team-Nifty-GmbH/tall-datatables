@@ -171,6 +171,33 @@ public function getRowActions(): array
 }
 ```
 
+## Combining Columns
+
+You can combine multiple columns into one by overwrite the get{Position}Appends.
+As the name states the defined columns will be appended to the position.
+
+```php
+public function getBottomAppends(): array
+{
+    return [
+        'name' => 'email',
+    ];
+}
+
+public function getLeftAppends(): array
+{
+    return [
+        'name' => 'avatar',
+    ];
+}
+```
+This function would append the email below the name in the name column.
+This is just for view purposes. The data is still available in the record variable.
+Also all formatters are applied before the column is appended.
+
+> **_NOTE:_** Keep in mind to add the appended Columns to the `getReturnKeys` method.
+
+
 ### Eager Loading
 If you need to eager load additional data you can override the getBuilder method
 
