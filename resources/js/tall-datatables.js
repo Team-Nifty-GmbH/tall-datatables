@@ -322,14 +322,14 @@ window.formatters = {
     },
     bool: (value) => {
         if (value === 'false' || value === false || value === 0 || value === '0' || value === null) {
-            return `<span class="outline-none inline-flex justify-center items-center group rounded-full w-6 h-6 text-white bg-negative-500 dark:bg-negative-700">
-                        <svg class="w-3 h-3 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            return `<span class="bg-negative-500 dark:bg-negative-700 group inline-flex h-6 w-6 items-center justify-center rounded-full text-white outline-none">
+                        <svg class="h-3 w-3 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </span>`;
         } else {
-            return `<span class="outline-none inline-flex justify-center items-center group rounded-full w-6 h-6 text-white bg-positive-500 dark:bg-positive-700">
-                    <svg class="w-3 h-3 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            return `<span class="bg-positive-500 dark:bg-positive-700 group inline-flex h-6 w-6 items-center justify-center rounded-full text-white outline-none">
+                    <svg class="h-3 w-3 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
                     </span>`;
@@ -429,9 +429,9 @@ window.formatters = {
             return value;
         }
 
-        return '<div class="shrink-0 inline-flex items-center justify-center overflow-hidden rounded-full border border-gray-200 dark:border-secondary-500 dark:bg-gray-200">\n' +
+        return '<div class="dark:border-secondary-500 inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 dark:bg-gray-200">\n' +
             '    \n' +
-            '            <img class="shrink-0 object-contain object-center rounded-full w-8 h-8 text-xl" src="' + value + '">\n' +
+            '            <img class="h-8 w-8 shrink-0 rounded-full object-contain object-center text-xl" src="' + value + '">\n' +
             '    \n' +
             '    </div>';
     },

@@ -1,5 +1,5 @@
-<div class="fixed inset-0 overflow-y-auto p-4 z-30" {{ $attributes->only('x-show') }}>
-    <div x-on:click="{{ $attributes->get('x-show') }} = false;" class="fixed inset-0 bg-secondary-400 dark:bg-secondary-700 bg-opacity-60 dark:bg-opacity-60 transform transition-opacity" {{ $attributes }} x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+<div class="fixed inset-0 z-30 overflow-y-auto p-4" {{ $attributes->only('x-show') }}>
+    <div x-on:click="{{ $attributes->get('x-show') }} = false;" class="bg-secondary-400 dark:bg-secondary-700 fixed inset-0 transform bg-opacity-60 transition-opacity dark:bg-opacity-60" {{ $attributes }} x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
     </div>
     <aside
         x-cloak
@@ -14,7 +14,7 @@
         <div class="px-2 py-5">
             {{ $slot }}
         </div>
-        <div class="w-full absolute sticky bottom-0 px-4 py-4 sm:px-6 bg-secondary-50 rounded-t-none border-t dark:bg-secondary-800 dark:border-secondary-600 rounded-xl ">
+        <div class="bg-secondary-50 dark:bg-secondary-800 dark:border-secondary-600 absolute sticky bottom-0 w-full rounded-xl rounded-t-none border-t px-4 py-4 sm:px-6">
             <div class="flex justify-end gap-x-4">
                 {{ $footer ?? '' }}
             </div>
