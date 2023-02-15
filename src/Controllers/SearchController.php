@@ -5,7 +5,9 @@ namespace TeamNiftyGmbH\DataTable\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Event;
 use Laravel\Scout\Searchable;
+use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
 
 class SearchController extends Controller
 {
@@ -17,9 +19,11 @@ class SearchController extends Controller
             abort(404);
         }
 
+        Event::dispatch('tall-datatables-searching', $request);
+
         if ($request->has('selected')) {
             $selected = $request->get('selected');
-            $optionValue = $request->get('option-value') ?: 'id';
+            $optionValue = $request->get('option-value') ?: (new $model)->getKeyName();
             $selected = $request->has('option-value')
                 ? Arr::pluck($selected, $optionValue)
                 : $selected;
@@ -28,10 +32,12 @@ class SearchController extends Controller
             is_array($selected)
                 ? $query->whereIn($optionValue, $selected)
                 : $query->where($optionValue, $selected);
-        } else {
-            $search = ! is_string($request->search) ? '' : $request->search;
+        } elseif ($request->has('search')) {
+            $search = ! is_string($request->search) ? '' : $request->get('search');
             $query = $model::search($search)
                 ->toEloquentBuilder();
+        } else {
+            $query = $model::query();
         }
 
         if ($request->has('with')) {
@@ -111,6 +117,23 @@ class SearchController extends Controller
                 $item->append($request->get('appends'));
             });
         }
+
+        if (in_array(InteractsWithDataTables::class, class_implements($model))) {
+            $result = $result->map(function ($item) use ($request) {
+                return array_merge(
+                    [
+                        'id' => $item->getKey(),
+                        'label' => $item->getLabel(),
+                        'description' => $item->getDescription(),
+                        'src' => $item->getAvatarUrl(),
+                    ],
+                    $item->only($request->get('fields', [])),
+                    $item->only($request->get('appends', []))
+                );
+            });
+        }
+
+        Event::dispatch('tall-datatables-searched', [$request, $result]);
 
         return $result;
     }

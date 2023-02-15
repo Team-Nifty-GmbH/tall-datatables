@@ -9,7 +9,6 @@ interface HasFrontendFormatter
      * See javascript formatters in resources/js/tall-datatables.js for available formatters.
      *
      * @param null ...$args
-     * @return string|array
      */
     public static function getFrontendFormatter(mixed ...$args): string|array;
 }

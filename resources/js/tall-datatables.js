@@ -216,9 +216,13 @@ document.addEventListener('alpine:init', () => {
         },
         filterName: '',
         permanent: false,
-        columns: [],
+        exportColumns: [],
+        exportableColumns: [],
         getColumns() {
-            $wire.getExportColumns().then(result => {this.columns = result})
+            $wire.getExportableColumns().then(result => {
+                this.exportableColumns = result;
+                this.exportColumns = result;
+            })
         },
         relations: [],
         savedFilters: [],
@@ -238,9 +242,6 @@ document.addEventListener('alpine:init', () => {
             } else {
                 return formatters.format({value: val, context: record});
             }
-
-
-            return val;
         },
         disabled() {
             return false;
