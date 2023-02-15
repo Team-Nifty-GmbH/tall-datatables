@@ -658,7 +658,7 @@ class DataTable extends Component
     {
         $query = $this->buildSearch();
 
-        return (new DataTableExport($query, array_filter($columns, fn ($value) => $value)))
+        return (new DataTableExport($query, array_filter($columns)))
             ->download(class_basename($this->model) . '_' . now()->toDateTimeLocalString('minute') . '.xlsx');
     }
 
