@@ -11,10 +11,7 @@ class Money implements CastsAttributes, HasFrontendFormatter
      * Cast the given value.
      *
      * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @param  string  $key
      * @param  mixed  $value
-     * @param  array  $attributes
-     * @return mixed
      */
     public function get($model, string $key, $value, array $attributes): mixed
     {
@@ -29,10 +26,7 @@ class Money implements CastsAttributes, HasFrontendFormatter
      * Prepare the given value for storage.
      *
      * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @param  string  $key
      * @param  mixed  $value
-     * @param  array  $attributes
-     * @return mixed
      */
     public function set($model, string $key, $value, array $attributes): mixed
     {
@@ -44,7 +38,6 @@ class Money implements CastsAttributes, HasFrontendFormatter
      * See javascript formatters in resources/js/formatters for available formatters.
      *
      * @param null ...$args
-     * @return string|array
      */
     public static function getFrontendFormatter(...$args): string|array
     {

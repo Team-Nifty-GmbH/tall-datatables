@@ -105,6 +105,24 @@ public array $enabledCols = [
 ];
 ```
 
+### Chosing a layout
+
+By default the table is rendered as a table.
+You can change the layout by overriding the `getLayout` method.
+
+```php
+public function getLayout(): string
+{
+    return 'tall-datatables::layouts.grid';
+}
+```
+
+This package delivers 2 layouts:
+'tall-datatables::layouts.grid' and 'tall-datatables::layouts.table'
+
+You can also create your own layout by creating a blade file inside the `resources/views/components` folder.
+
+
 ### Adding Buttons to the table
 
 You can add buttons to the table by overriding the getTableActions method.

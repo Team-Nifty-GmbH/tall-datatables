@@ -9,9 +9,6 @@ use TeamNiftyGmbH\DataTable\Exceptions\LockedPublicPropertyTamperException;
 trait WithLockedPublicPropertiesTrait
 {
     /**
-     * @param string $name
-     * @return void
-     *
      * @throws LockedPublicPropertyTamperException
      * @throws ReflectionException
      */
