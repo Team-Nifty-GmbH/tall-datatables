@@ -649,16 +649,16 @@ class DataTable extends Component
         }
     }
 
-    public function getExportColumns(): array
+    public function getExportableColumns(): array
     {
-        return array_fill_keys($this->availableCols, true);
+        return $this->availableCols;
     }
 
     public function export(array $columns = []): Response|BinaryFileResponse
     {
         $query = $this->buildSearch();
 
-        return (new DataTableExport($query, array_keys(array_filter($columns, fn ($value) => $value))))
+        return (new DataTableExport($query, array_filter($columns, fn ($value) => $value)))
             ->download(class_basename($this->model) . '_' . now()->toDateTimeLocalString('minute') . '.xlsx');
     }
 

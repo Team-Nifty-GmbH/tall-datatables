@@ -217,8 +217,12 @@ document.addEventListener('alpine:init', () => {
         filterName: '',
         permanent: false,
         exportColumns: [],
+        exportableColumns: [],
         getColumns() {
-            $wire.getExportColumns().then(result => {this.exportColumns = result})
+            $wire.getExportableColumns().then(result => {
+                this.exportableColumns = result;
+                this.exportColumns = result;
+            })
         },
         relations: [],
         savedFilters: [],

@@ -61,9 +61,9 @@
                             <template x-if="savedFilters?.length > 0">
                                 <div>
                                     <div class="flex justify-between block w-full px-3 py-2 text-base sm:text-sm shadow-sm
-                                rounded-md border bg-white focus:ring-1 focus:outline-none cursor-pointer
-                                dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-400
-                                border-secondary-300 focus:ring-primary-500 focus:border-primary-500"
+                                            rounded-md border bg-white focus:ring-1 focus:outline-none cursor-pointer
+                                            dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-400
+                                            border-secondary-300 focus:ring-primary-500 focus:border-primary-500"
                                          x-on:click="showSavedFilters = ! showSavedFilters"
                                     >
                                         <x-label class="mr-2">
@@ -95,17 +95,14 @@
                                                             2xs
                                                             icon="x"
                                                             x-on:click="
-                                                        savedFilters.splice(savedFilters.indexOf(index), 1);
-                                                        $wire.deleteSavedFilter(filter.id)
-                                                    "
+                                                                savedFilters.splice(savedFilters.indexOf(index), 1);
+                                                                $wire.deleteSavedFilter(filter.id)
+                                                            "
                                                         />
                                                     </x-slot:action>
                                                     <div class="flex justify-between">
                                                         <div class="flex gap-1">
-                                                            <x-badge
-                                                                flat
-                                                                primary
-                                                            >
+                                                            <x-badge flat primary>
                                                                 <x-slot:label>
                                                                     <span x-text="filter.is_permanent ? '{{ __('Permanent') }}' : '{{ __('Temporary') }}'"></span>
                                                                 </x-slot:label>
@@ -145,11 +142,7 @@
                                                                                         </x-slot:label>
                                                                                     </x-badge>
                                                                                     <template x-if="(orFilters.length - 1) !== index">
-                                                                                        <x-badge
-                                                                                            flat
-                                                                                            negative
-                                                                                            :label="__('and')"
-                                                                                        />
+                                                                                        <x-badge flat negative :label="__('and')" />
                                                                                     </template>
                                                                                 </div>
                                                                             </template>
@@ -367,20 +360,21 @@
                                 primary
                                 class="w-full"
                                 x-on:click="
-                            $wireui.confirmDialog({
-                                id: 'save-filter',
-                                icon: 'question',
-                                accept: {
-                                    label: '{{ __('Save') }}',
-                                    execute: () => {$wire.saveFilter(filterName, permanent); filterName = ''; permanent = false;},
-                                },
-                                reject: {
-                                    label: '{{ __('Cancel') }}',
-                                    execute: () => {
-                                        filterName = ''
-                                    }
-                                }
-                            })"
+                                    $wireui.confirmDialog({
+                                        id: 'save-filter',
+                                        icon: 'question',
+                                        accept: {
+                                            label: '{{ __('Save') }}',
+                                            execute: () => {$wire.saveFilter(filterName, permanent); filterName = ''; permanent = false;},
+                                        },
+                                        reject: {
+                                            label: '{{ __('Cancel') }}',
+                                            execute: () => {
+                                                filterName = ''
+                                            }
+                                        }
+                                    })
+                                "
                             >
                                 {{ __('Save') }}
                             </x-button>
@@ -451,8 +445,8 @@
             </div>
             @if($this->isExportable)
                 <div x-show="tab === 'export'">
-                    <template x-for="(columnValue, columnName) in exportColumns">
-                        <x-checkbox x-bind:value="columnName" x-model="exportColumns[columnName]">
+                    <template x-for="columnName in exportableColumns">
+                        <x-checkbox x-bind:value="columnName" x-model="exportColumns">
                             <x-slot:label>
                                 <span x-text="columnName"></span>
                             </x-slot:label>

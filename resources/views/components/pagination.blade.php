@@ -24,10 +24,10 @@
                               option-value="value"
                               option-label="label"
                               :options="[
-                                                ['value' => 15, 'label' => '15'],
-                                                ['value' => 50, 'label' => '50'],
-                                                ['value' => 100, 'label' => '100'],
-                                            ]"
+                                            ['value' => 15, 'label' => '15'],
+                                            ['value' => 50, 'label' => '50'],
+                                            ['value' => 100, 'label' => '100'],
+                                        ]"
                     />
                 @endif
             </div>
