@@ -11,10 +11,6 @@ use Spatie\ModelInfo\ModelInfo as BaseModelInfo;
 
 class ModelInfo extends BaseModelInfo
 {
-    /**
-     * @param string|Model|ReflectionClass $model
-     * @return BaseModelInfo
-     */
     public static function forModel(string|Model|ReflectionClass $model): BaseModelInfo
     {
         if ($model instanceof ReflectionClass) {
@@ -50,12 +46,6 @@ class ModelInfo extends BaseModelInfo
         return $modelInfo;
     }
 
-    /**
-     * @param string|null $directory
-     * @param string|null $basePath
-     * @param string|null $baseNamespace
-     * @return Collection
-     */
     public static function forAllModels(
         string $directory = null,
         string $basePath = null,

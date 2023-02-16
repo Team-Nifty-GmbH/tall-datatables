@@ -16,9 +16,6 @@ use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
  */
 class DataTableDirectives extends Facade
 {
-    /**
-     * @return string
-     */
     protected static function getFacadeAccessor(): string
     {
         return DataTableBladeDirectives::class;

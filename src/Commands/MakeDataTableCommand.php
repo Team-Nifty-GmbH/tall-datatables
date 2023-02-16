@@ -34,8 +34,6 @@ class MakeDataTableCommand extends GeneratorCommand
 
     /**
      * Execute the console command.
-     *
-     * @return bool
      */
     public function handle(): bool
     {
@@ -70,10 +68,6 @@ class MakeDataTableCommand extends GeneratorCommand
         return true;
     }
 
-    /**
-     * @param bool $force
-     * @return string|bool
-     */
     private function createClass(bool $force = false): string|bool
     {
         $classPath = $this->parser->classPath();
@@ -91,9 +85,6 @@ class MakeDataTableCommand extends GeneratorCommand
         return $classPath;
     }
 
-    /**
-     * @param string $path
-     */
     private function ensureDirectoryExists(string $path): void
     {
         if (! File::isDirectory(dirname($path))) {
@@ -101,9 +92,6 @@ class MakeDataTableCommand extends GeneratorCommand
         }
     }
 
-    /**
-     * @return string
-     */
     private function classContents(): string
     {
         return str_replace(
@@ -115,8 +103,6 @@ class MakeDataTableCommand extends GeneratorCommand
 
     /**
      * Get the stub file for the generator.
-     *
-     * @return string
      */
     protected function getStub(): string
     {

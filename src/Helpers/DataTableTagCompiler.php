@@ -8,7 +8,6 @@ use TeamNiftyGmbH\DataTable\Facades\DataTableDirectives;
 class DataTableTagCompiler extends ComponentTagCompiler
 {
     /**
-     * @param string $value
      * @return string
      */
     public function compile(string $value)
@@ -17,7 +16,6 @@ class DataTableTagCompiler extends ComponentTagCompiler
     }
 
     /**
-     * @param string $value
      * @return string
      */
     protected function compileDataTableSelfClosingTags(string $value)

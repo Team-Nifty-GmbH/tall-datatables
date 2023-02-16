@@ -6,11 +6,6 @@ use Illuminate\View\ComponentAttributeBag;
 
 class DataTableBladeDirectives
 {
-    /**
-     * @param bool $absolute
-     * @param array $attributes
-     * @return string
-     */
     public function scripts(bool $absolute = false, array $attributes = []): string
     {
         $route = route(name: 'tall-datatables.assets.scripts', absolute: $absolute);
@@ -23,10 +18,6 @@ class DataTableBladeDirectives
         HTML;
     }
 
-    /**
-     * @param bool $absolute
-     * @return string
-     */
     public function styles(bool $absolute = false): string
     {
         $route = route(name: 'tall-datatables.assets.styles', absolute: $absolute);
@@ -35,11 +26,6 @@ class DataTableBladeDirectives
         return "<link href=\"{$route}\" rel=\"stylesheet\" type=\"text/css\">";
     }
 
-    /**
-     * @param string $file
-     * @param string|null $route
-     * @return string|null
-     */
     public function getManifestVersion(string $file, ?string &$route = null): ?string
     {
         $manifestPath = dirname(__DIR__, 2) . '/dist/build/manifest.json';
