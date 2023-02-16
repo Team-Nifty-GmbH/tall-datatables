@@ -10,8 +10,6 @@ trait HasFrontendAttributes
     public array $detailRouteParams = [];
 
     /**
-     * @return Icon
-     *
      * @throws \Exception
      */
     public static function icon(): Icon
@@ -21,9 +19,6 @@ trait HasFrontendAttributes
         return Icon::make($iconName);
     }
 
-    /**
-     * @return array
-     */
     public static function typeScriptAttributes(): array
     {
         return ModelInfo::forModel(self::class)
@@ -33,7 +28,6 @@ trait HasFrontendAttributes
     }
 
     /**
-     * @param array $routeParams
      * @return $this
      */
     public function setDetailRouteParams(array $routeParams): self
@@ -43,10 +37,6 @@ trait HasFrontendAttributes
         return $this;
     }
 
-    /**
-     * @param bool $absolute
-     * @return string|null
-     */
     public function detailRoute(bool $absolute = true): string|null
     {
         return $this->getDetailRouteName()
@@ -54,9 +44,6 @@ trait HasFrontendAttributes
             : null;
     }
 
-    /**
-     * @return array
-     */
     public function getDetailRouteParams(): array
     {
         return array_merge(
@@ -65,9 +52,6 @@ trait HasFrontendAttributes
         );
     }
 
-    /**
-     * @return string|null
-     */
     private function getDetailRouteName(): string|null
     {
         return $this->detailRouteName ?? null;

@@ -157,11 +157,10 @@ class DataTable extends Component
 
     public array $data = [];
 
-    protected $listeners = ['loadData'];
+    protected $listeners = [
+        'loadData',
+    ];
 
-    /**
-     * @return array
-     */
     public function getConfig(): array
     {
         return [
@@ -189,62 +188,46 @@ class DataTable extends Component
     /**
      * @return ComponentAttributeBag
      */
+    public function getLayout(): string
+    {
+        return 'tall-datatables::layouts.table';
+    }
+
     public function getRowAttributes(): ComponentAttributeBag
     {
         return new ComponentAttributeBag();
     }
 
-    /**
-     * @return array
-     */
     public function getRowActions(): array
     {
         return [];
     }
 
-    /**
-     * @return array
-     */
     public function getTableActions(): array
     {
         return [];
     }
 
-    /**
-     * @return array
-     */
     public function getLeftAppends(): array
     {
         return [];
     }
 
-    /**
-     * @return array
-     */
     public function getRightAppends(): array
     {
         return [];
     }
 
-    /**
-     * @return array
-     */
     public function getTopAppends(): array
     {
         return [];
     }
 
-    /**
-     * @return array
-     */
     public function getBottomAppends(): array
     {
         return [];
     }
 
-    /**
-     * @return void
-     */
     public function mount(): void
     {
         if (config('tall-datatables.should_cache')) {
@@ -302,9 +285,6 @@ class DataTable extends Component
         $this->getFormatters();
     }
 
-    /**
-     * @return Application|Factory|View
-     */
     public function render(): View|Factory|Application
     {
         return view('tall-datatables::livewire.data-table',
@@ -314,6 +294,7 @@ class DataTable extends Component
                 'rowActions' => $this->getRowActions(),
                 'tableActions' => $this->getTableActions(),
                 'modelName' => class_basename($this->model),
+                'layout' => $this->getLayout(),
             ]
         );
     }
@@ -371,9 +352,6 @@ class DataTable extends Component
         $this->skipRender();
     }
 
-    /**
-     * @return void
-     */
     public function updatedUserFilters(): void
     {
         $this->skipRender();
@@ -381,9 +359,6 @@ class DataTable extends Component
         $this->updatedSearch();
     }
 
-    /**
-     * @return void
-     */
     public function updatedaggregatableCols(): void
     {
         $this->skipRender();
@@ -392,10 +367,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    /**
-     * @param $col
-     * @return void
-     */
     public function sortTable($col): void
     {
         $this->skipRender();
@@ -410,10 +381,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    /**
-     * @param array $cols
-     * @return void
-     */
     public function storeColLayout(array $cols): void
     {
         $reload = count($cols) > count($this->enabledCols);
@@ -428,9 +395,6 @@ class DataTable extends Component
         $this->skipRender();
     }
 
-    /**
-     * @return void
-     */
     public function updatedPage(): void
     {
         $this->skipRender();
@@ -439,9 +403,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    /**
-     * @return void
-     */
     public function updatedPerPage(): void
     {
         $this->skipRender();
@@ -450,9 +411,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    /**
-     * @return void
-     */
     public function getFormatters(): void
     {
         $this->formatters = method_exists($this->model, 'typeScriptAttributes')
@@ -470,9 +428,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    /**
-     * @return void
-     */
     public function loadData(): void
     {
         $this->initialized = true;
@@ -545,10 +500,6 @@ class DataTable extends Component
         return $result;
     }
 
-    /**
-     * @param Builder $builder
-     * @return array
-     */
     public function getAggregate(Builder $builder): array
     {
         $aggregates = [];
@@ -579,9 +530,6 @@ class DataTable extends Component
         return $aggregates;
     }
 
-    /**
-     * @return array
-     */
     public function getReturnKeys(): array
     {
         return array_merge(
@@ -590,10 +538,6 @@ class DataTable extends Component
         );
     }
 
-    /**
-     * @param $item
-     * @return array
-     */
     public function itemToArray($item): array
     {
         $returnKeys = $this->getReturnKeys();
@@ -620,19 +564,12 @@ class DataTable extends Component
         return $itemArray;
     }
 
-    /**
-     * @return array
-     */
     public function getAppends(): array
     {
         return $this->appends;
     }
 
     /**
-     * @param string $name
-     * @param bool $permanent
-     * @return void
-     *
      * @throws MissingTraitException
      */
     public function saveFilter(string $name, bool $permanent = false): void
@@ -661,9 +598,6 @@ class DataTable extends Component
     }
 
     /**
-     * @param string $id
-     * @return void
-     *
      * @throws MissingTraitException
      */
     public function deleteSavedFilter(string $id): void
@@ -675,11 +609,6 @@ class DataTable extends Component
         $this->skipRender();
     }
 
-    /**
-     * @param array $properties
-     * @param bool $skipRender
-     * @return void
-     */
     public function loadFilter(array $properties, bool $skipRender = true): void
     {
         if (! $properties) {
@@ -699,10 +628,6 @@ class DataTable extends Component
         }
     }
 
-    /**
-     * @param string|null $name
-     * @return array
-     */
     public function loadFields(?string $name = null): array
     {
         if (! $name) {
@@ -755,9 +680,6 @@ class DataTable extends Component
         return array_values(array_intersect($this->availableCols, $tableCols));
     }
 
-    /**
-     * @return array
-     */
     public function loadRelations(): array
     {
         $basis = __(class_basename($this->model));
@@ -776,9 +698,6 @@ class DataTable extends Component
             ->toArray());
     }
 
-    /**
-     * @return array
-     */
     public function getSavedFilters(): array
     {
         if (method_exists(Auth::user(), 'getDataTableSettings')) {
@@ -790,29 +709,19 @@ class DataTable extends Component
         }
     }
 
-    /**
-     * @return array
-     */
-    public function getExportColumns(): array
+    public function getExportableColumns(): array
     {
         return $this->availableCols;
     }
 
-    /**
-     * @param array $columns
-     * @return Response|BinaryFileResponse
-     */
     public function export(array $columns = []): Response|BinaryFileResponse
     {
         $query = $this->buildSearch();
 
-        return (new DataTableExport($query, array_keys(array_filter($columns, fn ($value) => $value))))
+        return (new DataTableExport($query, array_filter($columns)))
             ->download(class_basename($this->model) . '_' . now()->toDateTimeLocalString('minute') . '.xlsx');
     }
 
-    /**
-     * @return Builder
-     */
     public function buildSearch(): Builder
     {
         /** @var Model $model */
@@ -872,28 +781,16 @@ class DataTable extends Component
         return $this->applyFilters($query);
     }
 
-    /**
-     * @param Builder $builder
-     * @return Builder
-     */
     public function getBuilder(Builder $builder): Builder
     {
         return $builder;
     }
 
-    /**
-     * @param LengthAwarePaginator $paginator
-     * @return LengthAwarePaginator
-     */
     public function getPaginator(LengthAwarePaginator $paginator): LengthAwarePaginator
     {
         return $paginator;
     }
 
-    /**
-     * @param Builder $builder
-     * @return Builder
-     */
     public function applyFilters(Builder $builder): Builder
     {
         foreach ($this->filters as $type => $filter) {
@@ -942,58 +839,31 @@ class DataTable extends Component
         return $builder;
     }
 
-    /**
-     * @param array $data
-     * @return void
-     */
     public function setData(array $data): void
     {
         $this->data = $data;
     }
 
-    /**
-     * @param Builder $builder
-     * @param array $filter
-     * @return Builder
-     */
     private function whereIn(Builder $builder, array $filter): Builder
     {
         return $builder->whereIn($filter[0], $filter[1]);
     }
 
-    /**
-     * @param Builder $builder
-     * @param array $filter
-     * @return Builder
-     */
     private function where(Builder $builder, array $filter): Builder
     {
         return $builder->where($filter[0], $filter[1], $filter[2]);
     }
 
-    /**
-     * @param Builder $builder
-     * @param array $filter
-     * @return Builder
-     */
     private function with(Builder $builder, array $filter): Builder
     {
         return $builder->with($filter);
     }
 
-    /**
-     * @param Builder $builder
-     * @param array $filter
-     * @return Builder
-     */
     private function whereRelation(Builder $builder, array $filter): Builder
     {
         return $builder->whereRelation($filter['relation'], $filter['column'], $filter['operator'], $filter['value']);
     }
 
-    /**
-     * @return void
-     */
     private function cacheState(): void
     {
         $filter = [
@@ -1015,10 +885,6 @@ class DataTable extends Component
 
     /**
      * Resolves a foreign key to a relation.
-     *
-     * @param string $localKey
-     * @param string|null $relation
-     * @return string|array|null
      */
     public function resolveForeignKey(string $localKey, string $relation = null): string|array|null
     {
@@ -1082,8 +948,6 @@ class DataTable extends Component
      * You should set the name of the route in your .env file.
      * e.g. TALL_DATATABLES_SEARCH_ROUTE=datatables.search
      * The route should lead to the SearchController from this package.
-     *
-     * @return string
      */
     private function getSearchRoute(): string
     {
@@ -1093,8 +957,6 @@ class DataTable extends Component
     }
 
     /**
-     * @return void
-     *
      * @throws MissingTraitException
      */
     private function ensureAuthHasTrait(): void

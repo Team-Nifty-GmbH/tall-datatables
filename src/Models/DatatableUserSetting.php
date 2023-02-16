@@ -28,9 +28,6 @@ class DatatableUserSetting extends Model
         });
     }
 
-    /**
-     * @return MorphTo
-     */
     public function authenticatable(): MorphTo
     {
         return $this->morphTo();

@@ -9,11 +9,6 @@ use TeamNiftyGmbH\DataTable\Helpers\Icon;
 class IconController
 {
     /**
-     * @param Request $request
-     * @param string $name
-     * @param string|null $variant
-     * @return Response
-     *
      * @throws \Exception
      */
     public function __invoke(Request $request, string $name, string $variant = null): Response

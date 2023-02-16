@@ -5,8 +5,6 @@ namespace TeamNiftyGmbH\DataTable\Exceptions;
 final class MissingTraitException extends \Exception
 {
     /**
-     * @param mixed $class
-     * @param string $trait
      * @return static
      */
     public static function create(mixed $class, string $trait): self

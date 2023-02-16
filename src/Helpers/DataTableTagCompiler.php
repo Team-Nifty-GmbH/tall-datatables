@@ -8,7 +8,6 @@ use TeamNiftyGmbH\DataTable\Facades\DataTableDirectives;
 class DataTableTagCompiler extends ComponentTagCompiler
 {
     /**
-     * @param string $value
      * @return string
      */
     public function compile(string $value)
@@ -17,12 +16,11 @@ class DataTableTagCompiler extends ComponentTagCompiler
     }
 
     /**
-     * @param string $value
      * @return string
      */
     protected function compileDataTableSelfClosingTags(string $value)
     {
-        $pattern = '/<\s*datatable\:(scripts|styles)\s*\/?>/';
+        $pattern = '/<\s*datatable:(scripts|styles)\s*\/?>/';
 
         return preg_replace_callback($pattern, function (array $matches) {
             $element = '<script>throw new Error("Wrong <datatable:scripts /> usage. It should be <datatable:scripts />")</script>';
