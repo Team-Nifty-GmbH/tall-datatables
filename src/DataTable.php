@@ -6,6 +6,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -180,6 +181,11 @@ class DataTable extends Component
         ];
     }
 
+    public function getComponentAttributes(): ComponentAttributeBag
+    {
+        return new ComponentAttributeBag();
+    }
+
     /**
      * @return ComponentAttributeBag
      */
@@ -303,12 +309,53 @@ class DataTable extends Component
     {
         return view('tall-datatables::livewire.data-table',
             [
+                'componentAttributes' => $this->getComponentAttributes(),
                 'rowAttributes' => $this->getRowAttributes(),
                 'rowActions' => $this->getRowActions(),
                 'tableActions' => $this->getTableActions(),
                 'modelName' => class_basename($this->model),
             ]
         );
+    }
+
+    public function replaceByIndex(int $index, array $data): void
+    {
+        $this->data[$index] = array_merge($this->data[$index], $data);
+    }
+
+    public function replaceByKey(array $data)
+    {
+        $key = (new $this->model)->getKeyName();
+
+        $keyed = Arr::keyBy($this->data, $key);
+
+        $keyed[data_get($data, $key)] = array_merge($keyed[data_get($data, $key)], $data);
+
+        $this->data = array_values($keyed);
+    }
+
+    public function removeByIndex(int $index): void
+    {
+        unset($this->data[$index]);
+    }
+
+    public function removeByKey(string|int $key)
+    {
+        $keyName = (new $this->model)->getKeyName();
+
+        $keyed = Arr::keyBy($this->data, $keyName);
+
+        $this->data = Arr::except($keyed, $key);
+    }
+
+    public function addToBottom(array $data)
+    {
+        $this->data[] = $data;
+    }
+
+    public function addToTop(array $data)
+    {
+        array_unshift($this->data, $data);
     }
 
     /**
@@ -416,7 +463,7 @@ class DataTable extends Component
     /**
      * @return void
      */
-    public function loadMore()
+    public function loadMore(): void
     {
         $this->perPage += $this->perPage;
 
@@ -430,9 +477,24 @@ class DataTable extends Component
     {
         $this->initialized = true;
 
-        $baseQuery = $this->buildSearch();
-        $query = $baseQuery->clone();
+        $query = $this->buildSearch();
+        $baseQuery = $query->clone();
 
+        $result = $this->getResultFromQuery($query);
+
+        if ($aggregates = $this->getAggregate($baseQuery)) {
+            $result['aggregates'] = ! $this->search ? $aggregates : [];
+        }
+        $this->setData(is_array($result) ? $result : $result->toArray());
+
+        if ($this->data['links'] ?? false) {
+            array_pop($this->data['links']);
+            array_shift($this->data['links']);
+        }
+    }
+
+    public function getResultFromQuery(Builder $query): LengthAwarePaginator|Collection|array
+    {
         try {
             if (property_exists($query, 'scout_pagination')) {
                 $total = data_get($query->scout_pagination, 'estimatedTotalHits');
@@ -452,12 +514,11 @@ class DataTable extends Component
         } catch (QueryException $e) {
             $this->notification()->error($e->getMessage());
 
-            return;
+            return [];
         }
         $result = $this->getPaginator($result);
         $resultCollection = $result->getCollection();
 
-        $aggregates = [];
         if (property_exists($query, 'hits')) {
             $mapped = $resultCollection->map(
                 function (Model $item) use ($query) {
@@ -477,18 +538,11 @@ class DataTable extends Component
                     return $this->itemToArray($item);
                 }
             );
-
-            $aggregates = $this->getAggregate($baseQuery);
         }
 
         $result->setCollection($mapped);
 
-        $result = $result->toArray();
-        $result['aggregates'] = $aggregates;
-        $this->setData($result);
-
-        array_pop($this->data['links']);
-        array_shift($this->data['links']);
+        return $result;
     }
 
     /**
