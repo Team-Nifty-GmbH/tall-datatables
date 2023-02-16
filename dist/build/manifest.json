@@ -1,12 +1,12 @@
 {
   "resources/css/tall-datatables.css": {
-    "file": "assets/tall-datatables-35284519.css",
-    "src": "resources/css/tall-datatables.css",
-    "isEntry": true
+    "file": "assets/tall-datatables-f23f47d1.css",
+    "isEntry": true,
+    "src": "resources/css/tall-datatables.css"
   },
   "resources/js/tall-datatables.js": {
-    "file": "assets/tall-datatables-f85aecf5.js",
-    "src": "resources/js/tall-datatables.js",
-    "isEntry": true
+    "file": "assets/tall-datatables-fdcab395.js",
+    "isEntry": true,
+    "src": "resources/js/tall-datatables.js"
   }
 }
