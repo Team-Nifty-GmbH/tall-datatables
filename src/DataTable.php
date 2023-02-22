@@ -6,6 +6,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -156,9 +157,7 @@ class DataTable extends Component
 
     public array $data = [];
 
-    protected $listeners = [
-        'loadData',
-    ];
+    protected $listeners = ['loadData'];
 
     public function getConfig(): array
     {
@@ -179,12 +178,22 @@ class DataTable extends Component
         ];
     }
 
+    public function getComponentAttributes(): ComponentAttributeBag
+    {
+        return new ComponentAttributeBag();
+    }
+
     public function getLayout(): string
     {
         return 'tall-datatables::layouts.table';
     }
 
     public function getRowAttributes(): ComponentAttributeBag
+    {
+        return new ComponentAttributeBag();
+    }
+
+    public function getSelectAttributes(): ComponentAttributeBag
     {
         return new ComponentAttributeBag();
     }
@@ -280,6 +289,8 @@ class DataTable extends Component
     {
         return view('tall-datatables::livewire.data-table',
             [
+                'componentAttributes' => $this->getComponentAttributes(),
+                'selectAttributes' => $this->getSelectAttributes(),
                 'rowAttributes' => $this->getRowAttributes(),
                 'rowActions' => $this->getRowActions(),
                 'tableActions' => $this->getTableActions(),
@@ -365,10 +376,7 @@ class DataTable extends Component
             : $this->formatters;
     }
 
-    /**
-     * @return void
-     */
-    public function loadMore()
+    public function loadMore(): void
     {
         $this->perPage += $this->perPage;
 
@@ -379,9 +387,25 @@ class DataTable extends Component
     {
         $this->initialized = true;
 
-        $baseQuery = $this->buildSearch();
-        $query = $baseQuery->clone();
+        $query = $this->buildSearch();
+        $baseQuery = $query->clone();
 
+        $result = $this->getResultFromQuery($query);
+
+        $this->setData(is_array($result) ? $result : $result->toArray());
+
+        if ($aggregates = $this->getAggregate($baseQuery)) {
+            $this->data['aggregates'] = ! $this->search ? $aggregates : [];
+        }
+
+        if ($this->data['links'] ?? false) {
+            array_pop($this->data['links']);
+            array_shift($this->data['links']);
+        }
+    }
+
+    public function getResultFromQuery(Builder $query): LengthAwarePaginator|Collection|array
+    {
         try {
             if (property_exists($query, 'scout_pagination')) {
                 $total = data_get($query->scout_pagination, 'estimatedTotalHits');
@@ -401,12 +425,11 @@ class DataTable extends Component
         } catch (QueryException $e) {
             $this->notification()->error($e->getMessage());
 
-            return;
+            return [];
         }
         $result = $this->getPaginator($result);
         $resultCollection = $result->getCollection();
 
-        $aggregates = [];
         if (property_exists($query, 'hits')) {
             $mapped = $resultCollection->map(
                 function (Model $item) use ($query) {
@@ -426,18 +449,11 @@ class DataTable extends Component
                     return $this->itemToArray($item);
                 }
             );
-
-            $aggregates = $this->getAggregate($baseQuery);
         }
 
         $result->setCollection($mapped);
 
-        $result = $result->toArray();
-        $result['aggregates'] = $aggregates;
-        $this->setData($result);
-
-        array_pop($this->data['links']);
-        array_shift($this->data['links']);
+        return $result;
     }
 
     public function getAggregate(Builder $builder): array

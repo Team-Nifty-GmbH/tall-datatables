@@ -33,9 +33,9 @@ class SearchController extends Controller
                 ? $query->whereIn($optionValue, $selected)
                 : $query->where($optionValue, $selected);
         } elseif ($request->has('search')) {
-            $search = ! is_string($request->search) ? '' : $request->get('search');
-            $query = $model::search($search)
-                ->toEloquentBuilder();
+            $query = ! is_string($request->get('search'))
+                ? $model::query()->limit(20)
+                : $model::search($request->get('search'))->toEloquentBuilder();
         } else {
             $query = $model::query();
         }

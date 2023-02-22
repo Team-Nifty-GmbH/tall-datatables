@@ -90,10 +90,13 @@
         >
             <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
                 <template x-if="selectable">
-                    <x-checkbox
-                        x-bind:value="record.id"
-                        x-model="selected"
-                    />
+                    <div {{ $selectAttributes }}>
+                        <x-checkbox
+                            x-on:change="$dispatch('data-table-record-selected', {record: record, index: index, value: $el.checked})"
+                            x-bind:value="record.id"
+                            x-model="selected"
+                        />
+                    </div>
                 </template>
             </td>
             <template x-for="col in cols">
