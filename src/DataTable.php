@@ -157,9 +157,7 @@ class DataTable extends Component
 
     public array $data = [];
 
-    protected $listeners = [
-        'loadData',
-    ];
+    protected $listeners = ['loadData'];
 
     public function getConfig(): array
     {
@@ -185,9 +183,6 @@ class DataTable extends Component
         return new ComponentAttributeBag();
     }
 
-    /**
-     * @return ComponentAttributeBag
-     */
     public function getLayout(): string
     {
         return 'tall-datatables::layouts.table';
