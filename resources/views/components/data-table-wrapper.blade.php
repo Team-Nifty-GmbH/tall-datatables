@@ -7,6 +7,7 @@
         class="relative"
         wire:ignore
         x-data="data_table($wire)"
+        {{ $attributes }}
     >
         {{ $slot }}
     </div>

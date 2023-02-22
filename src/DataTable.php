@@ -198,6 +198,11 @@ class DataTable extends Component
         return new ComponentAttributeBag();
     }
 
+    public function getSelectAttributes(): ComponentAttributeBag
+    {
+        return new ComponentAttributeBag();
+    }
+
     public function getRowActions(): array
     {
         return [];
@@ -290,6 +295,7 @@ class DataTable extends Component
         return view('tall-datatables::livewire.data-table',
             [
                 'componentAttributes' => $this->getComponentAttributes(),
+                'selectAttributes' => $this->getSelectAttributes(),
                 'rowAttributes' => $this->getRowAttributes(),
                 'rowActions' => $this->getRowActions(),
                 'tableActions' => $this->getTableActions(),
@@ -299,49 +305,6 @@ class DataTable extends Component
         );
     }
 
-    public function replaceByIndex(int $index, array $data): void
-    {
-        $this->data[$index] = array_merge($this->data[$index], $data);
-    }
-
-    public function replaceByKey(array $data)
-    {
-        $key = (new $this->model)->getKeyName();
-
-        $keyed = Arr::keyBy($this->data, $key);
-
-        $keyed[data_get($data, $key)] = array_merge($keyed[data_get($data, $key)], $data);
-
-        $this->data = array_values($keyed);
-    }
-
-    public function removeByIndex(int $index): void
-    {
-        unset($this->data[$index]);
-    }
-
-    public function removeByKey(string|int $key)
-    {
-        $keyName = (new $this->model)->getKeyName();
-
-        $keyed = Arr::keyBy($this->data, $keyName);
-
-        $this->data = Arr::except($keyed, $key);
-    }
-
-    public function addToBottom(array $data)
-    {
-        $this->data[] = $data;
-    }
-
-    public function addToTop(array $data)
-    {
-        array_unshift($this->data, $data);
-    }
-
-    /**
-     * @return void
-     */
     public function updatedSearch(): void
     {
         $this->page = '1';
@@ -418,9 +381,6 @@ class DataTable extends Component
             : $this->formatters;
     }
 
-    /**
-     * @return void
-     */
     public function loadMore(): void
     {
         $this->perPage += $this->perPage;

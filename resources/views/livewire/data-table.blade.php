@@ -1,4 +1,4 @@
-<x-tall-datatables::data-table-wrapper>
+<x-tall-datatables::data-table-wrapper :attributes="$componentAttributes" >
     <x-tall-datatables::options />
     @if($hasHead)
         <x-tall-datatables::head :model-name="$modelName" :table-actions="$tableActions" />
@@ -12,6 +12,7 @@
         :component="$layout"
         :has-head="$hasHead"
         :is-filterable="$isFilterable"
+        :select-attributes="$selectAttributes"
         :row-actions="$rowActions"
         :row-attributes="$rowAttributes"
         :has-infinite-scroll="$hasInfiniteScroll"
