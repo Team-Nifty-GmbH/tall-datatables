@@ -392,10 +392,11 @@ class DataTable extends Component
 
         $result = $this->getResultFromQuery($query);
 
-        if ($aggregates = $this->getAggregate($baseQuery)) {
-            $result['aggregates'] = ! $this->search ? $aggregates : [];
-        }
         $this->setData(is_array($result) ? $result : $result->toArray());
+
+        if ($aggregates = $this->getAggregate($baseQuery)) {
+            $this->data['aggregates'] = ! $this->search ? $aggregates : [];
+        }
 
         if ($this->data['links'] ?? false) {
             array_pop($this->data['links']);
