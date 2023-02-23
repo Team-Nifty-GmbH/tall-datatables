@@ -2,6 +2,10 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.4.2 - 2023-02-23
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.1...v0.4.2
+
 ## v0.4.1 - 2023-02-23
 
 hotfix exception caused by wrong order in mount
@@ -63,6 +67,7 @@ hotfix exception caused by wrong order in mount
 
 - Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
 - ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
+- 
 - 
 - 
 - 
