@@ -40,6 +40,8 @@ class DataTable extends Component
 
     protected string $model;
 
+    public ?string $modelKeyName = null;
+
     /**
      * The default filters for the table, these will be applied on every query.
      * e.g. ['is_active' => true]
@@ -252,10 +254,12 @@ class DataTable extends Component
                 array_merge(
                     $this->enabledCols,
                     $this->availableCols,
-                    [(new $this->model)->getKeyName()]
+                    [$this->modelKeyName]
                 )
             )
         );
+
+        $this->modelKeyName = $this->modelKeyName ?: (new $this->model)->getKeyName();
     }
 
     public function render(): View|Factory|Application
@@ -502,7 +506,7 @@ class DataTable extends Component
     {
         return array_merge(
             $this->enabledCols,
-            [(new $this->model)->getKeyName()]
+            [$this->modelKeyName]
         );
     }
 
@@ -738,7 +742,7 @@ class DataTable extends Component
             if ($this->orderBy) {
                 $query->orderBy($this->orderBy, $this->orderAsc ? 'DESC' : 'ASC');
             } else {
-                $query->orderBy((new $model)->getKeyName(), 'DESC');
+                $query->orderBy($this->modelKeyName, 'DESC');
             }
         }
 
