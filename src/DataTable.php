@@ -40,6 +40,7 @@ class DataTable extends Component
 
     protected string $model;
 
+    /** @locked  */
     public ?string $modelKeyName = null;
 
     /**
