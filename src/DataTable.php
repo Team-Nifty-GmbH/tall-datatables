@@ -250,6 +250,8 @@ class DataTable extends Component
             false
         );
 
+        $this->modelKeyName = $this->modelKeyName ?: (new $this->model)->getKeyName();
+
         $this->availableCols = array_values(
             array_unique(
                 array_merge(
@@ -259,8 +261,6 @@ class DataTable extends Component
                 )
             )
         );
-
-        $this->modelKeyName = $this->modelKeyName ?: (new $this->model)->getKeyName();
     }
 
     public function render(): View|Factory|Application
@@ -327,7 +327,7 @@ class DataTable extends Component
 
     public function getColLabels(): array
     {
-        $colLabels = array_flip($this->availableCols);
+        $colLabels = array_values($this->availableCols);
         array_walk($colLabels, function (&$value, $key) {
             $value = __(Str::headline($key));
         });
