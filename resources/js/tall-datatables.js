@@ -78,14 +78,17 @@ document.addEventListener('alpine:init', () => {
                     this.newFilter.operator = '=';
                 }
             }),
+
             this.$watch('newFilter.operator', () => {
                 if (this.newFilter.operator === 'is null' || this.newFilter.operator === 'is not null') {
                     this.filterSelectType = 'none';
                 }
             }),
+
             this.$watch('newFilter.relation', () => {
                 this.loadFilterable(this.newFilter.relation);
             }),
+
             this.$watch('selected', () => {
                 this.$dispatch('tall-datatables-selected', this.selected);
             })
