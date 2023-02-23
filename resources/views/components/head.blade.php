@@ -1,5 +1,5 @@
 <div class="flex w-full gap-5 justify-end">
-    @if($this->isSearchable)
+    @if($isSearchable)
         <div class="flex-1">
             <x-input
                 icon="search"
@@ -83,7 +83,7 @@
         <x-badge flat amber>
             <x-slot:label>
                 <span>{{ __('Order by') }}</span>
-                <span x-text="orderByCol"></span>
+                <span x-text="colLabels[orderByCol] ?? orderByCol"></span>
                 <span x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
             </x-slot:label>
             <x-slot

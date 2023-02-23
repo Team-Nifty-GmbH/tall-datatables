@@ -51,7 +51,7 @@ class DataTable extends Component
     public array $filters = [];
 
     /**
-     * These are the the columns that will be available to the user.
+     * These are the columns that will be available to the user.
      *
      * @locked
      */
@@ -125,10 +125,6 @@ class DataTable extends Component
 
     public int $perPage = 15;
 
-    public array $colLabels = [];
-
-    public array $stretchCol = [];
-
     public array $sortable = [];
 
     public array $aggregatable = [];
@@ -138,7 +134,7 @@ class DataTable extends Component
      *
      * @locked
      */
-    public bool $selectable = false;
+    public bool $isSelectable = false;
 
     /**
      * Contains the selected ids of the table rows.
@@ -164,12 +160,11 @@ class DataTable extends Component
         return [
             'cols' => $this->enabledCols,
             'enabledCols' => $this->availableCols,
-            'colLabels' => $this->colLabels,
-            'selectable' => $this->selectable,
-            'sortable' => $this->sortable,
-            'aggregatable' => $this->aggregatable,
-            'stretchCol' => $this->stretchCol,
-            'formatters' => $this->formatters,
+            'colLabels' => $this->getColLabels(),
+            'selectable' => $this->isSelectable,
+            'sortable' => $this->getSortable(),
+            'aggregatable' => $this->getAggregatable(),
+            'formatters' => $this->getFormatters(),
             'leftAppend' => $this->getLeftAppends(),
             'rightAppend' => $this->getRightAppends(),
             'topAppend' => $this->getTopAppends(),
@@ -189,6 +184,11 @@ class DataTable extends Component
     }
 
     public function getRowAttributes(): ComponentAttributeBag
+    {
+        return new ComponentAttributeBag();
+    }
+
+    public function getTableHeadColAttributes(): ComponentAttributeBag
     {
         return new ComponentAttributeBag();
     }
@@ -248,48 +248,23 @@ class DataTable extends Component
         );
 
         $this->availableCols = array_values(
-            array_unique(array_merge($this->enabledCols, $this->availableCols, ['id']))
+            array_unique(
+                array_merge(
+                    $this->enabledCols,
+                    $this->availableCols,
+                    [(new $this->model)->getKeyName()]
+                )
+            )
         );
-
-        $tableFields = ModelInfo::forModel($this->model)
-            ->attributes
-            ->filter(function (Attribute $attribute) {
-                return ! $attribute->virtual
-                    && ! $attribute->appended
-                    && in_array($attribute->name, $this->availableCols);
-            });
-
-        $this->colLabels = array_flip($this->availableCols);
-        array_walk($this->colLabels, function (&$value, $key) {
-            $value = __(Str::headline($key));
-        });
-
-        $this->sortable = $this->sortable === ['*']
-            ? $tableFields->pluck('name')->toArray()
-            : $this->sortable;
-
-        $this->aggregatable = $this->aggregatable === ['*']
-            ? $tableFields
-                ->filter(function (Attribute $attribute) {
-                    return in_array($attribute->phpType, ['int', 'float'])
-                        || Str::contains($attribute->type, ['decimal', 'float', 'double']);
-                })
-                ->pluck('name')
-                ->toArray()
-            : $this->aggregatable;
-
-        $this->isSearchable = is_null($this->isSearchable)
-            ? in_array(Searchable::class, class_uses_recursive($this->model))
-            : $this->isSearchable;
-
-        $this->getFormatters();
     }
 
     public function render(): View|Factory|Application
     {
         return view('tall-datatables::livewire.data-table',
             [
+                'searchable' => $this->getIsSearchable(),
                 'componentAttributes' => $this->getComponentAttributes(),
+                'tableHeadColAttributes' => $this->getTableHeadColAttributes(),
                 'selectAttributes' => $this->getSelectAttributes(),
                 'rowAttributes' => $this->getRowAttributes(),
                 'rowActions' => $this->getRowActions(),
@@ -317,12 +292,49 @@ class DataTable extends Component
         $this->updatedSearch();
     }
 
-    public function updatedaggregatableCols(): void
+    public function updatedAggregatableCols(): void
     {
         $this->skipRender();
 
         $this->cacheState();
         $this->loadData();
+    }
+
+    public function getSortable(): array
+    {
+        return $this->sortable === ['*']
+            ? $this->getTableFields()->pluck('name')->toArray()
+            : $this->sortable;
+    }
+
+    public function getAggregatable(): array
+    {
+        return $this->aggregatable === ['*']
+            ? $this->getTableFields()
+                ->filter(function (Attribute $attribute) {
+                    return in_array($attribute->phpType, ['int', 'float'])
+                        || Str::contains($attribute->type, ['decimal', 'float', 'double']);
+                })
+                ->pluck('name')
+                ->toArray()
+            : $this->aggregatable;
+    }
+
+    public function getColLabels(): array
+    {
+        $colLabels = array_flip($this->availableCols);
+        array_walk($colLabels, function (&$value, $key) {
+            $value = __(Str::headline($key));
+        });
+
+        return $colLabels;
+    }
+
+    public function getIsSearchable(): bool
+    {
+        return is_null($this->isSearchable)
+            ? in_array(Searchable::class, class_uses_recursive($this->model))
+            : $this->isSearchable;
     }
 
     public function sortTable($col): void
@@ -369,9 +381,9 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    public function getFormatters(): void
+    public function getFormatters(): array
     {
-        $this->formatters = method_exists($this->model, 'typeScriptAttributes')
+        return method_exists($this->model, 'typeScriptAttributes')
             ? array_merge($this->model::typeScriptAttributes(), $this->formatters)
             : $this->formatters;
     }
@@ -584,7 +596,7 @@ class DataTable extends Component
         }
     }
 
-    public function loadFields(?string $name = null): array
+    public function getFilterableColumns(?string $name = null): array
     {
         if (! $name) {
             $modelClass = $this->model;
@@ -624,8 +636,6 @@ class DataTable extends Component
                 }
             }
         );
-
-        $this->skipRender();
 
         $tableCols = $attributes->filter(fn (Attribute $attribute) => ! $attribute->virtual)
             ->pluck('name')
@@ -764,7 +774,7 @@ class DataTable extends Component
 
         $builder->where(function ($query) {
             foreach ($this->userFilters as $index => $orFilter) {
-                $query->where(function ($query) use ($orFilter) {
+                $query->where(function (Builder $query) use ($orFilter) {
                     foreach ($orFilter as $type => $filter) {
                         if (! is_string($type)) {
                             $filter = array_is_list($filter) ? [$filter] : $filter;
@@ -777,8 +787,10 @@ class DataTable extends Component
                                 $filter['column'] = $column;
                                 $filter['relation'] = $relation;
                                 $this->whereRelation($query, $filter);
+                            } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
+                                $this->whereNull($query, $filter);
                             } else {
-                                $query->where([array_values($filter)]);
+                                $query->where([array_values(array_filter($filter))]);
                             }
 
                             continue;
@@ -813,6 +825,15 @@ class DataTable extends Component
     private function with(Builder $builder, array $filter): Builder
     {
         return $builder->with($filter);
+    }
+
+    private function whereNull(Builder $builder, array $filter): Builder
+    {
+        if ($filter['operator'] === 'is not null') {
+            return $builder->whereNotNull($filter['column']);
+        } else {
+            return $builder->whereNull($filter['column']);
+        }
     }
 
     private function whereRelation(Builder $builder, array $filter): Builder
@@ -920,5 +941,16 @@ class DataTable extends Component
         if (! in_array(HasDatatableUserSettings::class, class_uses_recursive(Auth::user()))) {
             throw MissingTraitException::create(Auth::user()->getMorphClass(), HasDatatableUserSettings::class);
         }
+    }
+
+    private function getTableFields(?string $tableName = null): \Illuminate\Support\Collection
+    {
+        return ModelInfo::forModel($this->model)
+            ->attributes
+            ->filter(function (Attribute $attribute) {
+                return ! $attribute->virtual
+                    && ! $attribute->appended
+                    && in_array($attribute->name, $this->availableCols);
+            });
     }
 }
