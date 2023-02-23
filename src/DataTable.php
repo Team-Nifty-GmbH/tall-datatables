@@ -327,7 +327,7 @@ class DataTable extends Component
 
     public function getColLabels(): array
     {
-        $colLabels = array_values($this->availableCols);
+        $colLabels = array_flip($this->availableCols);
         array_walk($colLabels, function (&$value, $key) {
             $value = __(Str::headline($key));
         });
