@@ -198,10 +198,9 @@
                                 <option x-bind:value="col" x-text="colLabels[col]"></option>
                             </template>
                         </datalist>
-                        <div x-show="filterSelectType === 'text'">
+                        <div x-show="filterSelectType !== 'valueList' && filterSelectType !== 'search'">
                             <x-input
                                 x-ref="filterOperator"
-                                required
                                 x-model="newFilter.operator"
                                 placeholder="{{ __('Operator') }}"
                                 x-bind:list="$id('operators')"
@@ -215,6 +214,8 @@
                                 <option value="<=">{{ __('<=') }}</option>
                                 <option value="like">{{ __('like') }}</option>
                                 <option value="not like">{{ __('not like') }}</option>
+                                <option value="is null">{{ __('is null') }}</option>
+                                <option value="is not null">{{ __('is not null') }}</option>
                             </datalist>
                         </div>
                         <div x-show="filterSelectType === 'valueList'">
@@ -251,7 +252,7 @@
                         <div
                             x-cloak
                             x-show="newFilter.operator === 'like' || newFilter.operator === 'not like'"
-                            class="text-xs text-slate-400"
+                            class="text-xs text-slate-400 break-long-words max-w-md"
                         >
                             {{ __('When using the like or not like filter, you can use the % sign as a placeholder. Examples: "test%" for values that start with "test", "%test" for values that end with "test", and "%test%" for values that contain "test" anywhere.') }}
                         </div>
@@ -330,7 +331,7 @@
                             <x-badge flat amber>
                                 <x-slot:label>
                                     <span>{{ __('Order by') }}</span>
-                                    <span x-text="orderByCol"></span>
+                                    <span x-text="colLabels[orderByCol] ?? orderByCol"></span>
                                     <span x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
                                 </x-slot:label>
                                 <x-slot

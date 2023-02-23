@@ -19,7 +19,7 @@
                 </template>
             </x-tall-datatables::table.head-cell>
             <template x-for="(col, index) in cols">
-                <x-tall-datatables::table.head-cell x-bind:class="stretchCol.length && ! stretchCol.includes(col) ? 'w-[1%]' : ''">
+                <x-tall-datatables::table.head-cell :attributes="$tableHeadColAttributes">
                     <div class="flex">
                         <div
                             type="button"
