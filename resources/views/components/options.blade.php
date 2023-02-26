@@ -69,7 +69,7 @@
                                         <x-label class="mr-2">
                                             {{ __('Saved filters') }}
                                         </x-label>
-                                        <x-heroicons::outline.chevron-right
+                                        <x-icon name="chevron-right"
                                             class="transform transition-transform h-4 w-4"
                                             x-bind:class="{'rotate-90': showSavedFilters}"
                                         />

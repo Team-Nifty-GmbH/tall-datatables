@@ -38,7 +38,7 @@
                             />
                         </div>
                         @if($isFilterable)
-                            <x-heroicons::outline.funnel
+                            <x-icon name="filter"
                                 x-show="filterable.includes(col)"
                                 class="h-4 w-4 cursor-pointer"
                                 x-on:click="loadSidebar({column: col, operator: '', value: '', relation: ''})"
