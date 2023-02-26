@@ -22,11 +22,6 @@ class Icon implements Htmlable, Responsable
     public array|ComponentAttributeBag $attributes;
 
     /**
-     * @param string $name
-     * @param string $variant
-     * @param array|ComponentAttributeBag $attributes
-     * @return self
-     *
      * @throws \Exception
      */
     public static function make(
@@ -38,10 +33,6 @@ class Icon implements Htmlable, Responsable
     }
 
     /**
-     * @param string $name
-     * @param string $variant
-     * @param array|ComponentAttributeBag $attributes
-     *
      * @throws \Exception
      */
     public function __construct(
@@ -58,8 +49,6 @@ class Icon implements Htmlable, Responsable
     }
 
     /**
-     * @return string
-     *
      * @throws \Exception
      */
     public function __toString(): string
@@ -68,8 +57,6 @@ class Icon implements Htmlable, Responsable
     }
 
     /**
-     * @return string
-     *
      * @throws \Exception
      */
     public function getSvg(): string
@@ -77,17 +64,12 @@ class Icon implements Htmlable, Responsable
         return $this->getView()->render();
     }
 
-    /**
-     * @return string
-     */
     public function getUrl(): string
     {
         return route('icons', ['name' => $this->name, 'variant' => $this->variant]);
     }
 
     /**
-     * @return Factory|\Illuminate\Contracts\View\View|Application
-     *
      * @throws \Exception
      */
     public function getView(): Factory|\Illuminate\Contracts\View\View|Application
@@ -97,9 +79,6 @@ class Icon implements Htmlable, Responsable
         return view($view, ['attributes' => '']);
     }
 
-    /**
-     * @return string
-     */
     private function getComponentName(): string
     {
         return 'heroicons::components.' . ($this->variant ?? 'solid') . '.' . $this->name;
@@ -108,7 +87,6 @@ class Icon implements Htmlable, Responsable
     /**
      * Get content as a string of HTML.
      *
-     * @return string
      *
      * @throws \Exception
      */
@@ -121,7 +99,6 @@ class Icon implements Htmlable, Responsable
      * Create an HTTP response that represents the object.
      *
      * @param Request $request
-     * @return Response
      *
      * @throws \Exception
      */

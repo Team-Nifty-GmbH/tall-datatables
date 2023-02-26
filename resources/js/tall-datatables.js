@@ -1,92 +1,97 @@
 import {Sortable} from 'sortablejs';
-import _ from 'lodash';
 
-window._ = _;
-
+window.Sortable = Sortable;
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('data_table',
     ($wire) => ({
         init() {
-            window.Sortable = Sortable;
-            {
-                this.$wire.getConfig().then(
-                    result => {
-                        this.cols = result.cols;
-                        this.enabledCols = result.enabledCols;
-                        this.colLabels = result.colLabels;
-                        this.sortable = result.sortable;
-                        this.aggregatable = result.aggregatable;
-                        this.selectable = result.selectable;
-                        this.stretchCol = result.stretchCol;
-                        this.formatters = result.formatters;
-                        this.leftAppend = result.leftAppend;
-                        this.rightAppend = result.rightAppend;
-                        this.topAppend = result.topAppend;
-                        this.bottomAppend = result.bottomAppend;
-                        this.searchRoute = result.searchRoute;
+            this.$wire.getConfig().then(
+                result => {
+                    this.cols = result.cols;
+                    this.enabledCols = result.enabledCols;
+                    this.colLabels = result.colLabels;
+                    this.sortable = result.sortable;
+                    this.aggregatable = result.aggregatable;
+                    this.selectable = result.selectable;
+                    this.formatters = result.formatters;
+                    this.leftAppend = result.leftAppend;
+                    this.rightAppend = result.rightAppend;
+                    this.topAppend = result.topAppend;
+                    this.bottomAppend = result.bottomAppend;
+                    this.searchRoute = result.searchRoute;
 
-                        this.$watch('cols', () => {
-                            this.$wire.storeColLayout(this.cols);
-                        });
-                    }
-                ),
-                this.$nextTick(() => {
-                    new Sortable(document.getElementById(this.$id('table-cols')), {
-                        animation: 150,
-                        delay: 100,
-                        onEnd: (e) => {
-                            const el = this.enabledCols[e.oldIndex];
-                            let oldCols = Object.values(this.enabledCols);
-                            // move element from e.oldIndex to e.newIndex
-                            oldCols.splice(e.oldIndex, 1);
-                            oldCols.splice(e.newIndex, 0, el);
-
-                            this.enabledCols = oldCols;
-                            this.cols = this.enabledCols.filter(value => this.cols.includes(value));
-                        }
+                    this.$watch('cols', () => {
+                        this.$wire.storeColLayout(this.cols);
                     });
-                }),
-                this.loadFilterable(),
-                this.$watch('newFilter.column', () => {
-                    if (! Boolean(this.newFilter.column)) {
-                        return;
+                }
+            ),
+
+            this.$nextTick(() => {
+                new Sortable(document.getElementById(this.$id('table-cols')), {
+                    animation: 150,
+                    delay: 100,
+                    onEnd: (e) => {
+                        const el = this.enabledCols[e.oldIndex];
+                        let oldCols = Object.values(this.enabledCols);
+                        // move element from e.oldIndex to e.newIndex
+                        oldCols.splice(e.oldIndex, 1);
+                        oldCols.splice(e.newIndex, 0, el);
+
+                        this.enabledCols = oldCols;
+                        this.cols = this.enabledCols.filter(value => this.cols.includes(value));
                     }
+                });
+            }),
 
-                    let valueList = this.filterValueLists.hasOwnProperty(this.newFilter.column);
+            this.loadFilterable(),
 
-                    if (! valueList) {
-                        $wire.resolveForeignKey(this.newFilter.column, this.newFilter.relation).then(
-                            result => {
-                                if (result === null) {
-                                    this.filterSelectType = 'text';
-                                    return;
-                                }
+            this.$watch('newFilter.column', () => {
+                if (! Boolean(this.newFilter.column)) {
+                    return;
+                }
 
-                                if (typeof result === 'string') {
-                                    this.filterSelectType = 'search';
-                                    this.newFilter.operator = '=';
-                                    Alpine.$data(document.querySelector('#filter-select-search')).asyncData.api = this.searchRoute + '/' + result;
-                                } else if (typeof result === 'array' || typeof result === 'object') {
-                                    this.filterSelectType = 'valueList';
-                                    this.newFilter.operator = '=';
-                                    this.filterValueLists[this.newFilter.column] = result;
-                                    valueList = true;
-                                }
-                            });
-                    }
+                let valueList = this.filterValueLists.hasOwnProperty(this.newFilter.column);
 
-                    if (valueList) {
-                        this.filterSelectType = 'valueList';
-                        this.newFilter.operator = '=';
-                    }
-                }),
-                this.$watch('newFilter.relation', () => {
-                    this.loadFilterable(this.newFilter.relation);
-                }),
-                this.$watch('selected', () => {
-                    this.$dispatch('tall-datatables-selected', this.selected);
-                })
-            }
+                if (! valueList) {
+                    $wire.resolveForeignKey(this.newFilter.column, this.newFilter.relation).then(
+                        result => {
+                            if (result === null) {
+                                this.filterSelectType = this.filterSelectType === 'none' ? 'none' : 'text';
+                                return;
+                            }
+
+                            if (typeof result === 'string') {
+                                this.filterSelectType = 'search';
+                                this.newFilter.operator = '=';
+                                Alpine.$data(document.querySelector('#filter-select-search')).asyncData.api = this.searchRoute + '/' + result;
+                            } else if (typeof result === 'array' || typeof result === 'object') {
+                                this.filterSelectType = 'valueList';
+                                this.newFilter.operator = '=';
+                                this.filterValueLists[this.newFilter.column] = result;
+                                valueList = true;
+                            }
+                        });
+                }
+
+                if (valueList) {
+                    this.filterSelectType = 'valueList';
+                    this.newFilter.operator = '=';
+                }
+            }),
+
+            this.$watch('newFilter.operator', () => {
+                if (this.newFilter.operator === 'is null' || this.newFilter.operator === 'is not null') {
+                    this.filterSelectType = 'none';
+                }
+            }),
+
+            this.$watch('newFilter.relation', () => {
+                this.loadFilterable(this.newFilter.relation);
+            }),
+
+            this.$watch('selected', () => {
+                this.$dispatch('tall-datatables-selected', this.selected);
+            })
         },
         data: $wire.entangle('data'),
         showSidebar: false,
@@ -96,14 +101,12 @@ document.addEventListener('alpine:init', () => {
         sortable: [],
         aggregatable: [],
         selectable: false,
-        stretchCol: [],
         formatters: [],
         leftAppend: [],
         rightAppend: [],
         topAppend: [],
         bottomAppend: [],
         searchRoute: '',
-        intendentedCols: [],
         tab: 'edit-filters',
         showSavedFilters: false,
         filterValueLists: $wire.entangle('filterValueLists'),
@@ -116,7 +119,10 @@ document.addEventListener('alpine:init', () => {
         selected: $wire.entangle('selected').defer,
         filterBadge(filter) {
             const label = this.colLabels[filter.column] ?? filter.column;
-            const value = filter.value;
+            const value = this.filterValueLists[filter.column]?.find(item => {
+                return item.value == filter.value
+            })?.label ?? filter.value
+
             return label + ' ' + filter.operator + ' ' + value;
         },
         getData() {
@@ -152,7 +158,7 @@ document.addEventListener('alpine:init', () => {
         },
         filterable: [],
         loadFilterable(table = null) {
-            $wire.loadFields(table)
+            $wire.getFilterableColumns(table)
                 .then(
                     result => {
                         this.filterable = result;
@@ -170,17 +176,19 @@ document.addEventListener('alpine:init', () => {
         filterIndex: 0,
         newFilter: {column: '', operator: '', value: '', relation: ''},
         addFilter() {
+            let newFilter = this.newFilter;
             if (this.filters.length === 0) {
                 this.filters.push([]);
                 this.filterIndex = 0;
             }
 
-            if (this.newFilter.relation) {
-                this.newFilter.column = this.newFilter.relation + '.' + this.newFilter.column;
-                this.newFilter.relation = '';
+            newFilter.operator = Boolean(newFilter.operator) ? newFilter.operator : '=';
+            if (newFilter.relation) {
+                newFilter.column = newFilter.relation + '.' + newFilter.column;
+                newFilter.relation = '';
             }
 
-            this.filters[this.filterIndex].push(this.newFilter);
+            this.filters[this.filterIndex].push(newFilter);
             this.resetFilter();
             this.filterSelectType = 'text';
 
@@ -216,9 +224,13 @@ document.addEventListener('alpine:init', () => {
         },
         filterName: '',
         permanent: false,
-        columns: [],
+        exportColumns: [],
+        exportableColumns: [],
         getColumns() {
-            $wire.getExportColumns().then(result => {this.columns = result})
+            $wire.getExportableColumns().then(result => {
+                this.exportableColumns = result;
+                this.exportColumns = result;
+            })
         },
         relations: [],
         savedFilters: [],
@@ -226,11 +238,7 @@ document.addEventListener('alpine:init', () => {
             $wire.getSavedFilters().then(result => {this.savedFilters = result})
         },
         formatter(col, record) {
-            const val = _.get(record, col, null);
-
-            if (this.intendentedCols.includes(col)) {
-                return `<span class='${ record.depth >= 1 ? 'indent-icon' : '' }' style='text-indent:${ record.depth * 10 }px;'>` + val + '</span>';
-            }
+            const val = record[col] ?? null;
 
             if (this.formatters.hasOwnProperty(col)) {
                 let type = this.formatters[col];
@@ -238,12 +246,6 @@ document.addEventListener('alpine:init', () => {
             } else {
                 return formatters.format({value: val, context: record});
             }
-
-
-            return val;
-        },
-        disabled() {
-            return false;
         },
     })
     )
@@ -312,6 +314,14 @@ window.formatters = {
             return formatters.float(value) + ' ' + currencyCode;
         }
     },
+    coloredMoney: (value, currency = null, context) => {
+        const returnValue = formatters.money(value, currency, context);
+        if (value < 0) {
+            return `<span class="text-negative-500 dark:text-negative-700 font-semibold">${returnValue}</span>`;
+        } else {
+            return `<span class="text-positive-500 dark:text-positive-700 font-semibold">${returnValue}</span>`;
+        }
+    },
     percentage: (value) => {
         const percentageFormatter = new Intl.NumberFormat(document.documentElement.lang, {
             style: 'percent',
@@ -363,10 +373,29 @@ window.formatters = {
         return formatters.bool(value);
     },
     date: (value) => {
-        return new Date(value).toLocaleDateString(document.documentElement.lang);
+        return new Date(value).toLocaleDateString(document.documentElement.lang, {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        });
     },
     datetime: (value) => {
-        return new Date(value).toLocaleString(document.documentElement.lang);
+        return new Date(value).toLocaleString(document.documentElement.lang, {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        });
+    },
+    badge: (value, colors) => {
+        if (! Boolean(value)) {
+            return null;
+        }
+
+        const color = colors[value];
+
+        return '<span class="outline-none inline-flex justify-center items-center group rounded gap-x-1 text-xs font-semibold px-2.5 py-0.5 text-' + color + '-600 bg-' + color + '-100 dark:text-' + color + '-400 dark:bg-slate-700">\n' +
+            value + '\n' +
+            '</span>';
     },
     relativeTime: (value) => {
         const current = new Date().getTime();
@@ -418,11 +447,7 @@ window.formatters = {
         return value.toString();
     },
     state: (value, colors) => {
-        const color = colors[value];
-
-        return '<span class="outline-none inline-flex justify-center items-center group rounded gap-x-1 text-xs font-semibold px-2.5 py-0.5 text-' + color + '-600 bg-' + color + '-100 dark:text-' + color + '-400 dark:bg-slate-700">\n' +
-            value + '\n' +
-            '</span>';
+        return formatters.badge(value, colors);
     },
     image: (value) => {
         if (! value) {

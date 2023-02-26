@@ -8,12 +8,6 @@ use Spatie\ModelInfo\ModelFinder as BaseModelFinder;
 
 class ModelFinder extends BaseModelFinder
 {
-    /**
-     * @param string|null $directory
-     * @param string|null $basePath
-     * @param string|null $baseNamespace
-     * @return Collection
-     */
     public static function all(
         string $directory = null,
         string $basePath = null,
