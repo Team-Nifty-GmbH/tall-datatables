@@ -119,7 +119,7 @@ class DataTableServiceProvider extends ServiceProvider
                 });
         }
 
-        if (! Builder::hasMacro('toEloquentBuilder')) {
+        if (class_exists(Builder::class) && ! Builder::hasMacro('toEloquentBuilder')) {
             Builder::macro('toEloquentBuilder',
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
                     /** @var Builder $this */
