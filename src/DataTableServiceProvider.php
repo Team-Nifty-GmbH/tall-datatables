@@ -76,7 +76,7 @@ class DataTableServiceProvider extends ServiceProvider
 
     protected function registerMacros(): void
     {
-        if (! Builder::hasMacro('getScoutResults')) {
+        if (class_exists(Builder::class) && ! Builder::hasMacro('getScoutResults')) {
             Builder::macro('getScoutResults',
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
                     /** @var Builder $this */
@@ -104,7 +104,7 @@ class DataTableServiceProvider extends ServiceProvider
             );
         }
 
-        if (! Builder::hasMacro('toQueryBuilder')) {
+        if (class_exists(Builder::class) && ! Builder::hasMacro('toQueryBuilder')) {
             Builder::macro('toQueryBuilder',
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
                     /** @var Builder $this */
