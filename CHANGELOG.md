@@ -2,6 +2,14 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.4.3 - 2023-02-26
+
+### What's Changed
+
+- Upgrade laraval 10 by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/18
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.2...v0.4.3
+
 ## v0.4.2 - 2023-02-23
 
 **Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.1...v0.4.2
@@ -67,6 +75,7 @@ hotfix exception caused by wrong order in mount
 
 - Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
 - ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
+- 
 - 
 - 
 - 
