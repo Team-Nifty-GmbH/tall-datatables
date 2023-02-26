@@ -22,7 +22,6 @@
         "livewire/livewire": "^2.11",
         "maatwebsite/excel": "^3.1",
         "spatie/laravel-model-info": "^1.4",
-        "wireui/heroicons": "^2.3",
         "wireui/wireui": "^1.17"
     },
     "require-dev": {
