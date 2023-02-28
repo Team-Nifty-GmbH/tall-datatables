@@ -11,6 +11,7 @@
     <x-dynamic-component
         :component="$layout"
         :has-head="$hasHead"
+        :headline="$headline"
         :is-filterable="$isFilterable"
         :table-head-col-attributes="$tableHeadColAttributes"
         :select-attributes="$selectAttributes"
