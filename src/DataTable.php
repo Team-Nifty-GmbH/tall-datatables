@@ -800,7 +800,9 @@ class DataTable extends Component
                             } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
                                 $this->whereNull($query, $filter);
                             } else {
-                                $query->where([array_values(array_filter($filter))]);
+                                $query->where([array_values(
+                                    array_filter($filter, fn ($value) => $value == 0 || ! empty($value))
+                                )]);
                             }
 
                             continue;

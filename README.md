@@ -41,7 +41,7 @@ composer require team-nifty-gmbh/tall-datatables
 Keep in mind to follow the wireui installation instructions starting at step 2:
 https://livewire-wireui.com/docs/get-started
 
-3. Add the folowing to your tailwind.config.js
+3. Add the following to your tailwind.config.js
 
 ```js
 module.exports = {
@@ -105,9 +105,9 @@ public array $enabledCols = [
 ];
 ```
 
-### Chosing a layout
+### Choosing a layout
 
-By default the table is rendered as a table.
+By default, the table is rendered as a table.
 You can change the layout by overriding the `getLayout` method.
 
 ```php
@@ -131,7 +131,7 @@ Check the WireUi documentation for the available options.
 These buttons will be rendered above the table on the right side.
 If your table has search enabled, the buttons will be rendered on the right side of the search input.
 
-> **_NOTE:_** My advice is to embed the datatable inside an other component and use the `wire:ignore` directive to avoid re-rendering the whole page.
+> **_NOTE:_** My advice is to embed the datatable inside another component and use the `wire:ignore` directive to avoid re-rendering the whole page.
 > The "Create" button could dispatch an alpinejs event to the parent component. The listener could trigger a livewire function to render the create form.
 
 ```php
@@ -211,7 +211,7 @@ public function getLeftAppends(): array
 ```
 This function would append the email below the name in the name column.
 This is just for view purposes. The data is still available in the record variable.
-Also all formatters are applied before the column is appended.
+Also, all formatters are applied before the column is appended.
 
 > **_NOTE:_** Keep in mind to add the appended Columns to the `getReturnKeys` method.
 
@@ -254,7 +254,7 @@ You can pass contextual attributes when you call the component like this:
     :filters="[['is_active' => true]]" 
 />
 ```
-This keeps your component reusable and you can use it in different contexts.
+This keeps your component reusable, and you can use it in different contexts.
 
 ### Using your DataTable as a full page component
 To use this new Data table as a full page component you can just point a route to the component.
@@ -353,7 +353,7 @@ public function getRowAttributes(): array
 ```
 
 ### Infinite Scrolling
-By default the table shows pagination. If you want to use infinite scrolling you can set the `hasInfiniteScroll` property to true.
+By default, the table shows pagination. If you want to use infinite scrolling you can set the `hasInfiniteScroll` property to true.
 
 ```php
 public bool $hasInfiniteScroll = true;
@@ -383,7 +383,7 @@ If you want to hide the header you can set the `hasHeader` property to false.
 public bool $hasHeader = false;
 ```
 
-The sidebar with the filters are still available but you have to add your own button to show it.
+The sidebar with the filters are still available, but you have to add your own button to show it.
 
 ### Icons
 
@@ -433,7 +433,7 @@ use TeamNifty\TallDatatables\Casts\Date;
 If you want to search in your datatable you should use the Searchable trait from laravel scout.
 The package will automatically detect if your model is searchable and will add a search input to the datatable.
 
-If you dont want to use the search input you can set the isSearchable property to false in your DataTable.
+If you don't want to use the search input you can set the isSearchable property to false in your DataTable.
     
 ```php
 public bool $isSearchable = false;
