@@ -6,6 +6,13 @@
     </tr>
     @if($hasHead)
         <x-slot:header>
+            @if($headline)
+                <tr class="w-full border-b border-slate-200 dark:border-slate-600">
+                    <td colspan="100%" class="whitespace-nowrap px-6 py-4">
+                        <div>{{ __($headline) }}</div>
+                    </td>
+                </tr>
+            @endif
             <x-tall-datatables::table.head-cell>
                 <template x-if="selectable">
                     <x-checkbox x-on:change="function (e) {
