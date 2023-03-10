@@ -65,6 +65,8 @@ class DataTable extends Component
 
     public array $enabledCols = [];
 
+    public array $columnLabels = [];
+
     public array $userFilters = [];
 
     public array $savedFilters = [];
@@ -329,7 +331,7 @@ class DataTable extends Component
     {
         $colLabels = array_flip($this->availableCols);
         array_walk($colLabels, function (&$value, $key) {
-            $value = __(Str::headline($key));
+            $value = __(Str::headline($this->columnLabels[$key] ?? $key));
         });
 
         return $colLabels;
