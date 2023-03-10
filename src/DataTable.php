@@ -64,6 +64,8 @@ class DataTable extends Component
     public array $availableRelations = [];
 
     public array $enabledCols = [];
+    
+    public array $columnLabels = [];
 
     public array $userFilters = [];
 
@@ -332,7 +334,12 @@ class DataTable extends Component
             $value = __(Str::headline($key));
         });
 
-        return $colLabels;
+        $customLabels = $this->columnLabels;
+        array_walk($customLabels, function (&$value) {
+            $value = __(Str::headline($value));
+        });
+
+        return array_merge($colLabels, $customLabels);
     }
 
     public function getIsSearchable(): bool
