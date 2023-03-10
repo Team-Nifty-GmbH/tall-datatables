@@ -331,15 +331,10 @@ class DataTable extends Component
     {
         $colLabels = array_flip($this->availableCols);
         array_walk($colLabels, function (&$value, $key) {
-            $value = __(Str::headline($key));
+            $value = __(Str::headline($this->columnLabels[$key] ?? $key));
         });
 
-        $customLabels = $this->columnLabels;
-        array_walk($customLabels, function (&$value) {
-            $value = __(Str::headline($value));
-        });
-
-        return array_merge($colLabels, $customLabels);
+        return $colLabels;
     }
 
     public function getIsSearchable(): bool
