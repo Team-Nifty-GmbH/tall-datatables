@@ -64,7 +64,7 @@ class DataTable extends Component
     public array $availableRelations = [];
 
     public array $enabledCols = [];
-    
+
     public array $columnLabels = [];
 
     public array $userFilters = [];
