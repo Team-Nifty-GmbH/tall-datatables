@@ -112,8 +112,8 @@ document.addEventListener('alpine:init', () => {
         filterValueLists: $wire.entangle('filterValueLists'),
         filters: $wire.entangle('userFilters'),
         aggregatableCols: $wire.entangle('aggregatableCols'),
-        orderByCol: $wire.entangle('orderBy'),
-        orderAsc: $wire.entangle('orderAsc'),
+        orderByCol: $wire.entangle('userOrderBy'),
+        orderAsc: $wire.entangle('userOrderAsc'),
         initialized: $wire.entangle('initialized'),
         search: $wire.entangle('search'),
         selected: $wire.entangle('selected').defer,
@@ -384,6 +384,8 @@ window.formatters = {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
         });
     },
     badge: (value, colors) => {

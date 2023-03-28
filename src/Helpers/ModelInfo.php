@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use ReflectionClass;
 use Spatie\ModelInfo\Attributes\Attribute;
+use Spatie\ModelInfo\ModelFinder;
 use Spatie\ModelInfo\ModelInfo as BaseModelInfo;
 
 class ModelInfo extends BaseModelInfo
@@ -21,44 +22,42 @@ class ModelInfo extends BaseModelInfo
             $model = new $model;
         }
 
-        /** @var Collection|null $cachedModelInfoCollection * */
-        $cachedModelInfoCollection = Cache::get(config('tall-datatables.cache_key') . '.modelInfo');
-
-        if ($cachedModelInfo = $cachedModelInfoCollection
-            ?->first(fn (BaseModelInfo $modelInfo) => $modelInfo->class === $model::class)) {
-            return $cachedModelInfo;
+        $cachedModelInfos = Cache::get(config('tall-datatables.cache_key') . '.modelInfo') ?? [];
+        if (array_key_exists(get_class($model), $cachedModelInfos)) {
+            return $cachedModelInfos[get_class($model)];
         }
 
         $modelInfo = parent::forModel($model);
+
         $modelInfo->attributes = $modelInfo
             ->attributes
             ->map(function (Attribute $attribute) use ($model) {
+                $attribute = \TeamNiftyGmbH\DataTable\ModelInfo\Attribute::fromBase($attribute);
                 $attribute->formatter = $attribute->getFormatterType($model);
 
                 return $attribute;
             });
 
-        if ($cachedModelInfoCollection) {
-            $cachedModelInfoCollection->push($modelInfo);
-            Cache::forever(config('tall-datatables.cache_key') . '.modelInfo', $cachedModelInfoCollection);
-        }
+        $cachedModelInfos[get_class($model)] = $modelInfo;
+        Cache::forever(config('tall-datatables.cache_key') . '.modelInfo', $cachedModelInfos);
 
         return $modelInfo;
     }
 
+    /**
+     * @param  string|null  $directory
+     * @param  string|null  $basePath
+     * @param  string|null  $baseNamespace
+     * @return Collection<\Spatie\ModelInfo\ModelInfo>
+     */
     public static function forAllModels(
         string $directory = null,
         string $basePath = null,
         string $baseNamespace = null
     ): Collection {
-        return Cache::rememberForever(
-            config('tall-datatables.cache_key') . '.modelInfo',
-            function () use ($directory, $basePath, $baseNamespace) {
-                return ModelFinder::all($directory, $basePath, $baseNamespace)
-                    ->map(function (string $model) {
-                        return self::forModel($model);
-                    });
-            }
-        );
+        return ModelFinder::all($directory, $basePath, $baseNamespace)
+            ->map(function (string $model) {
+                return self::forModel($model);
+            });
     }
 }
