@@ -128,7 +128,7 @@ class DataTable extends Component
 
     public bool $userOrderAsc = true;
 
-    public string $page = '1';
+    public int|string $page = '1';
 
     public int $perPage = 15;
 
@@ -386,7 +386,7 @@ class DataTable extends Component
     {
         $this->skipRender();
         if ($this->data['total'] / $this->perPage < $this->page) {
-            $this->page = $this->data['total'] / $this->perPage;
+            $this->page = ceil($this->data['total'] / $this->perPage);
         }
 
         $this->cacheState();

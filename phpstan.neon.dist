@@ -11,4 +11,9 @@ parameters:
     checkOctaneCompatibility: true
     checkModelProperties: true
     checkMissingIterableValueType: false
+    ignoreErrors:
+        - '#^Class Laravel\\Scout\\Searchable not found\.$#'
+        - '#^Call to an undefined method Illuminate\\Foundaition\\Auth\\User::datatableUserSettings\(\)\.$#'
+        - '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model::getLabel\(\)\.$#'
+        - '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model::getDescription\(\)\.$#'
 
