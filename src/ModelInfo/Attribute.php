@@ -29,7 +29,7 @@ class Attribute extends BaseAttribute
         );
     }
 
-    public function getFormatterType (Model|string $model): string|array
+    public function getFormatterType(Model|string $model): string|array
     {
         $modelInstance = is_string($model) ? new $model() : $model;
 
