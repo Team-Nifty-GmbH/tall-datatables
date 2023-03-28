@@ -392,7 +392,6 @@ class DataTable extends Component
         $this->cacheState();
 
         $this->loadData();
-
     }
 
     public function getFormatters(): array

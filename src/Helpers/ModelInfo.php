@@ -45,9 +45,6 @@ class ModelInfo extends BaseModelInfo
     }
 
     /**
-     * @param  string|null  $directory
-     * @param  string|null  $basePath
-     * @param  string|null  $baseNamespace
      * @return Collection<\Spatie\ModelInfo\ModelInfo>
      */
     public static function forAllModels(
