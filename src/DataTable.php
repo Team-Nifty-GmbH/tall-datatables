@@ -758,7 +758,7 @@ class DataTable extends Component
             $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
         } else {
             if ($orderBy) {
-                $query->orderBy($orderBy, $orderAsc ? 'DESC' : 'ASC');
+                $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
             } else {
                 $query->orderBy($this->modelKeyName, 'DESC');
             }
