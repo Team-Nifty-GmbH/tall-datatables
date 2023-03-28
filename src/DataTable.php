@@ -65,6 +65,8 @@ class DataTable extends Component
 
     public array $enabledCols = [];
 
+    public array $columnLabels = [];
+
     public array $userFilters = [];
 
     public array $savedFilters = [];
@@ -333,7 +335,7 @@ class DataTable extends Component
     {
         $colLabels = array_flip($this->availableCols);
         array_walk($colLabels, function (&$value, $key) {
-            $value = __(Str::headline($key));
+            $value = __(Str::headline($this->columnLabels[$key] ?? $key));
         });
 
         return $colLabels;
@@ -783,7 +785,12 @@ class DataTable extends Component
         foreach ($this->filters as $type => $filter) {
             if (! is_string($type)) {
                 $filter = array_is_list($filter) ? [$filter] : $filter;
-                $builder->where($filter);
+
+                if (($filter['operator'] ?? false) && in_array($filter['operator'], ['is null', 'is not null'])) {
+                    $builder->whereNull(columns: $filter['column'], not: $filter['operator'] === 'is not null');
+                } else {
+                    $builder->where([array_values($filter)]);
+                }
 
                 continue;
             }
@@ -811,7 +818,9 @@ class DataTable extends Component
                             } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
                                 $this->whereNull($query, $filter);
                             } else {
-                                $query->where([array_values(array_filter($filter))]);
+                                $query->where([array_values(
+                                    array_filter($filter, fn ($value) => $value == 0 || ! empty($value))
+                                )]);
                             }
 
                             continue;
@@ -850,11 +859,11 @@ class DataTable extends Component
 
     private function whereNull(Builder $builder, array $filter): Builder
     {
-        if ($filter['operator'] === 'is not null') {
-            return $builder->whereNotNull($filter['column']);
-        } else {
-            return $builder->whereNull($filter['column']);
-        }
+        return $builder->whereNull(
+            columns: $filter['column'],
+            boolean: ($filter['boolean'] ?? 'and') !== 'or' ? 'and' : 'or',
+            not: $filter['operator'] === 'is not null'
+        );
     }
 
     private function whereRelation(Builder $builder, array $filter): Builder

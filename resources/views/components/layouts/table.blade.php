@@ -33,7 +33,7 @@
                                 x-bind:class="Object.keys(sortable).length && orderByCol === col
                                 ? (orderAsc || 'rotate-180')
                                 : 'opacity-0'"
-                                name="chevron-down"
+                                name="chevron-up"
                                 class="h-4 w-4 transition-all"
                             />
                         </div>
