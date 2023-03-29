@@ -2,6 +2,15 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.4.5 - 2023-03-29
+
+### What's Changed
+
+- fix bugs by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/29
+- remove array_is_list() check by @SirSplasch in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/30
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.4...v0.4.5
+
 ## v0.4.4 - 2023-03-10
 
 ### What's Changed
@@ -90,6 +99,7 @@ hotfix exception caused by wrong order in mount
 
 - Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
 - ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
+- 
 - 
 - 
 - 
