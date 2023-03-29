@@ -139,7 +139,7 @@
                     <x-tall-datatables::table.cell>
                         <div
                             class="flex font-semibold"
-                            x-text="formatter(col, aggregate)"
+                            x-html="formatter(col, aggregate)"
                         >
                         </div>
                     </x-tall-datatables::table.cell>

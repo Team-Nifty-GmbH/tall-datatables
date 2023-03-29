@@ -189,6 +189,17 @@ public function getRowActions(): array
 }
 ```
 
+> **_TIP:_** If you want to prevent the row-clicked event to be dispatched on a button click
+> add the $event.stopPropagation() method to the button attributes.
+> ```php
+> DataTableButton::make()
+>    ->label('Edit')
+>    ->icon('pencil')
+>    ->color('primary')
+>    ->attributes([
+>        'x-on:click' => '$wire.edit(record.id); $event.stopPropagation()', // <--- here
+>      ]),
+
 ## Combining Columns
 
 You can combine multiple columns into one by overwrite the get{Position}Appends.

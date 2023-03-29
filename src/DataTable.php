@@ -126,7 +126,11 @@ class DataTable extends Component
 
     public bool $orderAsc = true;
 
-    public string $page = '1';
+    public string $userOrderBy = '';
+
+    public bool $userOrderAsc = true;
+
+    public int|string $page = '1';
 
     public int $perPage = 15;
 
@@ -348,11 +352,11 @@ class DataTable extends Component
     {
         $this->skipRender();
 
-        if ($this->orderBy === $col) {
-            $this->orderAsc = ! $this->orderAsc;
+        if ($this->userOrderBy === $col) {
+            $this->userOrderAsc = ! $this->userOrderAsc;
         }
 
-        $this->orderBy = $col;
+        $this->userOrderBy = $col;
 
         $this->cacheState();
         $this->loadData();
@@ -383,8 +387,12 @@ class DataTable extends Component
     public function updatedPerPage(): void
     {
         $this->skipRender();
+        if ($this->data['total'] / $this->perPage < $this->page) {
+            $this->page = ceil($this->data['total'] / $this->perPage);
+        }
 
         $this->cacheState();
+
         $this->loadData();
     }
 
@@ -562,8 +570,8 @@ class DataTable extends Component
                 'enabledCols' => $this->enabledCols,
                 'aggregatableCols' => $this->aggregatableCols,
                 'userFilters' => $this->userFilters,
-                'orderBy' => $this->orderBy,
-                'orderAsc' => $this->orderAsc,
+                'userOrderBy' => $this->userOrderBy,
+                'userOrderAsc' => $this->userOrderAsc,
                 'perPage' => $this->perPage,
             ],
             'is_permanent' => $permanent,
@@ -707,8 +715,16 @@ class DataTable extends Component
             $query = $model::query();
         }
 
-        if (Str::contains($this->orderBy, '.')) {
-            $relationPath = explode('.', $this->orderBy);
+        if ($this->userOrderBy) {
+            $orderBy = $this->userOrderBy;
+            $orderAsc = $this->userOrderAsc;
+        } else {
+            $orderBy = $this->orderBy;
+            $orderAsc = $this->orderAsc;
+        }
+
+        if (Str::contains($orderBy, '.')) {
+            $relationPath = explode('.', $orderBy);
             $table = $relationPath[0];
             $orderByColumn = array_pop($relationPath);
             $localModel = new $model;
@@ -740,10 +756,10 @@ class DataTable extends Component
             }
 
             $orderBy = $table . '.' . $orderByColumn;
-            $query->orderBy($orderBy, $this->orderAsc ? 'ASC' : 'DESC');
+            $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
         } else {
-            if ($this->orderBy) {
-                $query->orderBy($this->orderBy, $this->orderAsc ? 'ASC' : 'DESC');
+            if ($orderBy) {
+                $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
             } else {
                 $query->orderBy($this->modelKeyName, 'DESC');
             }
@@ -861,8 +877,8 @@ class DataTable extends Component
             'userFilters' => $this->userFilters,
             'enabledCols' => $this->enabledCols,
             'aggregatableCols' => $this->aggregatableCols,
-            'orderBy' => $this->orderBy,
-            'orderAsc' => $this->orderAsc,
+            'userOrderBy' => $this->userOrderBy,
+            'userOrderAsc' => $this->userOrderAsc,
             'perPage' => $this->perPage,
             'page' => $this->page,
             'search' => $this->search,
