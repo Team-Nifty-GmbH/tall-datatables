@@ -784,8 +784,6 @@ class DataTable extends Component
     {
         foreach ($this->filters as $type => $filter) {
             if (! is_string($type)) {
-                $filter = array_is_list($filter) ? [$filter] : $filter;
-
                 if (($filter['operator'] ?? false) && in_array($filter['operator'], ['is null', 'is not null'])) {
                     $builder->whereNull(columns: $filter['column'], not: $filter['operator'] === 'is not null');
                 } else {
