@@ -153,17 +153,6 @@ public function getTableActions(): array
 }
 ```
 
-> **_TIP:_** If you want to prevent the row-clicked event to be dispatched on a button click
-> add the $event.stopPropagation() method to the button attributes.
-> ```php
-> DataTableButton::make()
->    ->label('Create')
->    ->icon('plus')
->    ->color('primary')
->    ->attributes([
->        'x-on:click' => '$dispatch(\'create-user\'); $event.stopPropagation()', // <--- here
->      ]),
-
 ### Adding Buttons to a row
 
 > **_NOTE:_** Keep in mind that tall-datatables relies on alpinejs to render the data.
@@ -199,6 +188,17 @@ public function getRowActions(): array
     ];
 }
 ```
+
+> **_TIP:_** If you want to prevent the row-clicked event to be dispatched on a button click
+> add the $event.stopPropagation() method to the button attributes.
+> ```php
+> DataTableButton::make()
+>    ->label('Edit')
+>    ->icon('pencil')
+>    ->color('primary')
+>    ->attributes([
+>        'x-on:click' => '$wire.edit(record.id); $event.stopPropagation()', // <--- here
+>      ]),
 
 ## Combining Columns
 

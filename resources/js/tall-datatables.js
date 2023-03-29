@@ -386,6 +386,7 @@ window.formatters = {
             day: '2-digit',
             hour: '2-digit',
             minute: '2-digit',
+            second: '2-digit',
         });
     },
     badge: (value, colors) => {
@@ -429,6 +430,11 @@ window.formatters = {
         }
     },
     time: (value) => {
+        // check if value is already in time format
+        if (value.match(/^(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$/)) {
+            return value;
+        }
+
         return new Date(value).toLocaleTimeString(document.documentElement.lang);
     },
     float: (value) => {
