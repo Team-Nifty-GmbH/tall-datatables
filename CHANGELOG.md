@@ -2,6 +2,38 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.4.6 - 2023-03-29
+
+### What's Changed
+
+- re-add built js file by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/31
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.5...v0.4.6
+
+## v0.4.5 - 2023-03-29
+
+### What's Changed
+
+- fix bugs by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/29
+- remove array_is_list() check by @SirSplasch in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/30
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.4...v0.4.5
+
+## v0.4.4 - 2023-03-10
+
+### What's Changed
+
+- enable null filters by @SirSplasch in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/20
+- remove array_filter() to not accidentally remove 0 by @SirSplasch in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/21
+- Fix table sort order of variable $orderAsc by @nehegeb in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/25
+- Make column labels customizable by @nehegeb in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/27
+
+### New Contributors
+
+- @nehegeb made their first contribution in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/25
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.3...v0.4.4
+
 ## v0.4.3 - 2023-02-26
 
 ### What's Changed
@@ -75,6 +107,9 @@ hotfix exception caused by wrong order in mount
 
 - Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
 - ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
+- 
+- 
+- 
 - 
 - 
 - 

@@ -2,17 +2,14 @@
 
 namespace TeamNiftyGmbH\DataTable;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Scout\Builder;
-use Spatie\ModelInfo\Attributes\Attribute;
 use TeamNiftyGmbH\DataTable\Commands\MakeDataTableCommand;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCache;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCacheReset;
-use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
 
@@ -131,30 +128,6 @@ class DataTableServiceProvider extends ServiceProvider
                             $builder->hits = $searchResult['hits'];
                             $builder->scout_pagination = $searchResult['searchResult'];
                         });
-                }
-            );
-        }
-
-        if (! Attribute::hasMacro('getFormatterType')) {
-            Attribute::macro('getFormatterType',
-                function (Model|string $model): string|array {
-                    $modelInstance = is_string($model) ? new $model() : $model;
-
-                    /** @var Attribute $this */
-                    if (in_array($this->cast, ['accessor', 'attribute']) && $modelInstance->hasCast($this->name)) {
-                        $this->cast = $modelInstance->getCasts()[$this->name];
-                    } elseif (in_array($this->cast, ['accessor', 'attribute']) && class_exists($this->phpType)) {
-                        $this->cast = $this->phpType;
-                    }
-
-                    if (
-                        class_exists($this->cast ?? false)
-                        && in_array(HasFrontendFormatter::class, class_implements($this->cast))
-                    ) {
-                        return $this->cast::getFrontendFormatter(modelClass: $model);
-                    }
-
-                    return strtolower(class_basename($this->cast ?? $this->phpType));
                 }
             );
         }

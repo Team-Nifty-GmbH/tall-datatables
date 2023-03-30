@@ -65,6 +65,8 @@ class DataTable extends Component
 
     public array $enabledCols = [];
 
+    public array $columnLabels = [];
+
     public array $userFilters = [];
 
     public array $savedFilters = [];
@@ -130,7 +132,11 @@ class DataTable extends Component
 
     public bool $orderAsc = true;
 
-    public string $page = '1';
+    public string $userOrderBy = '';
+
+    public bool $userOrderAsc = true;
+
+    public int|string $page = '1';
 
     public int $perPage = 15;
 
@@ -335,7 +341,7 @@ class DataTable extends Component
     {
         $colLabels = array_flip($this->availableCols);
         array_walk($colLabels, function (&$value, $key) {
-            $value = __(Str::headline($key));
+            $value = __(Str::headline($this->columnLabels[$key] ?? $key));
         });
 
         return $colLabels;
@@ -352,11 +358,11 @@ class DataTable extends Component
     {
         $this->skipRender();
 
-        if ($this->orderBy === $col) {
-            $this->orderAsc = ! $this->orderAsc;
+        if ($this->userOrderBy === $col) {
+            $this->userOrderAsc = ! $this->userOrderAsc;
         }
 
-        $this->orderBy = $col;
+        $this->userOrderBy = $col;
 
         $this->cacheState();
         $this->loadData();
@@ -387,8 +393,12 @@ class DataTable extends Component
     public function updatedPerPage(): void
     {
         $this->skipRender();
+        if ($this->data['total'] / $this->perPage < $this->page) {
+            $this->page = ceil($this->data['total'] / $this->perPage);
+        }
 
         $this->cacheState();
+
         $this->loadData();
     }
 
@@ -566,8 +576,8 @@ class DataTable extends Component
                 'enabledCols' => $this->enabledCols,
                 'aggregatableCols' => $this->aggregatableCols,
                 'userFilters' => $this->userFilters,
-                'orderBy' => $this->orderBy,
-                'orderAsc' => $this->orderAsc,
+                'userOrderBy' => $this->userOrderBy,
+                'userOrderAsc' => $this->userOrderAsc,
                 'perPage' => $this->perPage,
             ],
             'is_permanent' => $permanent,
@@ -711,8 +721,16 @@ class DataTable extends Component
             $query = $model::query();
         }
 
-        if (Str::contains($this->orderBy, '.')) {
-            $relationPath = explode('.', $this->orderBy);
+        if ($this->userOrderBy) {
+            $orderBy = $this->userOrderBy;
+            $orderAsc = $this->userOrderAsc;
+        } else {
+            $orderBy = $this->orderBy;
+            $orderAsc = $this->orderAsc;
+        }
+
+        if (Str::contains($orderBy, '.')) {
+            $relationPath = explode('.', $orderBy);
             $table = $relationPath[0];
             $orderByColumn = array_pop($relationPath);
             $localModel = new $model;
@@ -744,10 +762,10 @@ class DataTable extends Component
             }
 
             $orderBy = $table . '.' . $orderByColumn;
-            $query->orderBy($orderBy, $this->orderAsc ? 'ASC' : 'DESC');
+            $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
         } else {
-            if ($this->orderBy) {
-                $query->orderBy($this->orderBy, $this->orderAsc ? 'DESC' : 'ASC');
+            if ($orderBy) {
+                $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
             } else {
                 $query->orderBy($this->modelKeyName, 'DESC');
             }
@@ -772,8 +790,11 @@ class DataTable extends Component
     {
         foreach ($this->filters as $type => $filter) {
             if (! is_string($type)) {
-                $filter = array_is_list($filter) ? [$filter] : $filter;
-                $builder->where($filter);
+                if (($filter['operator'] ?? false) && in_array($filter['operator'], ['is null', 'is not null'])) {
+                    $builder->whereNull(columns: $filter['column'], not: $filter['operator'] === 'is not null');
+                } else {
+                    $builder->where([array_values($filter)]);
+                }
 
                 continue;
             }
@@ -801,7 +822,9 @@ class DataTable extends Component
                             } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
                                 $this->whereNull($query, $filter);
                             } else {
-                                $query->where([array_values(array_filter($filter))]);
+                                $query->where([array_values(
+                                    array_filter($filter, fn ($value) => $value == 0 || ! empty($value))
+                                )]);
                             }
 
                             continue;
@@ -840,11 +863,11 @@ class DataTable extends Component
 
     private function whereNull(Builder $builder, array $filter): Builder
     {
-        if ($filter['operator'] === 'is not null') {
-            return $builder->whereNotNull($filter['column']);
-        } else {
-            return $builder->whereNull($filter['column']);
-        }
+        return $builder->whereNull(
+            columns: $filter['column'],
+            boolean: ($filter['boolean'] ?? 'and') !== 'or' ? 'and' : 'or',
+            not: $filter['operator'] === 'is not null'
+        );
     }
 
     private function whereRelation(Builder $builder, array $filter): Builder
@@ -858,8 +881,8 @@ class DataTable extends Component
             'userFilters' => $this->userFilters,
             'enabledCols' => $this->enabledCols,
             'aggregatableCols' => $this->aggregatableCols,
-            'orderBy' => $this->orderBy,
-            'orderAsc' => $this->orderAsc,
+            'userOrderBy' => $this->userOrderBy,
+            'userOrderAsc' => $this->userOrderAsc,
             'perPage' => $this->perPage,
             'page' => $this->page,
             'search' => $this->search,
