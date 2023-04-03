@@ -120,6 +120,11 @@ class DataTable extends Component
      */
     public bool $hasNoRedirect = false;
 
+    /**
+     * If not empty the given text will be displayed as a headline above the table.
+     */
+    public string $headline = '';
+
     public string $search = '';
 
     public string $orderBy = '';
