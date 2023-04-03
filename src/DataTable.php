@@ -121,8 +121,7 @@ class DataTable extends Component
     public bool $hasNoRedirect = false;
 
     /**
-     * If not empty and $hasHead is set to true,
-     * the given text will be displayed as a headline at the top of the table.
+     * If not empty the given text will be displayed as a headline above the table.
      */
     public string $headline = '';
 
