@@ -108,7 +108,7 @@ class DataTableServiceProvider extends ServiceProvider
                     $searchResult = $this->getScoutResults($highlight, $perPage, $page);
 
                     return DB::table($this->model->getTable())
-                        ->whereIn($this->model->getKeyName(), $searchResult['ids'])
+                        ->whereIn($this->model->getTable() . '.' . $this->model->getKeyName(), $searchResult['ids'])
                         ->tap(function ($builder) use ($searchResult) {
                             $builder->hits = $searchResult['hits'];
                             $builder->scout_pagination = $searchResult['searchResult'];
