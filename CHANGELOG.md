@@ -2,6 +2,15 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.4.7 - 2023-04-21
+
+### What's Changed
+
+- Add table headline by @nehegeb in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/19
+- add fully qualified column name in toEloquentBuilder() by @SirSplasch in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/32
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.6...v0.4.7
+
 ## v0.4.6 - 2023-03-29
 
 ### What's Changed
@@ -107,6 +116,7 @@ hotfix exception caused by wrong order in mount
 
 - Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
 - ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
+- 
 - 
 - 
 - 
