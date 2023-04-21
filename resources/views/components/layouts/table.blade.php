@@ -6,60 +6,90 @@
     </tr>
     @if($hasHead)
         <x-slot:header>
-            <x-tall-datatables::table.head-cell>
-                <template x-if="selectable">
-                    <x-checkbox x-on:change="function (e) {
-                        if (e.target.checked) {
-                            selected = getData().map(record => record.id);
-                            selected.push('*');
-                        } else {
-                            selected = [];
-                        }
-                    }" value="*" x-model="selected"/>
-                </template>
-            </x-tall-datatables::table.head-cell>
-            <template x-for="(col, index) in cols">
-                <x-tall-datatables::table.head-cell :attributes="$tableHeadColAttributes">
-                    <div class="flex">
-                        <div
-                            type="button"
-                            wire:loading.attr="disabled"
-                            class="flex flex-row items-center space-x-1.5"
-                            x-on:click="sortable.includes(col) && $wire.sortTable(col)"
-                            x-bind:class="sortable.includes(col) ? 'cursor-pointer' : ''"
-                        >
-                            <span x-text="colLabels[col]"></span>
-                            <x-icon
-                                x-bind:class="Object.keys(sortable).length && orderByCol === col
-                                ? (orderAsc || 'rotate-180')
-                                : 'opacity-0'"
-                                name="chevron-up"
-                                class="h-4 w-4 transition-all"
-                            />
+            <tr>
+                <x-tall-datatables::table.head-cell>
+                    <template x-if="selectable">
+                        <x-checkbox x-on:change="function (e) {
+                            if (e.target.checked) {
+                                selected = getData().map(record => record.id);
+                                selected.push('*');
+                            } else {
+                                selected = [];
+                            }
+                        }" value="*" x-model="selected"/>
+                    </template>
+                </x-tall-datatables::table.head-cell>
+                <template x-for="(col, index) in cols">
+                    <x-tall-datatables::table.head-cell :attributes="$tableHeadColAttributes">
+                        <div class="flex">
+                            <div
+                                type="button"
+                                wire:loading.attr="disabled"
+                                class="flex flex-row items-center space-x-1.5"
+                                x-on:click="sortable.includes(col) && $wire.sortTable(col)"
+                                x-bind:class="sortable.includes(col) ? 'cursor-pointer' : ''"
+                            >
+                                <span x-text="colLabels[col]"></span>
+                                <x-icon
+                                    x-bind:class="Object.keys(sortable).length && orderByCol === col
+                                    ? (orderAsc || 'rotate-180')
+                                    : 'opacity-0'"
+                                    name="chevron-up"
+                                    class="h-4 w-4 transition-all"
+                                />
+                            </div>
+                            @if($isFilterable && ! $showFilterInputs)
+                                <x-icon name="filter"
+                                    x-show="filterable.includes(col)"
+                                    class="h-4 w-4 cursor-pointer"
+                                    x-on:click="loadSidebar({column: col, operator: '', value: '', relation: ''})"
+                                />
+                            @endif
                         </div>
-                        @if($isFilterable)
-                            <x-icon name="filter"
-                                x-show="filterable.includes(col)"
-                                class="h-4 w-4 cursor-pointer"
-                                x-on:click="loadSidebar({column: col, operator: '', value: '', relation: ''})"
-                            />
-                        @endif
+                    </x-tall-datatables::table.head-cell>
+                </template>
+                @if($rowActions ?? false)
+                    <x-tall-datatables::table.head-cell class="w-[1%]">
+                        {{ __('Actions') }}
+                    </x-tall-datatables::table.head-cell>
+                @endif
+                <x-tall-datatables::table.head-cell class="!py-0 w-4 flex flex-row-reverse">
+                    <div class="flex w-full flex-row-reverse items-center">
+                        <x-button
+                            icon="cog"
+                            x-on:click="loadSidebar()"
+                        />
                     </div>
                 </x-tall-datatables::table.head-cell>
-            </template>
-            @if($rowActions ?? false)
-                <x-tall-datatables::table.head-cell class="w-[1%]">
-                    {{ __('Actions') }}
-                </x-tall-datatables::table.head-cell>
+            </tr>
+            @if($isFilterable && $showFilterInputs)
+                <tr class="bg-gray-50">
+                    <td></td>
+                    <template x-for="(col, index) in cols">
+                        <td class="py-1 px-2">
+                            <template x-if="! filterValueLists.hasOwnProperty(col)">
+                                <x-input class="p-1" x-model.debounce.500ms="textFilter[col]" x-show="filterable.includes(col)" />
+                            </template>
+                            <template x-if="filterValueLists.hasOwnProperty(col)">
+                                <x-native-select
+                                    x-model="textFilter[col]"
+                                    placeholder="{{ __('Value') }}"
+                                >
+                                    <option value=""></option>
+                                    <template x-for="item in filterValueLists[col]">
+                                        <option x-bind:value="item.value" x-text="item.label"></option>
+                                    </template>
+                                </x-native-select>
+                            </template>
+                        </td>
+                    </template>
+                    @if($rowActions ?? false)
+                        <td>
+                        </td>
+                    @endif
+                    <td></td>
+                </tr>
             @endif
-            <x-tall-datatables::table.head-cell class="w-4 flex flex-row-reverse">
-                <div class="flex w-full flex-row-reverse items-center">
-                    <x-button
-                        icon="cog"
-                        x-on:click="loadSidebar()"
-                    />
-                </div>
-            </x-tall-datatables::table.head-cell>
         </x-slot:header>
     @endif
     <template x-if="! getData().length && initialized">
