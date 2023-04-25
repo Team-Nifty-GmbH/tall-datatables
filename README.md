@@ -9,6 +9,8 @@ This package aims to provide a simple way to create datatables using alpinejs, t
 
 It relies mainly on alpinejs to avoid re-rendering the whole table when something changed.
 
+![img_1.png](resources%2Fimages%2Fimg_1.png)
+
 ## Requirements
 
 - PHP >= 8.1
@@ -17,7 +19,7 @@ It relies mainly on alpinejs to avoid re-rendering the whole table when somethin
 - TailwindCSS >= 3.0
 - Livewire >= 2.11
 - Vite >= 4.0
-- MeiliSearch >= 0.30
+- MeiliSearch >= 1.0
 
 ## Installation
 
@@ -32,7 +34,7 @@ composer require team-nifty-gmbh/tall-datatables
 <livewire:scripts/>
 
 <wireui:scripts />
-<datatable:scripts />
+@dataTablesScripts
 
 @vite(['resources/js/alpine.js'])
 ...
@@ -121,6 +123,8 @@ This package delivers 2 layouts:
 'tall-datatables::layouts.grid' and 'tall-datatables::layouts.table'
 
 You can also create your own layout by creating a blade file inside the `resources/views/components` folder.
+
+![grid_layout.png](resources%2Fimages%2Fgrid_layout.png)
 
 
 ### Adding Buttons to the table
@@ -385,6 +389,13 @@ Alpine.plugin(intersect);
 window.Alpine = Alpine;
 
 Alpine.start();
+```
+
+### Show filter inputs below column names
+If you want to show the filter inputs below the column names you can set the `showFilterInputs` property to true.
+
+```php
+public bool $showFilterInputs = true;
 ```
 
 ### Hiding the header

@@ -17,6 +17,7 @@
         :component="$layout"
         :has-head="$hasHead"
         :is-filterable="$isFilterable"
+        :show-filter-inputs="$showFilterInputs"
         :table-head-col-attributes="$tableHeadColAttributes"
         :select-attributes="$selectAttributes"
         :row-actions="$rowActions"
