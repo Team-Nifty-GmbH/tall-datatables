@@ -92,7 +92,8 @@
                 <template x-if="selectable">
                     <div {{ $selectAttributes }}>
                         <x-checkbox
-                            x-on:change="$dispatch('data-table-record-selected', {record: record, index: index, value: $el.checked})"
+                            x-on:click="$event.stopPropagation();"
+                            x-on:change="$dispatch('data-table-record-selected', {record: record, index: index, value: $el.checked});"
                             x-bind:value="record.id"
                             x-model="selected"
                         />
