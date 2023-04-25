@@ -101,6 +101,8 @@ class DataTable extends Component
      */
     public bool $isFilterable = true;
 
+    public bool $showFilterInputs = false;
+
     /**
      * If set to false the table will have no head, so no captions for the cols.
      *
@@ -286,6 +288,7 @@ class DataTable extends Component
                 'rowActions' => $this->getRowActions(),
                 'tableActions' => $this->getTableActions(),
                 'modelName' => class_basename($this->model),
+                'showFilterInputs' => $this->showFilterInputs,
                 'layout' => $this->getLayout(),
             ]
         );

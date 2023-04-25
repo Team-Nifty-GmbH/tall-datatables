@@ -24,7 +24,7 @@ document.addEventListener('alpine:init', () => {
                         this.$wire.storeColLayout(this.cols);
                     });
                 }
-            ),
+            )
 
             this.$nextTick(() => {
                 new Sortable(document.getElementById(this.$id('table-cols')), {
@@ -41,9 +41,9 @@ document.addEventListener('alpine:init', () => {
                         this.cols = this.enabledCols.filter(value => this.cols.includes(value));
                     }
                 });
-            }),
+            })
 
-            this.loadFilterable(),
+            this.loadFilterable()
 
             this.$watch('newFilter.column', () => {
                 if (! Boolean(this.newFilter.column)) {
@@ -77,17 +77,17 @@ document.addEventListener('alpine:init', () => {
                     this.filterSelectType = 'valueList';
                     this.newFilter.operator = '=';
                 }
-            }),
+            })
 
             this.$watch('newFilter.operator', () => {
                 if (this.newFilter.operator === 'is null' || this.newFilter.operator === 'is not null') {
                     this.filterSelectType = 'none';
                 }
-            }),
+            })
 
             this.$watch('newFilter.relation', () => {
                 this.loadFilterable(this.newFilter.relation);
-            }),
+            })
 
             this.$watch('selected', () => {
                 this.$dispatch('tall-datatables-selected', this.selected);
@@ -162,6 +162,15 @@ document.addEventListener('alpine:init', () => {
                 .then(
                     result => {
                         this.filterable = result;
+                        if (! this.textFilter) {
+                            this.textFilter = result.reduce((acc, curr) => {
+                                acc[curr] = "";
+                                return acc;
+                            }, {});
+                            this.$watch('textFilter', () => {
+                                this.parseFilter();
+                            });
+                        }
                     }
                 );
         },
@@ -174,7 +183,33 @@ document.addEventListener('alpine:init', () => {
                 );
         },
         filterIndex: 0,
+        textFilter: null,
         newFilter: {column: '', operator: '', value: '', relation: ''},
+        parseFilter() {
+            let filters = [];
+            for (const [key, value] of Object.entries(this.textFilter)) {
+                if (value === '') {
+                    continue;
+                }
+
+                let operator = null;
+                if (this.filterValueLists.hasOwnProperty(key)) {
+                    operator = '='
+                } else {
+                    operator = value.match(/^(=|!=|>|<|>=|<=|like|not like|is null|is not null)/i);
+                }
+
+                if (operator) {
+                    filters.push({column: key, operator: operator[0].toLowerCase(), value: value.replace(operator[0], '').trim(), relation: ''});
+
+                    continue;
+                }
+
+                filters.push({column: key, operator: 'like', value: '%' + value + '%', relation: ''});
+            }
+
+            this.filters = filters.length ? [filters] : [];
+        },
         addFilter() {
             let newFilter = this.newFilter;
             if (this.filters.length === 0) {

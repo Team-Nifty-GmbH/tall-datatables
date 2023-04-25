@@ -447,11 +447,30 @@
             @if($this->isExportable)
                 <div x-show="tab === 'export'">
                     <template x-for="columnName in exportableColumns">
-                        <x-checkbox x-bind:value="columnName" x-model="exportColumns">
-                            <x-slot:label>
-                                <span x-text="columnName"></span>
-                            </x-slot:label>
-                        </x-checkbox>
+                        <div>
+                            <label for="" class="flex items-center ">
+                                <div class="relative flex items-start">
+                                    <div class="flex items-center h-5">
+                                        <input
+                                            type="checkbox"
+                                            class="form-checkbox rounded transition ease-in-out duration-100
+                                                border-secondary-300 text-primary-600 focus:ring-primary-600 focus:border-primary-400
+                                                dark:border-secondary-500 dark:checked:border-secondary-600 dark:focus:ring-secondary-600
+                                                dark:focus:border-secondary-500 dark:bg-secondary-600 dark:text-secondary-600
+                                                dark:focus:ring-offset-secondary-800"
+                                            x-bind:value="columnName"
+                                            x-model="exportColumns"
+                                            value="uuid"
+                                        >
+                                    </div>
+                                    <div class="ml-2 text-sm">
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-400">
+                                            <span x-text="columnName"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
                     </template>
                     <div class="pt-3">
                         <x-button
