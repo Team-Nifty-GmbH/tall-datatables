@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Controllers;
 
+use Illuminate\Support\Facades\File;
 use Livewire\Controllers\CanPretendToBeAFile;
 
 class AssetController extends Controller
@@ -16,8 +17,14 @@ class AssetController extends Controller
      */
     public function scripts(): mixed
     {
-        $path = dirname(__DIR__, 2) . '/dist/build/assets/';
-        $path .= request()->has('id') ? 'tall-datatables-' . request()->get('id') : 'tall-datatables.js';
+        $assetPath = dirname(__DIR__, 2) . '/dist/build/assets/';
+
+        $path = request()->has('id')
+            ? 'tall-datatables-' . request()->get('id') :
+            null;
+        $path = file_exists($assetPath . $path)
+            ? $assetPath . $path
+            : File::glob($path . 'tall-datatables*.js')[0];
 
         return $this->pretendResponseIsFile(
             $path,
@@ -33,8 +40,14 @@ class AssetController extends Controller
      */
     public function styles(): mixed
     {
-        $path = dirname(__DIR__, 2) . '/dist/build/assets/';
-        $path .= request()->has('id') ? 'tall-datatables-' . request()->get('id') : 'tall-datatables.css';
+        $assetPath = dirname(__DIR__, 2) . '/dist/build/assets/';
+
+        $path = request()->has('id')
+            ? 'tall-datatables-' . request()->get('id') :
+            null;
+        $path = file_exists($assetPath . $path)
+            ? $assetPath . $path
+            : File::glob($path . 'tall-datatables*.css')[0];
 
         return $this->pretendResponseIsFile(
             $path,
