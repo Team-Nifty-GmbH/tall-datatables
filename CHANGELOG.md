@@ -2,6 +2,15 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.4.8 - 2023-04-25
+
+### What's Changed
+
+- add filter inputs below column names by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/33
+- prevent click event by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/35
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.7...v0.4.8
+
 ## v0.4.7 - 2023-04-21
 
 ### What's Changed
@@ -116,6 +125,7 @@ hotfix exception caused by wrong order in mount
 
 - Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
 - ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
+- 
 - 
 - 
 - 
