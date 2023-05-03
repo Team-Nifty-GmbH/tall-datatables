@@ -2,6 +2,14 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.4.9 - 2023-05-03
+
+### What's Changed
+
+- fix asset not found exception by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/36
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.8...v0.4.9
+
 ## v0.4.8 - 2023-04-25
 
 ### What's Changed
@@ -125,6 +133,7 @@ hotfix exception caused by wrong order in mount
 
 - Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
 - ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
+- 
 - 
 - 
 - 
