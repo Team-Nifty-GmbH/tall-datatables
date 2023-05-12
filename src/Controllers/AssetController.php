@@ -22,9 +22,10 @@ class AssetController extends Controller
         $path = request()->has('id')
             ? 'tall-datatables-' . request()->get('id') :
             null;
+
         $path = file_exists($assetPath . $path)
             ? $assetPath . $path
-            : File::glob($path . 'tall-datatables*.js')[0];
+            : File::glob($assetPath . 'tall-datatables*.js')[0];
 
         return $this->pretendResponseIsFile(
             $path,
@@ -47,7 +48,7 @@ class AssetController extends Controller
             null;
         $path = file_exists($assetPath . $path)
             ? $assetPath . $path
-            : File::glob($path . 'tall-datatables*.css')[0];
+            : File::glob($assetPath . 'tall-datatables*.css')[0];
 
         return $this->pretendResponseIsFile(
             $path,
