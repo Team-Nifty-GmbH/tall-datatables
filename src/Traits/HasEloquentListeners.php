@@ -17,8 +17,7 @@ trait HasEloquentListeners
 
         if (
             in_array(BroadcastsEvents::class, class_uses_recursive($this->model))
-            && $paginator->currentPage() === 1)
-        {
+            && $paginator->currentPage() === 1) {
             $this->broadcastChannels['created'] = $this->model::getBroadcastChannel(true);
         }
 
