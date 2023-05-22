@@ -308,6 +308,38 @@ If you want to use your clicked row with livewire my recommendation is to use th
 </div>
 ```
 
+## Echo and Eloquent Events
+
+If you want to listen to eloquent events that occur on the model you can use the `HasEloquentListeners` trait in your Datatable.
+This trait will automatically register the Echo event listeners for `created`, `updated` and `deleted` events.
+
+Your models should use the BroadcastsEvents trait from this package.
+    
+```php
+use TeamNiftyGmbH\DataTable\Traits\BroadcastsEvents;
+
+class User extends Authenticatable
+{
+    use BroadcastsEvents;
+}
+```
+
+You have to define your Authentication callbacks like this:
+
+```php
+Broadcast::channel(App\Models\User::class, function ($user, $id) {
+    return $user->id === (int) $id;
+});
+```
+
+To have `created` events working you have to add an aditional route:
+
+```php
+Broadcast::channel(\App\Models\User::getBroadcastChannel(), function ($user) {
+    return true;
+});
+```
+
 # Prepare your model
 
 ## HasFrontendFormatter trait
