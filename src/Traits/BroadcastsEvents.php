@@ -48,30 +48,6 @@ trait BroadcastsEvents
 
     public function broadcastOn($event): array
     {
-        if ($event === 'created') {
-            $channels[] = new PrivateChannel($this->broadcastChannel(true));
-        } else {
-            $channels[] = new PrivateChannel($this->broadcastChannel());
-        }
-
-        $relationshipTypes = [
-            BelongsTo::class,
-            HasOne::class,
-            HasOneThrough::class,
-            MorphOne::class,
-        ];
-
-        ModelInfo::forModel(self::class)
-            ->relations
-            ->filter(fn (Relation $relation) => in_array($relation->type, $relationshipTypes))
-            ->each(function ($relation) use (&$channels) {
-                $relationChannel = $this->{$relation->name}()->first()?->broadcastChannel(false);
-
-                if ($relationChannel) {
-                    $channels[] = new PrivateChannel($relationChannel);
-                }
-            });
-
-        return $channels;
+        return [new PrivateChannel($this->broadcastChannel($event === 'created'))];
     }
 }

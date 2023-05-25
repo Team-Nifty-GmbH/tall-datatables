@@ -17,7 +17,8 @@ trait HasEloquentListeners
 
         if (
             in_array(BroadcastsEvents::class, class_uses_recursive($this->model))
-            && $paginator->currentPage() === 1) {
+            && $paginator->currentPage() === 1
+        ) {
             $this->broadcastChannels['created'] = $this->model::getBroadcastChannel(true);
         }
 
@@ -49,8 +50,8 @@ trait HasEloquentListeners
         $item = $this->itemToArray($model);
 
         array_unshift($this->data['data'], $item);
-        $this->data['total'] = $this->data['total'] + 1;
-        $this->data['to'] = $this->data['to'] + 1;
+        $this->data['total']++;
+        $this->data['to']++;
         $this->data['from'] = $this->data['from'] ?: 1;
 
         if (count($this->data['data']) > $this->data['per_page']) {
@@ -63,11 +64,14 @@ trait HasEloquentListeners
     public function echoDeleted($eventData): void
     {
         $data = \Arr::keyBy($this->data['data'], $this->modelKeyName);
-        unset($data[$eventData['model'][$this->modelKeyName]]);
+        unset(
+            $data[$eventData['model'][$this->modelKeyName]],
+            $this->broadcastChannels[$eventData['model'][$this->modelKeyName]]
+        );
+
         $this->data['data'] = array_values($data);
-        unset($this->broadcastChannels[$eventData['model'][$this->modelKeyName]]);
-        $this->data['total'] = $this->data['total'] - 1;
-        $this->data['to'] = $this->data['to'] - 1;
+        $this->data['total']--;
+        $this->data['to']--;
 
         $this->skipRender();
     }
