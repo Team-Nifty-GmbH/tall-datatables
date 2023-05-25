@@ -6,6 +6,7 @@
     <div
         class="relative"
         wire:ignore
+        tall-datatable
         x-data="data_table($wire)"
         {{ $attributes }}
     >

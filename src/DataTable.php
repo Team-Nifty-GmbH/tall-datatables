@@ -691,7 +691,7 @@ class DataTable extends Component
     {
         if (method_exists(Auth::user(), 'getDataTableSettings')) {
             return Auth::user()
-                ->getDataTableSettings()
+                ->getDataTableSettings($this)
                 ?->toArray() ?: [];
         } else {
             return [];
@@ -717,7 +717,7 @@ class DataTable extends Component
         $model = $this->model;
 
         if ($this->search && method_exists($model, 'search')) {
-            $query = $model::search($this->search)
+            $query = $this->getScoutSearch()
                 ->toEloquentBuilder($this->enabledCols, $this->perPage, $this->page);
         } else {
             $query = $model::query();
@@ -776,6 +776,11 @@ class DataTable extends Component
         $query = $this->getBuilder($query);
 
         return $this->applyFilters($query);
+    }
+
+    public function getScoutSearch(): \Laravel\Scout\Builder
+    {
+        return $this->model::search($this->search);
     }
 
     public function getBuilder(Builder $builder): Builder

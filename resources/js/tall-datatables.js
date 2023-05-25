@@ -19,6 +19,7 @@ document.addEventListener('alpine:init', () => {
                     this.topAppend = result.topAppend;
                     this.bottomAppend = result.bottomAppend;
                     this.searchRoute = result.searchRoute;
+                    this.echoListeners = result.echoListeners;
 
                     this.$watch('cols', () => {
                         this.$wire.storeColLayout(this.cols);
@@ -92,6 +93,24 @@ document.addEventListener('alpine:init', () => {
             this.$watch('selected', () => {
                 this.$dispatch('tall-datatables-selected', this.selected);
             })
+
+            if (window.Echo !== undefined) {
+                this.$watch('broadcastChannels', (newChannels, oldChannels) => {
+                    const removedChannels = Object.values(oldChannels).filter(channel => ! Object.values(newChannels).includes(channel));
+                    const addedChannels = Object.values(newChannels).filter(channel => ! Object.values(oldChannels).includes(channel));
+
+                    removedChannels.forEach(channel => {
+                        Echo.leave(channel);
+                    });
+
+                    addedChannels.forEach(channel => {
+                        Echo.private(channel)
+                            .listenToAll((event, data) => {
+                                this.$wire.eloquentEventOccurred(event, data);
+                            });
+                    });
+                });
+            }
         },
         data: $wire.entangle('data'),
         showSidebar: false,
@@ -106,6 +125,7 @@ document.addEventListener('alpine:init', () => {
         rightAppend: [],
         topAppend: [],
         bottomAppend: [],
+        broadcastChannels: [],
         searchRoute: '',
         tab: 'edit-filters',
         showSavedFilters: false,
@@ -126,6 +146,8 @@ document.addEventListener('alpine:init', () => {
             return label + ' ' + filter.operator + ' ' + value;
         },
         getData() {
+            this.broadcastChannels = $wire.get('broadcastChannels') ?? [];
+
             if (this.data.hasOwnProperty('data')) {
                 return this.data.data;
             }
