@@ -2,6 +2,14 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.4.12 - 2023-05-25
+
+### What's Changed
+
+- add traits to use echo broadcasting by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/38
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.11...v0.4.12
+
 ## v0.4.10 - 2023-05-04
 
 **Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.9...v0.4.10
@@ -137,6 +145,7 @@ hotfix exception caused by wrong order in mount
 
 - Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
 - ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
+- 
 - 
 - 
 - 
