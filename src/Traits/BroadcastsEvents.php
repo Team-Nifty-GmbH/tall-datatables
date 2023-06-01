@@ -6,13 +6,7 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Database\Eloquent\BroadcastableModelEventOccurred;
 use Illuminate\Database\Eloquent\BroadcastsEvents as BaseBroadcastsEvents;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasOneThrough;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use ReflectionClass;
-use Spatie\ModelInfo\Relations\Relation;
-use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 
 trait BroadcastsEvents
 {
