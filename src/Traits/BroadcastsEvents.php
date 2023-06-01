@@ -35,6 +35,14 @@ trait BroadcastsEvents
         return $instance->broadcastChannel($generic);
     }
 
+    public static function getBroadcastChannelRoute(): string
+    {
+        $reflection = new ReflectionClass(self::class);
+        $instance = $reflection->newInstanceWithoutConstructor();
+
+        return $instance->broadcastChannelRoute();
+    }
+
     protected function newBroadcastableEvent($event): BroadcastableModelEventOccurred
     {
         return (new BroadcastableModelEventOccurred($this, $event))->dontBroadcastToCurrentUser();
