@@ -6,7 +6,13 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Database\Eloquent\BroadcastableModelEventOccurred;
 use Illuminate\Database\Eloquent\BroadcastsEvents as BaseBroadcastsEvents;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use ReflectionClass;
+use Spatie\ModelInfo\Relations\Relation;
+use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 
 trait BroadcastsEvents
 {
@@ -33,6 +39,14 @@ trait BroadcastsEvents
         $instance = $reflection->newInstanceWithoutConstructor();
 
         return $instance->broadcastChannel($generic);
+    }
+
+    public static function getBroadcastChannelRoute(): string
+    {
+        $reflection = new ReflectionClass(self::class);
+        $instance = $reflection->newInstanceWithoutConstructor();
+
+        return $instance->broadcastChannelRoute();
     }
 
     protected function newBroadcastableEvent($event): BroadcastableModelEventOccurred
