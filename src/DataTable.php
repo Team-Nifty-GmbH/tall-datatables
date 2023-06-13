@@ -43,6 +43,9 @@ class DataTable extends Component
     /** @locked  */
     public ?string $modelKeyName = null;
 
+    /** @locked  */
+    public ?string $cacheKey = null;
+
     /**
      * The default filters for the table, these will be applied on every query.
      * e.g. ['is_active' => true]
@@ -247,7 +250,7 @@ class DataTable extends Component
     public function mount(): void
     {
         if (config('tall-datatables.should_cache')) {
-            $cachedFilters = Session::get(config('tall-datatables.cache_key') . '.filter:' . get_called_class());
+            $cachedFilters = Session::get(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
         } else {
             $cachedFilters = null;
         }
@@ -292,6 +295,11 @@ class DataTable extends Component
                 'layout' => $this->getLayout(),
             ]
         );
+    }
+
+    public function getCacheKey(): string
+    {
+        return $this->cacheKey ?: get_called_class();
     }
 
     public function updatedSearch(): void
@@ -396,7 +404,7 @@ class DataTable extends Component
     {
         $this->skipRender();
         if ($this->data['total'] / $this->perPage < $this->page) {
-            $this->page = ceil($this->data['total'] / $this->perPage);
+            $this->page = (int) ceil($this->data['total'] / $this->perPage);
         }
 
         $this->cacheState();
@@ -573,7 +581,7 @@ class DataTable extends Component
 
         Auth::user()->datatableUserSettings()->create([
             'name' => $name,
-            'component' => get_called_class(),
+            'component' => $this->getCacheKey(),
             'settings' => [
                 'enabledCols' => $this->enabledCols,
                 'aggregatableCols' => $this->aggregatableCols,
@@ -897,7 +905,7 @@ class DataTable extends Component
         ];
 
         if (config('tall-datatables.should_cache')) {
-            Session::put(config('tall-datatables.cache_key') . '.filter:' . get_called_class(), $filter);
+            Session::put(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey(), $filter);
         }
     }
 
