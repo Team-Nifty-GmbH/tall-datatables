@@ -404,7 +404,7 @@ class DataTable extends Component
     {
         $this->skipRender();
         if ($this->data['total'] / $this->perPage < $this->page) {
-            $this->page = ceil($this->data['total'] / $this->perPage);
+            $this->page = (int) ceil($this->data['total'] / $this->perPage);
         }
 
         $this->cacheState();
