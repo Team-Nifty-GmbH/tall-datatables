@@ -2,6 +2,15 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.4.13 - 2023-06-13
+
+### What's Changed
+
+- Add static get broadcast channel route by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/41
+- add cacheKey property by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/43
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.12...v0.4.13
+
 ## v0.4.12 - 2023-05-25
 
 ### What's Changed
@@ -145,6 +154,7 @@ hotfix exception caused by wrong order in mount
 
 - Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
 - ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
+- 
 - 
 - 
 - 
