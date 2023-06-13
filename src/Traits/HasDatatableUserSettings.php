@@ -15,7 +15,7 @@ trait HasDatatableUserSettings
 
     public function getDataTableSettings(string|DataTable $dataTable): Collection
     {
-        $dataTable = is_string($dataTable) ? $dataTable : get_class($dataTable);
+        $dataTable = is_string($dataTable) ? $dataTable : $dataTable->getCacheKey();
 
         return $this->datatableUserSettings()
             ->where('component', $dataTable)

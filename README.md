@@ -87,6 +87,24 @@ Optionally, you can publish the views using
 php artisan vendor:publish --tag="tall-datatables-views"
 ```
 
+## Configuration
+
+By default the package caches the state of the table in the session.
+If you want to disable this feature, you can set the `cache` option to false in the .env file.
+    
+```dotenv
+TALL_DATATABLES_CACHE=false
+```
+
+The caching is done per datatable. If you want to use your datatable in a different context you should set a different cache key.
+In your blade file pass the cache key to the component.
+
+```html
+<livewire:data-tables.user-data-table :cache-key="profile.subusers.user-table" />
+```
+
+You have to ensure that all cache-keys you set across your application are unique.
+
 # Usage
 
 This command creates a new DataTable class.
