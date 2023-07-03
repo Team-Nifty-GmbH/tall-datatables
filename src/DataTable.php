@@ -887,7 +887,12 @@ class DataTable extends Component
 
     private function whereRelation(Builder $builder, array $filter): Builder
     {
-        return $builder->whereRelation($filter['relation'], $filter['column'], $filter['operator'], $filter['value']);
+        return $builder->whereRelation(
+            Str::camel($filter['relation']),
+            $filter['column'],
+            $filter['operator'],
+            $filter['value']
+        );
     }
 
     private function cacheState(): void

@@ -44,9 +44,9 @@ trait HasEloquentListeners
         $this->skipRender();
     }
 
-    public function echoCreated($data): void
+    public function echoCreated($eventData): void
     {
-        $model = $this->getBuilder($this->model::query()->whereKey($data['model'][$this->modelKeyName]))->first();
+        $model = $this->getBuilder($this->model::query()->whereKey($eventData['model'][$this->modelKeyName]))->first();
         $item = $this->itemToArray($model);
 
         array_unshift($this->data['data'], $item);
@@ -74,5 +74,15 @@ trait HasEloquentListeners
         $this->data['to']--;
 
         $this->skipRender();
+    }
+
+    public function echoTrashed($eventData): void
+    {
+        $this->echoDeleted($eventData);
+    }
+
+    public function echoRestored($eventData): void
+    {
+        $this->echoCreated($eventData);
     }
 }
