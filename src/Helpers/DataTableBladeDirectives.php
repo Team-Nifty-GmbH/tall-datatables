@@ -26,7 +26,7 @@ class DataTableBladeDirectives
         return "<link href=\"{$route}\" rel=\"stylesheet\" type=\"text/css\">";
     }
 
-    public function getManifestVersion(string $file, ?string &$route = null): ?string
+    public function getManifestVersion(string $file, string &$route = null): ?string
     {
         $manifestPath = dirname(__DIR__, 2) . '/dist/build/manifest.json';
 

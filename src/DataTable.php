@@ -627,7 +627,7 @@ class DataTable extends Component
         }
     }
 
-    public function getFilterableColumns(?string $name = null): array
+    public function getFilterableColumns(string $name = null): array
     {
         if (! $name) {
             $modelClass = $this->model;
@@ -997,7 +997,7 @@ class DataTable extends Component
         }
     }
 
-    private function getTableFields(?string $tableName = null): \Illuminate\Support\Collection
+    private function getTableFields(string $tableName = null): \Illuminate\Support\Collection
     {
         return ModelInfo::forModel($this->model)
             ->attributes
