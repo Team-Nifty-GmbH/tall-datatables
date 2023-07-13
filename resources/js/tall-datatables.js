@@ -286,7 +286,7 @@ document.addEventListener('alpine:init', () => {
         getColumns() {
             $wire.getExportableColumns().then(result => {
                 this.exportableColumns = result;
-                this.exportColumns = result;
+                this.exportColumns = this.cols;
             })
         },
         relations: [],
