@@ -37,7 +37,7 @@ trait HasFrontendAttributes
         return $this;
     }
 
-    public function detailRoute(bool $absolute = true): string|null
+    public function detailRoute(bool $absolute = true): ?string
     {
         return $this->getDetailRouteName()
             ? route($this->getDetailRouteName(), $this->getDetailRouteParams(), $absolute)
@@ -52,7 +52,7 @@ trait HasFrontendAttributes
         );
     }
 
-    private function getDetailRouteName(): string|null
+    private function getDetailRouteName(): ?string
     {
         return $this->detailRouteName ?? null;
     }
