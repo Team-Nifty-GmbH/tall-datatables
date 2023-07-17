@@ -134,6 +134,7 @@ document.addEventListener('alpine:init', () => {
         aggregatableCols: $wire.entangle('aggregatableCols'),
         orderByCol: $wire.entangle('userOrderBy'),
         orderAsc: $wire.entangle('userOrderAsc'),
+        stickyCols: $wire.entangle('stickyCols'),
         initialized: $wire.entangle('initialized'),
         search: $wire.entangle('search'),
         selected: $wire.entangle('selected').defer,
@@ -293,6 +294,13 @@ document.addEventListener('alpine:init', () => {
         savedFilters: [],
         getSavedFilters() {
             $wire.getSavedFilters().then(result => {this.savedFilters = result})
+        },
+        toggleStickyCol(col) {
+            if (this.stickyCols.includes(col)) {
+                this.stickyCols.splice(this.stickyCols.indexOf(col), 1);
+            } else {
+                this.stickyCols.push(col);
+            }
         },
         formatter(col, record) {
             const val = record[col] ?? null;

@@ -114,6 +114,13 @@ class DataTable extends Component
     public bool $hasHead = true;
 
     /**
+     * If set to false the table will have no sidebar.
+     *
+     * @locked
+     */
+    public bool $hasSidebar = true;
+
+    /**
      * If set to true the table will show no pagination but
      * load more rows as soon as the table footer comes into viewport.
      */
@@ -133,6 +140,10 @@ class DataTable extends Component
     public string $search = '';
 
     public string $orderBy = '';
+
+    public array $stickyCols = [];
+
+    public bool $hasStickyCols = true;
 
     public bool $orderAsc = true;
 

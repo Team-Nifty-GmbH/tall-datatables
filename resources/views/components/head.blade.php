@@ -1,8 +1,8 @@
-<div class="w-full">
-    @if($headline)
+@if($headline)
+    <div class="w-full">
         <h1 class="text-base font-semibold leading-6 text-gray-900 dark:text-gray-50 pb-2.5 px-4"> {{ $headline }} </h1>
-    @endif
-</div>
+    </div>
+@endif
 <div class="flex w-full gap-5 justify-end">
     @if($isSearchable)
         <div class="flex-1">
