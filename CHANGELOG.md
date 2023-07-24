@@ -2,6 +2,16 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.4.14 - 2023-07-24
+
+### What's Changed
+
+- add methods for trashed and restored to trait by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/44
+- Fix export by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/48
+- add sticky columns by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/49
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.13...v0.4.14
+
 ## v0.4.13 - 2023-06-13
 
 ### What's Changed
@@ -154,6 +164,7 @@ hotfix exception caused by wrong order in mount
 
 - Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
 - ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
+- 
 - 
 - 
 - 
