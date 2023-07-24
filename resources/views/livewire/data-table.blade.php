@@ -1,5 +1,7 @@
 <x-tall-datatables::data-table-wrapper :attributes="$componentAttributes" >
-    <x-tall-datatables::options />
+    @if($hasSidebar)
+        <x-tall-datatables::options />
+    @endif
     @if($hasHead)
         <x-tall-datatables::head
             :is-searchable="$searchable"
@@ -23,5 +25,7 @@
         :row-actions="$rowActions"
         :row-attributes="$rowAttributes"
         :has-infinite-scroll="$hasInfiniteScroll"
+        :has-sticky-cols="$hasStickyCols"
+        :has-sidebar="$hasSidebar"
     />
 </x-tall-datatables::data-table-wrapper>

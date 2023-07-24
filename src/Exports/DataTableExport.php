@@ -44,7 +44,7 @@ class DataTableExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMa
     {
         return array_merge(
             array_fill_keys($this->exportColumns, null),
-            Arr::only(Arr::dot($data->toArray()), $this->exportColumns)
+            Arr::only(Arr::dot($row->toArray()), $this->exportColumns)
         );
     }
 }

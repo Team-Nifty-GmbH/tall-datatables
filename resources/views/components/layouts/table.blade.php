@@ -20,12 +20,15 @@
                     </template>
                 </x-tall-datatables::table.head-cell>
                 <template x-for="(col, index) in cols">
-                    <x-tall-datatables::table.head-cell :attributes="$tableHeadColAttributes">
+                    <x-tall-datatables::table.head-cell
+                        x-bind:class="stickyCols.includes(col) && 'left-0 z-10 border-r'"
+                        x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
+                        :attributes="$tableHeadColAttributes">
                         <div class="flex">
                             <div
                                 type="button"
                                 wire:loading.attr="disabled"
-                                class="flex flex-row items-center space-x-1.5"
+                                class="flex flex-row items-center space-x-1.5 group"
                                 x-on:click="sortable.includes(col) && $wire.sortTable(col)"
                                 x-bind:class="sortable.includes(col) ? 'cursor-pointer' : ''"
                             >
@@ -38,6 +41,22 @@
                                     class="h-4 w-4 transition-all"
                                 />
                             </div>
+                            @if($hasStickyCols)
+                                <div class="h-4 w-4">
+                                    <svg
+                                        x-bind:class="stickyCols.includes(col) ? 'fill-indigo-600' : ''"
+                                        x-on:click="toggleStickyCol(col)"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="100%"
+                                        height="100%"
+                                        fill="currentColor"
+                                        viewBox="0 0 256 256"
+                                    >
+                                        <path d="M235.32,81.37,174.63,20.69a16,16,0,0,0-22.63,0L98.37,74.49c-10.66-3.34-35-7.37-60.4,13.14a16,16,0,0,0-1.29,23.78L85,159.71,42.34,202.34a8,8,0,0,0,11.32,11.32L96.29,171l48.29,48.29A16,16,0,0,0,155.9,224c.38,0,.75,0,1.13,0a15.93,15.93,0,0,0,11.64-6.33c19.64-26.1,17.75-47.32,13.19-60L235.33,104A16,16,0,0,0,235.32,81.37ZM224,92.69h0l-57.27,57.46a8,8,0,0,0-1.49,9.22c9.46,18.93-1.8,38.59-9.34,48.62L48,100.08c12.08-9.74,23.64-12.31,32.48-12.31A40.13,40.13,0,0,1,96.81,91a8,8,0,0,0,9.25-1.51L163.32,32,224,92.68Z">
+                                        </path>
+                                    </svg>
+                                </div>
+                            @endif
                             @if($isFilterable && ! $showFilterInputs)
                                 <x-icon name="filter"
                                     x-show="filterable.includes(col)"
@@ -53,20 +72,24 @@
                         {{ __('Actions') }}
                     </x-tall-datatables::table.head-cell>
                 @endif
-                <x-tall-datatables::table.head-cell class="!py-0 w-4 flex flex-row-reverse">
-                    <div class="flex w-full flex-row-reverse items-center">
-                        <x-button
-                            icon="cog"
-                            x-on:click="loadSidebar()"
-                        />
-                    </div>
-                </x-tall-datatables::table.head-cell>
+                @if($hasSidebar)
+                    <x-tall-datatables::table.head-cell class="!py-0 w-4 flex flex-row-reverse bg-white dark:bg-secondary-800 sticky right-0 shadow-inner">
+                        <div class="flex w-full flex-row-reverse items-center">
+                            <x-button
+                                icon="cog"
+                                x-on:click="loadSidebar()"
+                            />
+                        </div>
+                    </x-tall-datatables::table.head-cell>
+                @endif
             </tr>
             @if($isFilterable && $showFilterInputs)
-                <tr class="bg-gray-50">
-                    <td></td>
+                <tr>
+                    <td class="bg-gray-50 dark:bg-secondary-600"></td>
                     <template x-for="(col, index) in cols">
-                        <td class="py-1 px-2">
+                        <td class="bg-gray-50 dark:bg-secondary-600 py-1 px-2"
+                            x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
+                            x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'">
                             <template x-if="! filterValueLists.hasOwnProperty(col)">
                                 <x-input class="p-1" x-model.debounce.500ms="textFilter[col]" x-show="filterable.includes(col)" />
                             </template>
@@ -87,7 +110,9 @@
                         <td>
                         </td>
                     @endif
-                    <td></td>
+                    @if($hasSidebar)
+                        <td class="bg-gray-50 dark:bg-secondary-800 sticky right-0"></td>
+                    @endif
                 </tr>
             @endif
         </x-slot:header>
@@ -131,7 +156,11 @@
                 </template>
             </td>
             <template x-for="col in cols">
-                <x-tall-datatables::table.cell class="cursor-pointer" x-bind:href="record?.href ?? false">
+                <x-tall-datatables::table.cell
+                    x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'"
+                    x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
+                    class="cursor-pointer"
+                    x-bind:href="record?.href ?? false">
                     <div class="flex gap-1.5">
                         <div x-html="formatter(leftAppend[col], record)">
                         </div>
@@ -158,8 +187,10 @@
                 </td>
             @endif
             {{-- Empty cell for the col selection--}}
-            <td class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
-            </td>
+            @if($hasSidebar)
+                <td class="bg-white dark:bg-secondary-800 table-cell border-b shadow-sm border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm sticky right-0">
+                </td>
+            @endif
         </tr>
     </template>
     <x-slot:footer>
