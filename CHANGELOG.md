@@ -2,6 +2,20 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.5.0 - 2023-08-25
+
+### What's Changed
+
+- add livewire v3 by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/50
+- Bump aglipanci/laravel-pint-action from 2.2.0 to 2.3.0 by @dependabot in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/40
+- Bump dependabot/fetch-metadata from 1.4.0 to 1.5.1 by @dependabot in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/39
+
+### New Contributors
+
+- @dependabot made their first contribution in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/40
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.4.14...v0.5.0
+
 ## v0.4.14 - 2023-07-24
 
 ### What's Changed
@@ -163,7 +177,8 @@ hotfix exception caused by wrong order in mount
 ### What's Changed
 
 - Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
-- ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
+- ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15   
+  
 - 
 - 
 - 
