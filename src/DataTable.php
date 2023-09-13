@@ -422,7 +422,7 @@ class DataTable extends Component
     public function updatedPerPage(): void
     {
         $this->skipRender();
-        if ($this->data['total'] / $this->perPage < $this->page) {
+        if ($this->page > $this->data['total'] / $this->perPage) {
             $this->page = (int) ceil($this->data['total'] / $this->perPage);
         }
 
