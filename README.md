@@ -144,6 +144,25 @@ You can also create your own layout by creating a blade file inside the `resourc
 
 ![grid_layout.png](resources%2Fimages%2Fgrid_layout.png)
 
+### Using your own view
+
+If you want to use your own view as a wrapper around the layout you can override the `$view` property.
+
+```php
+protected string $view = 'data-tables.my-custom-view';
+```
+
+Your view should include the default data-table wrapper:
+
+```html
+<div>
+    <!-- your custom stuff like modals -->
+    <div>
+        hey i'm rendered above the table
+    </div>
+    @include('tall-datatables::livewire.data-table')
+</div>
+```
 
 ### Adding Buttons to the table
 

@@ -157,6 +157,7 @@
             </td>
             <template x-for="col in cols">
                 <x-tall-datatables::table.cell
+                    :use-wire-navigate="$useWireNavigate"
                     x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'"
                     x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
                     class="cursor-pointer"
