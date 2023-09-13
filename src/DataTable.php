@@ -40,6 +40,10 @@ class DataTable extends Component
 
     protected string $model;
 
+    protected string $view = 'tall-datatables::livewire.data-table';
+
+    protected bool $useWireNavigate = false;
+
     /** @locked  */
     public ?string $modelKeyName = null;
 
@@ -292,20 +296,24 @@ class DataTable extends Component
 
     public function render(): View|Factory|Application
     {
-        return view('tall-datatables::livewire.data-table',
-            [
-                'searchable' => $this->getIsSearchable(),
-                'componentAttributes' => $this->getComponentAttributes(),
-                'tableHeadColAttributes' => $this->getTableHeadColAttributes(),
-                'selectAttributes' => $this->getSelectAttributes(),
-                'rowAttributes' => $this->getRowAttributes(),
-                'rowActions' => $this->getRowActions(),
-                'tableActions' => $this->getTableActions(),
-                'modelName' => class_basename($this->model),
-                'showFilterInputs' => $this->showFilterInputs,
-                'layout' => $this->getLayout(),
-            ]
-        );
+        return view($this->view, $this->getViewData());
+    }
+
+    public function getViewData(): array
+    {
+        return [
+            'searchable' => $this->getIsSearchable(),
+            'componentAttributes' => $this->getComponentAttributes(),
+            'tableHeadColAttributes' => $this->getTableHeadColAttributes(),
+            'selectAttributes' => $this->getSelectAttributes(),
+            'rowAttributes' => $this->getRowAttributes(),
+            'rowActions' => $this->getRowActions(),
+            'tableActions' => $this->getTableActions(),
+            'modelName' => class_basename($this->model),
+            'showFilterInputs' => $this->showFilterInputs,
+            'layout' => $this->getLayout(),
+            'useWireNavigate' => $this->useWireNavigate,
+        ];
     }
 
     public function getCacheKey(): string

@@ -27,5 +27,6 @@
         :has-infinite-scroll="$hasInfiniteScroll"
         :has-sticky-cols="$hasStickyCols"
         :has-sidebar="$hasSidebar"
+        :use-wire-navigate="$useWireNavigate"
     />
 </x-tall-datatables::data-table-wrapper>

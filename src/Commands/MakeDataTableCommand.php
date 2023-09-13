@@ -51,14 +51,19 @@ class MakeDataTableCommand extends GeneratorCommand
             return false;
         }
 
-        $this->model = ModelFinder::all()
-            ->filter(
-                function ($modelInfo) {
-                    return class_basename($modelInfo) === $this->argument('model')
-                        || $modelInfo === $this->argument('model');
-                }
-            )
-            ->first();
+        if (class_exists($this->argument('model'))) {
+            $this->model = $this->argument('model');
+        } else {
+            $model = ModelFinder::all()
+                ->filter(
+                    function ($modelInfo) {
+                        return class_basename($modelInfo) === $this->argument('model')
+                            || $modelInfo === $this->argument('model');
+                    }
+                )
+                ->first();
+            $this->model = $model ?: $this->argument('model');
+        }
         $force = $this->option('force');
 
         if ($classPath = $this->createClass($force)) {
