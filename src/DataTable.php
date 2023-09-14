@@ -716,7 +716,7 @@ class DataTable extends Component
 
     public function getSavedFilters(): array
     {
-        if (method_exists(Auth::user(), 'getDataTableSettings')) {
+        if (Auth::user() && method_exists(Auth::user(), 'getDataTableSettings')) {
             return Auth::user()
                 ->getDataTableSettings($this)
                 ?->toArray() ?: [];

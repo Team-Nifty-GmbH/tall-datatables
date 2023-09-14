@@ -2,15 +2,16 @@
 
 namespace TeamNiftyGmbH\DataTable\Commands;
 
+use Composer\InstalledVersions;
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Facades\File;
-use Livewire\Commands\ComponentParser;
-use Livewire\Commands\MakeCommand as LivewireMakeCommand;
+use Livewire\Features\SupportConsoleCommands\Commands\ComponentParser;
+use Livewire\Features\SupportConsoleCommands\Commands\MakeLivewireCommand;
 use Spatie\ModelInfo\ModelFinder;
 
 class MakeDataTableCommand extends GeneratorCommand
 {
-    protected ComponentParser $parser;
+    protected ComponentParser|\Livewire\Commands\ComponentParser $parser;
 
     protected string $model;
 
@@ -37,13 +38,23 @@ class MakeDataTableCommand extends GeneratorCommand
      */
     public function handle(): bool
     {
-        $this->parser = new ComponentParser(
-            config('tall-datatables.data_table_namespace'),
-            config('tall-datatables.view_path'),
-            $this->argument('name'),
-        );
+        $version = InstalledVersions::getVersion('livewire/livewire');
 
-        $livewireMakeCommand = new LivewireMakeCommand();
+        if (version_compare($version, '3.0.0', '<')) {
+            $this->parser = new \Livewire\Commands\ComponentParser(
+                config('tall-datatables.data_table_namespace'),
+                config('tall-datatables.view_path'),
+                $this->argument('name'),
+            );
+            $livewireMakeCommand = new \Livewire\Commands\MakeCommand();
+        } else {
+            $this->parser = new ComponentParser(
+                config('tall-datatables.data_table_namespace'),
+                config('tall-datatables.view_path'),
+                $this->argument('name'),
+            );
+            $livewireMakeCommand = new MakeLivewireCommand();
+        }
 
         if ($livewireMakeCommand->isReservedClassName($name = $this->parser->className())) {
             $this->line('<fg=red;options=bold>Class is reserved:</>' . $name);
