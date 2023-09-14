@@ -2,6 +2,15 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.5.1 - 2023-09-13
+
+### What's Changed
+
+- Bump actions/checkout from 3 to 4 by @dependabot in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/52
+- add ability to use wire:navigate on row by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/53
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.5.0...v0.5.1
+
 ## v0.5.0 - 2023-08-25
 
 ### What's Changed
@@ -176,7 +185,8 @@ hotfix exception caused by wrong order in mount
 
 ### What's Changed
 
-- Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
+- Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14   
+  
 - ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15   
   
 - 
@@ -194,7 +204,8 @@ hotfix exception caused by wrong order in mount
 - 
 - 
 - 
-- Add methods by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/16
+- Add methods by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/16   
+  
 
 **Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.3.3...v0.3.4
 
