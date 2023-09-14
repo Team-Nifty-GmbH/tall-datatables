@@ -2,6 +2,15 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.5.2 - 2023-09-14
+
+### What's Changed
+
+- Bump dependabot/fetch-metadata from 1.5.1 to 1.6.0 by @dependabot in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/51
+- fix table when no logged in user is present by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/54
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.5.1...v0.5.2
+
 ## v0.5.1 - 2023-09-13
 
 ### What's Changed
