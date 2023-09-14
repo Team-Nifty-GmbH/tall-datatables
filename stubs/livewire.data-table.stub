@@ -9,9 +9,6 @@ class [class] extends DataTable
 {
     protected string $model = [model]::class;
 
-    /**
-     * @return void
-     */
     public function mount(): void
     {
         parent::mount();

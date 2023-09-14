@@ -11,7 +11,7 @@ return [
     |
     */
 
-    'data_table_namespace' => 'App\\Http\\Livewire\\DataTables',
+    'data_table_namespace' => config('livewire.class_namespace') . '\\DataTables',
 
     'view_path' => resource_path('views/livewire'),
 
