@@ -8,7 +8,7 @@ class DataTableRowAttributes extends ComponentAttributeBag
 {
     public static function make(): static
     {
-        return new self();
+        return new static();
     }
 
     /**
