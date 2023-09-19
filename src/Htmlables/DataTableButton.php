@@ -79,7 +79,7 @@ class DataTableButton implements Htmlable
     /**
      * Get content as a string of HTML.
      */
-    public function toHtml(): string|null
+    public function toHtml(): ?string
     {
         if (! $this->shouldRender) {
             return null;
