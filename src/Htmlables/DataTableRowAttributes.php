@@ -6,7 +6,7 @@ use Illuminate\View\ComponentAttributeBag;
 
 class DataTableRowAttributes extends ComponentAttributeBag
 {
-    public static function make(): self
+    public static function make(): static
     {
         return new self();
     }
@@ -14,7 +14,7 @@ class DataTableRowAttributes extends ComponentAttributeBag
     /**
      * @return $this
      */
-    public function bind(string $key, string $value): self
+    public function bind(string $key, string $value): static
     {
         $this->attributes['x-bind:' . $key] = $value;
 
@@ -24,7 +24,7 @@ class DataTableRowAttributes extends ComponentAttributeBag
     /**
      * @return $this
      */
-    public function on(string $event, string $callback): self
+    public function on(string $event, string $callback): static
     {
         $this->attributes['x-on:' . $event] = $callback;
 

@@ -28,8 +28,8 @@ class DataTableButton implements Htmlable
         string $loadingDelay = null,
         string $href = null,
         ?array $attributes = []
-    ): self {
-        return new self(rounded: $rounded,
+    ): static {
+        return new static(rounded: $rounded,
             squared: $squared,
             outline: $outline,
             flat: $flat,
@@ -69,7 +69,7 @@ class DataTableButton implements Htmlable
     /**
      * Render a button only if the closure is true
      */
-    public function when(\Closure|bool $condition): self
+    public function when(\Closure|bool $condition): static
     {
         $this->shouldRender = (bool) value($condition);
 
@@ -113,7 +113,7 @@ class DataTableButton implements Htmlable
         return BladeCompiler::renderComponent($button);
     }
 
-    public function attributes(array $attributes): self
+    public function attributes(array $attributes): static
     {
         $this->attributes = $attributes;
 
@@ -123,7 +123,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function rounded(bool $rounded = true): self
+    public function rounded(bool $rounded = true): static
     {
         $this->rounded = $rounded;
 
@@ -133,7 +133,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function squared(bool $squared = true): self
+    public function squared(bool $squared = true): static
     {
         $this->squared = $squared;
 
@@ -143,7 +143,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function outline(bool $outline = true): self
+    public function outline(bool $outline = true): static
     {
         $this->outline = $outline;
 
@@ -153,7 +153,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function flat(bool $flat = true): self
+    public function flat(bool $flat = true): static
     {
         $this->flat = $flat;
 
@@ -163,7 +163,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function full(bool $full = true): self
+    public function full(bool $full = true): static
     {
         $this->full = $full;
 
@@ -173,7 +173,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function circle(bool $circle = true): self
+    public function circle(bool $circle = true): static
     {
         $this->circle = $circle;
 
@@ -183,7 +183,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function color(string $color = null): self
+    public function color(string $color = null): static
     {
         $this->color = $color;
 
@@ -193,7 +193,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function size(string $size = null): self
+    public function size(string $size = null): static
     {
         $this->size = $size;
 
@@ -203,7 +203,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function label(string $label = null): self
+    public function label(string $label = null): static
     {
         $this->label = $label;
 
@@ -213,7 +213,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function icon(string $icon = null): self
+    public function icon(string $icon = null): static
     {
         $this->icon = $icon;
 
@@ -223,7 +223,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function rightIcon(string $rightIcon): self
+    public function rightIcon(string $rightIcon): static
     {
         $this->rightIcon = $rightIcon;
 
@@ -233,7 +233,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function spinner(string $spinner): self
+    public function spinner(string $spinner): static
     {
         $this->spinner = $spinner;
 
@@ -243,7 +243,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function loadingDelay(string $loadingDelay): self
+    public function loadingDelay(string $loadingDelay): static
     {
         $this->loadingDelay = $loadingDelay;
 
@@ -253,7 +253,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function href(string $href): self
+    public function href(string $href): static
     {
         $this->href = $href;
 
