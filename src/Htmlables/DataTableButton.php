@@ -10,6 +10,8 @@ use WireUi\View\Components\CircleButton;
 
 class DataTableButton implements Htmlable
 {
+    protected bool $shouldRender = true;
+
     public static function make(
         bool $rounded = false,
         bool $squared = false,
@@ -65,10 +67,24 @@ class DataTableButton implements Htmlable
     }
 
     /**
+     * Render a button only if the closure is true
+     */
+    public function when(\Closure|bool $condition): self
+    {
+        $this->shouldRender = (bool) value($condition);
+
+        return $this;
+    }
+
+    /**
      * Get content as a string of HTML.
      */
-    public function toHtml(): string
+    public function toHtml(): string|null
     {
+        if (! $this->shouldRender) {
+            return null;
+        }
+
         if ($this->circle) {
             $buttonClass = CircleButton::class;
             $this->icon = is_null($this->icon) ? 'pencil' : $this->icon;
