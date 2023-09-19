@@ -2,6 +2,14 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.5.3 - 2023-09-19
+
+### What's Changed
+
+- Add condition to buttons by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/57
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.5.2...v0.5.3
+
 ## v0.5.2 - 2023-09-14
 
 ### What's Changed
