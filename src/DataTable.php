@@ -189,6 +189,8 @@ class DataTable extends Component
 
     protected $listeners = ['loadData'];
 
+    public bool $withoutGlobalScopes = false;
+
     public function getConfig(): array
     {
         return [
@@ -748,6 +750,10 @@ class DataTable extends Component
                 ->toEloquentBuilder($this->enabledCols, $this->perPage, $this->page);
         } else {
             $query = $model::query();
+        }
+
+        if ($this->withoutGlobalScopes) {
+            $query->withoutGlobalScopes();
         }
 
         if ($this->userOrderBy) {
