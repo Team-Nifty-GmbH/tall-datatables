@@ -274,7 +274,6 @@ document.addEventListener('alpine:init', () => {
                     let removed = innerArray.splice(index, 1);
 
                     if (removed[0].textFilterKey) {
-                        console.log(this.textFilter[removed[0].column]);
                         this.textFilter[removed[0].column] = '';
                     }
 

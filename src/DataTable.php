@@ -300,7 +300,9 @@ class DataTable extends Component
 
     public function boot(): void
     {
-        $this->initialized && ! $this->forceRender ? $this->skipRender() : null;
+        if ($this->initialized && ! $this->forceRender) {
+            $this->skipRender();
+        }
     }
 
     public function render(): View|Factory|Application
@@ -575,10 +577,11 @@ class DataTable extends Component
 
         $itemArray = $item->toArray();
         $preserved = [];
+        $noDataUuid = Str::uuid()->toString();
         foreach ($returnKeys as $key) {
-            $value = data_get($itemArray, $key, '__no_data__');
+            $value = data_get($itemArray, $key, $noDataUuid);
 
-            if ($value === '__no_data__' && is_array(data_get($itemArray, Str::beforeLast($key, '.')))) {
+            if ($value === $noDataUuid && is_array(data_get($itemArray, Str::beforeLast($key, '.')))) {
                 $value = data_get($itemArray, Str::beforeLast($key, '.'));
                 $itemArray[$key] = Arr::pluck($value, Str::afterLast($key, '.'));
             }
@@ -675,7 +678,7 @@ class DataTable extends Component
                     ->relations
                     ->filter(fn ($relation) => $relation->name === $name)
                     ->first()
-                ->related,
+                    ->related,
             ];
         }
 
@@ -687,10 +690,8 @@ class DataTable extends Component
                     ->map(function ($state) {
                         return $state->map(function ($value) {
                             return ['value' => $value, 'label' => __($value)];
-                        }
-                        );
-                    }
-                    )
+                        });
+                    })
                     ->toArray()
                 : [];
 
