@@ -418,30 +418,72 @@
                 </div>
             @endif
             <div x-show="tab === 'columns'">
-                <div x-bind:id="$id('table-cols')">
-                    <template x-for="col in @js($this->availableCols)" :key="col">
-                        <div x-bind:data-column="col">
-                            <label x-bind:for="col" class="flex items-center">
-                                <div class="relative flex items-start">
-                                    <div class="flex items-center h-5">
-                                        <x-checkbox
-                                            x-bind:id="col"
-                                            x-bind:value="col"
-                                            x-model="cols"
-                                        />
+                <div x-data="{
+                        attributes: [],
+                        availableCols: @js($this->enabledCols),
+                        addCol(colName) {
+                            this.availableCols.push(colName);
+                        },
+                    }"
+                >
+                    <div x-bind:id="$id('table-cols')">
+                        <template x-for="col in availableCols" :key="col">
+                            <div x-bind:data-column="col">
+                                <label x-bind:for="col" class="flex items-center">
+                                    <div class="relative flex items-start">
+                                        <div class="flex items-center h-5">
+                                            <x-checkbox
+                                                x-bind:id="col"
+                                                x-bind:value="col"
+                                                x-model="cols"
+                                            />
+                                        </div>
+                                        <div class="ml-2 text-sm">
+                                            <label
+                                                x-text="colLabels[col] || col"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-50"
+                                                x-bind:for="col"
+                                            >
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div class="ml-2 text-sm">
-                                        <label
-                                            x-text="colLabels[col]"
-                                            class="block text-sm font-medium text-gray-700 dark:text-gray-50"
-                                            x-bind:for="col"
-                                        >
-                                        </label>
-                                    </div>
+                                </label>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="pt-6 pb-3">
+                        <x-native-select
+                            wire:target="loadFields"
+                            wire:loading.attr="disabled"
+                            x-on:change="$wire.getRelationAttributes($event.target.value).then((response) => {attributes = response})"
+                        >
+                            <option disabled selected>{{ __('Select table') }}</option>
+                            <option value="">{{  __('This table') }}</option>
+                            <template x-for="relation in relations">
+                                <option x-bind:value="relation.value" x-text="relation.label"></option>
+                            </template>
+                        </x-native-select>
+                        <template x-for="attribute in attributes">
+                            <div class="relative flex items-start">
+                                <div class="flex items-center h-5">
+                                    <x-checkbox
+                                        x-bind:id="attribute"
+                                        x-bind:value="attribute"
+                                        x-on:change="loadFilterable; addCol(attribute);"
+                                        x-model="cols"
+                                    />
                                 </div>
-                            </label>
-                        </div>
-                    </template>
+                                <div class="ml-2 text-sm">
+                                    <label
+                                        x-text="colLabels[attribute] || attribute"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-50"
+                                        x-bind:for="attribute"
+                                    >
+                                    </label>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
                 </div>
             </div>
             @if($this->isExportable)

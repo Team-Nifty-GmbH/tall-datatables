@@ -32,17 +32,11 @@ document.addEventListener('alpine:init', () => {
                     animation: 150,
                     delay: 100,
                     onEnd: (e) => {
-                        const el = this.enabledCols[e.oldIndex];
-                        let oldCols = Object.values(this.enabledCols);
-                        // move element from e.oldIndex to e.newIndex
-                        oldCols.splice(e.oldIndex, 1);
-                        oldCols.splice(e.newIndex, 0, el);
-
-                        this.enabledCols = oldCols;
-                        this.cols = this.enabledCols.filter(value => this.cols.includes(value));
+                        const [movedItem] = this.cols.splice(e.newIndex, 1); // Remove the item from its current position
+                        this.cols.splice(e.newIndex, 0, movedItem); // Insert the item at the new position
                     }
                 });
-            })
+            });
 
             this.loadFilterable()
 
@@ -112,7 +106,7 @@ document.addEventListener('alpine:init', () => {
                 });
             }
         },
-        data: $wire.entangle('data'),
+        data: $wire.entangle('data').live,
         showSidebar: false,
         cols: [],
         enabledCols: [],
@@ -129,15 +123,15 @@ document.addEventListener('alpine:init', () => {
         searchRoute: '',
         tab: 'edit-filters',
         showSavedFilters: false,
-        filterValueLists: $wire.entangle('filterValueLists'),
-        filters: $wire.entangle('userFilters'),
-        aggregatableCols: $wire.entangle('aggregatableCols'),
-        orderByCol: $wire.entangle('userOrderBy'),
-        orderAsc: $wire.entangle('userOrderAsc'),
-        stickyCols: $wire.entangle('stickyCols'),
-        initialized: $wire.entangle('initialized'),
-        search: $wire.entangle('search'),
-        selected: $wire.entangle('selected').defer,
+        filterValueLists: $wire.entangle('filterValueLists', true),
+        filters: $wire.entangle('userFilters', true),
+        aggregatableCols: $wire.entangle('aggregatableCols', true),
+        orderByCol: $wire.entangle('userOrderBy', true),
+        orderAsc: $wire.entangle('userOrderAsc', true),
+        stickyCols: $wire.entangle('stickyCols', true),
+        initialized: $wire.entangle('initialized', true),
+        search: $wire.entangle('search', true),
+        selected: $wire.entangle('selected'),
         filterBadge(filter) {
             const label = this.colLabels[filter.column] ?? filter.column;
             const value = this.filterValueLists[filter.column]?.find(item => {
@@ -223,12 +217,24 @@ document.addEventListener('alpine:init', () => {
                 }
 
                 if (operator) {
-                    filters.push({column: key, operator: operator[0].toLowerCase(), value: value.replace(operator[0], '').trim(), relation: ''});
+                    filters.push({
+                        column: key,
+                        operator: operator[0].toLowerCase(),
+                        value: value.replace(operator[0], '').trim(),
+                        relation: '',
+                        textFilterKey: true,
+                    });
 
                     continue;
                 }
 
-                filters.push({column: key, operator: 'like', value: '%' + value + '%', relation: ''});
+                filters.push({
+                    column: key,
+                    operator: 'like',
+                    value: '%' + value + '%',
+                    relation: '',
+                    textFilterKey: true,
+                });
             }
 
             this.filters = filters.length ? [filters] : [];
@@ -262,14 +268,26 @@ document.addEventListener('alpine:init', () => {
             this.filters.push([]);
         },
         removeFilter(index, groupIndex) {
-            this.filters[groupIndex].splice(this.filters[groupIndex].indexOf(index), 1);
+            const innerArray = this.filters[groupIndex];
+            if (innerArray) {
+                if (index >= 0 && index < innerArray.length) {
+                    let removed = innerArray.splice(index, 1);
 
-            if(this.filters[groupIndex].length === 0) {
-                this.filters.splice(this.filters.indexOf(groupIndex), 1);
+                    if (removed[0].textFilterKey) {
+                        console.log(this.textFilter[removed[0].column]);
+                        this.textFilter[removed[0].column] = '';
+                    }
+
+                    if (innerArray.length === 0) {
+                        this.removeFilterGroup(groupIndex)
+                    }
+                }
             }
         },
         removeFilterGroup(index) {
-            this.filters.splice(this.filters.indexOf(index), 1);
+            if (index >= 0 && index < this.filters.length) {
+                this.filters.splice(index, 1);
+            }
         },
         clearFilters() {
             this.filters = [];
@@ -351,7 +369,7 @@ window.formatters = {
             currencyCode = documentCurrencyCode;
         } else if (typeof currency === 'string') {
             currencyCode = currency;
-        } else if (typeof currency === 'object' && currency.hasOwnProperty('property')) {
+        } else if (typeof currency === 'object' && currency?.hasOwnProperty('property')) {
             currencyCode = context[currency.property];
         } else if (
             typeof currency === 'object'
@@ -359,7 +377,7 @@ window.formatters = {
             && currency.currency.hasOwnProperty('iso')
         ) {
             currencyCode = currency.currency.iso;
-        } else if (typeof currency === 'object' && currency.hasOwnProperty('iso')) {
+        } else if (typeof currency === 'object' && currency?.hasOwnProperty('iso')) {
             currencyCode = currency.iso;
         } else {
             currencyCode = documentCurrencyCode;

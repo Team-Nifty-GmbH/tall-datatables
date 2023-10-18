@@ -38,11 +38,15 @@ class DataTable extends Component
 
     public bool $initialized = false;
 
+    public bool $forceRender = false;
+
     protected string $model;
 
     protected string $view = 'tall-datatables::livewire.data-table';
 
     protected bool $useWireNavigate = false;
+
+    public array $loadedModels = [];
 
     /** @locked  */
     public ?string $modelKeyName = null;
@@ -292,6 +296,11 @@ class DataTable extends Component
                 )
             )
         );
+    }
+
+    public function boot(): void
+    {
+        $this->initialized && ! $this->forceRender ? $this->skipRender() : null;
     }
 
     public function render(): View|Factory|Application
@@ -567,7 +576,13 @@ class DataTable extends Component
         $itemArray = $item->toArray();
         $preserved = [];
         foreach ($returnKeys as $key) {
-            $value = $itemArray[$key] ?? false;
+            $value = data_get($itemArray, $key, '__no_data__');
+
+            if ($value === '__no_data__' && is_array(data_get($itemArray, Str::beforeLast($key, '.')))) {
+                $value = data_get($itemArray, Str::beforeLast($key, '.'));
+                $itemArray[$key] = Arr::pluck($value, Str::afterLast($key, '.'));
+            }
+
             if ($value && is_array($value) && ! Arr::isAssoc($value)) {
                 $preserved[$key] = Arr::pull($itemArray, $key);
             }
@@ -648,52 +663,88 @@ class DataTable extends Component
 
     public function getFilterableColumns(string $name = null): array
     {
-        if (! $name) {
-            $modelClass = $this->model;
-        } else {
-            $modelClass = ModelInfo::forModel($this->model)
-                ->relations
-                ->filter(fn ($relation) => $relation->name === $name)
-                ->first()
-                ->related;
+        if (! $this->isFilterable) {
+            return [];
         }
 
-        $this->filterValueLists = method_exists($modelClass, 'getStates')
-            ? $modelClass::getStates()
-                ->map(function ($state) {
-                    return $state->map(function ($value) {
-                        return ['value' => $value, 'label' => __($value)];
+        if (! $name) {
+            $models = array_unique(array_merge($this->loadedModels, [$this->model]));
+        } else {
+            $models = [
+                ModelInfo::forModel($this->model)
+                    ->relations
+                    ->filter(fn ($relation) => $relation->name === $name)
+                    ->first()
+                ->related,
+            ];
+        }
+
+        $tableCols = [];
+        foreach ($models as $prefix => $modelClass) {
+            $prefix = Str::snake($prefix);
+            $this->filterValueLists = method_exists($modelClass, 'getStates')
+                ? $modelClass::getStates()
+                    ->map(function ($state) {
+                        return $state->map(function ($value) {
+                            return ['value' => $value, 'label' => __($value)];
+                        }
+                        );
                     }
-                    );
-                }
-                )
-                ->toArray()
-            : [];
+                    )
+                    ->toArray()
+                : [];
 
-        $attributes = ModelInfo::forModel($modelClass)->attributes->each(
-            function (Attribute $attribute) {
-                if ($attribute->type === 'boolean') {
-                    $this->filterValueLists[$attribute->name] = [
-                        [
-                            'value' => 1,
-                            'label' => __('Yes'),
-                        ],
-                        [
-                            'value' => 0,
-                            'label' => __('No'),
-                        ],
-                    ];
+            $attributes = ModelInfo::forModel($modelClass)->attributes->each(
+                function (Attribute $attribute) {
+                    if ($attribute->type === 'boolean') {
+                        $this->filterValueLists[$attribute->name] = [
+                            [
+                                'value' => 1,
+                                'label' => __('Yes'),
+                            ],
+                            [
+                                'value' => 0,
+                                'label' => __('No'),
+                            ],
+                        ];
+                    }
                 }
-            }
-        );
+            );
 
-        $tableCols = $attributes->filter(fn (Attribute $attribute) => ! $attribute->virtual)
-            ->pluck('name')
-            ->toArray();
+            $currentTableCols = $attributes->filter(fn (Attribute $attribute) => ! $attribute->virtual)
+                ->pluck('name')
+                ->toArray();
+
+            $currentTableCols = ! is_numeric($prefix) ? array_map(fn ($col) => $prefix . '.' . $col, $currentTableCols) : $currentTableCols;
+            $tableCols = array_merge($tableCols, $currentTableCols);
+        }
 
         $this->skipRender();
 
-        return array_values(array_intersect($this->availableCols, $tableCols));
+        return array_values(array_intersect($this->enabledCols, $tableCols));
+    }
+
+    public function getRelationAttributes(string $relationName): array
+    {
+        if ($relationName === '') {
+            return $this->availableCols;
+        }
+
+        $model = ModelInfo::forModel($this->model)
+            ->relations
+            ->filter(fn ($relation) => $relation->name === $relationName)
+            ->first()
+            ?->related;
+
+        return array_map(
+            fn ($attribute) => Str::snake($relationName) . '.' . $attribute,
+            $this->getModelAttributes($model)
+        );
+    }
+
+    private function getModelAttributes(string $modelClass): array
+    {
+        return ModelInfo::forModel($modelClass)->attributes->pluck('name')->toArray();
     }
 
     public function loadRelations(): array
@@ -727,7 +778,7 @@ class DataTable extends Component
 
     public function getExportableColumns(): array
     {
-        return $this->availableCols;
+        return array_unique(array_merge($this->availableCols, $this->enabledCols));
     }
 
     public function export(array $columns = []): Response|BinaryFileResponse
@@ -800,6 +851,52 @@ class DataTable extends Component
             }
         }
 
+        // include selected relationships
+        $tmpWith = [];
+        $with = [];
+        $loadedModels = [];
+        $baseModelInfo = ModelInfo::forModel($this->model);
+        $modelQuery = new $this->model;
+        foreach ($this->enabledCols as $enabledCol) {
+            $foreignKeys = [];
+            if (str_contains($enabledCol, '.')) {
+                $explodedCol = explode('.', $enabledCol);
+                $attribute = Arr::pull($explodedCol, count($explodedCol) - 1);
+                $path = implode('.', array_map(fn ($relation) => Str::camel($relation), $explodedCol));
+                $relation = $baseModelInfo->relation(Str::camel($path));
+
+                $relatedModel = $relation->related;
+                $loadedModels[$path] = $relatedModel;
+
+                if (! ModelInfo::forModel($relatedModel)->attribute($attribute)->virtual) {
+                    $relationInstance = $modelQuery->{Str::camel($path)}();
+                    if (! method_exists($relationInstance, 'getOwnerKeyName')
+                        && ! method_exists($relationInstance, 'getForeignKeyName')
+                    ) {
+                        continue;
+                    }
+
+                    $foreignKeys[] = method_exists($relationInstance, 'getOwnerKeyName')
+                        ? $relationInstance->getOwnerKeyName()
+                        : $relationInstance->getForeignKeyName();
+                    $tmpWith[$path] = array_unique(
+                        array_merge($foreignKeys, $tmpWith[$path] ?? [], [$attribute])
+                    );
+                } else {
+                    $with[] = $path;
+                }
+            }
+        }
+
+        foreach ($tmpWith as $path => $attributes) {
+            $with[] = $path . ':' . implode(',', $attributes);
+            $loadedModels = array_unique($loadedModels);
+        }
+
+        $this->loadedModels = $loadedModels;
+
+        $query->with($with);
+
         $query = $this->getBuilder($query);
 
         return $this->applyFilters($query);
@@ -842,6 +939,7 @@ class DataTable extends Component
             foreach ($this->userFilters as $index => $orFilter) {
                 $query->where(function (Builder $query) use ($orFilter) {
                     foreach ($orFilter as $type => $filter) {
+                        $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
                         if (! is_string($type)) {
                             $filter = array_is_list($filter) ? [$filter] : $filter;
                             $target = explode('.', $filter['column']);
