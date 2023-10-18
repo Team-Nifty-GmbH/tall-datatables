@@ -862,7 +862,7 @@ class DataTable extends Component
             $foreignKeys = [];
             if (str_contains($enabledCol, '.')) {
                 $explodedCol = explode('.', $enabledCol);
-                $attribute = Arr::pull($explodedCol, count($explodedCol) - 1);
+                $attribute = array_pop($explodedCol);
                 $path = implode('.', array_map(fn ($relation) => Str::camel($relation), $explodedCol));
                 $relation = $baseModelInfo->relation(Str::camel($path));
 
