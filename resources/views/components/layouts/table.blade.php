@@ -32,7 +32,7 @@
                                 x-on:click="sortable.includes(col) && $wire.sortTable(col)"
                                 x-bind:class="sortable.includes(col) ? 'cursor-pointer' : ''"
                             >
-                                <span x-text="colLabels[col]"></span>
+                                <span x-text="colLabels[col] || col"></span>
                                 <x-icon
                                     x-bind:class="Object.keys(sortable).length && orderByCol === col
                                     ? (orderAsc || 'rotate-180')
