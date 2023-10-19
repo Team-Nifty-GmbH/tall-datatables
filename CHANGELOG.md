@@ -2,6 +2,16 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.5.5 - 2023-10-19
+
+### What's Changed
+
+- Bump stefanzweifel/git-auto-commit-action from 4 to 5 by @dependabot in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/60
+- Bump postcss from 8.4.29 to 8.4.31 by @dependabot in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/59
+- fix endless spinner by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/62
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.5.4...v0.5.5
+
 ## v0.5.3 - 2023-09-19
 
 ### What's Changed
