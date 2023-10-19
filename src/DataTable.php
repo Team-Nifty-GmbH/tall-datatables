@@ -561,10 +561,10 @@ class DataTable extends Component
 
     public function getReturnKeys(): array
     {
-        return array_merge(
+        return array_filter(array_merge(
             $this->enabledCols,
             [$this->modelKeyName]
-        );
+        ));
     }
 
     public function itemToArray($item): array
@@ -866,6 +866,10 @@ class DataTable extends Component
                 $path = implode('.', array_map(fn ($relation) => Str::camel($relation), $explodedCol));
                 $relation = $baseModelInfo->relation(Str::camel($path));
 
+                if (! $relation) {
+                    continue;
+                }
+
                 $relatedModel = $relation->related;
                 $loadedModels[$path] = $relatedModel;
 
@@ -874,6 +878,8 @@ class DataTable extends Component
                     if (! method_exists($relationInstance, 'getOwnerKeyName')
                         && ! method_exists($relationInstance, 'getForeignKeyName')
                     ) {
+                        $with[] = $path;
+
                         continue;
                     }
 
