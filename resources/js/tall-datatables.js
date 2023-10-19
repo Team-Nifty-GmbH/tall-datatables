@@ -3,333 +3,335 @@ import {Sortable} from 'sortablejs';
 window.Sortable = Sortable;
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('data_table',
-    ($wire) => ({
-        init() {
-            this.$wire.getConfig().then(
-                result => {
-                    this.cols = result.cols;
-                    this.enabledCols = result.enabledCols;
-                    this.colLabels = result.colLabels;
-                    this.sortable = result.sortable;
-                    this.aggregatable = result.aggregatable;
-                    this.selectable = result.selectable;
-                    this.formatters = result.formatters;
-                    this.leftAppend = result.leftAppend;
-                    this.rightAppend = result.rightAppend;
-                    this.topAppend = result.topAppend;
-                    this.bottomAppend = result.bottomAppend;
-                    this.searchRoute = result.searchRoute;
-                    this.echoListeners = result.echoListeners;
+        ($wire) => ({
+            init() {
+                this.$wire.getConfig().then(
+                    result => {
+                        this.cols = result.cols;
+                        this.enabledCols = result.enabledCols;
+                        this.colLabels = result.colLabels;
+                        this.sortable = result.sortable;
+                        this.aggregatable = result.aggregatable;
+                        this.selectable = result.selectable;
+                        this.formatters = result.formatters;
+                        this.leftAppend = result.leftAppend;
+                        this.rightAppend = result.rightAppend;
+                        this.topAppend = result.topAppend;
+                        this.bottomAppend = result.bottomAppend;
+                        this.searchRoute = result.searchRoute;
+                        this.echoListeners = result.echoListeners;
 
-                    this.$watch('cols', () => {
-                        this.$wire.storeColLayout(this.cols);
-                    });
-                }
-            )
-
-            this.$nextTick(() => {
-                new Sortable(document.getElementById(this.$id('table-cols')), {
-                    animation: 150,
-                    delay: 100,
-                    onEnd: (e) => {
-                        const [movedItem] = this.cols.splice(e.newIndex, 1); // Remove the item from its current position
-                        this.cols.splice(e.newIndex, 0, movedItem); // Insert the item at the new position
-                    }
-                });
-            });
-
-            this.loadFilterable()
-
-            this.$watch('newFilter.column', () => {
-                if (! Boolean(this.newFilter.column)) {
-                    return;
-                }
-
-                let valueList = this.filterValueLists.hasOwnProperty(this.newFilter.column);
-
-                if (! valueList) {
-                    $wire.resolveForeignKey(this.newFilter.column, this.newFilter.relation).then(
-                        result => {
-                            if (result === null) {
-                                this.filterSelectType = this.filterSelectType === 'none' ? 'none' : 'text';
-                                return;
-                            }
-
-                            if (typeof result === 'string') {
-                                this.filterSelectType = 'search';
-                                this.newFilter.operator = '=';
-                                Alpine.$data(document.querySelector('#filter-select-search')).asyncData.api = this.searchRoute + '/' + result;
-                            } else if (typeof result === 'array' || typeof result === 'object') {
-                                this.filterSelectType = 'valueList';
-                                this.newFilter.operator = '=';
-                                this.filterValueLists[this.newFilter.column] = result;
-                                valueList = true;
-                            }
+                        this.$watch('cols', () => {
+                            this.$wire.storeColLayout(this.cols);
                         });
-                }
+                    }
+                )
 
-                if (valueList) {
-                    this.filterSelectType = 'valueList';
-                    this.newFilter.operator = '=';
-                }
-            })
-
-            this.$watch('newFilter.operator', () => {
-                if (this.newFilter.operator === 'is null' || this.newFilter.operator === 'is not null') {
-                    this.filterSelectType = 'none';
-                }
-            })
-
-            this.$watch('newFilter.relation', () => {
-                this.loadFilterable(this.newFilter.relation);
-            })
-
-            this.$watch('selected', () => {
-                this.$dispatch('tall-datatables-selected', this.selected);
-            })
-
-            if (window.Echo !== undefined) {
-                this.$watch('broadcastChannels', (newChannels, oldChannels) => {
-                    const removedChannels = Object.values(oldChannels).filter(channel => ! Object.values(newChannels).includes(channel));
-                    const addedChannels = Object.values(newChannels).filter(channel => ! Object.values(oldChannels).includes(channel));
-
-                    removedChannels.forEach(channel => {
-                        Echo.leave(channel);
-                    });
-
-                    addedChannels.forEach(channel => {
-                        Echo.private(channel)
-                            .listenToAll((event, data) => {
-                                this.$wire.eloquentEventOccurred(event, data);
-                            });
+                this.$nextTick(() => {
+                    new Sortable(document.getElementById(this.$id('table-cols')), {
+                        animation: 150,
+                        delay: 100,
+                        onEnd: (e) => {
+                            const name = e.item.dataset.column;
+                            const oldIndex = this.cols.indexOf(name);
+                            const [movedItem] = this.cols.splice(oldIndex, 1);
+                            this.cols.splice(e.newIndex, 0, movedItem);
+                        }
                     });
                 });
-            }
-        },
-        data: $wire.entangle('data').live,
-        showSidebar: false,
-        cols: [],
-        enabledCols: [],
-        colLabels: [],
-        sortable: [],
-        aggregatable: [],
-        selectable: false,
-        formatters: [],
-        leftAppend: [],
-        rightAppend: [],
-        topAppend: [],
-        bottomAppend: [],
-        broadcastChannels: [],
-        searchRoute: '',
-        tab: 'edit-filters',
-        showSavedFilters: false,
-        filterValueLists: $wire.entangle('filterValueLists', true),
-        filters: $wire.entangle('userFilters', true),
-        aggregatableCols: $wire.entangle('aggregatableCols', true),
-        orderByCol: $wire.entangle('userOrderBy', true),
-        orderAsc: $wire.entangle('userOrderAsc', true),
-        stickyCols: $wire.entangle('stickyCols', true),
-        initialized: $wire.entangle('initialized', true),
-        search: $wire.entangle('search', true),
-        selected: $wire.entangle('selected'),
-        filterBadge(filter) {
-            const label = this.colLabels[filter.column] ?? filter.column;
-            const value = this.filterValueLists[filter.column]?.find(item => {
-                return item.value == filter.value
-            })?.label ?? filter.value
 
-            return label + ' ' + filter.operator + ' ' + value;
-        },
-        getData() {
-            this.broadcastChannels = $wire.get('broadcastChannels') ?? [];
+                this.loadFilterable()
 
-            if (this.data.hasOwnProperty('data')) {
-                return this.data.data;
-            }
+                this.$watch('newFilter.column', () => {
+                    if (! Boolean(this.newFilter.column)) {
+                        return;
+                    }
 
-            return this.data;
-        },
-        filterSelectType: 'text',
-        loadSidebar(newFilter = null) {
-            if (newFilter) {
-                this.newFilter = newFilter;
-                this.tab = 'edit-filters';
-            } else {
-                this.resetFilter();
-            }
+                    let valueList = this.filterValueLists.hasOwnProperty(this.newFilter.column);
 
-            this.loadRelations(this.newFilter.relation);
+                    if (! valueList) {
+                        $wire.resolveForeignKey(this.newFilter.column, this.newFilter.relation).then(
+                            result => {
+                                if (result === null) {
+                                    this.filterSelectType = this.filterSelectType === 'none' ? 'none' : 'text';
+                                    return;
+                                }
 
-            this.getSavedFilters();
-
-            if (Boolean(this.newFilter.column)) {
-                this.$nextTick(() => this.$refs.filterOperator.focus());
-            } else if(Boolean(this.newFilter.operator)) {
-                this.$nextTick(() => this.$refs.filterValue.focus());
-            } else {
-                this.$nextTick(() => this.$refs.filterColumn.focus());
-            }
-
-            this.showSidebar = true;
-            this.showSavedFilters = false;
-        },
-        filterable: [],
-        loadFilterable(table = null) {
-            $wire.getFilterableColumns(table)
-                .then(
-                    result => {
-                        this.filterable = result;
-                        if (! this.textFilter) {
-                            this.textFilter = result.reduce((acc, curr) => {
-                                acc[curr] = "";
-                                return acc;
-                            }, {});
-                            this.$watch('textFilter', () => {
-                                this.parseFilter();
+                                if (typeof result === 'string') {
+                                    this.filterSelectType = 'search';
+                                    this.newFilter.operator = '=';
+                                    Alpine.$data(document.querySelector('#filter-select-search')).asyncData.api = this.searchRoute + '/' + result;
+                                } else if (typeof result === 'array' || typeof result === 'object') {
+                                    this.filterSelectType = 'valueList';
+                                    this.newFilter.operator = '=';
+                                    this.filterValueLists[this.newFilter.column] = result;
+                                    valueList = true;
+                                }
                             });
-                        }
                     }
-                );
-        },
-        loadRelations(table = null) {
-            $wire.loadRelations(table)
-                .then(
-                    result => {
-                        this.relations = result;
+
+                    if (valueList) {
+                        this.filterSelectType = 'valueList';
+                        this.newFilter.operator = '=';
                     }
-                );
-        },
-        filterIndex: 0,
-        textFilter: null,
-        newFilter: {column: '', operator: '', value: '', relation: ''},
-        parseFilter() {
-            let filters = [];
-            for (const [key, value] of Object.entries(this.textFilter)) {
-                if (value === '') {
-                    continue;
+                })
+
+                this.$watch('newFilter.operator', () => {
+                    if (this.newFilter.operator === 'is null' || this.newFilter.operator === 'is not null') {
+                        this.filterSelectType = 'none';
+                    }
+                })
+
+                this.$watch('newFilter.relation', () => {
+                    this.loadFilterable(this.newFilter.relation);
+                })
+
+                this.$watch('selected', () => {
+                    this.$dispatch('tall-datatables-selected', this.selected);
+                })
+
+                if (window.Echo !== undefined) {
+                    this.$watch('broadcastChannels', (newChannels, oldChannels) => {
+                        const removedChannels = Object.values(oldChannels).filter(channel => ! Object.values(newChannels).includes(channel));
+                        const addedChannels = Object.values(newChannels).filter(channel => ! Object.values(oldChannels).includes(channel));
+
+                        removedChannels.forEach(channel => {
+                            Echo.leave(channel);
+                        });
+
+                        addedChannels.forEach(channel => {
+                            Echo.private(channel)
+                                .listenToAll((event, data) => {
+                                    this.$wire.eloquentEventOccurred(event, data);
+                                });
+                        });
+                    });
+                }
+            },
+            data: $wire.entangle('data').live,
+            showSidebar: false,
+            cols: [],
+            enabledCols: [],
+            colLabels: [],
+            sortable: [],
+            aggregatable: [],
+            selectable: false,
+            formatters: [],
+            leftAppend: [],
+            rightAppend: [],
+            topAppend: [],
+            bottomAppend: [],
+            broadcastChannels: [],
+            searchRoute: '',
+            tab: 'edit-filters',
+            showSavedFilters: false,
+            filterValueLists: $wire.entangle('filterValueLists', true),
+            filters: $wire.entangle('userFilters', true),
+            aggregatableCols: $wire.entangle('aggregatableCols', true),
+            orderByCol: $wire.entangle('userOrderBy', true),
+            orderAsc: $wire.entangle('userOrderAsc', true),
+            stickyCols: $wire.entangle('stickyCols', true),
+            initialized: $wire.entangle('initialized', true),
+            search: $wire.entangle('search', true),
+            selected: $wire.entangle('selected'),
+            filterBadge(filter) {
+                const label = this.colLabels[filter.column] ?? filter.column;
+                const value = this.filterValueLists[filter.column]?.find(item => {
+                    return item.value == filter.value
+                })?.label ?? filter.value
+
+                return label + ' ' + filter.operator + ' ' + value;
+            },
+            getData() {
+                this.broadcastChannels = $wire.get('broadcastChannels') ?? [];
+
+                if (this.data.hasOwnProperty('data')) {
+                    return this.data.data;
                 }
 
-                let operator = null;
-                if (this.filterValueLists.hasOwnProperty(key)) {
-                    operator = '='
+                return this.data;
+            },
+            filterSelectType: 'text',
+            loadSidebar(newFilter = null) {
+                if (newFilter) {
+                    this.newFilter = newFilter;
+                    this.tab = 'edit-filters';
                 } else {
-                    operator = value.match(/^(=|!=|>|<|>=|<=|like|not like|is null|is not null)/i);
+                    this.resetFilter();
                 }
 
-                if (operator) {
+                this.loadRelations(this.newFilter.relation);
+
+                this.getSavedFilters();
+
+                if (Boolean(this.newFilter.column)) {
+                    this.$nextTick(() => this.$refs.filterOperator.focus());
+                } else if(Boolean(this.newFilter.operator)) {
+                    this.$nextTick(() => this.$refs.filterValue.focus());
+                } else {
+                    this.$nextTick(() => this.$refs.filterColumn.focus());
+                }
+
+                this.showSidebar = true;
+                this.showSavedFilters = false;
+            },
+            filterable: [],
+            loadFilterable(table = null) {
+                $wire.getFilterableColumns(table)
+                    .then(
+                        result => {
+                            this.filterable = result;
+                            if (! this.textFilter) {
+                                this.textFilter = result.reduce((acc, curr) => {
+                                    acc[curr] = "";
+                                    return acc;
+                                }, {});
+                                this.$watch('textFilter', () => {
+                                    this.parseFilter();
+                                });
+                            }
+                        }
+                    );
+            },
+            loadRelations(table = null) {
+                $wire.loadRelations(table)
+                    .then(
+                        result => {
+                            this.relations = result;
+                        }
+                    );
+            },
+            filterIndex: 0,
+            textFilter: null,
+            newFilter: {column: '', operator: '', value: '', relation: ''},
+            parseFilter() {
+                let filters = [];
+                for (const [key, value] of Object.entries(this.textFilter)) {
+                    if (value === '') {
+                        continue;
+                    }
+
+                    let operator = null;
+                    if (this.filterValueLists.hasOwnProperty(key)) {
+                        operator = '='
+                    } else {
+                        operator = value.match(/^(=|!=|>|<|>=|<=|like|not like|is null|is not null)/i);
+                    }
+
+                    if (operator) {
+                        filters.push({
+                            column: key,
+                            operator: operator[0].toLowerCase(),
+                            value: value.replace(operator[0], '').trim(),
+                            relation: '',
+                            textFilterKey: true,
+                        });
+
+                        continue;
+                    }
+
                     filters.push({
                         column: key,
-                        operator: operator[0].toLowerCase(),
-                        value: value.replace(operator[0], '').trim(),
+                        operator: 'like',
+                        value: '%' + value + '%',
                         relation: '',
                         textFilterKey: true,
                     });
-
-                    continue;
                 }
 
-                filters.push({
-                    column: key,
-                    operator: 'like',
-                    value: '%' + value + '%',
-                    relation: '',
-                    textFilterKey: true,
-                });
-            }
+                this.filters = filters.length ? [filters] : [];
+            },
+            addFilter() {
+                let newFilter = this.newFilter;
+                if (this.filters.length === 0) {
+                    this.filters.push([]);
+                    this.filterIndex = 0;
+                }
 
-            this.filters = filters.length ? [filters] : [];
-        },
-        addFilter() {
-            let newFilter = this.newFilter;
-            if (this.filters.length === 0) {
+                newFilter.operator = Boolean(newFilter.operator) ? newFilter.operator : '=';
+                if (newFilter.relation) {
+                    newFilter.column = newFilter.relation + '.' + newFilter.column;
+                    newFilter.relation = '';
+                }
+
+                this.filters[this.filterIndex].push(newFilter);
+                this.resetFilter();
+                this.filterSelectType = 'text';
+
+                this.$nextTick(() => this.$refs.filterColumn.focus());
+            },
+            addOrFilter() {
+                if (this.filters[this.filters.length - 1].length === 0) {
+                    this.filterIndex = this.filters.length - 1;
+                    return;
+                }
+
+                this.filterIndex = this.filters.length;
                 this.filters.push([]);
-                this.filterIndex = 0;
-            }
+            },
+            removeFilter(index, groupIndex) {
+                const innerArray = this.filters[groupIndex];
+                if (innerArray) {
+                    if (index >= 0 && index < innerArray.length) {
+                        let removed = innerArray.splice(index, 1);
 
-            newFilter.operator = Boolean(newFilter.operator) ? newFilter.operator : '=';
-            if (newFilter.relation) {
-                newFilter.column = newFilter.relation + '.' + newFilter.column;
-                newFilter.relation = '';
-            }
+                        if (removed[0].textFilterKey) {
+                            this.textFilter[removed[0].column] = '';
+                        }
 
-            this.filters[this.filterIndex].push(newFilter);
-            this.resetFilter();
-            this.filterSelectType = 'text';
-
-            this.$nextTick(() => this.$refs.filterColumn.focus());
-        },
-        addOrFilter() {
-            if (this.filters[this.filters.length - 1].length === 0) {
-                this.filterIndex = this.filters.length - 1;
-                return;
-            }
-
-            this.filterIndex = this.filters.length;
-            this.filters.push([]);
-        },
-        removeFilter(index, groupIndex) {
-            const innerArray = this.filters[groupIndex];
-            if (innerArray) {
-                if (index >= 0 && index < innerArray.length) {
-                    let removed = innerArray.splice(index, 1);
-
-                    if (removed[0].textFilterKey) {
-                        this.textFilter[removed[0].column] = '';
-                    }
-
-                    if (innerArray.length === 0) {
-                        this.removeFilterGroup(groupIndex)
+                        if (innerArray.length === 0) {
+                            this.removeFilterGroup(groupIndex)
+                        }
                     }
                 }
-            }
-        },
-        removeFilterGroup(index) {
-            if (index >= 0 && index < this.filters.length) {
-                this.filters.splice(index, 1);
-            }
-        },
-        clearFilters() {
-            this.filters = [];
-            this.filterIndex = 0;
-            $wire.sortTable('');
-        },
-        resetFilter() {
-            this.filterSelectType = 'text';
-            this.newFilter = {column: '', operator: '', value: '', relation: ''};
-        },
-        filterName: '',
-        permanent: false,
-        exportColumns: [],
-        exportableColumns: [],
-        getColumns() {
-            $wire.getExportableColumns().then(result => {
-                this.exportableColumns = result;
-                this.exportColumns = this.cols;
-            })
-        },
-        relations: [],
-        savedFilters: [],
-        getSavedFilters() {
-            $wire.getSavedFilters().then(result => {this.savedFilters = result})
-        },
-        toggleStickyCol(col) {
-            if (this.stickyCols.includes(col)) {
-                this.stickyCols.splice(this.stickyCols.indexOf(col), 1);
-            } else {
-                this.stickyCols.push(col);
-            }
-        },
-        formatter(col, record) {
-            const val = record[col] ?? null;
+            },
+            removeFilterGroup(index) {
+                if (index >= 0 && index < this.filters.length) {
+                    this.filters.splice(index, 1);
+                }
+            },
+            clearFilters() {
+                this.filters = [];
+                this.filterIndex = 0;
+                $wire.sortTable('');
+            },
+            resetFilter() {
+                this.filterSelectType = 'text';
+                this.newFilter = {column: '', operator: '', value: '', relation: ''};
+            },
+            filterName: '',
+            permanent: false,
+            exportColumns: [],
+            exportableColumns: [],
+            getColumns() {
+                $wire.getExportableColumns().then(result => {
+                    this.exportableColumns = result;
+                    this.exportColumns = this.cols;
+                })
+            },
+            relations: [],
+            savedFilters: [],
+            getSavedFilters() {
+                $wire.getSavedFilters().then(result => {this.savedFilters = result})
+            },
+            toggleStickyCol(col) {
+                if (this.stickyCols.includes(col)) {
+                    this.stickyCols.splice(this.stickyCols.indexOf(col), 1);
+                } else {
+                    this.stickyCols.push(col);
+                }
+            },
+            formatter(col, record) {
+                const val = record[col] ?? null;
 
-            if (this.formatters.hasOwnProperty(col)) {
-                let type = this.formatters[col];
-                return formatters.format({value: val, type: type, context: record});
-            } else {
-                return formatters.format({value: val, context: record});
-            }
-        },
-    })
+                if (this.formatters.hasOwnProperty(col)) {
+                    let type = this.formatters[col];
+                    return formatters.format({value: val, type: type, context: record});
+                } else {
+                    return formatters.format({value: val, context: record});
+                }
+            },
+        })
     )
 });
 
@@ -372,8 +374,8 @@ window.formatters = {
             currencyCode = context[currency.property];
         } else if (
             typeof currency === 'object'
-            && currency.hasOwnProperty('currency')
-            && currency.currency.hasOwnProperty('iso')
+            && currency?.hasOwnProperty('currency')
+            && currency?.currency?.hasOwnProperty('iso')
         ) {
             currencyCode = currency.currency.iso;
         } else if (typeof currency === 'object' && currency?.hasOwnProperty('iso')) {
