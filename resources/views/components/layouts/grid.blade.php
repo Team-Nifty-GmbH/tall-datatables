@@ -44,7 +44,7 @@
         </div>
     </template>
     <div class="mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8">
-        <div wire:loading.delay class="absolute bottom-0 top-0 right-0 w-full">
+        <div wire:loading class="absolute bottom-0 top-0 right-0 w-full">
             <x-tall-datatables::spinner />
         </div>
         <template x-for="(record, index) in getData()">

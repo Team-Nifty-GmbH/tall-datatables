@@ -436,6 +436,7 @@
                                                 x-bind:id="col"
                                                 x-bind:value="col"
                                                 x-model="cols"
+                                                wire:loading.attr="disabled"
                                             />
                                         </div>
                                         <div class="ml-2 text-sm">
@@ -467,17 +468,18 @@
                             <div class="relative flex items-start">
                                 <div class="flex items-center h-5">
                                     <x-checkbox
-                                        x-bind:id="attribute"
-                                        x-bind:value="attribute"
-                                        x-on:change="loadFilterable; addCol(attribute);"
+                                        wire:loading.attr="disabled"
+                                        x-bind:id="attribute.value"
+                                        x-bind:value="attribute.value"
+                                        x-on:change="loadFilterable; addCol(attribute.value);"
                                         x-model="cols"
                                     />
                                 </div>
                                 <div class="ml-2 text-sm">
                                     <label
-                                        x-text="colLabels[attribute] || attribute"
+                                        x-text="colLabels[attribute] || attribute.label || attribute"
                                         class="block text-sm font-medium text-gray-700 dark:text-gray-50"
-                                        x-bind:for="attribute"
+                                        x-bind:for="attribute.value"
                                     >
                                     </label>
                                 </div>

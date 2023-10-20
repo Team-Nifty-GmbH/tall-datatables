@@ -181,6 +181,12 @@ document.addEventListener('alpine:init', () => {
                     .then(
                         result => {
                             this.filterable = result;
+                            $wire.getColLabels(this.cols)
+                                .then(
+                                    result => {
+                                        this.colLabels = result;
+                                    }
+                                );
                             if (! this.textFilter) {
                                 this.textFilter = result.reduce((acc, curr) => {
                                     acc[curr] = "";

@@ -377,11 +377,19 @@ class DataTable extends Component
             : $this->aggregatable;
     }
 
-    public function getColLabels(): array
+    public function getColLabels(array $cols = null): array
     {
-        $colLabels = array_flip($this->availableCols);
+        $colLabels = array_flip($cols ?: $this->enabledCols);
         array_walk($colLabels, function (&$value, $key) {
-            $value = __(Str::headline($this->columnLabels[$key] ?? $key));
+            if (str_contains($key, '.') && ! ($this->columnLabels[$key] ?? false)) {
+                $relation = explode('.', Str::beforeLast($key, '.'));
+                $field = Str::afterLast($key, '.');
+                $relation = array_map(fn ($part) => __(Str::headline($part)), $relation);
+
+                $value = implode(' -> ', $relation) . ' -> ' . __(Str::headline($field));
+            } else {
+                $value = __(Str::headline($this->columnLabels[$key] ?? $key));
+            }
         });
 
         return $colLabels;
@@ -563,7 +571,7 @@ class DataTable extends Component
     {
         return array_filter(array_merge(
             $this->enabledCols,
-            [$this->modelKeyName]
+            [$this->modelKeyName, 'href']
         ));
     }
 
@@ -727,18 +735,21 @@ class DataTable extends Component
 
     public function getRelationAttributes(string $relationName): array
     {
-        if ($relationName === '') {
-            return $this->availableCols;
+        if (! $relationName) {
+            $model = $this->model;
+        } else {
+            $model = ModelInfo::forModel($this->model)
+                ->relations
+                ->filter(fn ($relation) => $relation->name === $relationName)
+                ->first()
+                ?->related;
         }
 
-        $model = ModelInfo::forModel($this->model)
-            ->relations
-            ->filter(fn ($relation) => $relation->name === $relationName)
-            ->first()
-            ?->related;
-
         return array_map(
-            fn ($attribute) => Str::snake($relationName) . '.' . $attribute,
+            fn ($attribute) => [
+                'value' => ($relationName ? Str::snake($relationName) . '.' : '') . $attribute,
+                'label' => __(Str::headline($attribute)),
+            ],
             $this->getModelAttributes($model)
         );
     }
@@ -750,7 +761,7 @@ class DataTable extends Component
 
     public function loadRelations(): array
     {
-        $basis = __(class_basename($this->model));
+        $basis = __(Str::of(class_basename($this->model))->headline()->toString());
 
         return array_values(ModelInfo::forModel($this->model)
             ->relations
@@ -953,11 +964,14 @@ class DataTable extends Component
 
                             $column = array_pop($target);
                             $relation = implode('.', $target);
-
                             if ($relation) {
                                 $filter['column'] = $column;
                                 $filter['relation'] = $relation;
-                                $this->whereRelation($query, $filter);
+                                if ($filter['value'] === '%*%') {
+                                    $this->whereHas($query, $filter['relation']);
+                                } else {
+                                    $this->whereRelation($query, $filter);
+                                }
                             } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
                                 $this->whereNull($query, $filter);
                             } else {
@@ -1017,6 +1031,11 @@ class DataTable extends Component
             $filter['operator'],
             $filter['value']
         );
+    }
+
+    private function whereHas(Builder $builder, string $relation): Builder
+    {
+        return $builder->whereHas(Str::camel($relation));
     }
 
     private function cacheState(): void
