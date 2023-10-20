@@ -1,5 +1,5 @@
 <x-tall-datatables::table class="relative">
-    <tr wire:loading.delay class="absolute bottom-0 top-0 right-0 w-full">
+    <tr wire:loading class="absolute bottom-0 top-0 right-0 w-full">
         <td>
             <x-tall-datatables::spinner />
         </td>

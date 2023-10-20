@@ -11,7 +11,7 @@
     </div>
     <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
         <div>
-            <div class="text-sm text-slate-400 flex gap-1">
+            <div class="text-sm text-slate-400 flex gap-1 items-center">
                 {{ __('Showing') }}
                 <div x-text="data.from" class="font-medium align-middle"></div>
                 {{ __('to') }}
@@ -20,13 +20,14 @@
                 <div x-text="data.total" class="font-medium"></div>
                 {{ __('results') }}
                 @if($this->perPage ?? false)
-                    <x-select class="pl-4" wire:model="perPage" :clearable="false"
+                    <x-select class="pl-4" wire:model.live="perPage" :clearable="false"
                               option-value="value"
                               option-label="label"
                               :options="[
-                                            ['value' => 15, 'label' => '15'],
-                                            ['value' => 50, 'label' => '50'],
-                                            ['value' => 100, 'label' => '100'],
+                                            ['value' => 15, 'label' => '15 ' . __('per page')],
+                                            ['value' => 25, 'label' => '25 ' . __('per page')],
+                                            ['value' => 50, 'label' => '50 ' . __('per page')],
+                                            ['value' => 100, 'label' => '100 ' . __('per page')],
                                         ]"
                     />
                 @endif
