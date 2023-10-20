@@ -383,10 +383,10 @@ class DataTable extends Component
         array_walk($colLabels, function (&$value, $key) {
             if (str_contains($key, '.') && ! ($this->columnLabels[$key] ?? false)) {
                 $relation = explode('.', Str::beforeLast($key, '.'));
-                $field = Str::afterLast($key, '.');
+                $column = Str::afterLast($key, '.');
                 $relation = array_map(fn ($part) => __(Str::headline($part)), $relation);
 
-                $value = implode(' -> ', $relation) . ' -> ' . __(Str::headline($field));
+                $value = implode(' -> ', $relation) . ' -> ' . __(Str::headline($column));
             } else {
                 $value = __(Str::headline($this->columnLabels[$key] ?? $key));
             }
