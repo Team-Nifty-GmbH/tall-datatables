@@ -2,6 +2,14 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.5.6 - 2023-10-20
+
+### What's Changed
+
+- add column labels generation for relations by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/63
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.5.5...v0.5.6
+
 ## v0.5.5 - 2023-10-19
 
 ### What's Changed
