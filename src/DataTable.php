@@ -393,13 +393,13 @@ class DataTable extends Component
         });
 
         return array_merge(
-            $colLabels,
             [
                 'sum' => __('Sum'),
                 'avg' => __('Average'),
-                'min' => __('Minimal'),
-                'max' => __('Maximal'),
-            ]
+                'min' => __('Minimum'),
+                'max' => __('Maximum'),
+            ],
+            $colLabels
         );
     }
 
