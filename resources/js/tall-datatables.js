@@ -165,11 +165,11 @@ document.addEventListener('alpine:init', () => {
                 this.getSavedFilters();
 
                 if (Boolean(this.newFilter.column)) {
-                    this.$nextTick(() => this.$refs.filterOperator.focus());
+                    this.$nextTick(() => this.$refs.filterOperator?.focus());
                 } else if(Boolean(this.newFilter.operator)) {
-                    this.$nextTick(() => this.$refs.filterValue.focus());
+                    this.$nextTick(() => this.$refs.filterValue?.focus());
                 } else {
-                    this.$nextTick(() => this.$refs.filterColumn.focus());
+                    this.$nextTick(() => this.$refs.filterColumn?.focus());
                 }
 
                 this.showSidebar = true;
