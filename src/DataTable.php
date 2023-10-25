@@ -392,7 +392,15 @@ class DataTable extends Component
             }
         });
 
-        return $colLabels;
+        return array_merge(
+            [
+                'sum' => __('Sum'),
+                'avg' => __('Average'),
+                'min' => __('Minimum'),
+                'max' => __('Maximum'),
+            ],
+            $colLabels
+        );
     }
 
     public function getIsSearchable(): bool
@@ -884,7 +892,7 @@ class DataTable extends Component
                 $relatedModel = $relation->related;
                 $loadedModels[$path] = $relatedModel;
 
-                if (! ModelInfo::forModel($relatedModel)->attribute($attribute)->virtual) {
+                if (! ModelInfo::forModel($relatedModel)->attribute($attribute)?->virtual) {
                     $relationInstance = $modelQuery->{Str::camel($path)}();
                     if (! method_exists($relationInstance, 'getOwnerKeyName')
                         && ! method_exists($relationInstance, 'getForeignKeyName')

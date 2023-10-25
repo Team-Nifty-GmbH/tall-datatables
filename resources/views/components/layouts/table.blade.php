@@ -197,7 +197,7 @@
     <x-slot:footer>
         <template x-for="(aggregate, name) in data.aggregates">
             <tr class="hover:bg-gray-100 bg-gray-50 dark:hover:bg-secondary-800 dark:bg-secondary-900">
-                <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm font-bold" x-text="name"></td>
+                <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm font-bold" x-text="colLabels[name] || name"></td>
                 <template x-for="col in cols">
                     <x-tall-datatables::table.cell>
                         <div

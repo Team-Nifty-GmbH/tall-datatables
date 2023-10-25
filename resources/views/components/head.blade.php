@@ -22,7 +22,7 @@
         </div>
     @endif
 </div>
-<div class="flex pt-3 items-center gap-1.5" x-cloak x-show="filters.length > 0 || orderByCol">
+<div class="flex flex-wrap pt-3 items-center gap-1.5" x-cloak x-show="filters.length > 0 || orderByCol">
     <template x-for="(orFilters, orIndex) in filters">
         <div class="flex justify-center items-center">
             <div class="relative pr-6.5 pointer-events-auto w-full rounded-lg bg-white p-1.5
