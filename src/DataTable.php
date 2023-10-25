@@ -398,7 +398,7 @@ class DataTable extends Component
                 'sum' => __('Sum'),
                 'avg' => __('Average'),
                 'min' => __('Minimal'),
-                'max' => __('Maximal')
+                'max' => __('Maximal'),
             ]
         );
     }
