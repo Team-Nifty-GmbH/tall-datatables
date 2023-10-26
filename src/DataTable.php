@@ -1169,7 +1169,8 @@ class DataTable extends Component
                     'is_layout' => true,
                 ])
                 ->save();
-        } catch (MissingTraitException) {}
+        } catch (MissingTraitException) {
+        }
     }
 
     public function resetLayout(): void
@@ -1186,7 +1187,8 @@ class DataTable extends Component
 
             $this->reset(array_keys($layout->settings));
             $layout->delete();
-        } catch (MissingTraitException) {}
+        } catch (MissingTraitException) {
+        }
     }
 
     /**
