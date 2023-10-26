@@ -7,6 +7,16 @@ document.addEventListener('alpine:init', () => {
             init() {
                 this.loadTableConfig();
                 this.$nextTick(() => {
+                    this.$watch('cols', () => {
+                        this.$wire.storeColLayout(this.cols);
+                        this.$wire.getColLabels(this.cols)
+                            .then(
+                                result => {
+                                    Object.assign(this.colLabels, result);
+                                }
+                            );
+                    });
+
                     new Sortable(document.getElementById(this.$id('table-cols')), {
                         animation: 150,
                         delay: 100,
@@ -82,16 +92,6 @@ document.addEventListener('alpine:init', () => {
                         this.searchRoute = result.searchRoute;
                         this.echoListeners = result.echoListeners;
                         this.operatorLabels = result.operatorLabels;
-
-                        this.$watch('cols', () => {
-                            this.$wire.storeColLayout(this.cols);
-                            this.$wire.getColLabels(this.cols)
-                                .then(
-                                    result => {
-                                        Object.assign(this.colLabels, result);
-                                    }
-                                );
-                        });
                     }
                 )
             },
@@ -235,7 +235,7 @@ document.addEventListener('alpine:init', () => {
                     );
             },
             filterIndex: 0,
-            textFilter: null,
+            textFilter: {},
             newFilter: {column: '', operator: '', value: '', relation: ''},
             parseFilter() {
                 let filters = [];
