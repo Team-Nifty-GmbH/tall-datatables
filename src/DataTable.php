@@ -28,6 +28,7 @@ use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
 use TeamNiftyGmbH\DataTable\Exceptions\MissingTraitException;
 use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
+use TeamNiftyGmbH\DataTable\Models\DatatableUserSetting;
 use TeamNiftyGmbH\DataTable\Traits\HasDatatableUserSettings;
 use TeamNiftyGmbH\DataTable\Traits\WithLockedPublicPropertiesTrait;
 use WireUi\Traits\Actions;
@@ -90,6 +91,8 @@ class DataTable extends Component
         'min' => [],
         'max' => [],
     ];
+
+    public array $colLabels = [];
 
     /**
      * This is set automatically by the component if its null.
@@ -196,8 +199,8 @@ class DataTable extends Component
     public function getConfig(): array
     {
         return [
-            'cols' => $this->enabledCols,
-            'enabledCols' => $this->availableCols,
+            'cols' => $this->getEnabledCols(),
+            'enabledCols' => $this->getAvailableCols(),
             'colLabels' => $this->getColLabels(),
             'selectable' => $this->isSelectable,
             'sortable' => $this->getSortable(),
@@ -208,6 +211,7 @@ class DataTable extends Component
             'topAppend' => $this->getTopAppends(),
             'bottomAppend' => $this->getBottomAppends(),
             'searchRoute' => $this->getSearchRoute(),
+            'operatorLabels' => $this->getOperatorLabels(),
         ];
     }
 
@@ -266,6 +270,11 @@ class DataTable extends Component
         return [];
     }
 
+    public function placeholder(): View|Factory|Application
+    {
+        return view('tall-datatables::livewire.placeholders.table');
+    }
+
     public function mount(): void
     {
         if (config('tall-datatables.should_cache')) {
@@ -274,28 +283,31 @@ class DataTable extends Component
             $cachedFilters = null;
         }
 
-        $this->loadFilter(
-            $cachedFilters ?: data_get(
-                collect($this->getSavedFilters())
-                    ->where('is_permanent', true)
-                    ->first(),
+        $loadFilter = $cachedFilters;
+        $savedFilters = $this->getSavedFilters();
+
+        // no cached filter but saved filters
+        if (! $loadFilter && $savedFilters) {
+            $loadFilter = data_get(
+                collect($savedFilters)->where('is_permanent', true)->first(),
                 'settings',
                 []
-            ),
-            false
-        );
+            );
+        }
+
+        // no permanent filter but layout filter
+        if (! $loadFilter && $savedFilters) {
+            $loadFilter = data_get(
+                collect($savedFilters)->where('is_layout', true)->first(),
+                'settings',
+                []
+            );
+        }
+
+        $this->loadFilter($loadFilter ?? [], false);
+        $this->colLabels = $this->getColLabels();
 
         $this->modelKeyName = $this->modelKeyName ?: (new $this->model)->getKeyName();
-
-        $this->availableCols = array_values(
-            array_unique(
-                array_merge(
-                    $this->enabledCols,
-                    $this->availableCols,
-                    [$this->modelKeyName]
-                )
-            )
-        );
     }
 
     public function boot(): void
@@ -307,6 +319,8 @@ class DataTable extends Component
 
     public function render(): View|Factory|Application
     {
+        $this->forceRender = false;
+
         return view($this->view, $this->getViewData());
     }
 
@@ -338,23 +352,42 @@ class DataTable extends Component
 
         $this->cacheState();
         $this->loadData();
-
-        $this->skipRender();
     }
 
     public function updatedUserFilters(): void
     {
-        $this->skipRender();
+        $this->colLabels = $this->getColLabels();
 
         $this->updatedSearch();
     }
 
     public function updatedAggregatableCols(): void
     {
-        $this->skipRender();
-
         $this->cacheState();
         $this->loadData();
+    }
+
+    public function getEnabledCols(): array
+    {
+        return $this->enabledCols;
+    }
+
+    public function getAvailableCols(): array
+    {
+        $availableCols = $this->availableCols === ['*']
+            ? ModelInfo::forModel($this->model)->attributes->pluck('name')->toArray()
+            : $this->availableCols;
+
+        return array_values(
+            array_unique(
+                array_merge(
+                    $this->enabledCols,
+                    $availableCols,
+                    [$this->modelKeyName]
+                )
+            )
+        );
+
     }
 
     public function getSortable(): array
@@ -379,7 +412,18 @@ class DataTable extends Component
 
     public function getColLabels(array $cols = null): array
     {
-        $colLabels = array_flip($cols ?: $this->enabledCols);
+        $colLabels = array_flip(
+            $cols
+                ?: array_merge(
+                    $this->enabledCols,
+                    $this->getAggregatable(),
+                    array_filter(
+                        Arr::dot($this->userFilters),
+                        fn ($key) => str_ends_with($key, '.column'),
+                        ARRAY_FILTER_USE_KEY
+                    )
+                )
+        );
         array_walk($colLabels, function (&$value, $key) {
             if (str_contains($key, '.') && ! ($this->columnLabels[$key] ?? false)) {
                 $relation = explode('.', Str::beforeLast($key, '.'));
@@ -392,7 +436,7 @@ class DataTable extends Component
             }
         });
 
-        return array_merge(
+        return $cols ? $colLabels : array_merge(
             [
                 'sum' => __('Sum'),
                 'avg' => __('Average'),
@@ -401,6 +445,16 @@ class DataTable extends Component
             ],
             $colLabels
         );
+    }
+
+    public function getOperatorLabels(): array
+    {
+        return [
+            'like' => __('like'),
+            'not like' => __('not like'),
+            'is null' => __('is null'),
+            'is not null' => __('is not null'),
+        ];
     }
 
     public function getIsSearchable(): bool
@@ -412,8 +466,6 @@ class DataTable extends Component
 
     public function sortTable($col): void
     {
-        $this->skipRender();
-
         if ($this->userOrderBy === $col) {
             $this->userOrderAsc = ! $this->userOrderAsc;
         }
@@ -434,21 +486,16 @@ class DataTable extends Component
         if ($reload) {
             $this->loadData();
         }
-
-        $this->skipRender();
     }
 
     public function updatedPage(): void
     {
-        $this->skipRender();
-
         $this->cacheState();
         $this->loadData();
     }
 
     public function updatedPerPage(): void
     {
-        $this->skipRender();
         if ($this->page > $this->data['total'] / $this->perPage) {
             $this->page = (int) ceil($this->data['total'] / $this->perPage);
         }
@@ -645,8 +692,6 @@ class DataTable extends Component
             ],
             'is_permanent' => $permanent,
         ]);
-
-        $this->skipRender();
     }
 
     /**
@@ -657,8 +702,6 @@ class DataTable extends Component
         $this->ensureAuthHasTrait();
 
         Auth::user()->datatableUserSettings()->whereKey($id)->delete();
-
-        $this->skipRender();
     }
 
     public function loadFilter(array $properties, bool $skipRender = true): void
@@ -687,7 +730,7 @@ class DataTable extends Component
         }
 
         if (! $name) {
-            $models = array_unique(array_merge($this->loadedModels, [$this->model]));
+            $models = array_merge($this->loadedModels, [$this->model]);
         } else {
             $models = [
                 ModelInfo::forModel($this->model)
@@ -736,9 +779,33 @@ class DataTable extends Component
             $tableCols = array_merge($tableCols, $currentTableCols);
         }
 
-        $this->skipRender();
-
         return array_values(array_intersect($this->enabledCols, $tableCols));
+    }
+
+    public function getRelationTableCols(string $relationName = null): array
+    {
+        $relationName = $relationName ? Str::camel($relationName) : null;
+        $model = $relationName
+            ? ModelInfo::forModel($this->model)
+                ->relations
+                ->filter(fn ($relation) => $relation->name === $relationName)
+                ->first()
+                ?->related
+            : $this->model;
+
+        if (! $model) {
+            return [];
+        }
+
+        return ModelInfo::forModel($model)
+            ->attributes
+            ->filter(fn ($attribute) => ! $attribute->virtual)
+            ->when(
+                $this->availableCols !== ['*'],
+                fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
+            )
+            ->pluck('name')
+            ->toArray();
     }
 
     public function getRelationAttributes(string $relationName): array
@@ -748,7 +815,7 @@ class DataTable extends Component
         } else {
             $model = ModelInfo::forModel($this->model)
                 ->relations
-                ->filter(fn ($relation) => $relation->name === $relationName)
+                ->filter(fn ($relation) => $relation->name === Str::camel($relationName))
                 ->first()
                 ?->related;
         }
@@ -764,7 +831,14 @@ class DataTable extends Component
 
     private function getModelAttributes(string $modelClass): array
     {
-        return ModelInfo::forModel($modelClass)->attributes->pluck('name')->toArray();
+        return ModelInfo::forModel($modelClass)
+            ->attributes
+            ->when(
+                $this->availableCols !== ['*'],
+                fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
+            )
+            ->pluck('name')
+            ->toArray();
     }
 
     public function loadRelations(): array
@@ -778,7 +852,7 @@ class DataTable extends Component
             })
             ->map(function (Relation $relation) use ($basis) {
                 return [
-                    'value' => $relation->name,
+                    'value' => Str::snake($relation->name),
                     'label' => $basis . ' -> ' . __(Str::headline($relation->name)),
                 ];
             })
@@ -790,7 +864,7 @@ class DataTable extends Component
         if (Auth::user() && method_exists(Auth::user(), 'getDataTableSettings')) {
             return Auth::user()
                 ->getDataTableSettings($this)
-                ?->toArray() ?: [];
+                ?->toArray() ?? [];
         } else {
             return [];
         }
@@ -974,7 +1048,7 @@ class DataTable extends Component
                             $relation = implode('.', $target);
                             if ($relation) {
                                 $filter['column'] = $column;
-                                $filter['relation'] = $relation;
+                                $filter['relation'] = Str::camel($relation);
                                 if ($filter['value'] === '%*%') {
                                     $this->whereHas($query, $filter['relation']);
                                 } else {
@@ -1033,12 +1107,25 @@ class DataTable extends Component
 
     private function whereRelation(Builder $builder, array $filter): Builder
     {
-        return $builder->whereRelation(
-            Str::camel($filter['relation']),
-            $filter['column'],
-            $filter['operator'],
-            $filter['value']
-        );
+        if (in_array($filter['operator'], ['is not null', 'is null'])) {
+            return $builder
+                ->whereHas(
+                    Str::camel($filter['relation']),
+                    function ($query) use ($filter) {
+                        return match ($filter['operator']) {
+                            'is not null' => $query->whereNotNull($filter['column']),
+                            'is null' => $query->whereNull($filter['column'])
+                        };
+                    }
+                );
+        } else {
+            return $builder->whereRelation(
+                Str::camel($filter['relation']),
+                $filter['column'],
+                $filter['operator'],
+                $filter['value']
+            );
+        }
     }
 
     private function whereHas(Builder $builder, string $relation): Builder
@@ -1063,6 +1150,43 @@ class DataTable extends Component
         if (config('tall-datatables.should_cache')) {
             Session::put(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey(), $filter);
         }
+
+        try {
+            $this->ensureAuthHasTrait();
+
+            DatatableUserSetting::query()
+                ->where('is_layout', true)
+                ->firstOrNew()
+                ->fill([
+                    'name' => 'layout',
+                    'component' => $this->getCacheKey(),
+                    'settings' => [
+                        'userFilters' => [],
+                        'enabledCols' => $this->enabledCols,
+                        'aggregatableCols' => $this->aggregatableCols,
+                        'perPage' => $this->perPage,
+                    ],
+                    'is_layout' => true,
+                ])
+                ->save();
+        } catch (MissingTraitException) {}
+    }
+
+    public function resetLayout(): void
+    {
+        try {
+            $this->ensureAuthHasTrait();
+            $layout = DatatableUserSetting::query()
+                ->where('is_layout', true)
+                ->first();
+
+            if (! $layout) {
+                return;
+            }
+
+            $this->reset(array_keys($layout->settings));
+            $layout->delete();
+        } catch (MissingTraitException) {}
     }
 
     /**
@@ -1148,14 +1272,17 @@ class DataTable extends Component
         }
     }
 
-    private function getTableFields(string $tableName = null): \Illuminate\Support\Collection
+    private function getTableFields(): \Illuminate\Support\Collection
     {
         return ModelInfo::forModel($this->model)
             ->attributes
             ->filter(function (Attribute $attribute) {
                 return ! $attribute->virtual
-                    && ! $attribute->appended
-                    && in_array($attribute->name, $this->availableCols);
-            });
+                    && ! $attribute->appended;
+            })
+            ->when(
+                $this->availableCols !== ['*'],
+                fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
+            );
     }
 }

@@ -26,8 +26,9 @@
     <template x-for="(orFilters, orIndex) in filters">
         <div class="flex justify-center items-center">
             <div class="relative pr-6.5 pointer-events-auto w-full rounded-lg bg-white p-1.5
-                                text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 ring-1
-                                ring-slate-700/10 dark:bg-secondary-800"
+                                text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 dark:bg-secondary-800"
+                 x-on:click="filterIndex = orIndex"
+                 x-bind:class="filterIndex === orIndex ? 'ring-2 ring-indigo-600' : 'ring-1 ring-slate-700/10'"
             >
                 <div class="absolute top-0.5 right-0.5">
                     <x-button.circle
@@ -88,7 +89,7 @@
         <x-badge flat amber>
             <x-slot:label>
                 <span>{{ __('Order by') }}</span>
-                <span x-text="colLabels[orderByCol] ?? orderByCol"></span>
+                <span x-text="getLabel(orderByCol)"></span>
                 <span x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
             </x-slot:label>
             <x-slot

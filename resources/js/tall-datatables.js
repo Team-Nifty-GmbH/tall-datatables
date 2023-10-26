@@ -5,28 +5,7 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.data('data_table',
         ($wire) => ({
             init() {
-                this.$wire.getConfig().then(
-                    result => {
-                        this.cols = result.cols;
-                        this.enabledCols = result.enabledCols;
-                        this.colLabels = result.colLabels;
-                        this.sortable = result.sortable;
-                        this.aggregatable = result.aggregatable;
-                        this.selectable = result.selectable;
-                        this.formatters = result.formatters;
-                        this.leftAppend = result.leftAppend;
-                        this.rightAppend = result.rightAppend;
-                        this.topAppend = result.topAppend;
-                        this.bottomAppend = result.bottomAppend;
-                        this.searchRoute = result.searchRoute;
-                        this.echoListeners = result.echoListeners;
-
-                        this.$watch('cols', () => {
-                            this.$wire.storeColLayout(this.cols);
-                        });
-                    }
-                )
-
+                this.loadTableConfig();
                 this.$nextTick(() => {
                     new Sortable(document.getElementById(this.$id('table-cols')), {
                         animation: 150,
@@ -49,27 +28,6 @@ document.addEventListener('alpine:init', () => {
 
                     let valueList = this.filterValueLists.hasOwnProperty(this.newFilter.column);
 
-                    if (! valueList) {
-                        $wire.resolveForeignKey(this.newFilter.column, this.newFilter.relation).then(
-                            result => {
-                                if (result === null) {
-                                    this.filterSelectType = this.filterSelectType === 'none' ? 'none' : 'text';
-                                    return;
-                                }
-
-                                if (typeof result === 'string') {
-                                    this.filterSelectType = 'search';
-                                    this.newFilter.operator = '=';
-                                    Alpine.$data(document.querySelector('#filter-select-search')).asyncData.api = this.searchRoute + '/' + result;
-                                } else if (typeof result === 'array' || typeof result === 'object') {
-                                    this.filterSelectType = 'valueList';
-                                    this.newFilter.operator = '=';
-                                    this.filterValueLists[this.newFilter.column] = result;
-                                    valueList = true;
-                                }
-                            });
-                    }
-
                     if (valueList) {
                         this.filterSelectType = 'valueList';
                         this.newFilter.operator = '=';
@@ -83,7 +41,7 @@ document.addEventListener('alpine:init', () => {
                 })
 
                 this.$watch('newFilter.relation', () => {
-                    this.loadFilterable(this.newFilter.relation);
+                    this.loadRelationTableFields(this.newFilter.relation);
                 })
 
                 this.$watch('selected', () => {
@@ -108,11 +66,41 @@ document.addEventListener('alpine:init', () => {
                     });
                 }
             },
+            loadTableConfig() {
+                this.$wire.getConfig().then(
+                    result => {
+                        this.cols = result.cols;
+                        this.enabledCols = result.enabledCols;
+                        this.sortable = result.sortable;
+                        this.aggregatable = result.aggregatable;
+                        this.selectable = result.selectable;
+                        this.formatters = result.formatters;
+                        this.leftAppend = result.leftAppend;
+                        this.rightAppend = result.rightAppend;
+                        this.topAppend = result.topAppend;
+                        this.bottomAppend = result.bottomAppend;
+                        this.searchRoute = result.searchRoute;
+                        this.echoListeners = result.echoListeners;
+                        this.operatorLabels = result.operatorLabels;
+
+                        this.$watch('cols', () => {
+                            this.$wire.storeColLayout(this.cols);
+                            this.$wire.getColLabels(this.cols)
+                                .then(
+                                    result => {
+                                        Object.assign(this.colLabels, result);
+                                    }
+                                );
+                        });
+                    }
+                )
+            },
             data: $wire.entangle('data').live,
             showSidebar: false,
             cols: [],
             enabledCols: [],
-            colLabels: [],
+            colLabels: $wire.entangle('colLabels'),
+            operatorLabels: [],
             sortable: [],
             aggregatable: [],
             selectable: false,
@@ -140,7 +128,7 @@ document.addEventListener('alpine:init', () => {
                     return item.value == filter.value
                 })?.label ?? filter.value
 
-                return label + ' ' + filter.operator + ' ' + value;
+                return label + ' ' + (this.operatorLabels[filter.operator] || filter.operator) + ' ' + value;
             },
             getData() {
                 this.broadcastChannels = $wire.get('broadcastChannels') ?? [];
@@ -153,40 +141,79 @@ document.addEventListener('alpine:init', () => {
             },
             filterSelectType: 'text',
             loadSidebar(newFilter = null) {
-                if (newFilter) {
-                    this.newFilter = newFilter;
-                    this.tab = 'edit-filters';
-                } else {
-                    this.resetFilter();
-                }
+                if (this.$refs.filterOperator) {
+                    if (newFilter) {
+                        this.newFilter = newFilter;
+                        this.tab = 'edit-filters';
+                    } else {
+                        this.resetFilter();
+                    }
 
-                this.loadRelations(this.newFilter.relation);
+                    this.loadRelations(this.newFilter.relation);
 
-                this.getSavedFilters();
+                    this.getSavedFilters();
 
-                if (Boolean(this.newFilter.column)) {
-                    this.$nextTick(() => this.$refs.filterOperator?.focus());
-                } else if(Boolean(this.newFilter.operator)) {
-                    this.$nextTick(() => this.$refs.filterValue?.focus());
-                } else {
-                    this.$nextTick(() => this.$refs.filterColumn?.focus());
+                    if (Boolean(this.newFilter.column)) {
+                        this.$nextTick(() => this.$refs.filterOperator?.focus());
+                    } else if(Boolean(this.newFilter.operator)) {
+                        this.$nextTick(() => this.$refs.filterValue?.focus());
+                    } else {
+                        this.$nextTick(() => this.$refs.filterColumn?.focus());
+                    }
+                    this.showSavedFilters = false;
                 }
 
                 this.showSidebar = true;
-                this.showSavedFilters = false;
             },
             filterable: [],
+            relationTableFields: {},
+            relationColLabels: {},
+            resetLayout() {
+                $wire.resetLayout().then(
+                    response => {
+                        this.loadTableConfig();
+                    }
+                )
+            },
+            getLabel(col) {
+                return this.colLabels[col] || col.label || this.relationColLabels[col] || col;
+            },
+            loadRelationTableFields(table = null) {
+                let tableAlias = table;
+                if (table === '') {
+                    tableAlias = 'self';
+                }
+
+                if (this.relationTableFields.hasOwnProperty(tableAlias)) {
+                    return;
+                }
+
+                $wire.getRelationTableCols(table).then(
+                    result => {
+                        this.relationTableFields[tableAlias] = result;
+                        $wire.getColLabels(this.relationTableFields[tableAlias])
+                            .then(
+                                result => {
+                                    Object.assign(this.relationColLabels, result);
+                                }
+                            );
+                        if (! this.textFilter) {
+                            this.textFilter = result.reduce((acc, curr) => {
+                                acc[curr] = "";
+                                return acc;
+                            }, {});
+                            this.$watch('textFilter', () => {
+                                this.parseFilter();
+                            });
+                        }
+                    }
+                );
+            },
             loadFilterable(table = null) {
                 $wire.getFilterableColumns(table)
                     .then(
                         result => {
                             this.filterable = result;
-                            $wire.getColLabels(this.cols)
-                                .then(
-                                    result => {
-                                        this.colLabels = result;
-                                    }
-                                );
                             if (! this.textFilter) {
                                 this.textFilter = result.reduce((acc, curr) => {
                                     acc[curr] = "";
@@ -299,6 +326,7 @@ document.addEventListener('alpine:init', () => {
             clearFilters() {
                 this.filters = [];
                 this.filterIndex = 0;
+                this.textFilter = {};
                 $wire.sortTable('');
             },
             resetFilter() {
@@ -484,7 +512,7 @@ window.formatters = {
             return null;
         }
 
-        const color = colors[value];
+        const color = colors[value] || colors;
 
         return '<span class="outline-none inline-flex justify-center items-center group rounded gap-x-1 text-xs font-semibold px-2.5 py-0.5 text-' + color + '-600 bg-' + color + '-100 dark:text-' + color + '-400 dark:bg-slate-700">\n' +
             value + '\n' +

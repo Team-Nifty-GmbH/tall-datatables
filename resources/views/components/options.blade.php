@@ -194,8 +194,8 @@
                             x-bind:list="$id('cols')"
                         />
                         <datalist x-bind:id="$id('cols')">
-                            <template x-for="col in filterable">
-                                <option x-bind:value="col" x-text="colLabels[col]"></option>
+                            <template x-for="col in relationTableFields[newFilter.relation === '' ? 'self' : newFilter.relation]">
+                                <option x-bind:value="col" x-text="getLabel(col)"></option>
                             </template>
                         </datalist>
                         <div x-show="filterSelectType !== 'valueList' && filterSelectType !== 'search'">
@@ -331,7 +331,7 @@
                             <x-badge flat amber>
                                 <x-slot:label>
                                     <span>{{ __('Order by') }}</span>
-                                    <span x-text="colLabels[orderByCol] ?? orderByCol"></span>
+                                    <span x-text="getLabel(orderByCol)"></span>
                                     <span x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
                                 </x-slot:label>
                                 <x-slot
@@ -389,7 +389,7 @@
                         <template x-for="col in aggregatable">
                             <div>
                                 <x-label>
-                                <span x-text="colLabels[col]">
+                                <span x-text="getLabel(col)">
                                 </span>
                                 </x-label>
                                 <x-checkbox
@@ -441,7 +441,7 @@
                                         </div>
                                         <div class="ml-2 text-sm">
                                             <label
-                                                x-text="colLabels[col] || col"
+                                                x-text="getLabel(col)"
                                                 class="block text-sm font-medium text-gray-700 dark:text-gray-50"
                                                 x-bind:for="col"
                                             >
@@ -451,6 +451,9 @@
                                 </label>
                             </div>
                         </template>
+                        <div class="flex justify-end pt-2">
+                            <x-button x-on:click="resetLayout" :label="__('Reset Layout')" />
+                        </div>
                     </div>
                     <div class="pt-6 pb-3">
                         <x-native-select
@@ -477,7 +480,7 @@
                                 </div>
                                 <div class="ml-2 text-sm">
                                     <label
-                                        x-text="colLabels[attribute] || attribute.label || attribute"
+                                        x-text="getLabel(attribute)"
                                         class="block text-sm font-medium text-gray-700 dark:text-gray-50"
                                         x-bind:for="attribute.value"
                                     >
