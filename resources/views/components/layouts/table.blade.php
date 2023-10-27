@@ -19,7 +19,7 @@
                         }" value="*" x-model="selected"/>
                     </template>
                 </x-tall-datatables::table.head-cell>
-                <template x-for="(col, index) in cols">
+                <template x-for="(col, index) in enabledCols">
                     <x-tall-datatables::table.head-cell
                         x-bind:class="stickyCols.includes(col) && 'left-0 z-10 border-r'"
                         x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
@@ -86,7 +86,7 @@
             @if($isFilterable && $showFilterInputs)
                 <tr>
                     <td class="bg-gray-50 dark:bg-secondary-600"></td>
-                    <template x-for="(col, index) in cols">
+                    <template x-for="(col, index) in enabledCols">
                         <td class="bg-gray-50 dark:bg-secondary-600 py-1 px-2"
                             x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
                             x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'">
@@ -155,7 +155,7 @@
                     </div>
                 </template>
             </td>
-            <template x-for="col in cols">
+            <template x-for="col in enabledCols">
                 <x-tall-datatables::table.cell
                     :use-wire-navigate="$useWireNavigate"
                     x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'"

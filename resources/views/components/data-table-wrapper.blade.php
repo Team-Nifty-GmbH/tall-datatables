@@ -1,7 +1,7 @@
 <div
     wire:init="loadData()"
     x-data
-    x-id="['save-filter', 'cols', 'operators', 'filter-select-search', 'table-cols']"
+    x-id="['save-filter', 'enabledCols', 'operators', 'filter-select-search', 'table-cols']"
 >
     <div
         class="relative"

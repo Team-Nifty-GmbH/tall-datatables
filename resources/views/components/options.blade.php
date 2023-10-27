@@ -24,7 +24,7 @@
                     @if($this->aggregatable)
                         <button
                             wire:loading.attr="disabled"
-                            x-on:click.prevent="sortCols = cols; tab = 'summarize';"
+                            x-on:click.prevent="sortCols = enabledCols; tab = 'summarize';"
                             x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'summarize'}"
                             class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
                         >
@@ -33,7 +33,7 @@
                     @endif
                     <button
                         wire:loading.attr="disabled"
-                        x-on:click.prevent="sortCols = cols; tab = 'columns';"
+                        x-on:click.prevent="sortCols = enabledCols; tab = 'columns';"
                         x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'columns'}"
                         class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
                     >
@@ -191,9 +191,9 @@
                             required
                             x-model.lazy="newFilter.column"
                             placeholder="{{ __('Column') }}"
-                            x-bind:list="$id('cols')"
+                            x-bind:list="$id('enabledCols')"
                         />
-                        <datalist x-bind:id="$id('cols')">
+                        <datalist x-bind:id="$id('enabledCols')">
                             <template x-for="col in relationTableFields[newFilter.relation === '' ? 'self' : newFilter.relation]">
                                 <option x-bind:value="col" x-text="getLabel(col)"></option>
                             </template>
@@ -435,7 +435,7 @@
                                             <x-checkbox
                                                 x-bind:id="col"
                                                 x-bind:value="col"
-                                                x-model="cols"
+                                                x-model="enabledCols"
                                                 wire:loading.attr="disabled"
                                             />
                                         </div>
@@ -475,7 +475,7 @@
                                         x-bind:id="attribute.value"
                                         x-bind:value="attribute.value"
                                         x-on:change="loadFilterable; addCol(attribute.value);"
-                                        x-model="cols"
+                                        x-model="enabledCols"
                                     />
                                 </div>
                                 <div class="ml-2 text-sm">

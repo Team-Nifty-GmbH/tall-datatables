@@ -7,9 +7,9 @@ document.addEventListener('alpine:init', () => {
             init() {
                 this.loadTableConfig();
                 this.$nextTick(() => {
-                    this.$watch('cols', () => {
-                        this.$wire.storeColLayout(this.cols);
-                        this.$wire.getColLabels(this.cols)
+                    this.$watch('enabledCols', () => {
+                        this.$wire.storeColLayout(this.enabledCols);
+                        this.$wire.getColLabels(this.enabledCols)
                             .then(
                                 result => {
                                     Object.assign(this.colLabels, result);
@@ -22,9 +22,9 @@ document.addEventListener('alpine:init', () => {
                         delay: 100,
                         onEnd: (e) => {
                             const name = e.item.dataset.column;
-                            const oldIndex = this.cols.indexOf(name);
-                            const [movedItem] = this.cols.splice(oldIndex, 1);
-                            this.cols.splice(e.newIndex, 0, movedItem);
+                            const oldIndex = this.enabledCols.indexOf(name);
+                            const [movedItem] = this.enabledCols.splice(oldIndex, 1);
+                            this.enabledCols.splice(e.newIndex, 0, movedItem);
                         }
                     });
                 });
@@ -79,8 +79,8 @@ document.addEventListener('alpine:init', () => {
             loadTableConfig() {
                 this.$wire.getConfig().then(
                     result => {
-                        this.cols = result.cols;
                         this.enabledCols = result.enabledCols;
+                        this.availableCols = result.availableCols;
                         this.sortable = result.sortable;
                         this.aggregatable = result.aggregatable;
                         this.selectable = result.selectable;
@@ -97,8 +97,8 @@ document.addEventListener('alpine:init', () => {
             },
             data: $wire.entangle('data').live,
             showSidebar: false,
-            cols: [],
             enabledCols: [],
+            availableCols: [],
             colLabels: $wire.entangle('colLabels'),
             operatorLabels: [],
             sortable: [],
@@ -197,9 +197,10 @@ document.addEventListener('alpine:init', () => {
                                     Object.assign(this.relationColLabels, result);
                                 }
                             );
+
                         if (! this.textFilter) {
                             this.textFilter = result.reduce((acc, curr) => {
-                                acc[curr] = "";
+                                acc[curr] = '';
                                 return acc;
                             }, {});
                             this.$watch('textFilter', () => {
@@ -214,9 +215,10 @@ document.addEventListener('alpine:init', () => {
                     .then(
                         result => {
                             this.filterable = result;
+
                             if (! this.textFilter) {
                                 this.textFilter = result.reduce((acc, curr) => {
-                                    acc[curr] = "";
+                                    acc[curr] = '';
                                     return acc;
                                 }, {});
                                 this.$watch('textFilter', () => {
@@ -340,7 +342,7 @@ document.addEventListener('alpine:init', () => {
             getColumns() {
                 $wire.getExportableColumns().then(result => {
                     this.exportableColumns = result;
-                    this.exportColumns = this.cols;
+                    this.exportColumns = this.enabledCols;
                 })
             },
             relations: [],

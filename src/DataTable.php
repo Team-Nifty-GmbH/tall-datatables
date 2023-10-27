@@ -199,8 +199,8 @@ class DataTable extends Component
     public function getConfig(): array
     {
         return [
-            'cols' => $this->getEnabledCols(),
-            'enabledCols' => $this->getAvailableCols(),
+            'enabledCols' => $this->getEnabledCols(),
+            'availableCols' => $this->getAvailableCols(),
             'colLabels' => $this->getColLabels(),
             'selectable' => $this->isSelectable,
             'sortable' => $this->getSortable(),
@@ -312,7 +312,7 @@ class DataTable extends Component
 
     public function boot(): void
     {
-        if ($this->initialized && ! $this->forceRender) {
+        if ($this->initialized && ! $this->getForceRender()) {
             $this->skipRender();
         }
     }
@@ -1154,10 +1154,9 @@ class DataTable extends Component
         try {
             $this->ensureAuthHasTrait();
 
-            DatatableUserSetting::query()
-                ->where('is_layout', true)
-                ->firstOrNew()
-                ->fill([
+            Auth::user()->datatableUserSettings()->updateOrCreate(
+                ['component' => $this->getCacheKey()],
+                [
                     'name' => 'layout',
                     'component' => $this->getCacheKey(),
                     'settings' => [
@@ -1167,8 +1166,8 @@ class DataTable extends Component
                         'perPage' => $this->perPage,
                     ],
                     'is_layout' => true,
-                ])
-                ->save();
+                ]
+            );
         } catch (MissingTraitException) {
         }
     }
@@ -1177,7 +1176,9 @@ class DataTable extends Component
     {
         try {
             $this->ensureAuthHasTrait();
-            $layout = DatatableUserSetting::query()
+            $layout = Auth::user()
+                ->datatableUserSettings()
+                ->where('component', $this->getCacheKey())
                 ->where('is_layout', true)
                 ->first();
 
