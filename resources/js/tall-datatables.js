@@ -104,7 +104,7 @@ document.addEventListener('alpine:init', () => {
             sortable: [],
             aggregatable: [],
             selectable: false,
-            formatters: [],
+            formatters: $wire.entangle('formatters'),
             leftAppend: [],
             rightAppend: [],
             topAppend: [],

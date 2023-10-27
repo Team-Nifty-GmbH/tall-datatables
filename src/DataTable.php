@@ -435,6 +435,8 @@ class DataTable extends Component
             }
         });
 
+        $this->formatters = $this->getFormatters();
+
         return $cols ? $colLabels : array_merge(
             [
                 'sum' => __('Sum'),
@@ -515,9 +517,16 @@ class DataTable extends Component
 
     public function getFormatters(): array
     {
-        return method_exists($this->model, 'typeScriptAttributes')
-            ? array_merge($this->model::typeScriptAttributes(), $this->formatters)
-            : $this->formatters;
+        $models = array_merge($this->loadedModels, [$this->model]);
+
+        $formatters = [];
+        foreach ($models as $model) {
+            $formatters = method_exists($model, 'typeScriptAttributes')
+                ? array_merge($model::typeScriptAttributes(), $formatters)
+                : $formatters;
+        }
+
+        return array_merge($formatters, $this->formatters);
     }
 
     public function loadMore(): void

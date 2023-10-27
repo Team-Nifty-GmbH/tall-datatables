@@ -222,7 +222,7 @@
                                 </template>
                             </x-native-select>
                         </div>
-                        <div x-show="filterSelectType === 'text' && ! newFilter.isCalculation" class="flex flex-col gap-1.5">
+                        <div x-show="filterSelectType === 'text'" class="flex flex-col gap-1.5">
                             <div class="flex items-center gap-1.5">
                                 <x-input
                                     x-show="! newFilter.value[0]?.hasOwnProperty('calculation')"
