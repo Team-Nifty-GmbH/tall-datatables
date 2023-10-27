@@ -312,7 +312,7 @@ class DataTable extends Component
 
     public function boot(): void
     {
-        if ($this->initialized && ! $this->getForceRender()) {
+        if ($this->initialized && ! $this->forceRender) {
             $this->skipRender();
         }
     }
