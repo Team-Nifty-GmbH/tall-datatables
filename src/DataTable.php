@@ -28,7 +28,6 @@ use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
 use TeamNiftyGmbH\DataTable\Exceptions\MissingTraitException;
 use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
-use TeamNiftyGmbH\DataTable\Models\DatatableUserSetting;
 use TeamNiftyGmbH\DataTable\Traits\HasDatatableUserSettings;
 use TeamNiftyGmbH\DataTable\Traits\WithLockedPublicPropertiesTrait;
 use WireUi\Traits\Actions;
