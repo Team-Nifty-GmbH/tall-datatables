@@ -123,12 +123,41 @@ document.addEventListener('alpine:init', () => {
             search: $wire.entangle('search', true),
             selected: $wire.entangle('selected'),
             filterBadge(filter) {
-                const label = this.colLabels[filter.column] ?? filter.column;
-                const value = this.filterValueLists[filter.column]?.find(item => {
-                    return item.value == filter.value
-                })?.label ?? filter.value
+                if (! filter) {
+                    return;
+                }
 
-                return label + ' ' + (this.operatorLabels[filter.operator] || filter.operator) + ' ' + value;
+                const label = this.colLabels[filter.column] ?? filter.column;
+                let value = this.filterValueLists[filter.column]?.find(item => {
+                    return item.value == filter.value
+                })?.label ?? filter.value;
+
+                if (Array.isArray(value)) {
+                    value = filter.value.map((item) => {
+                        if (item.hasOwnProperty('calculation')) {
+                            return this.getCalculationLabel(item.calculation);
+                        }
+
+                        return formatters.format({value: item});
+                    }).join(' ' + this.operatorLabels.and + ' ');
+                } else {
+                    value = formatters.format({value: value});
+                }
+
+
+                return label + ' ' +
+                    (this.operatorLabels[filter.operator] || filter.operator) + ' ' +
+                    value;
+            },
+            getCalculationLabel(calculation) {
+                if (! calculation) {
+                    return;
+                }
+
+                return this.getLabel('Today')
+                    + ' ' + calculation.operator
+                    + ' ' + calculation.value
+                    + ' ' + this.getLabel(calculation.unit);
             },
             getData() {
                 this.broadcastChannels = $wire.get('broadcastChannels') ?? [];
@@ -176,7 +205,7 @@ document.addEventListener('alpine:init', () => {
                 )
             },
             getLabel(col) {
-                return this.colLabels[col] || col.label || this.relationColLabels[col] || col;
+                return this.colLabels[col] || col.label || this.relationColLabels[col] || this.operatorLabels[col] || col;
             },
             loadRelationTableFields(table = null) {
                 let tableAlias = table;
@@ -237,8 +266,18 @@ document.addEventListener('alpine:init', () => {
                     );
             },
             filterIndex: 0,
-            textFilter: {},
-            newFilter: {column: '', operator: '', value: '', relation: ''},
+            textFilter: null,
+            newFilter: {column: '', operator: '', value: [], relation: ''},
+            newFilterCalculation: {value: 0, operator: '-', unit: 'days'},
+            addCalculation(index) {
+                // check if the index exists, otherwise add it
+                if (! this.newFilter.value[index]) {
+                    this.newFilter.value[index] = {};
+                }
+
+                this.newFilter.value[index].calculation = this.newFilterCalculation;
+                this.newFilterCalculation = {value: 0, operator: '-', unit: 'days'};
+            },
             parseFilter() {
                 let filters = [];
                 for (const [key, value] of Object.entries(this.textFilter)) {
@@ -333,7 +372,7 @@ document.addEventListener('alpine:init', () => {
             },
             resetFilter() {
                 this.filterSelectType = 'text';
-                this.newFilter = {column: '', operator: '', value: '', relation: ''};
+                this.newFilter = {column: '', operator: '', value: [], relation: ''};
             },
             filterName: '',
             permanent: false,
@@ -647,7 +686,7 @@ window.formatters = {
                 return 'email';
             }
 
-            if (value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+            if (value.match(/^\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}(:\d{2})?$/)) {
                 return 'datetime';
             }
 

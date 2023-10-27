@@ -1,12 +1,4 @@
 <x-tall-datatables::sidebar x-on:keydown.esc="showSidebar = false" x-show="showSidebar">
-    @if(method_exists(auth()->user(), 'datatableUserSettings'))
-        <x-dialog id="save-filter" :title="__('Save filter')">
-            <x-input required :label="__('Filter name')" x-model="filterName" />
-            <div class="pt-3">
-                <x-checkbox :label="__('Permanent')" x-model="permanent" />
-            </div>
-        </x-dialog>
-    @endif
     <div class="mt-2">
         <div class="pb-2.5">
             <div class="border-b border-gray-200 dark:border-secondary-700">
@@ -216,6 +208,7 @@
                                 <option value="not like">{{ __('not like') }}</option>
                                 <option value="is null">{{ __('is null') }}</option>
                                 <option value="is not null">{{ __('is not null') }}</option>
+                                <option value="between">{{ __('between') }}</option>
                             </datalist>
                         </div>
                         <div x-show="filterSelectType === 'valueList'">
@@ -229,25 +222,84 @@
                                 </template>
                             </x-native-select>
                         </div>
-                        <div x-show="filterSelectType === 'text'">
-                            <x-input
-                                x-bind:type="window.formatters.inputType(formatters[newFilter.column])"
-                                x-model="newFilter.value"
-                                placeholder="{{ __('Value') }}"
-                                x-ref="filterValue"
-                            />
-                        </div>
-                        <div x-show="filterSelectType === 'search'">
-                            <x-select
-                                x-bind:id="$id('filter-select-search')"
-                                class="pb-4"
-                                x-on:selected="newFilter.value = $event.detail.value"
-                                option-value="id"
-                                option-label="name"
-                                option-description="description"
-                                :clearable="false"
-                                async-data=""
-                            />
+                        <div x-show="filterSelectType === 'text' && ! newFilter.isCalculation" class="flex flex-col gap-1.5">
+                            <div class="flex items-center gap-1.5">
+                                <x-input
+                                    x-show="! newFilter.value[0]?.hasOwnProperty('calculation')"
+                                    x-bind:type="window.formatters.inputType(formatters[newFilter.column])"
+                                    x-model="newFilter.value[0]"
+                                    placeholder="{{ __('Value') }}"
+                                    x-ref="filterValue"
+                                />
+                                <div class="flex" x-show="newFilter.value[0]?.hasOwnProperty('calculation')">
+                                    <x-badge primary x-text="getCalculationLabel(newFilter.value[0]?.calculation)">
+                                    </x-badge>
+                                </div>
+                                <div x-show="window.formatters.inputType(formatters[newFilter.column]).startsWith('date')">
+                                    <x-button
+                                        icon="calculator"
+                                        class="w-full"
+                                        x-on:click="
+                                    $wireui.confirmDialog({
+                                        id: 'date-calculation',
+                                        icon: 'question',
+                                        accept: {
+                                            label: '{{ __('Save') }}',
+                                            execute: () => {addCalculation(0);},
+                                        },
+                                        reject: {
+                                            label: '{{ __('Cancel') }}',
+                                            execute: () => {
+                                                filterName = ''
+                                            }
+                                        }
+                                    })
+                                "
+                                    >
+                                    </x-button>
+                                </div>
+                            </div>
+                            <div x-show="newFilter.operator === 'between'">
+                                <x-label class="text-center">
+                                    {{ __('and') }}
+                                </x-label>
+                                <div class="flex items-center gap-1.5">
+                                    <x-input
+                                        x-show="! newFilter.value[1]?.hasOwnProperty('calculation')"
+                                        x-bind:type="window.formatters.inputType(formatters[newFilter.column])"
+                                        x-model="newFilter.value[1]"
+                                        placeholder="{{ __('Value') }}"
+                                        x-ref="filterValue"
+                                    />
+                                    <div class="flex" x-show="newFilter.value[1]?.hasOwnProperty('calculation')">
+                                        <x-badge primary x-text="getCalculationLabel(newFilter.value[1]?.calculation)">
+                                        </x-badge>
+                                    </div>
+                                    <div x-show="window.formatters.inputType(formatters[newFilter.column]).startsWith('date')">
+                                        <x-button
+                                            icon="calculator"
+                                            class="w-full"
+                                            x-on:click="
+                                    $wireui.confirmDialog({
+                                        id: 'date-calculation',
+                                        icon: 'question',
+                                        accept: {
+                                            label: '{{ __('Save') }}',
+                                            execute: () => {addCalculation(1);},
+                                        },
+                                        reject: {
+                                            label: '{{ __('Cancel') }}',
+                                            execute: () => {
+                                                filterName = ''
+                                            }
+                                        }
+                                    })
+                                "
+                                        >
+                                        </x-button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div
                             x-cloak

@@ -453,6 +453,15 @@ class DataTable extends Component
             'not like' => __('not like'),
             'is null' => __('is null'),
             'is not null' => __('is not null'),
+            'between' => __('between'),
+            'and' => __('and'),
+            'Today' => __('Today'),
+            'minutes' => __('Minutes'),
+            'hours' => __('Hours'),
+            'days' => __('Days'),
+            'weeks' => __('Weeks'),
+            'months' => __('Months'),
+            'years' => __('Years'),
         ];
     }
 
@@ -1039,6 +1048,21 @@ class DataTable extends Component
                 $query->where(function (Builder $query) use ($orFilter) {
                     foreach ($orFilter as $type => $filter) {
                         $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
+                        $filter['value'] = array_map(function ($value) {
+                            if (! ($value['calculation'] ?? false)) {
+                                return $value;
+                            }
+                            $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
+                            $functionSuffix = ucfirst($value['calculation']['unit']);
+
+                            return [
+                                now()->{$functionPrefix . $functionSuffix}($value['calculation']['value']),
+                            ];
+                        }, $filter['value']);
+                        $filter['value'] = is_array($filter['value']) && count($filter['value']) === 1
+                            ? $filter['value'][0]
+                            : $filter['value'];
+
                         if (! is_string($type)) {
                             $filter = array_is_list($filter) ? [$filter] : $filter;
                             $target = explode('.', $filter['column']);
@@ -1055,6 +1079,8 @@ class DataTable extends Component
                                 }
                             } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
                                 $this->whereNull($query, $filter);
+                            } elseif ($filter['operator'] === 'between') {
+                                $query->whereBetween($filter['column'], $filter['value']);
                             } else {
                                 $query->where([array_values(
                                     array_filter($filter, fn ($value) => $value == 0 || ! empty($value))
