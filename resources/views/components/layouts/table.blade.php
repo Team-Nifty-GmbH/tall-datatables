@@ -19,7 +19,7 @@
                         }" value="*" x-model="selected"/>
                     </template>
                 </x-tall-datatables::table.head-cell>
-                <template x-for="(col, index) in cols">
+                <template x-for="(col, index) in enabledCols">
                     <x-tall-datatables::table.head-cell
                         x-bind:class="stickyCols.includes(col) && 'left-0 z-10 border-r'"
                         x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
@@ -86,7 +86,7 @@
             @if($isFilterable && $showFilterInputs)
                 <tr>
                     <td class="bg-gray-50 dark:bg-secondary-600"></td>
-                    <template x-for="(col, index) in cols">
+                    <template x-for="(col, index) in enabledCols">
                         <td class="bg-gray-50 dark:bg-secondary-600 py-1 px-2"
                             x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
                             x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'">
@@ -155,7 +155,7 @@
                     </div>
                 </template>
             </td>
-            <template x-for="col in cols">
+            <template x-for="col in enabledCols">
                 <x-tall-datatables::table.cell
                     :use-wire-navigate="$useWireNavigate"
                     x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'"
@@ -198,7 +198,7 @@
         <template x-for="(aggregate, name) in data.aggregates">
             <tr class="hover:bg-gray-100 bg-gray-50 dark:hover:bg-secondary-800 dark:bg-secondary-900">
                 <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm font-bold" x-text="colLabels[name] || name"></td>
-                <template x-for="col in cols">
+                <template x-for="col in enabledCols">
                     <x-tall-datatables::table.cell>
                         <div
                             class="flex font-semibold"

@@ -55,7 +55,7 @@
                 {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
             >
                 <a class="relative text-sm font-medium text-gray-900" x-bind:href="record?.href ?? false">
-                    <template x-for="(col, index) in cols">
+                    <template x-for="(col, index) in enabledCols">
                         <div>
                             <template x-if="formatters[col] === 'image'">
                                 <div class="relative h-72 w-full overflow-hidden rounded-lg">

@@ -1,12 +1,4 @@
 <x-tall-datatables::sidebar x-on:keydown.esc="showSidebar = false" x-show="showSidebar">
-    @if(method_exists(auth()->user(), 'datatableUserSettings'))
-        <x-dialog id="save-filter" :title="__('Save filter')">
-            <x-input required :label="__('Filter name')" x-model="filterName" />
-            <div class="pt-3">
-                <x-checkbox :label="__('Permanent')" x-model="permanent" />
-            </div>
-        </x-dialog>
-    @endif
     <div class="mt-2">
         <div class="pb-2.5">
             <div class="border-b border-gray-200 dark:border-secondary-700">
@@ -24,7 +16,7 @@
                     @if($this->aggregatable)
                         <button
                             wire:loading.attr="disabled"
-                            x-on:click.prevent="sortCols = cols; tab = 'summarize';"
+                            x-on:click.prevent="sortCols = enabledCols; tab = 'summarize';"
                             x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'summarize'}"
                             class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
                         >
@@ -33,7 +25,7 @@
                     @endif
                     <button
                         wire:loading.attr="disabled"
-                        x-on:click.prevent="sortCols = cols; tab = 'columns';"
+                        x-on:click.prevent="sortCols = enabledCols; tab = 'columns';"
                         x-bind:class="{'!border-indigo-500 text-indigo-600' : tab === 'columns'}"
                         class="cursor-pointer border-transparent text-gray-500 dark:text-gray-50 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
                     >
@@ -175,6 +167,7 @@
                             </template>
                         @endif
                         <x-native-select
+                            name="new-filter-relation"
                             wire:target="loadFields"
                             wire:loading.attr="disabled"
                             x-model="newFilter.relation"
@@ -185,21 +178,23 @@
                             </template>
                         </x-native-select>
                         <x-input
+                            name="new-filter-column"
                             wire:target="loadFields"
                             wire:loading.attr="disabled"
                             x-ref="filterColumn"
                             required
                             x-model.lazy="newFilter.column"
                             placeholder="{{ __('Column') }}"
-                            x-bind:list="$id('cols')"
+                            x-bind:list="$id('enabledCols')"
                         />
-                        <datalist x-bind:id="$id('cols')">
-                            <template x-for="col in filterable">
-                                <option x-bind:value="col" x-text="colLabels[col]"></option>
+                        <datalist x-bind:id="$id('enabledCols')">
+                            <template x-for="col in relationTableFields[newFilter.relation === '' ? 'self' : newFilter.relation]">
+                                <option x-bind:value="col" x-text="getLabel(col)"></option>
                             </template>
                         </datalist>
                         <div x-show="filterSelectType !== 'valueList' && filterSelectType !== 'search'">
                             <x-input
+                                name="new-filter-operator"
                                 x-ref="filterOperator"
                                 x-model="newFilter.operator"
                                 placeholder="{{ __('Operator') }}"
@@ -216,10 +211,12 @@
                                 <option value="not like">{{ __('not like') }}</option>
                                 <option value="is null">{{ __('is null') }}</option>
                                 <option value="is not null">{{ __('is not null') }}</option>
+                                <option value="between">{{ __('between') }}</option>
                             </datalist>
                         </div>
                         <div x-show="filterSelectType === 'valueList'">
                             <x-native-select
+                                name="new-filter-value-select"
                                 x-model="newFilter.value"
                                 placeholder="{{ __('Value') }}"
                             >
@@ -229,25 +226,86 @@
                                 </template>
                             </x-native-select>
                         </div>
-                        <div x-show="filterSelectType === 'text'">
-                            <x-input
-                                x-bind:type="window.formatters.inputType(formatters[newFilter.column])"
-                                x-model="newFilter.value"
-                                placeholder="{{ __('Value') }}"
-                                x-ref="filterValue"
-                            />
-                        </div>
-                        <div x-show="filterSelectType === 'search'">
-                            <x-select
-                                x-bind:id="$id('filter-select-search')"
-                                class="pb-4"
-                                x-on:selected="newFilter.value = $event.detail.value"
-                                option-value="id"
-                                option-label="name"
-                                option-description="description"
-                                :clearable="false"
-                                async-data=""
-                            />
+                        <div x-show="filterSelectType === 'text'" class="flex flex-col gap-1.5">
+                            <div class="flex items-center gap-1.5">
+                                <x-input
+                                    name="new-filter-value"
+                                    x-show="! newFilter.value[0]?.hasOwnProperty('calculation')"
+                                    x-bind:type="getFilterInputType(newFilter.relation + '.' + newFilter.column)"
+                                    x-model="newFilter.value[0]"
+                                    placeholder="{{ __('Value') }}"
+                                    x-ref="filterValue"
+                                />
+                                <div class="flex" x-show="newFilter.value[0]?.hasOwnProperty('calculation')">
+                                    <x-badge primary x-text="getCalculationLabel(newFilter.value[0]?.calculation)">
+                                    </x-badge>
+                                </div>
+                                <div x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
+                                    <x-button
+                                        icon="calculator"
+                                        class="w-full"
+                                        x-on:click="
+                                            $wireui.confirmDialog({
+                                                id: 'date-calculation',
+                                                icon: 'question',
+                                                accept: {
+                                                    label: '{{ __('Save') }}',
+                                                    execute: () => {addCalculation(0);},
+                                                },
+                                                reject: {
+                                                    label: '{{ __('Cancel') }}',
+                                                    execute: () => {
+                                                        filterName = ''
+                                                    }
+                                                }
+                                            })
+                                        "
+                                    >
+                                    </x-button>
+                                </div>
+                            </div>
+                            <div x-show="newFilter.operator === 'between'">
+                                <x-label class="text-center">
+                                    {{ __('and') }}
+                                </x-label>
+                                <div class="flex items-center gap-1.5">
+                                    <x-input
+                                        name="new-filter-value-2"
+                                        x-show="! newFilter.value[1]?.hasOwnProperty('calculation')"
+                                        x-bind:type="getFilterInputType(newFilter.relation + '.' + newFilter.column)"
+                                        x-model="newFilter.value[1]"
+                                        placeholder="{{ __('Value') }}"
+                                        x-ref="filterValue"
+                                    />
+                                    <div class="flex" x-show="newFilter.value[1]?.hasOwnProperty('calculation')">
+                                        <x-badge primary x-text="getCalculationLabel(newFilter.value[1]?.calculation)">
+                                        </x-badge>
+                                    </div>
+                                    <div x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
+                                        <x-button
+                                            icon="calculator"
+                                            class="w-full"
+                                            x-on:click="
+                                                $wireui.confirmDialog({
+                                                    id: 'date-calculation',
+                                                    icon: 'question',
+                                                    accept: {
+                                                        label: '{{ __('Save') }}',
+                                                        execute: () => {addCalculation(1);},
+                                                    },
+                                                    reject: {
+                                                        label: '{{ __('Cancel') }}',
+                                                        execute: () => {
+                                                            filterName = ''
+                                                        }
+                                                    }
+                                                })
+                                            "
+                                        >
+                                        </x-button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div
                             x-cloak
@@ -331,7 +389,7 @@
                             <x-badge flat amber>
                                 <x-slot:label>
                                     <span>{{ __('Order by') }}</span>
-                                    <span x-text="colLabels[orderByCol] ?? orderByCol"></span>
+                                    <span x-text="getLabel(orderByCol)"></span>
                                     <span x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
                                 </x-slot:label>
                                 <x-slot
@@ -389,7 +447,7 @@
                         <template x-for="col in aggregatable">
                             <div>
                                 <x-label>
-                                <span x-text="colLabels[col]">
+                                    <span x-text="getLabel(col)">
                                 </span>
                                 </x-label>
                                 <x-checkbox
@@ -435,13 +493,13 @@
                                             <x-checkbox
                                                 x-bind:id="col"
                                                 x-bind:value="col"
-                                                x-model="cols"
+                                                x-model="enabledCols"
                                                 wire:loading.attr="disabled"
                                             />
                                         </div>
                                         <div class="ml-2 text-sm">
                                             <label
-                                                x-text="colLabels[col] || col"
+                                                x-text="getLabel(col)"
                                                 class="block text-sm font-medium text-gray-700 dark:text-gray-50"
                                                 x-bind:for="col"
                                             >
@@ -451,6 +509,9 @@
                                 </label>
                             </div>
                         </template>
+                        <div class="flex justify-end pt-2">
+                            <x-button x-on:click="resetLayout" :label="__('Reset Layout')" />
+                        </div>
                     </div>
                     <div class="pt-6 pb-3">
                         <x-native-select
@@ -472,12 +533,12 @@
                                         x-bind:id="attribute.value"
                                         x-bind:value="attribute.value"
                                         x-on:change="loadFilterable; addCol(attribute.value);"
-                                        x-model="cols"
+                                        x-model="enabledCols"
                                     />
                                 </div>
                                 <div class="ml-2 text-sm">
                                     <label
-                                        x-text="colLabels[attribute] || attribute.label || attribute"
+                                        x-text="getLabel(attribute)"
                                         class="block text-sm font-medium text-gray-700 dark:text-gray-50"
                                         x-bind:for="attribute.value"
                                     >

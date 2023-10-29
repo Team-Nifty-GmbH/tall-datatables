@@ -16,11 +16,13 @@ class DatatableUserSetting extends Model
 
     protected $casts = [
         'settings' => 'array',
+        'is_layout' => 'boolean',
+        'is_permanent' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
-    protected static function booted()
+    protected static function booted(): void
     {
         static::creating(function ($model) {
             $model->authenticatable_id = $model->authenticatable_id ?? Auth::user()->id;

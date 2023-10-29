@@ -5,41 +5,35 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.data('data_table',
         ($wire) => ({
             init() {
-                this.$wire.getConfig().then(
-                    result => {
-                        this.cols = result.cols;
-                        this.enabledCols = result.enabledCols;
-                        this.colLabels = result.colLabels;
-                        this.sortable = result.sortable;
-                        this.aggregatable = result.aggregatable;
-                        this.selectable = result.selectable;
-                        this.formatters = result.formatters;
-                        this.leftAppend = result.leftAppend;
-                        this.rightAppend = result.rightAppend;
-                        this.topAppend = result.topAppend;
-                        this.bottomAppend = result.bottomAppend;
-                        this.searchRoute = result.searchRoute;
-                        this.echoListeners = result.echoListeners;
-
-                        this.$watch('cols', () => {
-                            this.$wire.storeColLayout(this.cols);
-                        });
-                    }
-                )
-
+                this.loadTableConfig();
                 this.$nextTick(() => {
+                    this.$watch('enabledCols', () => {
+                        this.$wire.storeColLayout(this.enabledCols);
+                        this.$wire.getFormatters()
+                            .then(
+                                formatters => {
+                                    this.formatters = formatters;
+                                }
+                            );
+                        this.$wire.getColLabels(this.enabledCols)
+                            .then(
+                                result => {
+                                    this.colLabels = result;
+                                }
+                            );
+                    });
+
                     new Sortable(document.getElementById(this.$id('table-cols')), {
                         animation: 150,
                         delay: 100,
                         onEnd: (e) => {
                             const name = e.item.dataset.column;
-                            const oldIndex = this.cols.indexOf(name);
-                            const [movedItem] = this.cols.splice(oldIndex, 1);
-                            this.cols.splice(e.newIndex, 0, movedItem);
+                            const oldIndex = this.enabledCols.indexOf(name);
+                            const [movedItem] = this.enabledCols.splice(oldIndex, 1);
+                            this.enabledCols.splice(e.newIndex, 0, movedItem);
                         }
                     });
                 });
-
                 this.loadFilterable()
 
                 this.$watch('newFilter.column', () => {
@@ -48,27 +42,6 @@ document.addEventListener('alpine:init', () => {
                     }
 
                     let valueList = this.filterValueLists.hasOwnProperty(this.newFilter.column);
-
-                    if (! valueList) {
-                        $wire.resolveForeignKey(this.newFilter.column, this.newFilter.relation).then(
-                            result => {
-                                if (result === null) {
-                                    this.filterSelectType = this.filterSelectType === 'none' ? 'none' : 'text';
-                                    return;
-                                }
-
-                                if (typeof result === 'string') {
-                                    this.filterSelectType = 'search';
-                                    this.newFilter.operator = '=';
-                                    Alpine.$data(document.querySelector('#filter-select-search')).asyncData.api = this.searchRoute + '/' + result;
-                                } else if (typeof result === 'array' || typeof result === 'object') {
-                                    this.filterSelectType = 'valueList';
-                                    this.newFilter.operator = '=';
-                                    this.filterValueLists[this.newFilter.column] = result;
-                                    valueList = true;
-                                }
-                            });
-                    }
 
                     if (valueList) {
                         this.filterSelectType = 'valueList';
@@ -83,7 +56,8 @@ document.addEventListener('alpine:init', () => {
                 })
 
                 this.$watch('newFilter.relation', () => {
-                    this.loadFilterable(this.newFilter.relation);
+                    this.newFilter.column = '';
+                    this.loadRelationTableFields(this.newFilter.relation);
                 })
 
                 this.$watch('selected', () => {
@@ -108,11 +82,31 @@ document.addEventListener('alpine:init', () => {
                     });
                 }
             },
+            loadTableConfig() {
+                this.$wire.getConfig().then(
+                    result => {
+                        this.enabledCols = result.enabledCols;
+                        this.availableCols = result.availableCols;
+                        this.sortable = result.sortable;
+                        this.aggregatable = result.aggregatable;
+                        this.selectable = result.selectable;
+                        this.formatters = result.formatters;
+                        this.leftAppend = result.leftAppend;
+                        this.rightAppend = result.rightAppend;
+                        this.topAppend = result.topAppend;
+                        this.bottomAppend = result.bottomAppend;
+                        this.searchRoute = result.searchRoute;
+                        this.echoListeners = result.echoListeners;
+                        this.operatorLabels = result.operatorLabels;
+                    }
+                )
+            },
             data: $wire.entangle('data').live,
             showSidebar: false,
-            cols: [],
             enabledCols: [],
+            availableCols: [],
             colLabels: [],
+            operatorLabels: [],
             sortable: [],
             aggregatable: [],
             selectable: false,
@@ -135,12 +129,41 @@ document.addEventListener('alpine:init', () => {
             search: $wire.entangle('search', true),
             selected: $wire.entangle('selected'),
             filterBadge(filter) {
-                const label = this.colLabels[filter.column] ?? filter.column;
-                const value = this.filterValueLists[filter.column]?.find(item => {
-                    return item.value == filter.value
-                })?.label ?? filter.value
+                if (! filter) {
+                    return;
+                }
 
-                return label + ' ' + filter.operator + ' ' + value;
+                const label = this.colLabels[filter.column] ?? filter.column;
+                let value = this.filterValueLists[filter.column]?.find(item => {
+                    return item.value == filter.value
+                })?.label ?? filter.value;
+
+                if (Array.isArray(value)) {
+                    value = filter.value.map((item) => {
+                        if (item.hasOwnProperty('calculation')) {
+                            return this.getCalculationLabel(item.calculation);
+                        }
+
+                        return formatters.format({value: item});
+                    }).join(' ' + this.operatorLabels.and + ' ');
+                } else {
+                    value = formatters.format({value: value});
+                }
+
+
+                return label + ' ' +
+                    (this.operatorLabels[filter.operator] || filter.operator) + ' ' +
+                    value;
+            },
+            getCalculationLabel(calculation) {
+                if (! calculation) {
+                    return;
+                }
+
+                return this.getLabel('Today')
+                    + ' ' + calculation.operator
+                    + ' ' + calculation.value
+                    + ' ' + this.getLabel(calculation.unit);
             },
             getData() {
                 this.broadcastChannels = $wire.get('broadcastChannels') ?? [];
@@ -153,43 +176,103 @@ document.addEventListener('alpine:init', () => {
             },
             filterSelectType: 'text',
             loadSidebar(newFilter = null) {
-                if (newFilter) {
-                    this.newFilter = newFilter;
-                    this.tab = 'edit-filters';
-                } else {
-                    this.resetFilter();
-                }
+                if (this.$refs.filterOperator) {
+                    if (newFilter) {
+                        this.newFilter = newFilter;
+                        this.tab = 'edit-filters';
+                    } else {
+                        this.resetFilter();
+                    }
 
-                this.loadRelations(this.newFilter.relation);
+                    this.loadRelations(this.newFilter.relation);
 
-                this.getSavedFilters();
+                    this.getSavedFilters();
 
-                if (Boolean(this.newFilter.column)) {
-                    this.$nextTick(() => this.$refs.filterOperator?.focus());
-                } else if(Boolean(this.newFilter.operator)) {
-                    this.$nextTick(() => this.$refs.filterValue?.focus());
-                } else {
-                    this.$nextTick(() => this.$refs.filterColumn?.focus());
+                    if (Boolean(this.newFilter.column)) {
+                        this.$nextTick(() => this.$refs.filterOperator?.focus());
+                    } else if(Boolean(this.newFilter.operator)) {
+                        this.$nextTick(() => this.$refs.filterValue?.focus());
+                    } else {
+                        this.$nextTick(() => this.$refs.filterColumn?.focus());
+                    }
+                    this.showSavedFilters = false;
                 }
 
                 this.showSidebar = true;
-                this.showSavedFilters = false;
             },
             filterable: [],
+            relationTableFields: {},
+            relationFormatters: {},
+            relationColLabels: {},
+            resetLayout() {
+                $wire.resetLayout().then(
+                    response => {
+                        this.loadTableConfig();
+                    }
+                )
+            },
+            getLabel(col) {
+                return this.colLabels[col] || col.label || this.relationColLabels[col] || this.operatorLabels[col] || col;
+            },
+            getFilterInputType(col) {
+                if (! col || col === '.') {
+                    return 'text';
+                }
+
+                let splittedCol = col.split('.');
+                let table = 'self';
+
+                if (splittedCol.length > 1) {
+                    table = splittedCol[0] || 'self';
+                    col = splittedCol[1];
+                }
+
+                const formatter = this.relationFormatters?.[table]?.[col] ?? null;
+
+                return formatters.inputType(formatter)
+            },
+            loadRelationTableFields(table = null) {
+                let tableAlias = table;
+                if (table === '') {
+                    tableAlias = 'self';
+                }
+
+                if (this.relationTableFields.hasOwnProperty(tableAlias)) {
+                    return;
+                }
+
+                $wire.getRelationTableCols(table).then(
+                    result => {
+                        this.relationTableFields[tableAlias] = Object.keys(result);
+                        this.relationFormatters[tableAlias] = result;
+                        $wire.getColLabels(this.relationTableFields[tableAlias])
+                            .then(
+                                result => {
+                                    Object.assign(this.relationColLabels, result);
+                                }
+                            );
+
+                        if (! this.textFilter) {
+                            this.textFilter = result.reduce((acc, curr) => {
+                                acc[curr] = '';
+                                return acc;
+                            }, {});
+                            this.$watch('textFilter', () => {
+                                this.parseFilter();
+                            });
+                        }
+                    }
+                );
+            },
             loadFilterable(table = null) {
                 $wire.getFilterableColumns(table)
                     .then(
                         result => {
                             this.filterable = result;
-                            $wire.getColLabels(this.cols)
-                                .then(
-                                    result => {
-                                        this.colLabels = result;
-                                    }
-                                );
+
                             if (! this.textFilter) {
                                 this.textFilter = result.reduce((acc, curr) => {
-                                    acc[curr] = "";
+                                    acc[curr] = '';
                                     return acc;
                                 }, {});
                                 this.$watch('textFilter', () => {
@@ -209,7 +292,17 @@ document.addEventListener('alpine:init', () => {
             },
             filterIndex: 0,
             textFilter: null,
-            newFilter: {column: '', operator: '', value: '', relation: ''},
+            newFilter: {column: '', operator: '', value: [], relation: ''},
+            newFilterCalculation: {value: 0, operator: '-', unit: 'days'},
+            addCalculation(index) {
+                // check if the index exists, otherwise add it
+                if (! this.newFilter.value[index]) {
+                    this.newFilter.value[index] = {};
+                }
+
+                this.newFilter.value[index].calculation = this.newFilterCalculation;
+                this.newFilterCalculation = {value: 0, operator: '-', unit: 'days'};
+            },
             parseFilter() {
                 let filters = [];
                 for (const [key, value] of Object.entries(this.textFilter)) {
@@ -299,11 +392,12 @@ document.addEventListener('alpine:init', () => {
             clearFilters() {
                 this.filters = [];
                 this.filterIndex = 0;
+                this.textFilter = {};
                 $wire.sortTable('');
             },
             resetFilter() {
                 this.filterSelectType = 'text';
-                this.newFilter = {column: '', operator: '', value: '', relation: ''};
+                this.newFilter = {column: '', operator: '', value: [], relation: ''};
             },
             filterName: '',
             permanent: false,
@@ -312,7 +406,7 @@ document.addEventListener('alpine:init', () => {
             getColumns() {
                 $wire.getExportableColumns().then(result => {
                     this.exportableColumns = result;
-                    this.exportColumns = this.cols;
+                    this.exportColumns = this.enabledCols;
                 })
             },
             relations: [],
@@ -484,7 +578,7 @@ window.formatters = {
             return null;
         }
 
-        const color = colors[value];
+        const color = colors[value] || colors;
 
         return '<span class="outline-none inline-flex justify-center items-center group rounded gap-x-1 text-xs font-semibold px-2.5 py-0.5 text-' + color + '-600 bg-' + color + '-100 dark:text-' + color + '-400 dark:bg-slate-700">\n' +
             value + '\n' +
@@ -617,7 +711,7 @@ window.formatters = {
                 return 'email';
             }
 
-            if (value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+            if (value.match(/^\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}(:\d{2})?$/)) {
                 return 'datetime';
             }
 
