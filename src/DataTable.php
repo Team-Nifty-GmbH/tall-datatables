@@ -519,7 +519,6 @@ class DataTable extends Component
                 ? $loadedRelation['model']::typeScriptAttributes()
                 : [];
 
-
             foreach ($loadedRelation['loaded_columns'] as $loadedColumn) {
                 $formatters[$loadedColumn['loaded_as']] = $relationFormatters[$loadedColumn['column']] ?? null;
             }
