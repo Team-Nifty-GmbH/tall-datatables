@@ -167,6 +167,7 @@
                             </template>
                         @endif
                         <x-native-select
+                            name="new-filter-relation"
                             wire:target="loadFields"
                             wire:loading.attr="disabled"
                             x-model="newFilter.relation"
@@ -177,6 +178,7 @@
                             </template>
                         </x-native-select>
                         <x-input
+                            name="new-filter-column"
                             wire:target="loadFields"
                             wire:loading.attr="disabled"
                             x-ref="filterColumn"
@@ -192,6 +194,7 @@
                         </datalist>
                         <div x-show="filterSelectType !== 'valueList' && filterSelectType !== 'search'">
                             <x-input
+                                name="new-filter-operator"
                                 x-ref="filterOperator"
                                 x-model="newFilter.operator"
                                 placeholder="{{ __('Operator') }}"
@@ -213,6 +216,7 @@
                         </div>
                         <div x-show="filterSelectType === 'valueList'">
                             <x-native-select
+                                name="new-filter-value-select"
                                 x-model="newFilter.value"
                                 placeholder="{{ __('Value') }}"
                             >
@@ -225,8 +229,9 @@
                         <div x-show="filterSelectType === 'text'" class="flex flex-col gap-1.5">
                             <div class="flex items-center gap-1.5">
                                 <x-input
+                                    name="new-filter-value"
                                     x-show="! newFilter.value[0]?.hasOwnProperty('calculation')"
-                                    x-bind:type="window.formatters.inputType(formatters[newFilter.column])"
+                                    x-bind:type="getFilterInputType(newFilter.relation + '.' + newFilter.column)"
                                     x-model="newFilter.value[0]"
                                     placeholder="{{ __('Value') }}"
                                     x-ref="filterValue"
@@ -235,26 +240,26 @@
                                     <x-badge primary x-text="getCalculationLabel(newFilter.value[0]?.calculation)">
                                     </x-badge>
                                 </div>
-                                <div x-show="window.formatters.inputType(formatters[newFilter.column]).startsWith('date')">
+                                <div x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
                                     <x-button
                                         icon="calculator"
                                         class="w-full"
                                         x-on:click="
-                                    $wireui.confirmDialog({
-                                        id: 'date-calculation',
-                                        icon: 'question',
-                                        accept: {
-                                            label: '{{ __('Save') }}',
-                                            execute: () => {addCalculation(0);},
-                                        },
-                                        reject: {
-                                            label: '{{ __('Cancel') }}',
-                                            execute: () => {
-                                                filterName = ''
-                                            }
-                                        }
-                                    })
-                                "
+                                            $wireui.confirmDialog({
+                                                id: 'date-calculation',
+                                                icon: 'question',
+                                                accept: {
+                                                    label: '{{ __('Save') }}',
+                                                    execute: () => {addCalculation(0);},
+                                                },
+                                                reject: {
+                                                    label: '{{ __('Cancel') }}',
+                                                    execute: () => {
+                                                        filterName = ''
+                                                    }
+                                                }
+                                            })
+                                        "
                                     >
                                     </x-button>
                                 </div>
@@ -265,8 +270,9 @@
                                 </x-label>
                                 <div class="flex items-center gap-1.5">
                                     <x-input
+                                        name="new-filter-value-2"
                                         x-show="! newFilter.value[1]?.hasOwnProperty('calculation')"
-                                        x-bind:type="window.formatters.inputType(formatters[newFilter.column])"
+                                        x-bind:type="getFilterInputType(newFilter.relation + '.' + newFilter.column)"
                                         x-model="newFilter.value[1]"
                                         placeholder="{{ __('Value') }}"
                                         x-ref="filterValue"
@@ -275,26 +281,26 @@
                                         <x-badge primary x-text="getCalculationLabel(newFilter.value[1]?.calculation)">
                                         </x-badge>
                                     </div>
-                                    <div x-show="window.formatters.inputType(formatters[newFilter.column]).startsWith('date')">
+                                    <div x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
                                         <x-button
                                             icon="calculator"
                                             class="w-full"
                                             x-on:click="
-                                    $wireui.confirmDialog({
-                                        id: 'date-calculation',
-                                        icon: 'question',
-                                        accept: {
-                                            label: '{{ __('Save') }}',
-                                            execute: () => {addCalculation(1);},
-                                        },
-                                        reject: {
-                                            label: '{{ __('Cancel') }}',
-                                            execute: () => {
-                                                filterName = ''
-                                            }
-                                        }
-                                    })
-                                "
+                                                $wireui.confirmDialog({
+                                                    id: 'date-calculation',
+                                                    icon: 'question',
+                                                    accept: {
+                                                        label: '{{ __('Save') }}',
+                                                        execute: () => {addCalculation(1);},
+                                                    },
+                                                    reject: {
+                                                        label: '{{ __('Cancel') }}',
+                                                        execute: () => {
+                                                            filterName = ''
+                                                        }
+                                                    }
+                                                })
+                                            "
                                         >
                                         </x-button>
                                     </div>
@@ -441,7 +447,7 @@
                         <template x-for="col in aggregatable">
                             <div>
                                 <x-label>
-                                <span x-text="getLabel(col)">
+                                    <span x-text="getLabel(col)">
                                 </span>
                                 </x-label>
                                 <x-checkbox

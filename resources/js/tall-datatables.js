@@ -9,10 +9,16 @@ document.addEventListener('alpine:init', () => {
                 this.$nextTick(() => {
                     this.$watch('enabledCols', () => {
                         this.$wire.storeColLayout(this.enabledCols);
+                        this.$wire.getFormatters()
+                            .then(
+                                formatters => {
+                                    this.formatters = formatters;
+                                }
+                            );
                         this.$wire.getColLabels(this.enabledCols)
                             .then(
                                 result => {
-                                    Object.assign(this.colLabels, result);
+                                    this.colLabels = result;
                                 }
                             );
                     });
@@ -28,7 +34,6 @@ document.addEventListener('alpine:init', () => {
                         }
                     });
                 });
-
                 this.loadFilterable()
 
                 this.$watch('newFilter.column', () => {
@@ -51,6 +56,7 @@ document.addEventListener('alpine:init', () => {
                 })
 
                 this.$watch('newFilter.relation', () => {
+                    this.newFilter.column = '';
                     this.loadRelationTableFields(this.newFilter.relation);
                 })
 
@@ -99,12 +105,12 @@ document.addEventListener('alpine:init', () => {
             showSidebar: false,
             enabledCols: [],
             availableCols: [],
-            colLabels: $wire.entangle('colLabels'),
+            colLabels: [],
             operatorLabels: [],
             sortable: [],
             aggregatable: [],
             selectable: false,
-            formatters: $wire.entangle('formatters'),
+            formatters: [],
             leftAppend: [],
             rightAppend: [],
             topAppend: [],
@@ -196,6 +202,7 @@ document.addEventListener('alpine:init', () => {
             },
             filterable: [],
             relationTableFields: {},
+            relationFormatters: {},
             relationColLabels: {},
             resetLayout() {
                 $wire.resetLayout().then(
@@ -206,6 +213,23 @@ document.addEventListener('alpine:init', () => {
             },
             getLabel(col) {
                 return this.colLabels[col] || col.label || this.relationColLabels[col] || this.operatorLabels[col] || col;
+            },
+            getFilterInputType(col) {
+                if (! col || col === '.') {
+                    return 'text';
+                }
+
+                let splittedCol = col.split('.');
+                let table = 'self';
+
+                if (splittedCol.length > 1) {
+                    table = splittedCol[0] || 'self';
+                    col = splittedCol[1];
+                }
+
+                const formatter = this.relationFormatters?.[table]?.[col] ?? null;
+
+                return formatters.inputType(formatter)
             },
             loadRelationTableFields(table = null) {
                 let tableAlias = table;
@@ -219,7 +243,8 @@ document.addEventListener('alpine:init', () => {
 
                 $wire.getRelationTableCols(table).then(
                     result => {
-                        this.relationTableFields[tableAlias] = result;
+                        this.relationTableFields[tableAlias] = Object.keys(result);
+                        this.relationFormatters[tableAlias] = result;
                         $wire.getColLabels(this.relationTableFields[tableAlias])
                             .then(
                                 result => {

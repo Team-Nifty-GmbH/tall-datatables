@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable;
 
+use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -14,6 +15,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
@@ -435,17 +437,7 @@ class DataTable extends Component
             }
         });
 
-        $this->formatters = $this->getFormatters();
-
-        return $cols ? $colLabels : array_merge(
-            [
-                'sum' => __('Sum'),
-                'avg' => __('Average'),
-                'min' => __('Minimum'),
-                'max' => __('Maximum'),
-            ],
-            $colLabels
-        );
+        return $colLabels;
     }
 
     public function getOperatorLabels(): array
@@ -464,6 +456,10 @@ class DataTable extends Component
             'weeks' => __('Weeks'),
             'months' => __('Months'),
             'years' => __('Years'),
+            'sum' => __('Sum'),
+            'avg' => __('Average'),
+            'min' => __('Minimum'),
+            'max' => __('Maximum'),
         ];
     }
 
@@ -517,16 +513,49 @@ class DataTable extends Component
 
     public function getFormatters(): array
     {
-        $models = array_merge($this->loadedModels, [$this->model]);
-
         $formatters = [];
-        foreach ($models as $model) {
-            $formatters = method_exists($model, 'typeScriptAttributes')
-                ? array_merge($model::typeScriptAttributes(), $formatters)
-                : $formatters;
+        foreach ($this->getIncludedRelations() as $loadedRelation) {
+            $relationFormatters = method_exists($loadedRelation['model'], 'typeScriptAttributes')
+                ? $loadedRelation['model']::typeScriptAttributes()
+                : [];
+
+
+            foreach ($loadedRelation['loaded_columns'] as $loadedColumn) {
+                $formatters[$loadedColumn['loaded_as']] = $relationFormatters[$loadedColumn['column']] ?? null;
+            }
         }
 
-        return array_merge($formatters, $this->formatters);
+        return array_filter(array_merge($formatters, $this->formatters));
+    }
+
+    public function getIncludedRelations(): array
+    {
+        $baseModelInfo = ModelInfo::forModel($this->model);
+        $loadedRelations = [];
+        foreach ($this->enabledCols as $enabledCol) {
+            if (str_contains($enabledCol, '.')) {
+                $explodedCol = explode('.', $enabledCol);
+                $attribute = array_pop($explodedCol);
+                $path = implode('.', array_map(fn ($relation) => Str::camel($relation), $explodedCol));
+                $relation = $baseModelInfo->relation(Str::camel($path));
+            } else {
+                $attribute = $enabledCol;
+                $path = 'self';
+                $relation = null;
+            }
+
+            $loadedColumns = $loadedRelations[$path]['loaded_columns'] ?? [];
+            $loadedColumns[$enabledCol] = [
+                'column' => $attribute,
+                'loaded_as' => $enabledCol,
+            ];
+            $loadedRelations[$path] = [
+                'model' => $relation?->related ?? $this->model,
+                'loaded_columns' => $loadedColumns,
+            ];
+        }
+
+        return $loadedRelations;
     }
 
     public function loadMore(): void
@@ -821,7 +850,7 @@ class DataTable extends Component
                 $this->availableCols !== ['*'],
                 fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
             )
-            ->pluck('name')
+            ->pluck('formatter', 'name')
             ->toArray();
     }
 
@@ -1057,6 +1086,7 @@ class DataTable extends Component
                 $query->where(function (Builder $query) use ($orFilter) {
                     foreach ($orFilter as $type => $filter) {
                         $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
+                        $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
                         $filter['value'] = array_map(function ($value) {
                             if (! ($value['calculation'] ?? false)) {
                                 return $value;
@@ -1064,13 +1094,18 @@ class DataTable extends Component
                             $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
                             $functionSuffix = ucfirst($value['calculation']['unit']);
 
-                            return [
-                                now()->{$functionPrefix . $functionSuffix}($value['calculation']['value']),
-                            ];
+                            return [now()->{$functionPrefix . $functionSuffix}($value['calculation']['value'])];
                         }, $filter['value']);
-                        $filter['value'] = is_array($filter['value']) && count($filter['value']) === 1
+                        $filter['value'] = trim(count($filter['value']) === 1
                             ? $filter['value'][0]
-                            : $filter['value'];
+                            : $filter['value']
+                        );
+
+                        // try to parse the value as a date
+                        try {
+                            $filter['value'] = Carbon::parse($filter['value'])->toIso8601String();
+                        } catch (InvalidFormatException) {
+                        }
 
                         if (! is_string($type)) {
                             $filter = array_is_list($filter) ? [$filter] : $filter;
@@ -1222,6 +1257,7 @@ class DataTable extends Component
 
             $this->reset(array_keys($layout->settings));
             $layout->delete();
+            $this->loadData();
         } catch (MissingTraitException) {
         }
     }
