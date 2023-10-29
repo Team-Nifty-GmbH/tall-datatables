@@ -2,6 +2,14 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.6.0 - 2023-10-29
+
+### What's Changed
+
+- fix colLabels in multiple scenarios by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/65
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.5.7...v0.6.0
+
 ## v0.5.7 - 2023-10-26
 
 ### What's Changed
