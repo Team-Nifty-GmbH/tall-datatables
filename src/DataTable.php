@@ -1086,25 +1086,25 @@ class DataTable extends Component
                     foreach ($orFilter as $type => $filter) {
                         $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
                         $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
-                        $filter['value'] = array_map(function ($value) {
-                            if (! ($value['calculation'] ?? false)) {
-                                return $value;
+                        array_walk_recursive($filter['value'], function (&$value) {
+                            if (is_string($value)) {
+                                try {
+                                    $value = Carbon::parse($value)->toIso8601String();
+                                } catch (InvalidFormatException) {
+                                }
                             }
-                            $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
-                            $functionSuffix = ucfirst($value['calculation']['unit']);
 
-                            return [now()->{$functionPrefix . $functionSuffix}($value['calculation']['value'])];
-                        }, $filter['value']);
-                        $filter['value'] = trim(count($filter['value']) === 1
+                            if ($value['calculation'] ?? false) {
+                                $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
+                                $functionSuffix = ucfirst($value['calculation']['unit']);
+
+                                $value = now()->{$functionPrefix . $functionSuffix}($value['calculation']['value']);
+                            }
+
+                        });
+                        $filter['value'] = count($filter['value']) === 1
                             ? $filter['value'][0]
-                            : $filter['value']
-                        );
-
-                        // try to parse the value as a date
-                        try {
-                            $filter['value'] = Carbon::parse($filter['value'])->toIso8601String();
-                        } catch (InvalidFormatException) {
-                        }
+                            : $filter['value'];
 
                         if (! is_string($type)) {
                             $filter = array_is_list($filter) ? [$filter] : $filter;
