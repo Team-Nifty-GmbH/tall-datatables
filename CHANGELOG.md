@@ -2,6 +2,14 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.6.1 - 2023-10-30
+
+### What's Changed
+
+- fix double operator not being parsed by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/66
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.5.8...v0.6.1
+
 ## v0.5.8 - 2023-10-29
 
 **Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.6.0...v0.5.8
