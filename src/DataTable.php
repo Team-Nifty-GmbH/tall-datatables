@@ -400,7 +400,7 @@ class DataTable extends Component
                 $columns = collect($loadedRelation['loaded_columns']);
                 $attributes = ModelInfo::forModel($loadedRelation['model'])
                     ->attributes
-                    ->filter(fn($attribute) => (! $attribute->virtual) && $columns->contains('column', $attribute->name))
+                    ->filter(fn ($attribute) => (! $attribute->virtual) && $columns->contains('column', $attribute->name))
                     ->map(function (Attribute $attribute) use ($columns) {
                         return $columns->where('column', $attribute->name)?->value('loaded_as');
                     })
