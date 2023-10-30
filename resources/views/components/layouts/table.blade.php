@@ -32,7 +32,7 @@
                                 x-on:click="sortable.includes(col) && $wire.sortTable(col)"
                                 x-bind:class="sortable.includes(col) ? 'cursor-pointer' : ''"
                             >
-                                <span x-text="colLabels[col] || col"></span>
+                                <span x-text="getLabel(col)"></span>
                                 <x-icon
                                     x-bind:class="Object.keys(sortable).length && orderByCol === col
                                     ? (orderAsc || 'rotate-180')
@@ -197,7 +197,7 @@
     <x-slot:footer>
         <template x-for="(aggregate, name) in data.aggregates">
             <tr class="hover:bg-gray-100 bg-gray-50 dark:hover:bg-secondary-800 dark:bg-secondary-900">
-                <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm font-bold" x-text="colLabels[name] || name"></td>
+                <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm font-bold" x-text="getLabel(name)"></td>
                 <template x-for="col in enabledCols">
                     <x-tall-datatables::table.cell>
                         <div

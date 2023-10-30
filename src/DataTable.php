@@ -339,6 +339,7 @@ class DataTable extends Component
             'showFilterInputs' => $this->showFilterInputs,
             'layout' => $this->getLayout(),
             'useWireNavigate' => $this->useWireNavigate,
+            'colLabels' => $this->colLabels,
         ];
     }
 
