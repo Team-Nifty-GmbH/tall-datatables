@@ -339,6 +339,7 @@ class DataTable extends Component
             'showFilterInputs' => $this->showFilterInputs,
             'layout' => $this->getLayout(),
             'useWireNavigate' => $this->useWireNavigate,
+            'colLabels' => $this->colLabels,
         ];
     }
 
@@ -393,9 +394,23 @@ class DataTable extends Component
 
     public function getSortable(): array
     {
-        return $this->sortable === ['*']
-            ? $this->getTableFields()->pluck('name')->toArray()
-            : $this->sortable;
+        $sortable = $this->sortable;
+        if ($this->sortable === ['*']) {
+            foreach ($this->getIncludedRelations() as $loadedRelation) {
+                $columns = collect($loadedRelation['loaded_columns']);
+                $attributes = ModelInfo::forModel($loadedRelation['model'])
+                    ->attributes
+                    ->filter(fn ($attribute) => (! $attribute->virtual) && $columns->contains('column', $attribute->name))
+                    ->map(function (Attribute $attribute) use ($columns) {
+                        return $columns->where('column', $attribute->name)?->value('loaded_as');
+                    })
+                    ->filter()
+                    ->toArray();
+                $sortable = array_merge($sortable, $attributes);
+            }
+        }
+
+        return $sortable;
     }
 
     public function getAggregatable(): array
@@ -1093,15 +1108,17 @@ class DataTable extends Component
                                 } catch (InvalidFormatException) {
                                 }
                             }
-
-                            if ($value['calculation'] ?? false) {
-                                $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
-                                $functionSuffix = ucfirst($value['calculation']['unit']);
-
-                                $value = now()->{$functionPrefix . $functionSuffix}($value['calculation']['value']);
+                        });
+                        $filter['value'] = array_map(function ($value) {
+                            if (! ($value['calculation'] ?? false)) {
+                                return $value;
                             }
 
-                        });
+                            $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
+                            $functionSuffix = ucfirst($value['calculation']['unit']);
+
+                            return [now()->{$functionPrefix . $functionSuffix}($value['calculation']['value'])];
+                        }, $filter['value']);
                         $filter['value'] = count($filter['value']) === 1
                             ? $filter['value'][0]
                             : $filter['value'];

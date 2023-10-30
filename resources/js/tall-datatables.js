@@ -15,6 +15,12 @@ document.addEventListener('alpine:init', () => {
                                     this.formatters = formatters;
                                 }
                             );
+                        this.$wire.getSortable()
+                            .then(
+                                sortable => {
+                                    this.sortable = sortable;
+                                }
+                            );
                         this.$wire.getColLabels(this.enabledCols)
                             .then(
                                 result => {
@@ -98,6 +104,7 @@ document.addEventListener('alpine:init', () => {
                         this.searchRoute = result.searchRoute;
                         this.echoListeners = result.echoListeners;
                         this.operatorLabels = result.operatorLabels;
+                        this.colLabels = result.colLabels;
                     }
                 )
             },
@@ -331,6 +338,7 @@ document.addEventListener('alpine:init', () => {
                         continue;
                     }
 
+                    // check if value starts or ends with %, if so use like and dont add % to value
                     if (! value.trim().startsWith('%') && ! value.trim().endsWith('%')) {
                         filterValue = '%' + value.trim() + '%';
                     }
