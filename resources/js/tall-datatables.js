@@ -310,11 +310,13 @@ document.addEventListener('alpine:init', () => {
                         continue;
                     }
 
+                    let filterValue = value;
+
                     let operator = null;
                     if (this.filterValueLists.hasOwnProperty(key)) {
                         operator = '='
                     } else {
-                        operator = value.match(/^(=|!=|>|<|>=|<=|like|not like|is null|is not null)/i);
+                        operator = value.match(/^(>=|<=|!=|like|not like|>|<|is null|is not null)/i);
                     }
 
                     if (operator) {
@@ -329,10 +331,14 @@ document.addEventListener('alpine:init', () => {
                         continue;
                     }
 
+                    if (! value.trim().startsWith('%') && ! value.trim().endsWith('%')) {
+                        filterValue = '%' + value.trim() + '%';
+                    }
+
                     filters.push({
                         column: key,
                         operator: 'like',
-                        value: '%' + value + '%',
+                        value: filterValue,
                         relation: '',
                         textFilterKey: true,
                     });

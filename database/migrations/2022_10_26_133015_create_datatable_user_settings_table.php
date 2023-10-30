@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('datatable_user_settings')) {
+            return;
+        }
+
         Schema::create('datatable_user_settings', function (Blueprint $table) {
             $table->id();
 
