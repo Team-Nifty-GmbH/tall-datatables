@@ -1108,18 +1108,21 @@ class DataTable extends Component
                                 } catch (InvalidFormatException) {
                                 }
                             }
-
-                            if ($value['calculation'] ?? false) {
-                                $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
-                                $functionSuffix = ucfirst($value['calculation']['unit']);
-
-                                $value = now()->{$functionPrefix . $functionSuffix}($value['calculation']['value']);
+                        });
+                        $filter['value'] = array_map(function($value) {
+                            if (! ($value['calculation'] ?? false)) {
+                                return $value;
                             }
 
-                        });
+                            $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
+                            $functionSuffix = ucfirst($value['calculation']['unit']);
+
+                            return [now()->{$functionPrefix . $functionSuffix}($value['calculation']['value'])];
+                        }, $filter['value']);
                         $filter['value'] = count($filter['value']) === 1
                             ? $filter['value'][0]
                             : $filter['value'];
+
 
                         if (! is_string($type)) {
                             $filter = array_is_list($filter) ? [$filter] : $filter;
