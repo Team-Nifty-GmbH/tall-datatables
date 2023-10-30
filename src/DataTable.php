@@ -394,9 +394,23 @@ class DataTable extends Component
 
     public function getSortable(): array
     {
-        return $this->sortable === ['*']
-            ? $this->getTableFields()->pluck('name')->toArray()
-            : $this->sortable;
+        $sortable = $this->sortable;
+        if ($this->sortable === ['*']) {
+            foreach ($this->getIncludedRelations() as $loadedRelation) {
+                $columns = collect($loadedRelation['loaded_columns']);
+                $attributes = ModelInfo::forModel($loadedRelation['model'])
+                    ->attributes
+                    ->filter(fn($attribute) => (! $attribute->virtual) && $columns->contains('column', $attribute->name))
+                    ->map(function (Attribute $attribute) use ($columns) {
+                        return $columns->where('column', $attribute->name)?->value('loaded_as');
+                    })
+                    ->filter()
+                    ->toArray();
+                $sortable = array_merge($sortable, $attributes);
+            }
+        }
+
+        return $sortable;
     }
 
     public function getAggregatable(): array
