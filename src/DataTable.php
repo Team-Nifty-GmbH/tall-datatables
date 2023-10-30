@@ -1109,7 +1109,7 @@ class DataTable extends Component
                                 }
                             }
                         });
-                        $filter['value'] = array_map(function($value) {
+                        $filter['value'] = array_map(function ($value) {
                             if (! ($value['calculation'] ?? false)) {
                                 return $value;
                             }
@@ -1122,7 +1122,6 @@ class DataTable extends Component
                         $filter['value'] = count($filter['value']) === 1
                             ? $filter['value'][0]
                             : $filter['value'];
-
 
                         if (! is_string($type)) {
                             $filter = array_is_list($filter) ? [$filter] : $filter;
