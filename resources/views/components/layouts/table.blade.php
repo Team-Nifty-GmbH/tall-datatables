@@ -189,7 +189,7 @@
             @endif
             {{-- Empty cell for the col selection--}}
             @if($hasSidebar)
-                <td class="bg-white dark:bg-secondary-800 table-cell border-b shadow-sm border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm sticky right-0">
+                <td class="table-cell border-b shadow-sm border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm sticky right-0">
                 </td>
             @endif
         </tr>
