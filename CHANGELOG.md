@@ -2,6 +2,15 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.7.0 - 2023-11-02
+
+### What's Changed
+
+- add cache_key to datatable settings by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/68
+- remove cell background color by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/69
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.6.2...v0.7.0
+
 ## v0.6.2 - 2023-10-30
 
 ### What's Changed
