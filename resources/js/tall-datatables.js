@@ -140,7 +140,7 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
 
-                const label = this.colLabels[filter.column] ?? filter.column;
+                const label = this.getLabel(filter.column) ?? filter.column;
                 let value = this.filterValueLists[filter.column]?.find(item => {
                     return item.value == filter.value
                 })?.label ?? filter.value;
@@ -323,7 +323,7 @@ document.addEventListener('alpine:init', () => {
                     if (this.filterValueLists.hasOwnProperty(key)) {
                         operator = '='
                     } else {
-                        operator = value.match(/^(>=|<=|!=|like|not like|>|<|is null|is not null)/i);
+                        operator = value.match(/^(>=|<=|!=|=|like|not like|>|<|is null|is not null)/i);
                     }
 
                     if (operator) {
@@ -370,6 +370,7 @@ document.addEventListener('alpine:init', () => {
                 this.filters[this.filterIndex].push(newFilter);
                 this.resetFilter();
                 this.filterSelectType = 'text';
+                this.$wire.getColLabels().then(result => {this.colLabels = result;});
 
                 this.$nextTick(() => this.$refs.filterColumn.focus());
             },

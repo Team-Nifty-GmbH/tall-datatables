@@ -71,10 +71,10 @@ class DataTable extends Component
      *
      * @locked
      */
-    public array $availableCols = [];
+    public array $availableCols = ['*'];
 
     /** @locked  */
-    public array $availableRelations = [];
+    public array $availableRelations = ['*'];
 
     public array $enabledCols = [];
 
@@ -116,7 +116,7 @@ class DataTable extends Component
      */
     public bool $isFilterable = true;
 
-    public bool $showFilterInputs = false;
+    public bool $showFilterInputs = true;
 
     /**
      * If set to false the table will have no head, so no captions for the cols.
@@ -167,9 +167,9 @@ class DataTable extends Component
 
     public int $perPage = 15;
 
-    public array $sortable = [];
+    public array $sortable = ['*'];
 
-    public array $aggregatable = [];
+    public array $aggregatable = ['*'];
 
     /**
      * If set to true the table rows will be selectable.
@@ -397,6 +397,14 @@ class DataTable extends Component
         $sortable = $this->sortable;
         if ($this->sortable === ['*']) {
             foreach ($this->getIncludedRelations() as $loadedRelation) {
+
+                if (
+                    $loadedRelation['type']
+                    && ($loadedRelation['type'] !== BelongsTo::class || $loadedRelation['type'] !== HasOne::class)
+                ) {
+                    continue;
+                }
+
                 $columns = collect($loadedRelation['loaded_columns']);
                 $attributes = ModelInfo::forModel($loadedRelation['model'])
                     ->attributes
@@ -566,6 +574,7 @@ class DataTable extends Component
             $loadedRelations[$path] = [
                 'model' => $relation?->related ?? $this->model,
                 'loaded_columns' => $loadedColumns,
+                'type' => $relation?->type,
             ];
         }
 
@@ -742,6 +751,7 @@ class DataTable extends Component
         Auth::user()->datatableUserSettings()->create([
             'name' => $name,
             'component' => $this->getCacheKey(),
+            'cache_key' => get_class($this),
             'settings' => [
                 'enabledCols' => $this->enabledCols,
                 'aggregatableCols' => $this->aggregatableCols,
@@ -1240,10 +1250,13 @@ class DataTable extends Component
             $this->ensureAuthHasTrait();
 
             Auth::user()->datatableUserSettings()->updateOrCreate(
-                ['component' => $this->getCacheKey()],
+                [
+                    'cache_key' => $this->getCacheKey(),
+                ],
                 [
                     'name' => 'layout',
-                    'component' => $this->getCacheKey(),
+                    'cache_key' => $this->getCacheKey(),
+                    'component' => get_class($this),
                     'settings' => [
                         'userFilters' => [],
                         'enabledCols' => $this->enabledCols,
