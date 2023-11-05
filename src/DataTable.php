@@ -1111,14 +1111,16 @@ class DataTable extends Component
                     foreach ($orFilter as $type => $filter) {
                         $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
                         $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
+                        $oldVal = $filter['value'];
                         array_walk_recursive($filter['value'], function (&$value) {
-                            if (is_string($value)) {
+                            if (is_string($value) && $value != 1 && $value != 0) {
                                 try {
                                     $value = Carbon::parse($value)->toIso8601String();
                                 } catch (InvalidFormatException) {
                                 }
                             }
                         });
+
                         $filter['value'] = array_map(function ($value) {
                             if (! ($value['calculation'] ?? false)) {
                                 return $value;

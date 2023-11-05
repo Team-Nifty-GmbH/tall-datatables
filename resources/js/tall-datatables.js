@@ -438,12 +438,19 @@ document.addEventListener('alpine:init', () => {
             },
             formatter(col, record) {
                 const val = record[col] ?? null;
+                let label;
+
+                if (this.filterValueLists.hasOwnProperty(col)) {
+                    label = this.filterValueLists[col].find(item => {
+                        return item.value == val
+                    })?.label ?? val;
+                }
 
                 if (this.formatters.hasOwnProperty(col)) {
                     let type = this.formatters[col];
-                    return formatters.format({value: val, type: type, context: record});
+                    return formatters.setLabel(label).format({value: val, type: type, context: record});
                 } else {
-                    return formatters.format({value: val, context: record});
+                    return formatters.setLabel(label).format({value: val, context: record});
                 }
             },
         })
@@ -451,7 +458,13 @@ document.addEventListener('alpine:init', () => {
 });
 
 window.formatters = {
-    format: function ({value, type, options, context}) {
+    label: null,
+    setLabel(label) {
+        this.label = label;
+
+        return this;
+    },
+    format({value, type, options, context}) {
         if (value === null) {
             return value;
         }
@@ -472,7 +485,7 @@ window.formatters = {
 
         return value;
     },
-    money: (value, currency = null, context) => {
+    money(value, currency = null, context) {
         if (value === null) {
             return value;
         }
@@ -500,7 +513,7 @@ window.formatters = {
         }
 
         if (! (typeof currencyCode === 'string')) {
-            return formatters.float(value);
+            return this.float(value);
         }
 
         try {
@@ -510,18 +523,18 @@ window.formatters = {
                 minimumFractionDigits: 2,
             }).format(value);
         } catch (e) {
-            return formatters.float(value) + ' ' + currencyCode;
+            return this.float(value) + ' ' + currencyCode;
         }
     },
-    coloredMoney: (value, currency = null, context) => {
-        const returnValue = formatters.money(value, currency, context);
+    coloredMoney(value, currency = null, context) {
+        const returnValue = this.money(value, currency, context);
         if (value < 0) {
             return `<span class="text-negative-500 dark:text-negative-700 font-semibold">${returnValue}</span>`;
         } else {
             return `<span class="text-positive-500 dark:text-positive-700 font-semibold">${returnValue}</span>`;
         }
     },
-    percentage: (value) => {
+    percentage(value) {
         const percentageFormatter = new Intl.NumberFormat(document.documentElement.lang, {
             style: 'percent',
             minimumFractionDigits: 2,
@@ -529,7 +542,7 @@ window.formatters = {
 
         return percentageFormatter.format(value);
     },
-    bool: (value) => {
+    bool(value) {
         if (value === 'false' || value === false || value === 0 || value === '0' || value === null) {
             return `<span class="bg-negative-500 dark:bg-negative-700 group inline-flex h-6 w-6 items-center justify-center rounded-full text-white outline-none">
                         <svg class="h-3 w-3 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -544,11 +557,11 @@ window.formatters = {
                     </span>`;
         }
     },
-    array: (value) => {
+    array(value) {
         if (typeof value === 'object') {
             const items = [];
             value.forEach(item => {
-                items.push(formatters.object(item));
+                items.push(this.object(item));
             });
 
             return items.join('<br /><br />');
@@ -560,25 +573,25 @@ window.formatters = {
 
         return value;
     },
-    object: (value) => {
+    object(value) {
         return Object.keys(value).map(key => {
-            const type = formatters.guessType(value[key]);
-            const val = formatters.format({value: value[key], type: type});
+            const type = this.guessType(value[key]);
+            const val = this.format({value: value[key], type: type});
 
             return `${key}: ${val}`;
         }).join('<br />');
     },
-    boolean: (value) => {
-        return formatters.bool(value);
+    boolean(value) {
+        return this.bool(value);
     },
-    date: (value) => {
+    date(value) {
         return new Date(value).toLocaleDateString(document.documentElement.lang, {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
         });
     },
-    datetime: (value) => {
+    datetime(value) {
         return new Date(value).toLocaleString(document.documentElement.lang, {
             year: 'numeric',
             month: '2-digit',
@@ -588,18 +601,21 @@ window.formatters = {
             second: '2-digit',
         });
     },
-    badge: (value, colors) => {
+    badge(value, colors) {
         if (! Boolean(value)) {
             return null;
         }
 
         const color = colors[value] || colors;
+        if (this.label) {
+            value = this.label;
+        }
 
         return '<span class="outline-none inline-flex justify-center items-center group rounded gap-x-1 text-xs font-semibold px-2.5 py-0.5 text-' + color + '-600 bg-' + color + '-100 dark:text-' + color + '-400 dark:bg-slate-700">\n' +
             value + '\n' +
             '</span>';
     },
-    relativeTime: (value) => {
+    relativeTime(value) {
         const current = new Date().getTime();
         const elapsed = current - value;
         const timeFormatter = new Intl.RelativeTimeFormat(document.documentElement.lang, {style: 'narrow'});
@@ -628,7 +644,7 @@ window.formatters = {
                 return timeFormatter.format(Math.round(years) * -1, 'year');
         }
     },
-    time: (value) => {
+    time(value) {
         // check if value is already in time format
         if (value.match(/^(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$/)) {
             return value;
@@ -636,27 +652,31 @@ window.formatters = {
 
         return new Date(value).toLocaleTimeString(document.documentElement.lang);
     },
-    float: (value) => {
+    float(value) {
         if (isNaN(parseFloat(value))) {
             return value;
         }
 
         return parseFloat(value).toLocaleString(document.documentElement.lang);
     },
-    int: (value) => {
+    int(value) {
         return parseInt(value);
     },
-    string: (value) => {
+    string(value) {
         if (value === null) {
             return value;
         }
 
+        if (this.label) {
+            value = this.label;
+        }
+
         return value.toString();
     },
-    state: (value, colors) => {
-        return formatters.badge(value, colors);
+    state(value, colors) {
+        return this.badge(value, colors);
     },
-    image: (value) => {
+    image(value) {
         if (! value) {
             return value;
         }
@@ -667,19 +687,19 @@ window.formatters = {
             '    \n' +
             '    </div>';
     },
-    email: (value) => {
+    email(value) {
         return '<a href="mailto:' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
     },
-    url: (value) => {
+    url(value) {
         return '<a href="' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
     },
-    tel: (value) => {
+    tel(value) {
         return '<a href="tel:' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
     },
-    link: (value) => {
+    link(value) {
         return '<a href="' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
     },
-    inputType: (value) => {
+    inputType(value) {
         switch (value) {
             case 'datetime':
                 return 'datetime-local';
@@ -704,7 +724,7 @@ window.formatters = {
                 return 'text';
         }
     },
-    guessType: (value) => {
+    guessType(value) {
         if (value === null) {
             return 'null';
         }
