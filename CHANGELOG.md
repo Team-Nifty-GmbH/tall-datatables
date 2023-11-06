@@ -2,6 +2,14 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.7.1 - 2023-11-06
+
+### What's Changed
+
+- add label to formatters when the col has a filterValueList by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/70
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.7.0...v0.7.1
+
 ## v0.7.0 - 2023-11-02
 
 ### What's Changed
