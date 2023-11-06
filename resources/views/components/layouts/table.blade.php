@@ -1,5 +1,5 @@
 <x-tall-datatables::table class="relative">
-    <tr wire:loading class="absolute bottom-0 top-0 right-0 w-full">
+    <tr wire:loading.delay.longer class="absolute bottom-0 top-0 right-0 w-full">
         <td>
             <x-tall-datatables::spinner />
         </td>
@@ -222,7 +222,7 @@
         @else
             <tr>
                 <td x-intersect:enter="$wire.get('initialized') && $wire.loadMore()" colspan="100%">
-                    <x-button flat spinner wire:loading wire:target="loadMore" class="w-full">
+                    <x-button flat spinner wire:loading.delay.longer wire:target="loadMore" class="w-full">
                         {{ __('Loading...') }}
                     </x-button>
                 </td>
