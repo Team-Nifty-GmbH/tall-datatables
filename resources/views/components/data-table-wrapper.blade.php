@@ -10,7 +10,7 @@
         x-data="data_table($wire)"
         {{ $attributes }}
     >
-        @if(method_exists(auth()->user(), 'datatableUserSettings'))
+        @if(auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
             <x-dialog z-index="z-40" id="save-filter" :title="__('Save filter')">
                 <x-input required :label="__('Filter name')" x-model="filterName" />
                 <div class="pt-3">

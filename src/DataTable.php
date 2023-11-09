@@ -1371,8 +1371,8 @@ class DataTable extends Component
      */
     private function ensureAuthHasTrait(): void
     {
-        if (! in_array(HasDatatableUserSettings::class, class_uses_recursive(Auth::user()))) {
-            throw MissingTraitException::create(Auth::user()->getMorphClass(), HasDatatableUserSettings::class);
+        if (! Auth::user() || ! in_array(HasDatatableUserSettings::class, class_uses_recursive(Auth::user()))) {
+            throw MissingTraitException::create(Auth::user()?->getMorphClass(), HasDatatableUserSettings::class);
         }
     }
 

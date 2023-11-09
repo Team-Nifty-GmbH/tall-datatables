@@ -657,7 +657,13 @@ window.formatters = {
             return value;
         }
 
-        return parseFloat(value).toLocaleString(document.documentElement.lang);
+        val = parseFloat(value);
+
+        try {
+            val.toLocaleString(document.documentElement.lang);
+        } catch (e) {
+            return val;
+        }
     },
     int(value) {
         return parseInt(value);

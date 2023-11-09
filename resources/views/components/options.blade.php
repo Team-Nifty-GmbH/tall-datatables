@@ -49,7 +49,7 @@
                 <div x-cloak x-show="tab === 'edit-filters'">
                     <form class="grid grid-cols-1 gap-3"
                           x-on:submit.prevent="addFilter();">
-                        @if(method_exists(auth()->user(), 'datatableUserSettings'))
+                        @if(auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
                             <template x-if="savedFilters?.length > 0">
                                 <div>
                                     <div class="flex justify-between block w-full px-3 py-2 text-base sm:text-sm shadow-sm
@@ -414,7 +414,7 @@
                             :label="__('Add or')"
                             x-on:click="addOrFilter()"
                         />
-                        @if(method_exists(auth()->user(), 'datatableUserSettings'))
+                        @if(auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
                             <x-button
                                 primary
                                 class="w-full"
