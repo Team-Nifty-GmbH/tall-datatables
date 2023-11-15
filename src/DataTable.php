@@ -335,7 +335,7 @@ class DataTable extends Component
             'rowAttributes' => $this->getRowAttributes(),
             'rowActions' => $this->getRowActions(),
             'tableActions' => $this->getTableActions(),
-            'modelName' => class_basename($this->model),
+            'modelName' => Str::headline(class_basename($this->model)),
             'showFilterInputs' => $this->showFilterInputs,
             'layout' => $this->getLayout(),
             'useWireNavigate' => $this->useWireNavigate,
@@ -1254,6 +1254,7 @@ class DataTable extends Component
             Auth::user()->datatableUserSettings()->updateOrCreate(
                 [
                     'cache_key' => $this->getCacheKey(),
+                    'is_layout' => true,
                 ],
                 [
                     'name' => 'layout',
@@ -1286,72 +1287,11 @@ class DataTable extends Component
                 return;
             }
 
-            $this->reset(array_keys($layout->settings));
             $layout->delete();
+            $this->reset(array_keys($layout->settings));
             $this->loadData();
         } catch (MissingTraitException) {
         }
-    }
-
-    /**
-     * Resolves a foreign key to a relation.
-     */
-    public function resolveForeignKey(string $localKey, string $relation = null): string|array|null
-    {
-        $model = new ($relation ? ModelInfo::forModel($this->model)->relation($relation)->related : $this->model);
-
-        if (! $localKey) {
-            return null;
-        }
-
-        $schema = $model->getConnection()->getDoctrineSchemaManager();
-        $table = $model->getConnection()->getTablePrefix() . $model->getTable();
-
-        $result = collect($schema->introspectTable($table)
-            ->getForeignKeys())
-            ->map(function ($foreign) {
-                return [
-                    'local' => $foreign->getLocalColumns()[0] ?? '',
-                    'foreign' => $foreign->getForeignColumns()[0] ?? '',
-                    'foreign_table' => $foreign->getForeignTableName(),
-                ];
-            });
-
-        $relatedTable = data_get($result->where('local', $localKey)->first(), 'foreign_table');
-
-        if (! $relatedTable) {
-            return null;
-        }
-
-        $relatedModel = ModelInfo::forAllModels()
-            ->where('tableName', $relatedTable)
-            ->first()
-            ?->class;
-
-        if (! $relatedModel) {
-            return null;
-        }
-
-        if (in_array(Searchable::class, class_uses_recursive($relatedModel))) {
-            return $relatedModel;
-        }
-
-        if ($relatedModel::count() > 100) {
-            return null;
-        }
-
-        $hasLabel = false;
-        if (in_array(InteractsWithDataTables::class, class_implements($relatedModel))) {
-            $hasLabel = true;
-        }
-
-        return $relatedModel::all()->map(function (Model $item) use ($hasLabel) {
-            return [
-                'value' => $item->getKey(),
-                'label' => $hasLabel ? $item->getLabel() : $item->getKey(),
-                'description' => $hasLabel ? $item->getDescription() : null,
-            ];
-        })->toArray();
     }
 
     /**

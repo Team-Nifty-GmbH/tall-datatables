@@ -107,7 +107,7 @@
                         </td>
                     </template>
                     @if($rowActions ?? false)
-                        <td>
+                        <td class="bg-gray-50 dark:bg-secondary-800">
                         </td>
                     @endif
                     @if($hasSidebar)

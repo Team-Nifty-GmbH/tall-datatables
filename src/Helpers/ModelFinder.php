@@ -13,11 +13,17 @@ class ModelFinder extends BaseModelFinder
         string $basePath = null,
         string $baseNamespace = null,
     ): Collection {
-        return Cache::rememberForever(
-            config('tall-datatables.cache_key') . '.modelFinder',
-            function () use ($directory, $basePath, $baseNamespace) {
-                return parent::all($directory, $basePath, $baseNamespace);
-            }
-        );
+        $paramHash = md5(serialize(func_get_args()));
+
+        $cached = Cache::get(config('tall-datatables.cache_key') . '.modelFinder') ?? [];
+
+        if ($cached[$paramHash] ?? false) {
+            return $cached[$paramHash];
+        }
+
+        $cached[$paramHash] = parent::all($directory, $basePath, $baseNamespace);
+        Cache::put(config('tall-datatables.cache_key') . '.modelFinder', $cached);
+
+        return $cached[$paramHash];
     }
 }
