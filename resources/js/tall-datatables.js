@@ -213,7 +213,7 @@ document.addEventListener('alpine:init', () => {
             relationColLabels: {},
             resetLayout() {
                 $wire.resetLayout().then(
-                    response => {
+                    () => {
                         this.loadTableConfig();
                     }
                 )
@@ -656,11 +656,10 @@ window.formatters = {
         if (isNaN(parseFloat(value))) {
             return value;
         }
-
-        val = parseFloat(value);
+        let val = parseFloat(value);
 
         try {
-            val.toLocaleString(document.documentElement.lang);
+            return val.toLocaleString(document.documentElement.lang);
         } catch (e) {
             return val;
         }
