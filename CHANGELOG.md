@@ -2,6 +2,14 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.7.4 - 2023-11-21
+
+### What's Changed
+
+- Add start of calculation by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/71
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.7.3...v0.7.4
+
 ## v0.7.3 - 2023-11-19
 
 Hotfix javascript formatter for floats
