@@ -1102,7 +1102,7 @@ class DataTable extends Component
                             array_merge($foreignKeysOwner, $foreignKeysForeign, $tmpWith[$addPath ?? $path] ?? [])
                         ));
 
-                        if(array_search('address_invoice_id', $tmpWith['order.addressInvoice'] ?? [])) {
+                        if (array_search('address_invoice_id', $tmpWith['order.addressInvoice'] ?? [])) {
                             dd($tmpWith, $addPath, $path, $foreignKeys);
                         }
 
