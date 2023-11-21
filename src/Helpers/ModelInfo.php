@@ -27,7 +27,14 @@ class ModelInfo extends BaseModelInfo
             return $cachedModelInfos[get_class($model)];
         }
 
-        $modelInfo = parent::forModel($model);
+        try {
+            $modelInfo = parent::forModel($model);
+        } catch (\Throwable $th) {
+            $modelInfo = (new ReflectionClass(BaseModelInfo::class))->newInstanceWithoutConstructor();
+            $modelInfo->relations = collect();
+
+            return $modelInfo;
+        }
 
         $modelInfo->attributes = $modelInfo
             ->attributes
