@@ -1047,29 +1047,70 @@ class DataTable extends Component
                 $path = implode('.', array_map(fn ($relation) => Str::camel($relation), $explodedCol));
                 $relation = $baseModelInfo->relation(Str::camel($path));
 
+                $explodedPath = explode('.', $path);
+                $startModelInfo = $baseModelInfo;
+                $relationPathModelInfo = [];
+                foreach ($explodedPath as $index => $relationItem) {
+                    if ($index === count($explodedPath) - 1) {
+                        $relation = $startModelInfo->relation(Str::camel($relationItem));
+                        $relationPathModelInfo[] = $relation;
+
+                        break;
+                    }
+
+                    $currentRelation = $startModelInfo->relation(Str::camel($relationItem));
+                    $startModelInfo = ModelInfo::forModel($currentRelation->related);
+                    $relationPathModelInfo[] = $currentRelation;
+                }
+
                 if (! $relation) {
                     continue;
                 }
 
                 $relatedModel = $relation->related;
                 $loadedModels[$path] = $relatedModel;
+                $addPath = null;
 
                 if (! ModelInfo::forModel($relatedModel)->attribute($attribute)?->virtual) {
-                    $relationInstance = $modelQuery->{Str::camel($path)}();
-                    if (! method_exists($relationInstance, 'getOwnerKeyName')
-                        && ! method_exists($relationInstance, 'getForeignKeyName')
-                    ) {
-                        $with[] = $path;
+                    $relationModelQuery = new $baseModelInfo->class;
 
-                        continue;
+                    foreach ($relationPathModelInfo as $index => $currentRelation) {
+                        $foreignKeysForeign = [];
+                        $foreignKeysOwner = [];
+
+                        $relationInstance = $relationModelQuery->{$currentRelation->name}();
+                        if (! method_exists($relationInstance, 'getOwnerKeyName')
+                            && ! method_exists($relationInstance, 'getForeignKeyName')
+                        ) {
+                            $with[] = $path;
+
+                            continue;
+                        }
+
+                        if (method_exists($relationInstance, 'getOwnerKeyName')) {
+                            $foreignKeysOwner[] = $relationInstance->getOwnerKeyName();
+                            $addPath = $path;
+                        }
+
+                        if (method_exists($relationInstance, 'getForeignKeyName') && $index > 0) {
+                            $addPath = array_slice($explodedPath, 0, $index);
+                            $addPath = implode('.', $addPath);
+                            $foreignKeysForeign[] = $relationInstance->getForeignKeyName();
+                        }
+
+                        $tmpWith[$addPath ?? $path] = array_values(array_unique(
+                            array_merge($foreignKeysOwner, $foreignKeysForeign, $tmpWith[$addPath ?? $path] ?? [])
+                        ));
+
+                        if(array_search('address_invoice_id', $tmpWith['order.addressInvoice'] ?? [])) {
+                            dd($tmpWith, $addPath, $path, $foreignKeys);
+                        }
+
+                        $relationModelQuery = new $currentRelation->related;
+                        $addPath = null;
                     }
 
-                    $foreignKeys[] = method_exists($relationInstance, 'getOwnerKeyName')
-                        ? $relationInstance->getOwnerKeyName()
-                        : $relationInstance->getForeignKeyName();
-                    $tmpWith[$path] = array_unique(
-                        array_merge($foreignKeys, $tmpWith[$path] ?? [], [$attribute])
-                    );
+                    $tmpWith[$path][] = $attribute;
                 } else {
                     $with[] = $path;
                 }
@@ -1199,10 +1240,16 @@ class DataTable extends Component
             if ($relation) {
                 $filter['column'] = $column;
                 $filter['relation'] = Str::camel($relation);
+
                 if ($filter['value'] === '%*%') {
                     $this->whereHas($query, $filter['relation']);
                 } else {
-                    $query->whereHas($filter['relation'], fn ($query) => $this->addFilter($query, $type, $filter));
+                    $query->whereHas($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
+                        unset($filter['relation']);
+                        $this->addFilter($subQuery, $type, $filter);
+
+                        return $subQuery;
+                    });
                 }
             } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
                 $this->whereNull($query, $filter);
