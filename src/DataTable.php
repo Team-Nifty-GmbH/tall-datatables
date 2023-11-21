@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
+use InvalidArgumentException;
 use Laravel\Scout\Searchable;
 use Livewire\Component;
 use ReflectionClass;
@@ -472,17 +473,25 @@ class DataTable extends Component
             'is not null' => __('is not null'),
             'between' => __('between'),
             'and' => __('and'),
-            'Today' => __('Today'),
+            'Now' => __('Now'),
             'minutes' => __('Minutes'),
             'hours' => __('Hours'),
             'days' => __('Days'),
             'weeks' => __('Weeks'),
             'months' => __('Months'),
             'years' => __('Years'),
+            'minute' => __('Minute'),
+            'hour' => __('Hour'),
+            'day' => __('Day'),
+            'week' => __('Week'),
+            'month' => __('Month'),
+            'year' => __('Year'),
             'sum' => __('Sum'),
             'avg' => __('Average'),
             'min' => __('Minimum'),
             'max' => __('Maximum'),
+            'Start of' => __('Start of'),
+            'End of' => __('End of'),
         ];
     }
 
@@ -911,11 +920,20 @@ class DataTable extends Component
             ->toArray();
     }
 
-    public function loadRelations(): array
+    public function loadRelations(?string $model): array
     {
-        $basis = __(Str::of(class_basename($this->model))->headline()->toString());
+        $basePath = __(Str::of(class_basename($this->model))->headline()->toString());
+        if ($model) {
+            $basis = $basePath . ' -> ' . __(Str::headline(class_basename($model)));
+        } else {
+            $basis = $basePath;
+        }
 
-        return array_values(ModelInfo::forModel($this->model)
+        if (! $model) {
+            $model = $this->model;
+        }
+
+        return array_values(ModelInfo::forModel($model)
             ->relations
             ->filter(function ($relation) {
                 return in_array($relation->name, $this->availableRelations) || $this->availableRelations === ['*'];
@@ -986,7 +1004,7 @@ class DataTable extends Component
                 $relationInstance = $class->getMethod(Str::camel($relation))->invoke($localModel);
 
                 if (! $relationInstance instanceof BelongsTo && ! $relationInstance instanceof HasOne) {
-                    throw new \InvalidArgumentException(
+                    throw new InvalidArgumentException(
                         'Only belongsTo and hasOne relations are supported for sorting.'
                     );
                 }
@@ -1029,29 +1047,70 @@ class DataTable extends Component
                 $path = implode('.', array_map(fn ($relation) => Str::camel($relation), $explodedCol));
                 $relation = $baseModelInfo->relation(Str::camel($path));
 
+                $explodedPath = explode('.', $path);
+                $startModelInfo = $baseModelInfo;
+                $relationPathModelInfo = [];
+                foreach ($explodedPath as $index => $relationItem) {
+                    if ($index === count($explodedPath) - 1) {
+                        $relation = $startModelInfo->relation(Str::camel($relationItem));
+                        $relationPathModelInfo[] = $relation;
+
+                        break;
+                    }
+
+                    $currentRelation = $startModelInfo->relation(Str::camel($relationItem));
+                    $startModelInfo = ModelInfo::forModel($currentRelation->related);
+                    $relationPathModelInfo[] = $currentRelation;
+                }
+
                 if (! $relation) {
                     continue;
                 }
 
                 $relatedModel = $relation->related;
                 $loadedModels[$path] = $relatedModel;
+                $addPath = null;
 
                 if (! ModelInfo::forModel($relatedModel)->attribute($attribute)?->virtual) {
-                    $relationInstance = $modelQuery->{Str::camel($path)}();
-                    if (! method_exists($relationInstance, 'getOwnerKeyName')
-                        && ! method_exists($relationInstance, 'getForeignKeyName')
-                    ) {
-                        $with[] = $path;
+                    $relationModelQuery = new $baseModelInfo->class;
 
-                        continue;
+                    foreach ($relationPathModelInfo as $index => $currentRelation) {
+                        $foreignKeysForeign = [];
+                        $foreignKeysOwner = [];
+
+                        $relationInstance = $relationModelQuery->{$currentRelation->name}();
+                        if (! method_exists($relationInstance, 'getOwnerKeyName')
+                            && ! method_exists($relationInstance, 'getForeignKeyName')
+                        ) {
+                            $with[] = $path;
+
+                            continue;
+                        }
+
+                        if (method_exists($relationInstance, 'getOwnerKeyName')) {
+                            $foreignKeysOwner[] = $relationInstance->getOwnerKeyName();
+                            $addPath = $path;
+                        }
+
+                        if (method_exists($relationInstance, 'getForeignKeyName') && $index > 0) {
+                            $addPath = array_slice($explodedPath, 0, $index);
+                            $addPath = implode('.', $addPath);
+                            $foreignKeysForeign[] = $relationInstance->getForeignKeyName();
+                        }
+
+                        $tmpWith[$addPath ?? $path] = array_values(array_unique(
+                            array_merge($foreignKeysOwner, $foreignKeysForeign, $tmpWith[$addPath ?? $path] ?? [])
+                        ));
+
+                        if (array_search('address_invoice_id', $tmpWith['order.addressInvoice'] ?? [])) {
+                            dd($tmpWith, $addPath, $path, $foreignKeys);
+                        }
+
+                        $relationModelQuery = new $currentRelation->related;
+                        $addPath = null;
                     }
 
-                    $foreignKeys[] = method_exists($relationInstance, 'getOwnerKeyName')
-                        ? $relationInstance->getOwnerKeyName()
-                        : $relationInstance->getForeignKeyName();
-                    $tmpWith[$path] = array_unique(
-                        array_merge($foreignKeys, $tmpWith[$path] ?? [], [$attribute])
-                    );
+                    $tmpWith[$path][] = $attribute;
                 } else {
                     $with[] = $path;
                 }
@@ -1089,6 +1148,7 @@ class DataTable extends Component
 
     public function applyFilters(Builder $builder): Builder
     {
+        // add fixed filters
         foreach ($this->filters as $type => $filter) {
             if (! is_string($type)) {
                 if (($filter['operator'] ?? false) && in_array($filter['operator'], ['is null', 'is not null'])) {
@@ -1105,72 +1165,108 @@ class DataTable extends Component
             }
         }
 
+        // add user filters
         $builder->where(function ($query) {
             foreach ($this->userFilters as $index => $orFilter) {
                 $query->where(function (Builder $query) use ($orFilter) {
                     foreach ($orFilter as $type => $filter) {
-                        $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
-                        $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
-                        $oldVal = $filter['value'];
-                        array_walk_recursive($filter['value'], function (&$value) {
-                            if (is_string($value) && $value != 1 && $value != 0) {
-                                try {
-                                    $value = Carbon::parse($value)->toIso8601String();
-                                } catch (InvalidFormatException) {
-                                }
-                            }
-                        });
-
-                        $filter['value'] = array_map(function ($value) {
-                            if (! ($value['calculation'] ?? false)) {
-                                return $value;
-                            }
-
-                            $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
-                            $functionSuffix = ucfirst($value['calculation']['unit']);
-
-                            return [now()->{$functionPrefix . $functionSuffix}($value['calculation']['value'])];
-                        }, $filter['value']);
-                        $filter['value'] = count($filter['value']) === 1
-                            ? $filter['value'][0]
-                            : $filter['value'];
-
-                        if (! is_string($type)) {
-                            $filter = array_is_list($filter) ? [$filter] : $filter;
-                            $target = explode('.', $filter['column']);
-
-                            $column = array_pop($target);
-                            $relation = implode('.', $target);
-                            if ($relation) {
-                                $filter['column'] = $column;
-                                $filter['relation'] = Str::camel($relation);
-                                if ($filter['value'] === '%*%') {
-                                    $this->whereHas($query, $filter['relation']);
-                                } else {
-                                    $this->whereRelation($query, $filter);
-                                }
-                            } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
-                                $this->whereNull($query, $filter);
-                            } elseif ($filter['operator'] === 'between') {
-                                $query->whereBetween($filter['column'], $filter['value']);
-                            } else {
-                                $query->where([array_values(
-                                    array_filter($filter, fn ($value) => $value == 0 || ! empty($value))
-                                )]);
-                            }
-
-                            continue;
-                        }
-
-                        if (method_exists($this, $type)) {
-                            $this->{$type}($query, $filter);
-                        }
+                        $this->addFilter($query, $type, $filter);
                     }
                 }, boolean: $index > 0 ? 'or' : 'and');
             }
         });
 
         return $builder;
+    }
+
+    private function parseFilter(array $filter): array
+    {
+        $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
+        $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
+
+        array_walk_recursive($filter['value'], function (&$value) {
+            if (is_string($value) && $value != 1 && $value != 0) {
+                try {
+                    $value = Carbon::parse($value)->toIso8601String();
+                } catch (InvalidFormatException) {
+                }
+            }
+        });
+
+        $filter['value'] = array_map(function ($value) {
+            if (! ($value['calculation'] ?? false)) {
+                return $value;
+            }
+
+            $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
+            $functionSuffix = ucfirst($value['calculation']['unit']);
+
+            if (
+                array_key_exists('is_start_of', $value['calculation'])
+                && is_numeric($value['calculation']['is_start_of'])
+            ) {
+                $functionStartOfPrefix = $value['calculation']['is_start_of'] ? 'startOf' : 'endOf';
+                $functionStartOfSuffix = ucfirst($value['calculation']['start_of']);
+
+                return [
+                    now()
+                        ->{$functionPrefix . $functionSuffix}($value['calculation']['value'])
+                        ->{$functionStartOfPrefix . $functionStartOfSuffix}(),
+                ];
+            } else {
+                return [
+                    now()
+                        ->{$functionPrefix . $functionSuffix}($value['calculation']['value']),
+                ];
+            }
+        }, $filter['value']);
+        $filter['value'] = count($filter['value']) === 1
+            ? $filter['value'][0]
+            : $filter['value'];
+
+        return $filter;
+    }
+
+    private function addFilter(Builder $query, string|int $type, array $filter): void
+    {
+        $filter = $this->parseFilter($filter);
+
+        if (! is_string($type)) {
+            $filter = array_is_list($filter) ? [$filter] : $filter;
+            $target = explode('.', $filter['column']);
+
+            $column = array_pop($target);
+            $relation = implode('.', $target);
+            if ($relation) {
+                $filter['column'] = $column;
+                $filter['relation'] = Str::camel($relation);
+
+                if ($filter['value'] === '%*%') {
+                    $this->whereHas($query, $filter['relation']);
+                } else {
+                    $query->whereHas($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
+                        unset($filter['relation']);
+                        $this->addFilter($subQuery, $type, $filter);
+
+                        return $subQuery;
+                    });
+                }
+            } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
+                $this->whereNull($query, $filter);
+            } elseif ($filter['operator'] === 'between') {
+                $query->whereBetween($filter['column'], $filter['value']);
+            } else {
+                $query->where([array_values(
+                    array_filter($filter, fn ($value) => $value == 0 || ! empty($value))
+                )]);
+            }
+
+            return;
+        }
+
+        if (method_exists($this, $type)) {
+            $this->{$type}($query, $filter);
+        }
     }
 
     public function setData(array $data): void
@@ -1200,29 +1296,6 @@ class DataTable extends Component
             boolean: ($filter['boolean'] ?? 'and') !== 'or' ? 'and' : 'or',
             not: $filter['operator'] === 'is not null'
         );
-    }
-
-    private function whereRelation(Builder $builder, array $filter): Builder
-    {
-        if (in_array($filter['operator'], ['is not null', 'is null'])) {
-            return $builder
-                ->whereHas(
-                    Str::camel($filter['relation']),
-                    function ($query) use ($filter) {
-                        return match ($filter['operator']) {
-                            'is not null' => $query->whereNotNull($filter['column']),
-                            'is null' => $query->whereNull($filter['column'])
-                        };
-                    }
-                );
-        } else {
-            return $builder->whereRelation(
-                Str::camel($filter['relation']),
-                $filter['column'],
-                $filter['operator'],
-                $filter['value']
-            );
-        }
     }
 
     private function whereHas(Builder $builder, string $relation): Builder

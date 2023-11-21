@@ -5,7 +5,6 @@ namespace TeamNiftyGmbH\DataTable\Tests\Browser;
 use Faker\Factory;
 use Laravel\Dusk\Browser;
 use Livewire\Livewire;
-use TeamNiftyGmbH\DataTable\DataTable;
 use TeamNiftyGmbH\DataTable\Tests\BrowserTestCase;
 use TeamNiftyGmbH\DataTable\Tests\Models\Data;
 
@@ -13,7 +12,8 @@ class DataTableTest extends BrowserTestCase
 {
     public function browser(): Browser
     {
-        return Livewire::visit(new class() extends \TeamNiftyGmbH\DataTable\DataTable {
+        return Livewire::visit(new class() extends \TeamNiftyGmbH\DataTable\DataTable
+        {
             protected string $model = \TeamNiftyGmbH\DataTable\Tests\Models\Data::class;
 
             public array $enabledCols = [
@@ -48,11 +48,11 @@ class DataTableTest extends BrowserTestCase
         /** @var Browser $browse */
         $browse = $this->browser();
 
-        $browse->waitUsing(10, 1, fn() => $browse->script('
+        $browse->waitUsing(10, 1, fn () => $browse->script('
                 let alpineComponent = Alpine.$data(document.querySelector("[tall-datatable]"));
 
                 return alpineComponent.initialized === 1;'
-            ))
+        ))
             ->waitForLivewire()
             ->waitForTextIn('thead', 'STRING')
             ->waitForTextIn('thead', 'INTEGER')

@@ -167,10 +167,17 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
 
-                return this.getLabel('Today')
-                    + ' ' + calculation.operator
-                    + ' ' + calculation.value
-                    + ' ' + this.getLabel(calculation.unit);
+                let label = this.getLabel('Now');
+
+                if (calculation.value !== 0) {
+                    label = label + ' ' + calculation.operator + ' ' + calculation.value + ' ' + this.getLabel(calculation.unit);
+                }
+
+                if (calculation.is_start_of) {
+                    label = label + ' ' + this.getLabel('Start of') + ' ' + this.getLabel(calculation.start_of);
+                }
+
+                return label;
             },
             getData() {
                 this.broadcastChannels = $wire.get('broadcastChannels') ?? [];
@@ -300,7 +307,7 @@ document.addEventListener('alpine:init', () => {
             filterIndex: 0,
             textFilter: null,
             newFilter: {column: '', operator: '', value: [], relation: ''},
-            newFilterCalculation: {value: 0, operator: '-', unit: 'days'},
+            newFilterCalculation: {value: 0, operator: '-', unit: 'days', is_start_of: "", start_of: 'day'},
             addCalculation(index) {
                 // check if the index exists, otherwise add it
                 if (! this.newFilter.value[index]) {
@@ -308,7 +315,7 @@ document.addEventListener('alpine:init', () => {
                 }
 
                 this.newFilter.value[index].calculation = this.newFilterCalculation;
-                this.newFilterCalculation = {value: 0, operator: '-', unit: 'days'};
+                this.newFilterCalculation = {value: 0, operator: '-', unit: 'days', is_start_of: "", start_of: 'day'};
             },
             parseFilter() {
                 let filters = [];

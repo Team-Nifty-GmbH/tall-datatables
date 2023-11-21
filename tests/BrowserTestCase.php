@@ -2,7 +2,6 @@
 
 namespace TeamNiftyGmbH\DataTable\Tests;
 
-use Illuminate\Foundation\Testing\DatabaseTruncation;
 use function Livewire\trigger;
 
 class BrowserTestCase extends TestCase
