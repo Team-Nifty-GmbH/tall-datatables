@@ -22,6 +22,7 @@
         :show-filter-inputs="$showFilterInputs"
         :table-head-col-attributes="$tableHeadColAttributes"
         :select-attributes="$selectAttributes"
+        :selected-actions="$selectedActions"
         :row-actions="$rowActions"
         :row-attributes="$rowAttributes"
         :has-infinite-scroll="$hasInfiniteScroll"

@@ -117,6 +117,7 @@ document.addEventListener('alpine:init', () => {
             sortable: [],
             aggregatable: [],
             selectable: false,
+            showSelectedActions: false,
             formatters: [],
             leftAppend: [],
             rightAppend: [],
@@ -653,7 +654,7 @@ window.formatters = {
     },
     time(value) {
         // check if value is already in time format
-        if (value.match(/^(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$/)) {
+        if (typeof value === 'string' && value.match(/^(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$/)) {
             return value;
         }
 

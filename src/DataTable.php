@@ -252,6 +252,11 @@ class DataTable extends Component
         return [];
     }
 
+    public function getSelectedActions(): array
+    {
+        return [];
+    }
+
     public function getLeftAppends(): array
     {
         return [];
@@ -274,7 +279,7 @@ class DataTable extends Component
 
     public function placeholder(): View|Factory|Application
     {
-        return view('tall-datatables::livewire.placeholders.table');
+        return view('tall-datatables::livewire.placeholders');
     }
 
     public function mount(): void
@@ -336,6 +341,7 @@ class DataTable extends Component
             'rowAttributes' => $this->getRowAttributes(),
             'rowActions' => $this->getRowActions(),
             'tableActions' => $this->getTableActions(),
+            'selectedActions' => $this->getSelectedActions(),
             'modelName' => Str::headline(class_basename($this->model)),
             'showFilterInputs' => $this->showFilterInputs,
             'layout' => $this->getLayout(),
@@ -428,7 +434,7 @@ class DataTable extends Component
             ? $this->getTableFields()
                 ->filter(function (Attribute $attribute) {
                     return in_array($attribute->phpType, ['int', 'float'])
-                        || Str::contains($attribute->type, ['decimal', 'float', 'double']);
+                        || Str::contains($attribute->type, ['decimal', 'float', 'double', 'bigint']);
                 })
                 ->pluck('name')
                 ->toArray()
@@ -549,7 +555,7 @@ class DataTable extends Component
         foreach ($this->getIncludedRelations() as $loadedRelation) {
             $relationFormatters = method_exists($loadedRelation['model'], 'typeScriptAttributes')
                 ? $loadedRelation['model']::typeScriptAttributes()
-                : [];
+                : (new $loadedRelation['model'])->getCasts();
 
             foreach ($loadedRelation['loaded_columns'] as $loadedColumn) {
                 $formatters[$loadedColumn['loaded_as']] = $relationFormatters[$loadedColumn['column']] ?? null;
@@ -854,7 +860,9 @@ class DataTable extends Component
                 ->pluck('name')
                 ->toArray();
 
-            $currentTableCols = ! is_numeric($prefix) ? array_map(fn ($col) => $prefix . '.' . $col, $currentTableCols) : $currentTableCols;
+            $currentTableCols = ! is_numeric($prefix)
+                ? array_map(fn ($col) => $prefix . '.' . $col, $currentTableCols)
+                : $currentTableCols;
             $tableCols = array_merge($tableCols, $currentTableCols);
         }
 
@@ -1059,8 +1067,10 @@ class DataTable extends Component
                     }
 
                     $currentRelation = $startModelInfo->relation(Str::camel($relationItem));
-                    $startModelInfo = ModelInfo::forModel($currentRelation->related);
-                    $relationPathModelInfo[] = $currentRelation;
+                    if ($currentRelation) {
+                        $startModelInfo = ModelInfo::forModel($currentRelation->related);
+                        $relationPathModelInfo[] = $currentRelation;
+                    }
                 }
 
                 if (! $relation) {
