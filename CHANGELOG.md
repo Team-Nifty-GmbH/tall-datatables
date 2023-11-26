@@ -2,6 +2,14 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.7.5 - 2023-11-26
+
+### What's Changed
+
+* add bulk actions by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/72
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.7.4...v0.7.5
+
 ## v0.7.4 - 2023-11-21
 
 ### What's Changed
@@ -291,9 +299,9 @@ hotfix exception caused by wrong order in mount
 
 ### What's Changed
 
-- Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14   
+- Tailwind Linter by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/14
   
-- ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15   
+- ### Added by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/15
   
 - 
 - 
@@ -310,7 +318,7 @@ hotfix exception caused by wrong order in mount
 - 
 - 
 - 
-- Add methods by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/16   
+- Add methods by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/16
   
 
 **Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.3.3...v0.3.4
