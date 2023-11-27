@@ -2,6 +2,10 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.7.6 - 2023-11-27
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.7.5...v0.7.6
+
 ## v0.7.5 - 2023-11-26
 
 ### What's Changed
