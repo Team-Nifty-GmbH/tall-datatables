@@ -279,7 +279,7 @@ class DataTable extends Component
 
     public function placeholder(): View|Factory|Application
     {
-        return view('tall-datatables::livewire.placeholders');
+        return view('tall-datatables::livewire.placeholder');
     }
 
     public function mount(): void
