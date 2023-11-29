@@ -658,7 +658,17 @@ window.formatters = {
             return value;
         }
 
-        return new Date(value).toLocaleTimeString(document.documentElement.lang);
+        let seconds = Math.floor(value / 1000);
+        let minutes = Math.floor(seconds / 60);
+        seconds = seconds % 60;
+        let hours = Math.floor(minutes / 60);
+        minutes = minutes % 60;
+
+        hours = hours.toString().padStart(2, '0');
+        minutes = minutes.toString().padStart(2, '0');
+        seconds = seconds.toString().padStart(2, '0');
+
+        return `${hours}:${minutes}:${seconds}`;
     },
     float(value) {
         if (isNaN(parseFloat(value))) {
