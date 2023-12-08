@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -1046,7 +1048,6 @@ class DataTable extends Component
         $with = [];
         $loadedModels = [];
         $baseModelInfo = ModelInfo::forModel($this->model);
-        $modelQuery = new $this->model;
         foreach ($this->enabledCols as $enabledCol) {
             $foreignKeys = [];
             if (str_contains($enabledCol, '.')) {
@@ -1093,7 +1094,6 @@ class DataTable extends Component
                             && ! method_exists($relationInstance, 'getForeignKeyName')
                         ) {
                             $with[] = $path;
-
                             continue;
                         }
 
@@ -1102,19 +1102,18 @@ class DataTable extends Component
                             $addPath = $path;
                         }
 
-                        if (method_exists($relationInstance, 'getForeignKeyName') && $index > 0) {
+                        if (method_exists($relationInstance, 'getForeignKeyName')
+                            && $relationInstance instanceof HasOneOrMany
+                        ) {
                             $addPath = array_slice($explodedPath, 0, $index);
                             $addPath = implode('.', $addPath);
                             $foreignKeysForeign[] = $relationInstance->getForeignKeyName();
                         }
 
-                        $tmpWith[$addPath ?? $path] = array_values(array_unique(
+
+                        $tmpWith[$addPath ?: $path] = array_values(array_unique(
                             array_merge($foreignKeysOwner, $foreignKeysForeign, $tmpWith[$addPath ?? $path] ?? [])
                         ));
-
-                        if (array_search('address_invoice_id', $tmpWith['order.addressInvoice'] ?? [])) {
-                            dd($tmpWith, $addPath, $path, $foreignKeys);
-                        }
 
                         $relationModelQuery = new $currentRelation->related;
                         $addPath = null;

@@ -477,6 +477,10 @@ window.formatters = {
             return value;
         }
 
+        if (Array.isArray(value)) {
+            return this.array(value);
+        }
+
         if (typeof type === 'object') {
             options = type[1];
             type = type[0];
@@ -566,28 +570,28 @@ window.formatters = {
         }
     },
     array(value) {
-        if (typeof value === 'object') {
-            const items = [];
-            value.forEach(item => {
-                items.push(this.object(item));
-            });
-
-            return items.join('<br /><br />');
+        if (! Array.isArray(value)) {
+            return value;
         }
 
-        if (typeof value === 'array') {
-            return value.join('<, >');
-        }
-
-        return value;
+        return value.map(item => {
+            return this.badge(item, 'indigo');
+        })
+            .join(' ');
     },
     object(value) {
+        if (Object.keys(value).every(key => !isNaN(parseInt(key)) && isFinite(key))) {
+            value = Array.from(value);
+
+            return this.array(value);
+        }
+
         return Object.keys(value).map(key => {
             const type = this.guessType(value[key]);
             const val = this.format({value: value[key], type: type});
 
-            return `${key}: ${val}`;
-        }).join('<br />');
+            return this.badge(`${key}: ${val}`, 'indigo');
+        }).join(' ');
     },
     boolean(value) {
         return this.bool(value);
@@ -750,6 +754,10 @@ window.formatters = {
     guessType(value) {
         if (value === null) {
             return 'null';
+        }
+
+        if (Array.isArray(value)) {
+            return 'array';
         }
 
         if (typeof value === 'object') {
