@@ -188,7 +188,7 @@
                     <div class="flex gap-1.5">
                         <div x-html="formatter(leftAppend[col], record)">
                         </div>
-                        <div>
+                        <div class="flex-grow">
                             <div x-html="formatter(topAppend[col], record)">
                             </div>
                             <div x-html="formatter(col, record)">

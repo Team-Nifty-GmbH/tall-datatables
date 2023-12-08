@@ -565,6 +565,15 @@ window.formatters = {
                     </span>`;
         }
     },
+    progressPercentage(value) {
+        value = this.percentage(value);
+        return `<div class="relative pt-1">
+                    <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
+                        <div style="width:${value}" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-500 dark:bg-primary-700"></div>
+                    </div>
+                    <span>${value}</span>
+                </div>`;
+    },
     array(value) {
         if (typeof value === 'object') {
             const items = [];
