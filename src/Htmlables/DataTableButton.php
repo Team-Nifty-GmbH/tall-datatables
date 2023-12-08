@@ -19,14 +19,14 @@ class DataTableButton implements Htmlable
         bool $flat = false,
         bool $full = false,
         bool $circle = false,
-        string $color = null,
-        string $size = null,
-        string $label = null,
-        string $icon = null,
-        string $rightIcon = null,
-        string $spinner = null,
-        string $loadingDelay = null,
-        string $href = null,
+        ?string $color = null,
+        ?string $size = null,
+        ?string $label = null,
+        ?string $icon = null,
+        ?string $rightIcon = null,
+        ?string $spinner = null,
+        ?string $loadingDelay = null,
+        ?string $href = null,
         ?array $attributes = []
     ): static {
         return new static(rounded: $rounded,
@@ -183,7 +183,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function color(string $color = null): static
+    public function color(?string $color = null): static
     {
         $this->color = $color;
 
@@ -193,7 +193,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function size(string $size = null): static
+    public function size(?string $size = null): static
     {
         $this->size = $size;
 
@@ -203,7 +203,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function label(string $label = null): static
+    public function label(?string $label = null): static
     {
         $this->label = $label;
 
@@ -213,7 +213,7 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function icon(string $icon = null): static
+    public function icon(?string $icon = null): static
     {
         $this->icon = $icon;
 

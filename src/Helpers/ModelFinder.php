@@ -9,9 +9,9 @@ use Spatie\ModelInfo\ModelFinder as BaseModelFinder;
 class ModelFinder extends BaseModelFinder
 {
     public static function all(
-        string $directory = null,
-        string $basePath = null,
-        string $baseNamespace = null,
+        ?string $directory = null,
+        ?string $basePath = null,
+        ?string $baseNamespace = null,
     ): Collection {
         $paramHash = md5(serialize(func_get_args()));
 
