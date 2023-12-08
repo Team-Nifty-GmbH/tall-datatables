@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\QueryException;
@@ -443,7 +442,7 @@ class DataTable extends Component
             : $this->aggregatable;
     }
 
-    public function getColLabels(array $cols = null): array
+    public function getColLabels(?array $cols = null): array
     {
         $colLabels = array_flip(
             $cols
@@ -810,7 +809,7 @@ class DataTable extends Component
         }
     }
 
-    public function getFilterableColumns(string $name = null): array
+    public function getFilterableColumns(?string $name = null): array
     {
         if (! $this->isFilterable) {
             return [];
@@ -871,7 +870,7 @@ class DataTable extends Component
         return array_values(array_intersect($this->enabledCols, $tableCols));
     }
 
-    public function getRelationTableCols(string $relationName = null): array
+    public function getRelationTableCols(?string $relationName = null): array
     {
         $relationName = $relationName ? Str::camel($relationName) : null;
         $model = $relationName
@@ -1094,6 +1093,7 @@ class DataTable extends Component
                             && ! method_exists($relationInstance, 'getForeignKeyName')
                         ) {
                             $with[] = $path;
+
                             continue;
                         }
 
@@ -1109,7 +1109,6 @@ class DataTable extends Component
                             $addPath = implode('.', $addPath);
                             $foreignKeysForeign[] = $relationInstance->getForeignKeyName();
                         }
-
 
                         $tmpWith[$addPath ?: $path] = array_values(array_unique(
                             array_merge($foreignKeysOwner, $foreignKeysForeign, $tmpWith[$addPath ?? $path] ?? [])

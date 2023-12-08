@@ -55,9 +55,9 @@ class ModelInfo extends BaseModelInfo
      * @return Collection<\Spatie\ModelInfo\ModelInfo>
      */
     public static function forAllModels(
-        string $directory = null,
-        string $basePath = null,
-        string $baseNamespace = null
+        ?string $directory = null,
+        ?string $basePath = null,
+        ?string $baseNamespace = null
     ): Collection {
         return ModelFinder::all($directory, $basePath, $baseNamespace)
             ->map(function (string $model) {
