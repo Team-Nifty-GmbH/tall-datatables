@@ -2,6 +2,15 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.7.8 - 2023-12-08
+
+### What's Changed
+
+* Fix with loading by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/74
+* Bump vite from 4.4.9 to 4.4.12 by @dependabot in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/73
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.7.7...v0.7.8
+
 ## v0.7.7 - 2023-11-29
 
 **Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.7.6...v0.7.7
