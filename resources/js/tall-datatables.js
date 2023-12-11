@@ -29,7 +29,9 @@ document.addEventListener('alpine:init', () => {
                             );
                     });
 
-                    new Sortable(document.getElementById(this.$id('table-cols')), {
+                    const sortable = document.getElementById(this.$id('table-cols'));
+
+                    if (sortable) new Sortable(sortable, {
                         animation: 150,
                         delay: 100,
                         onEnd: (e) => {
@@ -570,12 +572,12 @@ window.formatters = {
         }
     },
     progressPercentage(value) {
-        value = this.percentage(value);
+        const formatter = new Intl.NumberFormat('en-US', {style: 'percent'});
         return `<div class="relative pt-1">
                     <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
-                        <div style="width:${value}" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-500 dark:bg-primary-700"></div>
+                        <div style="width:${formatter.format(value)}" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-500 dark:bg-primary-700"></div>
                     </div>
-                    <span>${value}</span>
+                    <span>${this.percentage(value)}</span>
                 </div>`;
     },
     array(value) {
@@ -694,6 +696,9 @@ window.formatters = {
         } catch (e) {
             return val;
         }
+    },
+    coloredFloat(value) {
+        return this.coloredMoney(value, '');
     },
     int(value) {
         return parseInt(value);

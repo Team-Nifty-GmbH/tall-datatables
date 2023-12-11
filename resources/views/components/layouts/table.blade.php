@@ -191,7 +191,7 @@
                         <div class="flex-grow">
                             <div x-html="formatter(topAppend[col], record)">
                             </div>
-                            <div x-html="formatter(col, record)">
+                            <div  {{ $cellAttributes->merge(['x-html' => 'formatter(col, record)']) }}>
                             </div>
                             <div x-html="formatter(bottomAppend[col], record)">
                             </div>

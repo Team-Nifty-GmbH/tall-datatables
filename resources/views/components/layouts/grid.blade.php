@@ -1,4 +1,4 @@
-<div>
+<div x-data="{showButtons: null}">
     @if($isFilterable)
         <div class="flex justify-between w-full flex-row-reverse items-center pt-2">
             <x-button
@@ -43,7 +43,7 @@
             </div>
         </div>
     </template>
-    <div class="mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8">
+    <div class="mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 sm:gap-x-6  xl:gap-x-8">
         <div wire:loading.delay.longer class="absolute bottom-0 top-0 right-0 w-full">
             <x-tall-datatables::spinner />
         </div>
@@ -52,13 +52,27 @@
                 x-bind:data-id="record.id"
                 x-bind:key="record.id"
                 x-on:click="$dispatch('data-table-row-clicked', record)"
-                {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
+                {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900 rounded-md pb-1.5']) }}
             >
                 <a class="relative text-sm font-medium text-gray-900" x-bind:href="record?.href ?? false">
                     <template x-for="(col, index) in enabledCols">
                         <div>
                             <template x-if="formatters[col] === 'image'">
                                 <div class="relative h-72 w-full overflow-hidden rounded-lg">
+                                    @if($rowActions)
+                                        <div class="absolute right-2 top-2">
+                                            <x-dropdown>
+                                                <x-slot:trigger>
+                                                    <x-button.circle white icon="dots-vertical" />
+                                                </x-slot:trigger>
+                                                <div class="grid grid-cols-1 gap-1.5">
+                                                    @foreach($rowActions as $rowAction)
+                                                        {{ $rowAction }}
+                                                    @endforeach
+                                                </div>
+                                            </x-dropdown>
+                                        </div>
+                                    @endif
                                     <img x-bind:src="record[col]" class="h-full w-full object-cover object-center">
                                 </div>
                             </template>
@@ -81,32 +95,21 @@
                         </div>
                     </template>
                 </a>
-                <div class="mt-6">
-                    @if($rowActions ?? false)
-                        <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4">
-                            <div class="grid grid-cols-1 gap-1.5">
-                                @foreach($rowActions as $rowAction)
-                                    {{ $rowAction }}
-                                @endforeach
-                            </div>
-                        </td>
-                    @endif
-                </div>
             </div>
         </template>
     </div>
-        @if(! $hasInfiniteScroll)
-            <template x-if="data.hasOwnProperty('current_page') ">
-                <div class="w-full">
-                    <x-tall-datatables::pagination />
-                </div>
-            </template>
-        @else
-            <div x-intersect:enter="$wire.get('initialized') && $wire.loadMore()" class="w-full">
-                <x-button flat spinner wire:loading.delay.longer wire:target="loadMore" class="w-full">
-                    {{ __('Loading...') }}
-                </x-button>
+    @if(! $hasInfiniteScroll)
+        <template x-if="data.hasOwnProperty('current_page') ">
+            <div class="w-full">
+                <x-tall-datatables::pagination />
             </div>
-        @endif
+        </template>
+    @else
+        <div x-intersect:enter="$wire.get('initialized') && $wire.loadMore()" class="w-full">
+            <x-button flat spinner wire:loading.delay.longer wire:target="loadMore" class="w-full">
+                {{ __('Loading...') }}
+            </x-button>
+        </div>
+    @endif
 </div>
 
