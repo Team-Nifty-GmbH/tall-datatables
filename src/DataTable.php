@@ -199,6 +199,8 @@ class DataTable extends Component
 
     protected $listeners = ['loadData'];
 
+    private array $aggregatableRelationCols = [];
+
     public function getConfig(): array
     {
         return [
@@ -229,6 +231,11 @@ class DataTable extends Component
     }
 
     public function getRowAttributes(): ComponentAttributeBag
+    {
+        return new ComponentAttributeBag();
+    }
+
+    public function getCellAttributes(): ComponentAttributeBag
     {
         return new ComponentAttributeBag();
     }
@@ -340,6 +347,7 @@ class DataTable extends Component
             'tableHeadColAttributes' => $this->getTableHeadColAttributes(),
             'selectAttributes' => $this->getSelectAttributes(),
             'rowAttributes' => $this->getRowAttributes(),
+            'cellAttributes' => $this->getCellAttributes(),
             'rowActions' => $this->getRowActions(),
             'tableActions' => $this->getTableActions(),
             'selectedActions' => $this->getSelectedActions(),
@@ -440,6 +448,11 @@ class DataTable extends Component
                 ->pluck('name')
                 ->toArray()
             : $this->aggregatable;
+    }
+
+    public function getAggregatableRelationCols(): array
+    {
+        return [];
     }
 
     public function getColLabels(?array $cols = null): array
@@ -985,6 +998,10 @@ class DataTable extends Component
         /** @var Model $model */
         $model = $this->model;
 
+        foreach ($this->getAggregatableRelationCols() as $aggregatableRelationCol) {
+            $this->aggregatableRelationCols[] = $aggregatableRelationCol->alias;
+        }
+
         if ($this->search && method_exists($model, 'search')) {
             $query = $this->getScoutSearch()
                 ->toEloquentBuilder($this->enabledCols, $this->perPage, $this->page);
@@ -1179,10 +1196,22 @@ class DataTable extends Component
                 $query->where(function (Builder $query) use ($orFilter) {
                     foreach ($orFilter as $type => $filter) {
                         $this->addFilter($query, $type, $filter);
+                        $query->havingRaw('stock_postings_sum_posting > ?', [0]);
                     }
                 }, boolean: $index > 0 ? 'or' : 'and');
+
             }
         });
+
+        foreach ($this->aggregatableRelationCols as $index => $aggregatableRelationCol) {
+            if (is_int($index)) {
+                continue;
+            }
+
+            $filter = $this->parseFilter($aggregatableRelationCol);
+
+            $builder->having($filter['column'], $filter['operator'], $filter['value']);
+        }
 
         return $builder;
     }
@@ -1193,11 +1222,13 @@ class DataTable extends Component
         $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
 
         array_walk_recursive($filter['value'], function (&$value) {
-            if (is_string($value) && $value != 1 && $value != 0) {
+            if (is_string($value) && ! is_numeric($value)) {
                 try {
                     $value = Carbon::parse($value)->toIso8601String();
                 } catch (InvalidFormatException) {
                 }
+            } elseif (is_numeric($value)) {
+                $value = (float) $value;
             }
         });
 
@@ -1237,6 +1268,12 @@ class DataTable extends Component
 
     private function addFilter(Builder $query, string|int $type, array $filter): void
     {
+        if (in_array($filter['column'] ?? false, $this->aggregatableRelationCols)) {
+            $this->aggregatableRelationCols[$filter['column']] = $filter;
+
+            return;
+        }
+
         $filter = $this->parseFilter($filter);
 
         if (! is_string($type)) {
@@ -1289,7 +1326,7 @@ class DataTable extends Component
 
     private function where(Builder $builder, array $filter): Builder
     {
-        return $builder->where($filter[0], $filter[1], $filter[2]);
+        return $builder->where($filter);
     }
 
     private function with(Builder $builder, array $filter): Builder
@@ -1369,6 +1406,7 @@ class DataTable extends Component
             }
 
             $layout->delete();
+            Session::remove(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
             $this->reset(array_keys($layout->settings));
             $this->loadData();
         } catch (MissingTraitException) {

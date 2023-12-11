@@ -25,6 +25,7 @@
         :selected-actions="$selectedActions"
         :row-actions="$rowActions"
         :row-attributes="$rowAttributes"
+        :cell-attributes="$cellAttributes"
         :has-infinite-scroll="$hasInfiniteScroll"
         :has-sticky-cols="$hasStickyCols"
         :has-sidebar="$hasSidebar"
