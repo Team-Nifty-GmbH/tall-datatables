@@ -2,6 +2,14 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.7.9 - 2023-12-11
+
+### What's Changed
+
+* add cell attributes by @patrickweh in https://github.com/Team-Nifty-GmbH/tall-datatables/pull/75
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.7.8...v0.7.9
+
 ## v0.7.8 - 2023-12-08
 
 ### What's Changed
