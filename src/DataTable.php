@@ -1203,6 +1203,15 @@ class DataTable extends Component
             }
         });
 
+        // add aggregatable relations
+        foreach ($this->getAggregatableRelationCols() as $aggregatableRelationCol) {
+            $builder->withAggregate(
+                $aggregatableRelationCol->relation,
+                $aggregatableRelationCol->column,
+                $aggregatableRelationCol->function
+            );
+        }
+
         foreach ($this->aggregatableRelationCols as $index => $aggregatableRelationCol) {
             if (is_int($index)) {
                 continue;

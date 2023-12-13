@@ -13,7 +13,7 @@
                             icon="adjustments"
                         />
                     </x-slot:trigger>
-                    <template x-for="sortableItem in sortable">
+                    <template x-for="sortableItem in sortable.filter((item) => item !== '*')">
                         <a class="flex justify-between text-secondary-600 px-4 py-2 text-sm flex items-center cursor-pointer rounded-md transition-colors duration-150 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:bg-secondary-700" x-on:click="$wire.sortTable(sortableItem)">
                             <div x-text="colLabels[sortableItem]">
                             </div>
@@ -43,7 +43,7 @@
             </div>
         </div>
     </template>
-    <div class="mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 sm:gap-x-6  xl:gap-x-8">
+    <div class="mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 sm:gap-x-6 xl:gap-x-8">
         <div wire:loading.delay.longer class="absolute bottom-0 top-0 right-0 w-full">
             <x-tall-datatables::spinner />
         </div>
@@ -54,7 +54,7 @@
                 x-on:click="$dispatch('data-table-row-clicked', record)"
                 {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900 rounded-md pb-1.5']) }}
             >
-                <a class="relative text-sm font-medium text-gray-900" x-bind:href="record?.href ?? false">
+                <a class="relative text-sm font-medium text-gray-500 dark:text-gray-50" x-bind:href="record?.href ?? false">
                     <template x-for="(col, index) in enabledCols">
                         <div>
                             <template x-if="formatters[col] === 'image'">

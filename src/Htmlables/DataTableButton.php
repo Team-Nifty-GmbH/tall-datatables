@@ -3,6 +3,7 @@
 namespace TeamNiftyGmbH\DataTable\Htmlables;
 
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Arr;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\ComponentAttributeBag;
 use WireUi\View\Components\Button;
@@ -116,6 +117,44 @@ class DataTableButton implements Htmlable
     public function attributes(array $attributes): static
     {
         $this->attributes = $attributes;
+
+        return $this;
+    }
+
+    public function mergeAttributes(array $attributes): static
+    {
+        $this->attributes = array_merge($this->attributes, $attributes);
+
+        return $this;
+    }
+
+    public function class(string|array $class): static
+    {
+        $this->attributes['class'] = is_string($class) ? $class : Arr::toCssClasses($class);
+
+        return $this;
+    }
+
+    public function mergeClass(string|array $class): static
+    {
+        $this->attributes['class'] = array_merge(
+            explode(' ', $this->attributes['class'] ?? ''),
+            is_string($class) ? [$class] : Arr::fromCssClasses($class)
+        );
+
+        return $this;
+    }
+
+    public function xOnClick(string $js): static
+    {
+        $this->attributes['x-on:click'] = $js;
+
+        return $this;
+    }
+
+    public function wireClick(string $js): static
+    {
+        $this->attributes['wire:click'] = $js;
 
         return $this;
     }
