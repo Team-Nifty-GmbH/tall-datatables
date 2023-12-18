@@ -1,14 +1,11 @@
-<div
-    wire:init="loadData()"
-    x-data
-    x-id="['save-filter', 'enabledCols', 'operators', 'filter-select-search', 'table-cols']"
->
+<div wire:init="loadData()">
     <div
         class="relative"
         wire:ignore
         tall-datatable
         x-data="data_table($wire)"
         {{ $attributes }}
+        x-id="['save-filter', 'enabledCols', 'operators', 'filter-select-search', 'table-cols']"
     >
         @if(auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
             <x-dialog z-index="z-40" id="save-filter" :title="__('Save filter')">

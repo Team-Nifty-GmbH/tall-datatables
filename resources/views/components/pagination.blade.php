@@ -2,11 +2,11 @@
     <div class="flex flex-1 justify-between sm:hidden">
         <x-button
             x-bind:disabled="data.current_page === 1"
-            x-on:click="$wire.set('page', data.current_page - 1)"
+            wire:click="goToPage(data.current_page - 1)"
         >{{ __('Previous') }}</x-button>
         <x-button
             x-bind:disabled="data.current_page === data.last_page"
-            x-on:click="$wire.set('page', data.current_page + 1)"
+            wire:click="goToPage(data.current_page + 1)"
         >{{ __('Next') }}</x-button>
     </div>
     <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
@@ -20,7 +20,7 @@
                 <div x-text="data.total" class="font-medium"></div>
                 {{ __('results') }}
                 @if($this->perPage ?? false)
-                    <x-select class="pl-4" wire:model.live="perPage" :clearable="false"
+                    <x-select class="pl-4" x-on:selected="$wire.setPerPage($event.detail.value)" wire:model="perPage" :clearable="false"
                               option-value="value"
                               option-label="label"
                               :options="[
@@ -37,20 +37,20 @@
             <nav class="isolate inline-flex space-x-1 rounded-md shadow-sm" aria-label="Pagination">
                 <x-button
                     x-bind:disabled="data.current_page === 1"
-                    x-on:click="$wire.set('page', data.current_page - 1)"
+                    wire:click="goToPage(data.current_page - 1)"
                     icon="chevron-left"
                 />
                 <template x-for="link in data.links">
                     <x-button
                         x-bind:disabled="link.active"
                         x-html="link.label"
-                        x-on:click="$wire.set('page', link.label)"
+                        wire:click="goToPage(link.label)"
                         x-bind:class="link.active && 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'"
                     />
                 </template>
                 <x-button
                     x-bind:disabled="data.current_page === data.last_page"
-                    x-on:click="$wire.set('page', data.current_page + 1)"
+                    wire:click="goToPage(data.current_page + 1)"
                     icon="chevron-right"
                 />
             </nav>

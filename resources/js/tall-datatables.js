@@ -44,6 +44,14 @@ document.addEventListener('alpine:init', () => {
                 });
                 this.loadFilterable()
 
+                this.$watch('search', () => {
+                    this.$wire.startSearch();
+                });
+
+                this.$watch('aggregatableCols', () => {
+                    this.$wire.applyAggregations();
+                });
+
                 this.$watch('newFilter.column', () => {
                     if (! Boolean(this.newFilter.column)) {
                         return;
@@ -131,12 +139,12 @@ document.addEventListener('alpine:init', () => {
             showSavedFilters: false,
             filterValueLists: $wire.entangle('filterValueLists', true),
             filters: $wire.entangle('userFilters', true),
-            aggregatableCols: $wire.entangle('aggregatableCols', true),
-            orderByCol: $wire.entangle('userOrderBy', true),
-            orderAsc: $wire.entangle('userOrderAsc', true),
+            aggregatableCols: $wire.entangle('aggregatableCols'),
+            orderByCol: $wire.entangle('userOrderBy'),
+            orderAsc: $wire.entangle('userOrderAsc'),
             stickyCols: $wire.entangle('stickyCols', true),
             initialized: $wire.entangle('initialized', true),
-            search: $wire.entangle('search', true),
+            search: $wire.entangle('search'),
             selected: $wire.entangle('selected'),
             filterBadge(filter) {
                 if (! filter) {

@@ -7,41 +7,42 @@
     @if($hasHead)
         <x-slot:header>
             <tr>
-                <x-tall-datatables::table.head-cell class="max-w-0">
-                    <template x-if="selectable">
+                @if($isSelectable)
+                    <x-tall-datatables::table.head-cell class="max-w-0">
                         <div>
-                            <x-button x-ref="selectedActions" flat right-icon="chevron-down" x-on:click="selected.length > 0 ? showSelectedActions = true : null">
+                            <div class="flex items-center">
                                 <x-checkbox x-on:change="function (e) {
                                     if (e.target.checked) {
-                                        selected = getData().map(record => record.id);
+                                        selected = Array.from(getData().keys());
                                         selected.push('*');
                                     } else {
                                         selected = [];
                                     }
-                                }" value="*" x-model="selected"/>
-                            </x-button>
-                            <div
-                                x-on:click.outside="showSelectedActions = false"
-                                x-transition:enter="transition ease-out duration-200"
-                                x-transition:enter-start="opacity-0 scale-95"
-                                x-transition:enter-end="opacity-100 scale-100"
-                                x-transition:leave="transition ease-in duration-75"
-                                x-transition:leave-start="opacity-100 scale-100"
-                                x-transition:leave-end="opacity-0 scale-95"
-                                class="z-30"
-                                x-cloak
-                                x-show="showSelectedActions"
-                                x-anchor.bottom-start.offset.5="$refs.selectedActions"
-                            >
-                                <x-card>
-                                    @foreach($selectedActions as $action)
-                                        {{ $action }}
-                                    @endforeach
-                                </x-card>
+                                }" value="*" wire:model="selected"/>
+                                <x-button class="px-1.5 py-1.5" x-ref="selectedActions" flat right-icon="chevron-down" x-on:click="selected.length > 0 ? showSelectedActions = true : null" />
                             </div>
                         </div>
-                    </template>
-                </x-tall-datatables::table.head-cell>
+                        <div
+                            x-on:click.outside="showSelectedActions = false"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 scale-95"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-75"
+                            x-transition:leave-start="opacity-100 scale-100"
+                            x-transition:leave-end="opacity-0 scale-95"
+                            class="z-30"
+                            x-cloak
+                            x-show="showSelectedActions"
+                            x-anchor.bottom-start.offset.5="$refs.selectedActions"
+                        >
+                            <x-card>
+                                @foreach($selectedActions as $action)
+                                    {{ $action }}
+                                @endforeach
+                            </x-card>
+                        </div>
+                    </x-tall-datatables::table.head-cell>
+                @endif
                 <template x-for="(col, index) in enabledCols">
                     <x-tall-datatables::table.head-cell
                         x-bind:class="stickyCols.includes(col) && 'left-0 z-10 border-r'"
@@ -108,13 +109,15 @@
             </tr>
             @if($isFilterable && $showFilterInputs)
                 <tr>
-                    <td class="bg-gray-50 dark:bg-secondary-600"></td>
+                    @if($isSelectable)
+                        <td class="bg-gray-50 dark:bg-secondary-600"></td>
+                    @endif
                     <template x-for="(col, index) in enabledCols">
                         <td class="bg-gray-50 dark:bg-secondary-600 py-1 px-2"
                             x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
                             x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'">
                             <template x-if="! filterValueLists.hasOwnProperty(col)">
-                                <x-input class="p-1" x-model.debounce.500ms="textFilter[col]" x-show="filterable.includes(col)" />
+                                <x-input type="search" class="p-1" x-model.debounce.500ms="textFilter[col]" x-show="filterable.includes(col)" />
                             </template>
                             <template x-if="filterValueLists.hasOwnProperty(col)">
                                 <x-native-select
@@ -166,18 +169,18 @@
             x-on:click="$dispatch('data-table-row-clicked', record)"
             {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
         >
-            <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
-                <template x-if="selectable">
-                    <div {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}>
-                        <x-checkbox
-                            x-on:click="$event.stopPropagation();"
-                            x-on:change="$dispatch('data-table-record-selected', {record: record, index: index, value: $el.checked});"
-                            x-bind:value="record.id"
-                            x-model="selected"
-                        />
-                    </div>
-                </template>
-            </td>
+            @if($isSelectable)
+                <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
+                        <div {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}>
+                            <x-checkbox
+                                x-on:click="$event.stopPropagation();"
+                                x-on:change="$dispatch('data-table-record-selected', {record: record, index: index, value: $el.checked});"
+                                x-bind:value="index"
+                                wire:model="selected"
+                            />
+                        </div>
+                </td>
+            @endif
             <template x-for="col in enabledCols">
                 <x-tall-datatables::table.cell
                     :use-wire-navigate="$useWireNavigate"

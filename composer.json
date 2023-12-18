@@ -19,7 +19,7 @@
         "php": "^8.1",
         "hammerstone/fast-paginate": "^0.1.11",
         "laravel/framework": "^9.49|^10.0",
-        "livewire/livewire": "^2.11|^3.1",
+        "livewire/livewire": "^3.1",
         "maatwebsite/excel": "^3.1",
         "spatie/laravel-model-info": "^1.4",
         "wireui/wireui": "^1.17"

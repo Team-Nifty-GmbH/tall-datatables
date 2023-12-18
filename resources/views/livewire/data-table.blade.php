@@ -30,5 +30,6 @@
         :has-sticky-cols="$hasStickyCols"
         :has-sidebar="$hasSidebar"
         :use-wire-navigate="$useWireNavigate"
+        :is-selectable="$isSelectable"
     />
 </x-tall-datatables::data-table-wrapper>

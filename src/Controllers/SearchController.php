@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Controllers;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Arr;
@@ -21,6 +22,7 @@ class SearchController extends Controller
 
         Event::dispatch('tall-datatables-searching', $request);
 
+        /** @var Builder $query */
         if ($request->has('selected')) {
             $selected = $request->get('selected');
             $optionValue = $request->get('option-value') ?: (new $model)->getKeyName();
@@ -108,6 +110,14 @@ class SearchController extends Controller
 
         if ($request->has('fields')) {
             $query->select($request->get('fields'));
+        }
+
+        if ($request->has('whereDoesntHave')) {
+            $query->whereDoesntHave($request->get('whereDoesntHave'));
+        }
+
+        if ($request->has('whereHas')) {
+            $query->whereHas($request->get('whereHas'));
         }
 
         $result = $query->get();

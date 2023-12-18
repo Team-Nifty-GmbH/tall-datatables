@@ -4,12 +4,25 @@
     </div>
 @endif
 <div class="flex w-full gap-5 justify-end">
+    @if(count($this->savedFilters) > 1 && $this->showSavedFilters)
+        <div>
+            <x-select x-on:selected="$wire.loadSavedFilter()" wire:model="loadedFilterId" :placeholder="__('Saved filters')" :clearable="false">
+                @foreach($this->savedFilters as $savedFilter)
+                    @if(! $savedFilter['settings']['userFilters'] ?? false)
+                        @continue
+                    @endif
+                    <x-select.option :label="$savedFilter['name']" :value="$savedFilter['id']" />
+                @endforeach
+            </x-select>
+        </div>
+    @endif
     @if($isSearchable)
         <div class="flex-1">
             <x-input
+                type="search"
                 icon="search"
                 x-model.debounce.500ms="search"
-                placeholder="{{ __('Search in :model…', ['model' => __(\Illuminate\Support\Str::plural($modelName))]) }}"
+                :placeholder="__('Search in :model…', ['model' => __(\Illuminate\Support\Str::plural($modelName))])"
             >
             </x-input>
         </div>
