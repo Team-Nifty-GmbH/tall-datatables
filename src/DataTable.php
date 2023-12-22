@@ -190,8 +190,6 @@ class DataTable extends Component
 
     public array $data = [];
 
-    protected bool $forceRender = false;
-
     protected string $model;
 
     protected string $view = 'tall-datatables::livewire.data-table';
