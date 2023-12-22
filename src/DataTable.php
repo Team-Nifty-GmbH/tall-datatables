@@ -36,6 +36,7 @@ use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Traits\HasDatatableUserSettings;
 use WireUi\Traits\Actions;
+use function Livewire\store;
 
 class DataTable extends Component
 {
@@ -189,7 +190,7 @@ class DataTable extends Component
 
     public array $data = [];
 
-    public bool $forceRender = false;
+    protected bool $forceRender = false;
 
     protected string $model;
 
@@ -201,11 +202,18 @@ class DataTable extends Component
 
     private array $aggregatableRelationCols = [];
 
-    public function rendering(): void
+    public function hydrate(): void
     {
-        if (! $this->forceRender && $this->initialized) {
-            $this->skipRender();
+        if (! $this->initialized) {
+            return;
         }
+
+        $this->skipRender();
+    }
+
+    protected function forceRender(): void
+    {
+        store($this)->set('skipRender', false);
     }
 
     #[Renderless]
@@ -1121,7 +1129,7 @@ class DataTable extends Component
         }
     }
 
-    public function render(): View|Factory|Application
+    public function render(): View|Factory|Application|null
     {
         return view($this->view, $this->getViewData());
     }
