@@ -2,6 +2,12 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.8.1 - 2023-12-18
+
+fix wire:navigate
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.8.0...v0.8.1
+
 ## v0.8.0 - 2023-12-18
 
 **Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.7.10...v0.8.0
