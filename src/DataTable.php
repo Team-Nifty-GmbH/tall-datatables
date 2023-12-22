@@ -188,14 +188,20 @@ class DataTable extends Component
     public array $appends = [];
 
     public array $data = [];
+
     public bool $forceRender = false;
+
     protected string $model;
+
     protected string $view = 'tall-datatables::livewire.data-table';
+
     protected bool $useWireNavigate = true;
+
     protected $listeners = ['loadData'];
+
     private array $aggregatableRelationCols = [];
 
-    public function boot(): void
+    public function rendering(): void
     {
         if (! $this->forceRender && $this->initialized) {
             $this->skipRender();
