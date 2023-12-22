@@ -2,6 +2,12 @@
 
 All notable changes to `tall-datatables` will be documented in this file.
 
+## v0.8.2 - 2023-12-22
+
+fix force render
+
+**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.8.1...v0.8.2
+
 ## v0.8.1 - 2023-12-18
 
 fix wire:navigate
