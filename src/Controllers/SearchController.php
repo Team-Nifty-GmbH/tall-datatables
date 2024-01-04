@@ -5,7 +5,6 @@ namespace TeamNiftyGmbH\DataTable\Controllers;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Laravel\Scout\Searchable;
 use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
@@ -26,9 +25,6 @@ class SearchController extends Controller
         if ($request->has('selected')) {
             $selected = $request->get('selected');
             $optionValue = $request->get('option-value') ?: (new $model)->getKeyName();
-            $selected = $request->has('option-value')
-                ? Arr::pluck($selected, $optionValue)
-                : $selected;
 
             $query = $model::query();
             is_array($selected)

@@ -7,6 +7,7 @@
     @if($hasHead)
         <x-slot:header>
             <tr>
+                <th></th>
                 @if($isSelectable)
                     <x-tall-datatables::table.head-cell class="max-w-0">
                         <div>
@@ -109,6 +110,7 @@
             </tr>
             @if($isFilterable && $showFilterInputs)
                 <tr>
+                    <td class="bg-gray-50 dark:bg-secondary-600"></td>
                     @if($isSelectable)
                         <td class="bg-gray-50 dark:bg-secondary-600"></td>
                     @endif
@@ -169,6 +171,8 @@
             x-on:click="$dispatch('data-table-row-clicked', record)"
             {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
         >
+            <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap text-sm">
+            </td>
             @if($isSelectable)
                 <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
                         <div {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}>
