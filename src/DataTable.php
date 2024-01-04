@@ -1515,14 +1515,10 @@ class DataTable extends Component
                 ->where('component', $this->getCacheKey())
                 ->where('is_layout', true)
                 ->first();
-
-            if (! $layout) {
-                return;
-            }
-
-            $layout->delete();
             Session::remove(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
-            $this->reset(array_keys($layout->settings));
+
+            $layout?->delete();
+            $this->reset('enabledCols', 'aggregatableCols', 'userFilters', 'userOrderBy', 'userOrderAsc');
             $this->loadData();
         } catch (MissingTraitException) {
         }
