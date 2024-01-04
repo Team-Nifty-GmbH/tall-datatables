@@ -3,12 +3,10 @@
 namespace TeamNiftyGmbH\DataTable\Controllers;
 
 use Illuminate\Support\Facades\File;
-use Livewire\Controllers\CanPretendToBeAFile;
+use Livewire\Drawer\Utils;
 
 class AssetController extends Controller
 {
-    use CanPretendToBeAFile;
-
     /**
      * @return \Illuminate\Http\Response|mixed|\Symfony\Component\HttpFoundation\BinaryFileResponse
      *
@@ -27,10 +25,7 @@ class AssetController extends Controller
             ? $assetPath . $path
             : File::glob($assetPath . 'tall-datatables*.js')[0];
 
-        return $this->pretendResponseIsFile(
-            $path,
-            'application/javascript'
-        );
+        return Utils::pretendResponseIsFile($path, 'text/javascript');
     }
 
     /**
@@ -50,9 +45,6 @@ class AssetController extends Controller
             ? $assetPath . $path
             : File::glob($assetPath . 'tall-datatables*.css')[0];
 
-        return $this->pretendResponseIsFile(
-            $path,
-            'text/css'
-        );
+        return Utils::pretendResponseIsFile($path, 'text/css');
     }
 }

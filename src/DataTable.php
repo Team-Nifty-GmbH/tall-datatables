@@ -18,6 +18,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
@@ -36,6 +37,7 @@ use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Traits\HasDatatableUserSettings;
 use WireUi\Traits\Actions;
+
 use function Livewire\store;
 
 class DataTable extends Component
@@ -48,6 +50,9 @@ class DataTable extends Component
 
     #[Locked]
     public ?string $modelKeyName = null;
+
+    #[Locked]
+    public ?string $modelTable = null;
 
     #[Locked]
     public ?string $cacheKey = null;
@@ -290,11 +295,22 @@ class DataTable extends Component
 
     protected function getAggregatable(): array
     {
+        $foreignKeys = collect(Schema::getForeignKeys($this->modelTable))
+            ->pluck('columns')
+            ->flatten()
+            ->unique()
+            ->toArray();
+
         return $this->aggregatable === ['*']
             ? $this->getTableFields()
-                ->filter(function (Attribute $attribute) {
-                    return in_array($attribute->phpType, ['int', 'float'])
-                        || Str::contains($attribute->type, ['decimal', 'float', 'double', 'bigint']);
+                ->filter(function (Attribute $attribute) use ($foreignKeys) {
+                    return (in_array($attribute->phpType, ['int', 'float'])
+                        || Str::contains($attribute->type, ['decimal', 'float', 'double', 'bigint']))
+                        && ! in_array($attribute->name, $foreignKeys)
+                        && ! $attribute->virtual
+                        && ! $attribute->appended
+                        && ! $attribute->hidden
+                        && $attribute->name !== $this->modelKeyName;
                 })
                 ->pluck('name')
                 ->toArray()
@@ -1096,7 +1112,11 @@ class DataTable extends Component
         $this->loadFilter($loadFilter ?? [], false);
         $this->colLabels = $this->getColLabels();
 
-        $this->modelKeyName = $this->modelKeyName ?: (new $this->model)->getKeyName();
+        if (! $this->modelKeyName || ! $this->modelTable) {
+            $model = (new $this->model);
+            $this->modelKeyName = $this->modelKeyName ?: $model->getKeyName();
+            $this->modelTable = $this->modelTable ?: $model->getTable();
+        }
     }
 
     #[Renderless]
