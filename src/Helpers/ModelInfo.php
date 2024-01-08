@@ -7,24 +7,30 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use ReflectionClass;
 use Spatie\ModelInfo\Attributes\Attribute;
-use Spatie\ModelInfo\ModelFinder;
 use Spatie\ModelInfo\ModelInfo as BaseModelInfo;
 
 class ModelInfo extends BaseModelInfo
 {
+    private static ?array $cachedModelInfos = null;
+
     public static function forModel(string|Model|ReflectionClass $model): BaseModelInfo
     {
+        if (is_null(static::$cachedModelInfos)) {
+            static::$cachedModelInfos = Cache::get(config('tall-datatables.cache_key') . '.modelInfo')
+                ?? [];
+        }
+
         if ($model instanceof ReflectionClass) {
             $model = $model->getName();
         }
 
-        if (is_string($model)) {
-            $model = new $model;
+        $cacheKey = is_string($model) ? $model : get_class($model);
+        if (array_key_exists($cacheKey, static::$cachedModelInfos)) {
+            return static::$cachedModelInfos[$cacheKey];
         }
 
-        $cachedModelInfos = Cache::get(config('tall-datatables.cache_key') . '.modelInfo') ?? [];
-        if (array_key_exists(get_class($model), $cachedModelInfos)) {
-            return $cachedModelInfos[get_class($model)];
+        if (is_string($model)) {
+            $model = new $model;
         }
 
         try {
@@ -45,8 +51,8 @@ class ModelInfo extends BaseModelInfo
                 return $attribute;
             });
 
-        $cachedModelInfos[get_class($model)] = $modelInfo;
-        Cache::forever(config('tall-datatables.cache_key') . '.modelInfo', $cachedModelInfos);
+        static::$cachedModelInfos[get_class($model)] = $modelInfo;
+        Cache::forever(config('tall-datatables.cache_key') . '.modelInfo', static::$cachedModelInfos);
 
         return $modelInfo;
     }
