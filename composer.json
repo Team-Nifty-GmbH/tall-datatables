@@ -17,7 +17,7 @@
     ],
     "require": {
         "php": "^8.1",
-        "hammerstone/fast-paginate": "^0.1.11",
+        "hammerstone/fast-paginate": "^1.0",
         "laravel/framework": "^9.49|^10.0",
         "livewire/livewire": "^3.1",
         "maatwebsite/excel": "^3.1",

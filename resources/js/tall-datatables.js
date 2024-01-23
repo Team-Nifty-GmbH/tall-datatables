@@ -15,12 +15,6 @@ document.addEventListener('alpine:init', () => {
                                     this.formatters = formatters;
                                 }
                             );
-                        this.$wire.getSortable()
-                            .then(
-                                sortable => {
-                                    this.sortable = sortable;
-                                }
-                            );
                         this.$wire.getColLabels(this.enabledCols)
                             .then(
                                 result => {
@@ -209,8 +203,6 @@ document.addEventListener('alpine:init', () => {
                         this.resetFilter();
                     }
 
-                    this.loadRelations(this.newFilter.relation);
-
                     this.getSavedFilters();
 
                     if (Boolean(this.newFilter.column)) {
@@ -304,14 +296,6 @@ document.addEventListener('alpine:init', () => {
                                     this.parseFilter();
                                 });
                             }
-                        }
-                    );
-            },
-            loadRelations(table = null) {
-                $wire.loadRelations(table)
-                    .then(
-                        result => {
-                            this.relations = result;
                         }
                     );
             },
