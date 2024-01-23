@@ -37,7 +37,7 @@ class Money implements CastsAttributes, HasFrontendFormatter
      * This should return the name of the frontend formatter to use.
      * See javascript formatters in resources/js/formatters for available formatters.
      *
-     * @param null ...$args
+     * @param  null  ...$args
      */
     public static function getFrontendFormatter(...$args): string|array
     {

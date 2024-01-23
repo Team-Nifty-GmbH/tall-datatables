@@ -9,53 +9,42 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\QueryException;
-use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
-use InvalidArgumentException;
 use Laravel\Scout\Searchable;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
-use ReflectionClass;
 use Spatie\ModelInfo\Attributes\Attribute;
 use Spatie\ModelInfo\Relations\Relation;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
-use TeamNiftyGmbH\DataTable\Exceptions\MissingTraitException;
-use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
-use TeamNiftyGmbH\DataTable\Traits\HasDatatableUserSettings;
+use TeamNiftyGmbH\DataTable\Traits\DataTables\StoresSettings;
+use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsAggregation;
+use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsCache;
+use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsExporting;
+use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsRelations;
+use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSelecting;
 use WireUi\Traits\Actions;
 
 use function Livewire\store;
 
 class DataTable extends Component
 {
-    use Actions;
+    use Actions, StoresSettings, SupportsAggregation, SupportsCache, SupportsExporting, SupportsRelations,
+        SupportsSelecting;
 
     public bool $initialized = false;
-
-    public array $loadedModels = [];
 
     #[Locked]
     public ?string $modelKeyName = null;
 
     #[Locked]
     public ?string $modelTable = null;
-
-    #[Locked]
-    public ?string $cacheKey = null;
 
     /**
      * The default filters for the table, these will be applied on every query.
@@ -81,20 +70,7 @@ class DataTable extends Component
 
     public array $userFilters = [];
 
-    public array $savedFilters = [];
-
-    public bool $showSavedFilters = true;
-
     public ?int $loadedFilterId = null;
-
-    public array $exportColumns = [];
-
-    public array $aggregatableCols = [
-        'sum' => [],
-        'avg' => [],
-        'min' => [],
-        'max' => [],
-    ];
 
     public array $colLabels = [];
 
@@ -104,12 +80,6 @@ class DataTable extends Component
      * You can force enable or disable the search by setting this to true or false.
      */
     public ?bool $isSearchable = null;
-
-    /**
-     * If set to false the table will not show the export tab in the sidebar.
-     */
-    #[Locked]
-    public bool $isExportable = true;
 
     /**
      * If set to false the table will not be filterable.
@@ -168,21 +138,6 @@ class DataTable extends Component
 
     public array $sortable = ['*'];
 
-    public array $aggregatable = ['*'];
-
-    /**
-     * If set to true the table rows will be selectable.
-     */
-    #[Locked]
-    public bool $isSelectable = false;
-
-    /**
-     * Contains the selected ids of the table rows.
-     */
-    public array $selected = [];
-
-    public array $selectedIndex = [];
-
     /**
      * If some of your cols have available values this variable contains the lists.
      * e.g. ['status' => ['active', 'inactive']]
@@ -199,12 +154,15 @@ class DataTable extends Component
 
     protected string $view = 'tall-datatables::livewire.data-table';
 
+    protected ?string $includeBefore = null;
+
     protected bool $useWireNavigate = true;
 
     protected $listeners = ['loadData'];
 
-    private array $aggregatableRelationCols = [];
-
+    /**
+     * This ensures that the table will be rendered only once.
+     */
     public function hydrate(): void
     {
         if (! $this->initialized) {
@@ -214,6 +172,9 @@ class DataTable extends Component
         $this->skipRender();
     }
 
+    /**
+     * When you need to re-render the table you can call this to force rendering.
+     */
     protected function forceRender(): void
     {
         store($this)->set('skipRender', false);
@@ -227,7 +188,6 @@ class DataTable extends Component
             'availableCols' => $this->getAvailableCols(),
             'colLabels' => $this->getColLabels(),
             'selectable' => $this->isSelectable,
-            'sortable' => $this->getSortable(),
             'aggregatable' => $this->getAggregatable(),
             'formatters' => $this->getFormatters(),
             'leftAppend' => $this->getLeftAppends(),
@@ -293,30 +253,6 @@ class DataTable extends Component
         return $colLabels;
     }
 
-    protected function getAggregatable(): array
-    {
-        $foreignKeys = collect(Schema::getForeignKeys($this->modelTable))
-            ->pluck('columns')
-            ->flatten()
-            ->unique()
-            ->toArray();
-
-        return $this->aggregatable === ['*']
-            ? $this->getTableFields()
-                ->filter(function (Attribute $attribute) use ($foreignKeys) {
-                    return (in_array($attribute->phpType, ['int', 'float'])
-                        || Str::contains($attribute->type, ['decimal', 'float', 'double', 'bigint']))
-                        && ! in_array($attribute->name, $foreignKeys)
-                        && ! $attribute->virtual
-                        && ! $attribute->appended
-                        && ! $attribute->hidden
-                        && $attribute->name !== $this->modelKeyName;
-                })
-                ->pluck('name')
-                ->toArray()
-            : $this->aggregatable;
-    }
-
     protected function getTableFields(): \Illuminate\Support\Collection
     {
         return ModelInfo::forModel($this->model)
@@ -334,36 +270,6 @@ class DataTable extends Component
     private function whereIn(Builder $builder, array $filter): Builder
     {
         return $builder->whereIn($filter[0], $filter[1]);
-    }
-
-    #[Renderless]
-    public function getSortable(): array
-    {
-        $sortable = $this->sortable;
-        if ($this->sortable === ['*']) {
-            foreach ($this->getIncludedRelations() as $loadedRelation) {
-
-                if (
-                    $loadedRelation['type']
-                    && ($loadedRelation['type'] !== BelongsTo::class || $loadedRelation['type'] !== HasOne::class)
-                ) {
-                    continue;
-                }
-
-                $columns = collect($loadedRelation['loaded_columns']);
-                $attributes = ModelInfo::forModel($loadedRelation['model'])
-                    ->attributes
-                    ->filter(fn ($attribute) => (! $attribute->virtual) && $columns->contains('column', $attribute->name))
-                    ->map(function (Attribute $attribute) use ($columns) {
-                        return $columns->where('column', $attribute->name)?->value('loaded_as');
-                    })
-                    ->filter()
-                    ->toArray();
-                $sortable = array_merge($sortable, $attributes);
-            }
-        }
-
-        return $sortable;
     }
 
     protected function getIncludedRelations(): array
@@ -507,65 +413,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    private function cacheState(): void
-    {
-        $filter = [
-            'userFilters' => $this->userFilters,
-            'enabledCols' => $this->enabledCols,
-            'aggregatableCols' => $this->aggregatableCols,
-            'userOrderBy' => $this->userOrderBy,
-            'userOrderAsc' => $this->userOrderAsc,
-            'perPage' => $this->perPage,
-            'page' => $this->page,
-            'search' => $this->search,
-            'selected' => $this->selected,
-        ];
-
-        if (config('tall-datatables.should_cache')) {
-            Session::put(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey(), $filter);
-        }
-
-        try {
-            $this->ensureAuthHasTrait();
-
-            Auth::user()->datatableUserSettings()->updateOrCreate(
-                [
-                    'cache_key' => $this->getCacheKey(),
-                    'is_layout' => true,
-                ],
-                [
-                    'name' => 'layout',
-                    'cache_key' => $this->getCacheKey(),
-                    'component' => get_class($this),
-                    'settings' => [
-                        'userFilters' => [],
-                        'enabledCols' => $this->enabledCols,
-                        'aggregatableCols' => $this->aggregatableCols,
-                        'perPage' => $this->perPage,
-                    ],
-                    'is_layout' => true,
-                ]
-            );
-        } catch (MissingTraitException) {
-        }
-    }
-
-    #[Renderless]
-    public function getCacheKey(): string
-    {
-        return $this->cacheKey ?: get_called_class();
-    }
-
-    /**
-     * @throws MissingTraitException
-     */
-    protected function ensureAuthHasTrait(): void
-    {
-        if (! Auth::user() || ! in_array(HasDatatableUserSettings::class, class_uses_recursive(Auth::user()))) {
-            throw MissingTraitException::create(Auth::user()?->getMorphClass(), HasDatatableUserSettings::class);
-        }
-    }
-
     #[Renderless]
     public function loadData(): void
     {
@@ -577,6 +424,12 @@ class DataTable extends Component
         $result = $this->getResultFromQuery($query);
 
         $this->setData(is_array($result) ? $result : $result->toArray());
+
+        if (in_array('*', $this->selected)) {
+            $this->selected = array_diff(array_column($this->data['data'], 'id'), $this->wildcardSelectExcluded);
+            $this->selected[] = '*';
+            $this->selected = array_values($this->selected);
+        }
 
         if ($aggregates = $this->getAggregate($baseQuery)) {
             $this->data['aggregates'] = ! $this->search ? $aggregates : [];
@@ -613,38 +466,10 @@ class DataTable extends Component
         }
 
         if (Str::contains($orderBy, '.')) {
-            $relationPath = explode('.', $orderBy);
-            $table = $relationPath[0];
-            $orderByColumn = array_pop($relationPath);
-            $localModel = new $model;
-            $query->addSelect($localModel->getTable() . '.*');
-
-            foreach ($relationPath as $key => $relation) {
-                $class = new ReflectionClass($localModel);
-                /** @var \Illuminate\Database\Eloquent\Relations\Relation $relationInstance */
-                $relationInstance = $class->getMethod(Str::camel($relation))->invoke($localModel);
-
-                if (! $relationInstance instanceof BelongsTo && ! $relationInstance instanceof HasOne) {
-                    throw new InvalidArgumentException(
-                        'Only belongsTo and hasOne relations are supported for sorting.'
-                    );
-                }
-
-                if ($key === count($relationPath) - 1) {
-                    $select = $relationInstance->getRelated()->getTable() . '.' . $orderByColumn;
-                    $query->addSelect($select);
-                }
-
-                $table = $relationInstance->getRelated()->getTable();
-                $first = $relationInstance instanceof BelongsTo ? $relationInstance->getQualifiedOwnerKeyName() : $relationInstance->getQualifiedParentKeyName();
-                $second = $relationInstance->getQualifiedForeignKeyName();
-
-                $query->join($table, $first, '=', $second)->where($second, '!=', null);
-
-                $localModel = $relationInstance->getRelated();
-            }
-
+            $orderByColumn = Str::afterLast($orderBy, '.');
+            $table = $this->addDynamicJoin($query, Str::beforeLast($orderBy, '.'));
             $orderBy = $table . '.' . $orderByColumn;
+
             $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
         } else {
             if ($orderBy) {
@@ -655,104 +480,14 @@ class DataTable extends Component
         }
 
         // include selected relationships
-        $tmpWith = [];
-        $with = [];
-        $loadedModels = [];
-        $baseModelInfo = ModelInfo::forModel($this->model);
-        foreach ($this->enabledCols as $enabledCol) {
-            if (str_contains($enabledCol, '.')) {
-                $explodedCol = explode('.', $enabledCol);
-                $attribute = array_pop($explodedCol);
-                $path = implode('.', array_map(fn ($relation) => Str::camel($relation), $explodedCol));
-                $relation = $baseModelInfo->relation(Str::camel($path));
-
-                $explodedPath = explode('.', $path);
-                $startModelInfo = $baseModelInfo;
-                $relationPathModelInfo = [];
-                foreach ($explodedPath as $index => $relationItem) {
-                    if ($index === count($explodedPath) - 1) {
-                        $relation = $startModelInfo->relation(Str::camel($relationItem));
-                        $relationPathModelInfo[] = $relation;
-
-                        break;
-                    }
-
-                    $currentRelation = $startModelInfo->relation(Str::camel($relationItem));
-                    if ($currentRelation) {
-                        $startModelInfo = ModelInfo::forModel($currentRelation->related);
-                        $relationPathModelInfo[] = $currentRelation;
-                    }
-                }
-
-                if (! $relation) {
-                    continue;
-                }
-
-                $relatedModel = $relation->related;
-                $loadedModels[$path] = $relatedModel;
-                $addPath = null;
-
-                if (! ModelInfo::forModel($relatedModel)->attribute($attribute)?->virtual) {
-                    $relationModelQuery = new $baseModelInfo->class;
-
-                    foreach ($relationPathModelInfo as $index => $currentRelation) {
-                        $foreignKeysForeign = [];
-                        $foreignKeysOwner = [];
-
-                        $relationInstance = $relationModelQuery->{$currentRelation->name}();
-                        if (! method_exists($relationInstance, 'getOwnerKeyName')
-                            && ! method_exists($relationInstance, 'getForeignKeyName')
-                        ) {
-                            $with[] = $path;
-
-                            continue;
-                        }
-
-                        if (method_exists($relationInstance, 'getOwnerKeyName')) {
-                            $foreignKeysOwner[] = $relationInstance->getOwnerKeyName();
-                            $addPath = $path;
-                        }
-
-                        if (method_exists($relationInstance, 'getForeignKeyName')
-                            && $relationInstance instanceof HasOneOrMany
-                        ) {
-                            $addPath = array_slice($explodedPath, 0, $index);
-                            $addPath = implode('.', $addPath);
-                            $foreignKeysForeign[] = $relationInstance->getForeignKeyName();
-                        }
-
-                        $tmpWith[$addPath ?: $path] = array_values(array_unique(
-                            array_merge($foreignKeysOwner, $foreignKeysForeign, $tmpWith[$addPath ?? $path] ?? [])
-                        ));
-
-                        $relationModelQuery = new $currentRelation->related;
-                        $addPath = null;
-                    }
-
-                    $tmpWith[$path][] = $attribute;
-                } else {
-                    $with[] = $path;
-                }
-            }
-        }
-
-        foreach ($tmpWith as $path => $attributes) {
-            $with[] = $path . ':' . implode(',', $attributes);
-            $loadedModels = array_unique($loadedModels);
-        }
-
-        $this->loadedModels = $loadedModels;
+        [$with, $select, $filterable, $this->filterValueLists, $this->sortable] = $this->constructWith();
 
         $query->with($with);
+        $query->select(array_merge($select, [$this->modelTable . '.' . $this->modelKeyName]));
 
         $query = $this->getBuilder($query);
 
         return $this->applyFilters($query);
-    }
-
-    protected function getAggregatableRelationCols(): array
-    {
-        return [];
     }
 
     protected function getScoutSearch(): \Laravel\Scout\Builder
@@ -995,34 +730,39 @@ class DataTable extends Component
 
     protected function itemToArray($item): array
     {
-        $returnKeys = $this->getReturnKeys();
-
         if ($appends = $this->getAppends()) {
             $item->append($appends);
         }
 
-        $itemArray = $item->toArray();
-        $preserved = [];
-        $noDataUuid = Str::uuid()->toString();
-        foreach ($returnKeys as $key) {
-            $value = data_get($itemArray, $key, $noDataUuid);
+        $dotted = Arr::dot($item->toArray());
+        $itemArray = [];
+        $returnKeys = $this->getReturnKeys();
 
-            if ($value === $noDataUuid && is_array(data_get($itemArray, Str::beforeLast($key, '.')))) {
-                $value = data_get($itemArray, Str::beforeLast($key, '.'));
-                $itemArray[$key] = Arr::pluck($value, Str::afterLast($key, '.'));
+        // n:n or 1:n or n:1 relations have numeric keys while the the relation path has not
+        // so we need to filter out the numeric keys and convert them to the relation path
+        foreach ($dotted as $key => $value) {
+            $explodedKey = explode('.', $key);
+            $key = array_filter($explodedKey, fn ($part) => ! is_numeric($part));
+            $key = implode('.', $key);
+            if (! in_array($key, $returnKeys)) {
+                continue;
             }
 
-            if ($value && is_array($value) && ! Arr::isAssoc($value)) {
-                $preserved[$key] = Arr::pull($itemArray, $key);
+            if (array_key_exists($key, $itemArray)) {
+                if (! is_array($itemArray[$key])) {
+                    $itemArray[$key] = [$itemArray[$key]];
+                }
+                $itemArray[$key][] = $value;
+            } else {
+                $itemArray[$key] = $value;
             }
         }
 
-        $itemArray = Arr::only(array_merge(Arr::dot($itemArray), $preserved), $returnKeys);
         $itemArray['href'] = in_array(InteractsWithDataTables::class, class_implements($this->model))
-            && ! $this->hasNoRedirect
-            && method_exists($item, 'getUrl')
-                ? $item->getUrl()
-                : null;
+        && ! $this->hasNoRedirect
+        && method_exists($item, 'getUrl')
+            ? $item->getUrl()
+            : null;
 
         return $itemArray;
     }
@@ -1045,36 +785,6 @@ class DataTable extends Component
         $this->data = $data;
     }
 
-    protected function getAggregate(Builder $builder): array
-    {
-        $aggregates = [];
-        foreach ($this->aggregatableCols as $type => $columns) {
-            if (! in_array($type, ['sum', 'avg', 'min', 'max'])) {
-                continue;
-            }
-
-            if (! is_array($columns)) {
-                $columns = [$columns];
-            }
-
-            foreach ($columns as $column) {
-                if (! in_array($column, $this->enabledCols)) {
-                    continue;
-                }
-
-                try {
-                    $aggregates[$type][$column] = $builder->{$type}($column);
-                } catch (QueryException $e) {
-                    $this->notification()->error($e->getMessage());
-
-                    continue;
-                }
-            }
-        }
-
-        return $aggregates;
-    }
-
     public function placeholder(): View|Factory|Application
     {
         return view('tall-datatables::livewire.placeholder');
@@ -1082,34 +792,6 @@ class DataTable extends Component
 
     public function mount(): void
     {
-        if (config('tall-datatables.should_cache')) {
-            $cachedFilters = Session::get(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
-        } else {
-            $cachedFilters = null;
-        }
-
-        $loadFilter = $cachedFilters;
-        $this->savedFilters = $this->getSavedFilters();
-
-        // no cached filter but saved filters
-        if (! $loadFilter && $this->savedFilters) {
-            $loadFilter = data_get(
-                collect($this->savedFilters)->where('is_permanent', true)->first(),
-                'settings',
-                []
-            );
-        }
-
-        // no permanent filter but layout filter
-        if (! $loadFilter && $this->savedFilters) {
-            $loadFilter = data_get(
-                collect($this->savedFilters)->where('is_layout', true)->first(),
-                'settings',
-                []
-            );
-        }
-
-        $this->loadFilter($loadFilter ?? [], false);
         $this->colLabels = $this->getColLabels();
 
         if (! $this->modelKeyName || ! $this->modelTable) {
@@ -1120,19 +802,7 @@ class DataTable extends Component
     }
 
     #[Renderless]
-    public function getSavedFilters(): array
-    {
-        if (Auth::user() && method_exists(Auth::user(), 'getDataTableSettings')) {
-            return Auth::user()
-                ->getDataTableSettings($this)
-                ?->toArray() ?? [];
-        } else {
-            return [];
-        }
-    }
-
-    #[Renderless]
-    public function loadFilter(array $properties, bool $skipRender = true): void
+    public function loadFilter(array $properties): void
     {
         if (! $properties) {
             return;
@@ -1169,6 +839,8 @@ class DataTable extends Component
             'layout' => $this->getLayout(),
             'useWireNavigate' => $this->useWireNavigate,
             'colLabels' => $this->colLabels,
+            'includeBefore' => $this->includeBefore,
+            'selectValue' => $this->getSelectValue(),
         ];
     }
 
@@ -1185,12 +857,6 @@ class DataTable extends Component
     }
 
     protected function getTableHeadColAttributes(): ComponentAttributeBag
-    {
-        return new ComponentAttributeBag();
-    }
-
-    #[Renderless]
-    public function getSelectAttributes(): ComponentAttributeBag
     {
         return new ComponentAttributeBag();
     }
@@ -1215,33 +881,9 @@ class DataTable extends Component
         return [];
     }
 
-    protected function getSelectedActions(): array
-    {
-        return [];
-    }
-
     protected function getLayout(): string
     {
         return 'tall-datatables::layouts.table';
-    }
-
-    #[Renderless]
-    public function loadSavedFilter(): void
-    {
-        $this->loadFilter(
-            data_get(
-                collect($this->savedFilters)->where('id', $this->loadedFilterId)->first(),
-                'settings',
-                []
-            )
-        );
-    }
-
-    #[Renderless]
-    public function applyAggregations(): void
-    {
-        $this->cacheState();
-        $this->loadData();
     }
 
     #[Renderless]
@@ -1255,19 +897,6 @@ class DataTable extends Component
 
         $this->cacheState();
         $this->loadData();
-    }
-
-    #[Renderless]
-    public function storeColLayout(array $cols): void
-    {
-        $reload = count($cols) > count($this->enabledCols);
-
-        $this->enabledCols = $cols;
-
-        $this->cacheState();
-        if ($reload) {
-            $this->loadData();
-        }
     }
 
     #[Renderless]
@@ -1298,229 +927,5 @@ class DataTable extends Component
         $this->perPage += $this->perPage;
 
         $this->loadData();
-    }
-
-    /**
-     * @throws MissingTraitException
-     */
-    #[Renderless]
-    public function saveFilter(string $name, bool $permanent = false): void
-    {
-        $this->ensureAuthHasTrait();
-
-        if ($permanent) {
-            Auth::user()->datatableUserSettings()->update(['is_permanent' => false]);
-        }
-
-        Auth::user()->datatableUserSettings()->create([
-            'name' => $name,
-            'component' => get_class($this),
-            'cache_key' => $this->getCacheKey(),
-            'settings' => [
-                'enabledCols' => $this->enabledCols,
-                'aggregatableCols' => $this->aggregatableCols,
-                'userFilters' => $this->userFilters,
-                'userOrderBy' => $this->userOrderBy,
-                'userOrderAsc' => $this->userOrderAsc,
-                'perPage' => $this->perPage,
-            ],
-            'is_permanent' => $permanent,
-        ]);
-    }
-
-    /**
-     * @throws MissingTraitException
-     */
-    #[Renderless]
-    public function deleteSavedFilter(string $id): void
-    {
-        $this->ensureAuthHasTrait();
-
-        Auth::user()->datatableUserSettings()->whereKey($id)->delete();
-    }
-
-    #[Renderless]
-    public function getFilterableColumns(?string $name = null): array
-    {
-        if (! $this->isFilterable) {
-            return [];
-        }
-
-        if (! $name) {
-            $models = array_merge($this->loadedModels, [$this->model]);
-        } else {
-            $models = [
-                ModelInfo::forModel($this->model)
-                    ->relations
-                    ->filter(fn ($relation) => $relation->name === $name)
-                    ->first()
-                    ->related,
-            ];
-        }
-
-        $tableCols = [];
-        foreach ($models as $prefix => $modelClass) {
-            $prefix = Str::snake($prefix);
-            $this->filterValueLists = method_exists($modelClass, 'getStates')
-                ? $modelClass::getStates()
-                    ->map(function ($state) {
-                        return $state->map(function ($value) {
-                            return ['value' => $value, 'label' => __($value)];
-                        });
-                    })
-                    ->toArray()
-                : [];
-
-            $attributes = ModelInfo::forModel($modelClass)->attributes->each(
-                function (Attribute $attribute) {
-                    if ($attribute->type === 'boolean') {
-                        $this->filterValueLists[$attribute->name] = [
-                            [
-                                'value' => 1,
-                                'label' => __('Yes'),
-                            ],
-                            [
-                                'value' => 0,
-                                'label' => __('No'),
-                            ],
-                        ];
-                    }
-                }
-            );
-
-            $currentTableCols = $attributes->filter(fn (Attribute $attribute) => ! $attribute->virtual)
-                ->pluck('name')
-                ->toArray();
-
-            $currentTableCols = ! is_numeric($prefix)
-                ? array_map(fn ($col) => $prefix . '.' . $col, $currentTableCols)
-                : $currentTableCols;
-            $tableCols = array_merge($tableCols, $currentTableCols);
-        }
-
-        return array_values(array_intersect($this->enabledCols, $tableCols));
-    }
-
-    #[Renderless]
-    public function getRelationTableCols(?string $relationName = null): array
-    {
-        $relationName = $relationName ? Str::camel($relationName) : null;
-        $model = $relationName
-            ? ModelInfo::forModel($this->model)
-                ->relations
-                ->filter(fn ($relation) => $relation->name === $relationName)
-                ->first()
-                ?->related
-            : $this->model;
-
-        if (! $model) {
-            return [];
-        }
-
-        return ModelInfo::forModel($model)
-            ->attributes
-            ->filter(fn ($attribute) => ! $attribute->virtual)
-            ->when(
-                $this->availableCols !== ['*'],
-                fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
-            )
-            ->pluck('formatter', 'name')
-            ->toArray();
-    }
-
-    #[Renderless]
-    public function getRelationAttributes(string $relationName): array
-    {
-        if (! $relationName) {
-            $model = $this->model;
-        } else {
-            $model = ModelInfo::forModel($this->model)
-                ->relations
-                ->filter(fn ($relation) => $relation->name === Str::camel($relationName))
-                ->first()
-                ?->related;
-        }
-
-        return array_map(
-            fn ($attribute) => [
-                'value' => ($relationName ? Str::snake($relationName) . '.' : '') . $attribute,
-                'label' => __(Str::headline($attribute)),
-            ],
-            $this->getModelAttributes($model)
-        );
-    }
-
-    private function getModelAttributes(string $modelClass): array
-    {
-        return ModelInfo::forModel($modelClass)
-            ->attributes
-            ->when(
-                $this->availableCols !== ['*'],
-                fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
-            )
-            ->pluck('name')
-            ->toArray();
-    }
-
-    #[Renderless]
-    public function loadRelations(?string $model): array
-    {
-        $basePath = __(Str::of(class_basename($this->model))->headline()->toString());
-        if ($model) {
-            $basis = $basePath . ' -> ' . __(Str::headline(class_basename($model)));
-        } else {
-            $basis = $basePath;
-        }
-
-        if (! $model) {
-            $model = $this->model;
-        }
-
-        return array_values(ModelInfo::forModel($model)
-            ->relations
-            ->filter(function ($relation) {
-                return in_array($relation->name, $this->availableRelations) || $this->availableRelations === ['*'];
-            })
-            ->map(function (Relation $relation) use ($basis) {
-                return [
-                    'value' => Str::snake($relation->name),
-                    'label' => $basis . ' -> ' . __(Str::headline($relation->name)),
-                ];
-            })
-            ->toArray());
-    }
-
-    #[Renderless]
-    public function getExportableColumns(): array
-    {
-        return array_unique(array_merge($this->availableCols, $this->enabledCols));
-    }
-
-    #[Renderless]
-    public function export(array $columns = []): Response|BinaryFileResponse
-    {
-        $query = $this->buildSearch();
-
-        return (new DataTableExport($query, array_filter($columns)))
-            ->download(class_basename($this->model) . '_' . now()->toDateTimeLocalString('minute') . '.xlsx');
-    }
-
-    #[Renderless]
-    public function resetLayout(): void
-    {
-        try {
-            $this->ensureAuthHasTrait();
-            $layout = Auth::user()
-                ->datatableUserSettings()
-                ->where('component', $this->getCacheKey())
-                ->where('is_layout', true)
-                ->first();
-            Session::remove(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
-
-            $layout?->delete();
-            $this->reset('enabledCols', 'aggregatableCols', 'userFilters', 'userOrderBy', 'userOrderAsc');
-            $this->loadData();
-        } catch (MissingTraitException) {
-        }
     }
 }

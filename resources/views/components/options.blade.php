@@ -174,9 +174,9 @@
                             wire:loading.attr="disabled"
                             x-model="newFilter.relation"
                         >
-                            <option value="">{{  __('This table') }}</option>
-                            <template x-for="relation in relations">
-                                <option x-bind:value="relation.value" x-text="relation.label"></option>
+                            <option>{{  __('This table') }}</option>
+                            <template x-for="relation in $wire.selectedRelations">
+                                <option x-bind:value="relation.name" x-text="relation.label"></option>
                             </template>
                         </x-native-select>
                         <x-input
@@ -482,7 +482,11 @@
                         attributes: [],
                         availableCols: [...@js($this->enabledCols), ...['__placeholder__']],
                         addCol(colName) {
-                            this.availableCols.push(colName);
+                            if (this.availableCols.includes(colName))
+                                this.availableCols.splice(this.availableCols.indexOf(colName), 1);
+                            else {
+                                this.availableCols.push(colName);
+                            }
                         },
                     }"
                 >
@@ -515,39 +519,49 @@
                             <x-button x-on:click="resetLayout" :label="__('Reset Layout')" />
                         </div>
                     </div>
-                    <div class="pt-6 pb-3">
-                        <x-native-select
-                            wire:target="loadFields"
-                            wire:loading.attr="disabled"
-                            x-on:change="$wire.getRelationAttributes($event.target.value).then((response) => {attributes = response})"
-                        >
-                            <option disabled selected>{{ __('Select table') }}</option>
-                            <option value="">{{  __('This table') }}</option>
-                            <template x-for="relation in relations">
-                                <option x-bind:value="relation.value" x-text="relation.label"></option>
-                            </template>
-                        </x-native-select>
-                        <template x-for="attribute in attributes">
-                            <div class="relative flex items-start">
-                                <div class="flex items-center h-5">
-                                    <x-checkbox
-                                        wire:loading.attr="disabled"
-                                        x-bind:id="attribute.value"
-                                        x-bind:value="attribute.value"
-                                        x-on:change="loadFilterable; addCol(attribute.value);"
-                                        x-model="enabledCols"
-                                    />
-                                </div>
-                                <div class="ml-2 text-sm">
-                                    <label
-                                        x-text="getLabel(attribute)"
-                                        class="block text-sm font-medium text-gray-700 dark:text-gray-50"
-                                        x-bind:for="attribute.value"
-                                    >
-                                    </label>
-                                </div>
+                    <div class="text-sm font-medium text-gray-700 dark:text-gray-50">
+                        <div class="flex overflow-x-auto">
+                            <div class="flex gap-1.5 items-center">
+                                <x-button flat primary x-on:click="$wire.loadSlug()" >
+                                    <span class="whitespace-nowrap">{{ __('This table') }}</span>
+                                </x-button>
+                                <x-icon name="chevron-right" class="h-4 w-4"/>
                             </div>
-                        </template>
+                            <template x-for="segment in $wire.displayPath">
+                                <div class="flex gap-1.5 items-center">
+                                    <x-button flat primary x-on:click="$wire.loadSlug(segment.value)" >
+                                        <span class="whitespace-nowrap" x-text="segment.label"></span>
+                                    </x-button>
+                                    <x-icon name="chevron-right" class="h-4 w-4"/>
+                                </div>
+                            </template>
+                        </div>
+                        <hr class="pb-2.5">
+                        <div class="grid grid-cols-2">
+                            <div>
+                                <template x-for="col in $wire.selectedCols">
+                                    <div class="flex gap-1.5">
+                                        <x-checkbox
+                                            x-bind:checked="$wire.enabledCols.includes(col.attribute)"
+                                            wire:loading.attr="disabled"
+                                            x-bind:id="col.attribute"
+                                            x-bind:value="col.attribute"
+                                            x-on:change="loadFilterable; addCol(col.attribute);"
+                                            x-model="enabledCols"
+                                        />
+                                        <span class="overflow-hidden text-ellipsis whitespace-nowrap" x-text="col.label"></span>
+                                    </div>
+                                </template>
+                            </div>
+                            <div>
+                                <template x-for="relation in $wire.selectedRelations">
+                                    <div class="flex gap-1.5 cursor-pointer items-center" x-on:click="$wire.loadRelation(relation.model, relation.name)">
+                                        <span class="overflow-hidden text-ellipsis whitespace-nowrap" x-text="relation.label"></span>
+                                        <x-icon name="chevron-right" class="h-4 w-4"/>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

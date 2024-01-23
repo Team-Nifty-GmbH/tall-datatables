@@ -1,4 +1,4 @@
-<x-tall-datatables::table class="relative">
+<x-tall-datatables::table x-on:data-table-record-selected="if(! $wire.selected.includes('*')) return; ! $event.target.checked ? $wire.wildcardSelectExcluded.push($event.detail.{{ $selectValue }}) : console.log('adding')" class="relative">
     <tr wire:loading.delay.longer class="absolute bottom-0 top-0 right-0 w-full">
         <td>
             <x-tall-datatables::spinner />
@@ -7,21 +7,45 @@
     @if($hasHead)
         <x-slot:header>
             <tr>
-                <th></th>
                 @if($isSelectable)
-                    <x-tall-datatables::table.head-cell class="max-w-0">
-                        <div>
-                            <div class="flex items-center">
-                                <x-checkbox x-on:change="function (e) {
-                                    if (e.target.checked) {
-                                        selected = Array.from(getData().keys());
-                                        selected.push('*');
-                                    } else {
-                                        selected = [];
-                                    }
-                                }" value="*" wire:model="selected"/>
-                                <x-button class="px-1.5 py-1.5" x-ref="selectedActions" flat right-icon="chevron-down" x-on:click="selected.length > 0 ? showSelectedActions = true : null" />
-                            </div>
+                    <x-tall-datatables::table.head-cell class="min-w-24 !py-0 !px-0">
+                        <div class="flex items-center justify-center gap-1.5">
+                                @if($selectValue === 'index')
+                                    <x-checkbox
+                                        x-on:change="function (e) {
+                                                if (e.target.checked) {
+                                                        $wire.selected = Array.from(getData().keys());
+                                                    $wire.selected.push('*');
+                                                } else {
+                                                    $wire.selected = [];
+                                                    $wire.wildcardSelectExcluded = [];
+                                                }
+                                            }"
+                                        value="*"
+                                        wire:model="selected"
+                                    />
+                                @else
+                                    <x-checkbox
+                                        x-on:change="function (e) {
+                                            if (e.target.checked) {
+                                                $wire.selected = getData().map((record) => {{ $selectValue }});
+                                                $wire.selected.push('*');
+                                            } else {
+                                                $wire.selected = [];
+                                                $wire.wildcardSelectExcluded = [];
+                                            }
+                                        }"
+                                        value="*"
+                                        wire:model="selected"
+                                    />
+                                @endif
+                            <x-button
+                                class="px-1.5 py-1.5"
+                                x-ref="selectedActions"
+                                flat
+                                right-icon="chevron-down"
+                                x-on:click="$wire.selected.length > 0 ? showSelectedActions = true : null"
+                            />
                         </div>
                         <div
                             x-on:click.outside="showSelectedActions = false"
@@ -36,13 +60,15 @@
                             x-show="showSelectedActions"
                             x-anchor.bottom-start.offset.5="$refs.selectedActions"
                         >
-                            <x-card>
+                            <x-card x-on:click="showSelectedActions = false;">
                                 @foreach($selectedActions as $action)
                                     {{ $action }}
                                 @endforeach
                             </x-card>
                         </div>
                     </x-tall-datatables::table.head-cell>
+                @else
+                    <th class="max-w-0"></th>
                 @endif
                 <template x-for="(col, index) in enabledCols">
                     <x-tall-datatables::table.head-cell
@@ -54,12 +80,12 @@
                                 type="button"
                                 wire:loading.attr="disabled"
                                 class="flex flex-row items-center space-x-1.5 group"
-                                x-on:click="sortable.includes(col) && $wire.sortTable(col)"
-                                x-bind:class="sortable.includes(col) ? 'cursor-pointer' : ''"
+                                x-on:click="$wire.sortable.includes(col) && $wire.sortTable(col)"
+                                x-bind:class="$wire.sortable.includes(col) ? 'cursor-pointer' : ''"
                             >
                                 <span x-text="getLabel(col)"></span>
                                 <x-icon
-                                    x-bind:class="Object.keys(sortable).length && orderByCol === col
+                                    x-bind:class="Object.keys($wire.sortable).length && orderByCol === col
                                     ? (orderAsc || 'rotate-180')
                                     : 'opacity-0'"
                                     name="chevron-up"
@@ -110,10 +136,7 @@
             </tr>
             @if($isFilterable && $showFilterInputs)
                 <tr>
-                    <td class="bg-gray-50 dark:bg-secondary-600"></td>
-                    @if($isSelectable)
-                        <td class="bg-gray-50 dark:bg-secondary-600"></td>
-                    @endif
+                    <td class="bg-gray-50 dark:bg-secondary-600 max-w-0"></td>
                     <template x-for="(col, index) in enabledCols">
                         <td class="bg-gray-50 dark:bg-secondary-600 py-1 px-2"
                             x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
@@ -164,25 +187,26 @@
         <td colspan="100%" class="p-8 w-24 h-24">
         </td>
     </tr>
-    <template x-for="(record, index) in getData()">
+    <template x-for="(record, index) in getData()" :key="{{ $selectValue }}">
         <tr
             x-bind:data-id="record.id"
             x-bind:key="record.id"
             x-on:click="$dispatch('data-table-row-clicked', record)"
             {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
         >
-            <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap text-sm">
-            </td>
             @if($isSelectable)
                 <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
-                        <div {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}>
-                            <x-checkbox
-                                x-on:click="$event.stopPropagation();"
-                                x-on:change="$dispatch('data-table-record-selected', {record: record, index: index, value: $el.checked});"
-                                x-bind:value="index"
-                                wire:model="selected"
-                            />
-                        </div>
+                    <div {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}>
+                        <x-checkbox
+                            x-on:click="$event.stopPropagation();"
+                            x-on:change="$dispatch('data-table-record-selected', {record: record, index: index, value: $el.checked});"
+                            x-bind:value="{{ $selectValue }}"
+                            x-model.number="$wire.selected"
+                        />
+                    </div>
+                </td>
+            @else
+                <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap text-sm max-w-0">
                 </td>
             @endif
             <template x-for="col in enabledCols">
@@ -239,6 +263,10 @@
                 </template>
                 <td class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
                 </td>
+                @if($rowActions)
+                    <td class="table-cell border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4 text-sm">
+                    </td>
+                @endif
             </tr>
         </template>
         @if(! $hasInfiniteScroll)

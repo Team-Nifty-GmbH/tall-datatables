@@ -1,4 +1,5 @@
 <x-tall-datatables::data-table-wrapper :attributes="$componentAttributes" >
+    @includeWhen($includeBefore, $includeBefore)
     @if($hasSidebar)
         <x-tall-datatables::options />
     @endif
@@ -31,5 +32,6 @@
         :has-sidebar="$hasSidebar"
         :use-wire-navigate="$useWireNavigate"
         :is-selectable="$isSelectable"
+        :select-value="$selectValue"
     />
 </x-tall-datatables::data-table-wrapper>
