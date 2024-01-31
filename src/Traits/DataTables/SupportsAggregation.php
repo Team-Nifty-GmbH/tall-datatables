@@ -4,7 +4,6 @@ namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Renderless;
@@ -26,9 +25,6 @@ trait SupportsAggregation
     #[Renderless]
     public function applyAggregations(): void
     {
-        $aggregatingCols = array_values(array_unique(Arr::flatten($this->aggregatableCols)));
-        $this->enabledCols = array_merge($this->enabledCols, $aggregatingCols);
-
         $this->cacheState();
         $this->loadData();
     }

@@ -480,7 +480,7 @@
             <div x-show="tab === 'columns'">
                 <div x-data="{
                         attributes: [],
-                        availableCols: [...@js($this->enabledCols), ...['__placeholder__']],
+                        availableCols: [...$wire.enabledCols, ...['__placeholder__']],
                         addCol(colName) {
                             if (this.availableCols.includes(colName))
                                 this.availableCols.splice(this.availableCols.indexOf(colName), 1);
@@ -491,7 +491,7 @@
                     }"
                 >
                     <div x-bind:id="$id('table-cols')">
-                        <template x-for="col in availableCols" :key="col">
+                        <template x-for="col in availableCols">
                             <div x-bind:data-column="col" x-show="col !== '__placeholder__'">
                                 <label x-bind:for="col" class="flex items-center">
                                     <div class="relative flex items-start">

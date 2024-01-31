@@ -61,9 +61,11 @@
                             x-anchor.bottom-start.offset.5="$refs.selectedActions"
                         >
                             <x-card x-on:click="showSelectedActions = false;">
-                                @foreach($selectedActions as $action)
-                                    {{ $action }}
-                                @endforeach
+                                <div class="flex flex-col">
+                                    @foreach($selectedActions as $action)
+                                        {{ $action }}
+                                    @endforeach
+                                </div>
                             </x-card>
                         </div>
                     </x-tall-datatables::table.head-cell>
@@ -212,7 +214,7 @@
             <template x-for="col in enabledCols">
                 <x-tall-datatables::table.cell
                     :use-wire-navigate="$useWireNavigate"
-                    x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'"
+                    x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50'"
                     x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
                     class="cursor-pointer"
                     x-bind:href="record?.href ?? false">

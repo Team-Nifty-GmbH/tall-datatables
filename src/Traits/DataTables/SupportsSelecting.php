@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\View\ComponentAttributeBag;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
@@ -33,6 +34,13 @@ trait SupportsSelecting
                 ->pluck('id')
                 ->toArray()
             : $this->selected;
+    }
+
+    protected function getSelectedModels(): Collection
+    {
+        return $this->model::query()
+            ->whereIntegerInRaw($this->modelKeyName, $this->getSelectedValues())
+            ->get();
     }
 
     #[Renderless]
