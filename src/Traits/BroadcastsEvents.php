@@ -10,6 +10,8 @@ use ReflectionClass;
 
 trait BroadcastsEvents
 {
+    public bool $broadcastAfterCommit = true;
+
     use BaseBroadcastsEvents, InteractsWithSockets;
 
     public function broadcastChannel(bool $generic = false): string

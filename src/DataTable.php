@@ -20,7 +20,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
 use Spatie\ModelInfo\Attributes\Attribute;
-use Spatie\ModelInfo\Relations\Relation;
 use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\StoresSettings;
@@ -407,6 +406,7 @@ class DataTable extends Component
     #[Renderless]
     public function startSearch(): void
     {
+        $this->selected = [];
         $this->page = '1';
 
         $this->cacheState();

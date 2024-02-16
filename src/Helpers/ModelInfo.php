@@ -7,7 +7,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use ReflectionClass;
 use Spatie\ModelInfo\Attributes\Attribute;
+use Spatie\ModelInfo\Attributes\AttributeFinder;
 use Spatie\ModelInfo\ModelInfo as BaseModelInfo;
+use Spatie\ModelInfo\Relations\RelationFinder;
 
 class ModelInfo extends BaseModelInfo
 {
@@ -33,14 +35,30 @@ class ModelInfo extends BaseModelInfo
             $model = new $model;
         }
 
-        try {
-            $modelInfo = parent::forModel($model);
-        } catch (\Throwable $th) {
-            $modelInfo = (new ReflectionClass(BaseModelInfo::class))->newInstanceWithoutConstructor();
-            $modelInfo->relations = collect();
+        static::registerTypeMappings($model->getConnection()->getDoctrineSchemaManager()->getDatabasePlatform());
 
-            return $modelInfo;
+        try {
+            $relations = RelationFinder::forModel($model);
+        } catch (\Throwable) {
+            $relations = collect();
         }
+
+        try {
+            $attributes = AttributeFinder::forModel($model);
+        } catch (\Throwable) {
+            $attributes = collect();
+        }
+
+        $modelInfo = new self(
+            $model::class,
+            (new ReflectionClass($model))->getFileName(),
+            $model->getConnection()->getName(),
+            $model->getConnection()->getTablePrefix() . $model->getTable(),
+            $relations,
+            $attributes,
+            self::getTraits($model),
+            self::getExtraModelInfo($model),
+        );
 
         $modelInfo->attributes = $modelInfo
             ->attributes
