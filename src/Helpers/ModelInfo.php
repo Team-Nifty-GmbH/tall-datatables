@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Helpers;
 
+use Illuminate\Database\ClassMorphViolationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -13,6 +14,8 @@ use Spatie\ModelInfo\Relations\RelationFinder;
 
 class ModelInfo extends BaseModelInfo
 {
+    public string $morphClass;
+
     private static ?array $cachedModelInfos = null;
 
     public static function forModel(string|Model|ReflectionClass $model): BaseModelInfo
@@ -35,7 +38,7 @@ class ModelInfo extends BaseModelInfo
             $model = new $model;
         }
 
-        static::registerTypeMappings($model->getConnection()->getDoctrineSchemaManager()->getDatabasePlatform());
+        static::registerTypeMappings($model->getConnection()->getDoctrineConnection()->getDatabasePlatform());
 
         try {
             $relations = RelationFinder::forModel($model);
@@ -49,16 +52,24 @@ class ModelInfo extends BaseModelInfo
             $attributes = collect();
         }
 
-        $modelInfo = new self(
+        try {
+            $morphClass = $model->getMorphClass();
+        } catch (ClassMorphViolationException) {
+            $morphClass = $model::class;
+        }
+
+        $modelInfo = new static(
             $model::class,
             (new ReflectionClass($model))->getFileName(),
             $model->getConnection()->getName(),
             $model->getConnection()->getTablePrefix() . $model->getTable(),
             $relations,
             $attributes,
-            self::getTraits($model),
-            self::getExtraModelInfo($model),
+            static::getTraits($model),
+            static::getExtraModelInfo($model),
         );
+
+        $modelInfo->morphClass = $morphClass;
 
         $modelInfo->attributes = $modelInfo
             ->attributes
@@ -85,7 +96,7 @@ class ModelInfo extends BaseModelInfo
     ): Collection {
         return ModelFinder::all($directory, $basePath, $baseNamespace)
             ->map(function (string $model) {
-                return self::forModel($model);
+                return static::forModel($model);
             });
     }
 }
