@@ -111,7 +111,7 @@ trait StoresSettings
             $layout?->delete();
             Session::remove(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
 
-            $this->reset(array_keys(array_merge($layout?->settings ?? [], $cached)));
+            $this->reset(array_keys(array_merge($layout?->settings ?? [], $cached ?? [])));
             $this->loadData();
         } catch (MissingTraitException) {
         }
