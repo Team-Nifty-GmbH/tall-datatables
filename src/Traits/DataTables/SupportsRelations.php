@@ -32,7 +32,7 @@ trait SupportsRelations
 
     public function mountSupportsRelations(): void
     {
-        $this->loadRelation($this->model, null);
+        $this->loadRelation($this->getModel(), null);
     }
 
     #[Renderless]
@@ -45,7 +45,7 @@ trait SupportsRelations
             return;
         }
 
-        $model = $model ?: $this->model;
+        $model = $model ?: $this->getModel();
 
         $this->loadedPath = $relationName ? ($this->loadedPath ? $this->loadedPath . '.' : null) . $relationName : null;
 
@@ -91,7 +91,7 @@ trait SupportsRelations
         }, $selectedCols);
 
         Cache::put(
-            'relation-tree-widget.' . $this->loadedPath ?? $this->model,
+            'relation-tree-widget.' . $this->loadedPath ?? $this->getModel(),
             [
                 'cols' => $this->selectedCols,
                 'relations' => $this->selectedRelations,
@@ -108,7 +108,7 @@ trait SupportsRelations
         }
 
         $this->loadedPath = $path;
-        $data = Cache::get('relation-tree-widget.' . $path ?? $this->model);
+        $data = Cache::get('relation-tree-widget.' . $path ?? $this->getModel());
 
         $this->selectedCols = $data['cols'];
         $this->selectedRelations = $data['relations'];
@@ -123,7 +123,7 @@ trait SupportsRelations
 
     public function getRelationTableCols(?string $relationName = null): array
     {
-        $modelInfo = ModelInfo::forModel($this->model);
+        $modelInfo = ModelInfo::forModel($this->getModel());
 
         if ($relationName) {
             $modelInfo = ModelInfo::forModel($modelInfo->relation($relationName)->related);
@@ -151,7 +151,7 @@ trait SupportsRelations
             //return $cached[$cacheKey];
         }
 
-        $modelBase = new $this->model;
+        $modelBase = app($this->getModel());
         $with = ['__root__' => []];
         $modelInfos = [];
         $filterable = [];
@@ -197,11 +197,11 @@ trait SupportsRelations
 
             // check if the field is virtual or has a value list to filter
             // if $model is empty, we are on the root model
-            if ($modelInfos[$model ? get_class($model) : $this->model] ?? false) {
-                $modelInfo = $modelInfos[$model ? get_class($model) : $this->model];
+            if ($modelInfos[$model ? get_class($model) : $this->getModel()] ?? false) {
+                $modelInfo = $modelInfos[$model ? get_class($model) : $this->getModel()];
             } else {
-                $modelInfo = ModelInfo::forModel($model ? get_class($model) : $this->model);
-                $modelInfos[$model ? get_class($model) : $this->model] = $modelInfo;
+                $modelInfo = ModelInfo::forModel($model ? get_class($model) : $this->getModel());
+                $modelInfos[$model ? get_class($model) : $this->getModel()] = $modelInfo;
             }
 
             $attributeInfo = $modelInfo->attribute($fieldName);

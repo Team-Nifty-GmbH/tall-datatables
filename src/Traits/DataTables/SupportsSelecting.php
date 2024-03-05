@@ -38,7 +38,7 @@ trait SupportsSelecting
 
     protected function getSelectedModels(): Collection
     {
-        return $this->model::query()
+        return $this->getModel()::query()
             ->whereIntegerInRaw($this->modelKeyName, $this->getSelectedValues())
             ->get();
     }
