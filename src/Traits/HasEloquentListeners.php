@@ -16,10 +16,10 @@ trait HasEloquentListeners
         }
 
         if (
-            in_array(BroadcastsEvents::class, class_uses_recursive($this->model))
+            in_array(BroadcastsEvents::class, class_uses_recursive($this->getModel()))
             && $paginator->currentPage() === 1
         ) {
-            $this->broadcastChannels['created'] = $this->model::getBroadcastChannel(true);
+            $this->broadcastChannels['created'] = $this->getModel()::getBroadcastChannel(true);
         }
 
         return $paginator;
@@ -27,14 +27,14 @@ trait HasEloquentListeners
 
     public function eloquentEventOccurred(string $event, array $data): void
     {
-        $event = str_replace('.' . class_basename($this->model), 'echo', $event);
+        $event = str_replace('.' . class_basename($this->getModel()), 'echo', $event);
 
         $this->{$event}($data);
     }
 
     public function echoUpdated($eventData): void
     {
-        $model = $this->getBuilder($this->model::query()->whereKey($eventData['model'][$this->modelKeyName]))->first();
+        $model = $this->getBuilder($this->getModel()::query()->whereKey($eventData['model'][$this->modelKeyName]))->first();
 
         $item = $this->itemToArray($model);
         $data = \Arr::keyBy($this->data['data'], $this->modelKeyName);
@@ -46,7 +46,7 @@ trait HasEloquentListeners
 
     public function echoCreated($eventData): void
     {
-        $model = $this->getBuilder($this->model::query()->whereKey($eventData['model'][$this->modelKeyName]))->first();
+        $model = $this->getBuilder($this->getModel()::query()->whereKey($eventData['model'][$this->modelKeyName]))->first();
         $item = $this->itemToArray($model);
 
         array_unshift($this->data['data'], $item);

@@ -30,6 +30,6 @@ trait SupportsExporting
         $query = $this->buildSearch();
 
         return (new DataTableExport($query, array_filter($columns)))
-            ->download(class_basename($this->model) . '_' . now()->toDateTimeLocalString('minute') . '.xlsx');
+            ->download(class_basename($this->getModel()) . '_' . now()->toDateTimeLocalString('minute') . '.xlsx');
     }
 }

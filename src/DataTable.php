@@ -179,6 +179,11 @@ class DataTable extends Component
         store($this)->set('skipRender', false);
     }
 
+    protected function getModel(): string
+    {
+        return $this->model;
+    }
+
     #[Renderless]
     public function getConfig(): array
     {
@@ -207,7 +212,7 @@ class DataTable extends Component
     public function getAvailableCols(): array
     {
         $availableCols = $this->availableCols === ['*']
-            ? ModelInfo::forModel($this->model)->attributes->pluck('name')->toArray()
+            ? ModelInfo::forModel($this->getModel())->attributes->pluck('name')->toArray()
             : $this->availableCols;
 
         return array_values(
@@ -254,7 +259,7 @@ class DataTable extends Component
 
     protected function getTableFields(): \Illuminate\Support\Collection
     {
-        return ModelInfo::forModel($this->model)
+        return ModelInfo::forModel($this->getModel())
             ->attributes
             ->filter(function (Attribute $attribute) {
                 return ! $attribute->virtual
@@ -273,7 +278,7 @@ class DataTable extends Component
 
     protected function getIncludedRelations(): array
     {
-        $baseModelInfo = ModelInfo::forModel($this->model);
+        $baseModelInfo = ModelInfo::forModel($this->getModel());
         $loadedRelations = [];
         foreach ($this->enabledCols as $enabledCol) {
             if (str_contains($enabledCol, '.')) {
@@ -293,7 +298,7 @@ class DataTable extends Component
                 'loaded_as' => $enabledCol,
             ];
             $loadedRelations[$path] = [
-                'model' => $relation?->related ?? $this->model,
+                'model' => $relation?->related ?? $this->getModel(),
                 'loaded_columns' => $loadedColumns,
                 'type' => $relation?->type,
             ];
@@ -444,7 +449,7 @@ class DataTable extends Component
     protected function buildSearch(): Builder
     {
         /** @var Model $model */
-        $model = $this->model;
+        $model = $this->getModel();
 
         foreach ($this->getAggregatableRelationCols() as $aggregatableRelationCol) {
             $this->aggregatableRelationCols[] = $aggregatableRelationCol->alias;
@@ -492,7 +497,7 @@ class DataTable extends Component
 
     protected function getScoutSearch(): \Laravel\Scout\Builder
     {
-        return $this->model::search($this->search);
+        return $this->getModel()::search($this->search);
     }
 
     private function with(Builder $builder, array $filter): Builder
@@ -758,7 +763,7 @@ class DataTable extends Component
             }
         }
 
-        $itemArray['href'] = in_array(InteractsWithDataTables::class, class_implements($this->model))
+        $itemArray['href'] = in_array(InteractsWithDataTables::class, class_implements($this->getModel()))
         && ! $this->hasNoRedirect
         && method_exists($item, 'getUrl')
             ? $item->getUrl()
@@ -795,7 +800,7 @@ class DataTable extends Component
         $this->colLabels = $this->getColLabels();
 
         if (! $this->modelKeyName || ! $this->modelTable) {
-            $model = (new $this->model);
+            $model = app($this->getModel());
             $this->modelKeyName = $this->modelKeyName ?: $model->getKeyName();
             $this->modelTable = $this->modelTable ?: $model->getTable();
         }
@@ -834,7 +839,7 @@ class DataTable extends Component
             'rowActions' => $this->getRowActions(),
             'tableActions' => $this->getTableActions(),
             'selectedActions' => $this->getSelectedActions(),
-            'modelName' => Str::headline(class_basename($this->model)),
+            'modelName' => Str::headline(class_basename($this->getModel())),
             'showFilterInputs' => $this->showFilterInputs,
             'layout' => $this->getLayout(),
             'useWireNavigate' => $this->useWireNavigate,
@@ -847,7 +852,7 @@ class DataTable extends Component
     protected function getIsSearchable(): bool
     {
         return is_null($this->isSearchable)
-            ? in_array(Searchable::class, class_uses_recursive($this->model))
+            ? in_array(Searchable::class, class_uses_recursive($this->getModel()))
             : $this->isSearchable;
     }
 
