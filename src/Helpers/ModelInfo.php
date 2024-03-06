@@ -14,7 +14,7 @@ use Spatie\ModelInfo\Relations\RelationFinder;
 
 class ModelInfo extends BaseModelInfo
 {
-    public string $morphClass;
+    public ?string $morphClass = null;
 
     private static ?array $cachedModelInfos = null;
 

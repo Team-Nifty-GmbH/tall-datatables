@@ -35,6 +35,9 @@ trait HasEloquentListeners
     public function echoUpdated($eventData): void
     {
         $model = $this->getBuilder($this->getModel()::query()->whereKey($eventData['model'][$this->modelKeyName]))->first();
+        if ($model === null) {
+            return;
+        }
 
         $item = $this->itemToArray($model);
         $data = \Arr::keyBy($this->data['data'], $this->modelKeyName);
@@ -47,6 +50,10 @@ trait HasEloquentListeners
     public function echoCreated($eventData): void
     {
         $model = $this->getBuilder($this->getModel()::query()->whereKey($eventData['model'][$this->modelKeyName]))->first();
+        if ($model === null) {
+            return;
+        }
+
         $item = $this->itemToArray($model);
 
         array_unshift($this->data['data'], $item);
