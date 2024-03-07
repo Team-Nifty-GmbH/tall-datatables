@@ -10,7 +10,6 @@ use ReflectionClass;
 use Spatie\ModelInfo\Attributes\Attribute;
 use Spatie\ModelInfo\Attributes\AttributeFinder;
 use Spatie\ModelInfo\ModelInfo as BaseModelInfo;
-use Spatie\ModelInfo\Relations\RelationFinder;
 
 class ModelInfo extends BaseModelInfo
 {
@@ -42,7 +41,8 @@ class ModelInfo extends BaseModelInfo
 
         try {
             $relations = RelationFinder::forModel($model);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            throw $e;
             $relations = collect();
         }
 
