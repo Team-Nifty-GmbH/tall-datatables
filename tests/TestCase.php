@@ -2,7 +2,6 @@
 
 namespace TeamNiftyGmbH\DataTable\Tests;
 
-use Hammerstone\FastPaginate\FastPaginateProvider;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use WireUi\Providers\WireUiServiceProvider;
@@ -40,7 +39,6 @@ class TestCase extends \Orchestra\Testbench\Dusk\TestCase
             \Livewire\LivewireServiceProvider::class,
             \TeamNiftyGmbH\DataTable\DataTableServiceProvider::class,
             WireUiServiceProvider::class,
-            FastPaginateProvider::class,
         ];
     }
 

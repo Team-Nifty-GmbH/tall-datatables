@@ -37,8 +37,6 @@ class ModelInfo extends BaseModelInfo
             $model = new $model;
         }
 
-        static::registerTypeMappings($model->getConnection()->getDoctrineConnection()->getDatabasePlatform());
-
         try {
             $relations = RelationFinder::forModel($model);
         } catch (\Throwable $e) {
