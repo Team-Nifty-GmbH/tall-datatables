@@ -10,9 +10,16 @@ use ReflectionClass;
 
 trait BroadcastsEvents
 {
-    public bool $broadcastAfterCommit = true;
-
     use BaseBroadcastsEvents, InteractsWithSockets;
+
+    public static bool $broadcastAfterCommit = true;
+
+    public function broadcastAfterCommit(): bool
+    {
+        // this allows to override the default value from the model or a service provider
+
+        return static::$broadcastAfterCommit;
+    }
 
     public function broadcastChannel(bool $generic = false): string
     {
@@ -31,7 +38,7 @@ trait BroadcastsEvents
 
     public static function getBroadcastChannel(bool $generic = true): string
     {
-        $reflection = new ReflectionClass(self::class);
+        $reflection = new ReflectionClass(static::class);
         $instance = $reflection->newInstanceWithoutConstructor();
 
         return $instance->broadcastChannel($generic);
@@ -39,7 +46,7 @@ trait BroadcastsEvents
 
     public static function getBroadcastChannelRoute(): string
     {
-        $reflection = new ReflectionClass(self::class);
+        $reflection = new ReflectionClass(static::class);
         $instance = $reflection->newInstanceWithoutConstructor();
 
         return $instance->broadcastChannelRoute();
