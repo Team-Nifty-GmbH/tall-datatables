@@ -12,14 +12,7 @@ trait BroadcastsEvents
 {
     use BaseBroadcastsEvents, InteractsWithSockets;
 
-    public static bool $broadcastAfterCommit = true;
-
-    public function broadcastAfterCommit(): bool
-    {
-        // this allows to override the default value from the model or a service provider
-
-        return static::$broadcastAfterCommit;
-    }
+    public bool $broadcastAfterCommit = true;
 
     public function broadcastChannel(bool $generic = false): string
     {
