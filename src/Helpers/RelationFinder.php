@@ -26,6 +26,18 @@ class RelationFinder extends BaseRelationFinder
     public function relations(Model $model): Collection
     {
         $class = new ReflectionClass($model);
+        $relationResolvers = $class->getProperty('relationResolvers');
+        $relationResolvers->setAccessible(true);
+
+        $relations = [];
+        foreach (data_get($relationResolvers->getValue($model), get_class($model), []) as $relationName => $closure) {
+            $relation = $closure($model);
+            $relations[] = new Relation(
+                $relationName,
+                get_class($relation),
+                $relation->getRelated()::class,
+            );
+        }
 
         return collect($class->getMethods())
             ->filter(fn (ReflectionMethod $method) => $this->hasRelationReturnType($method))
@@ -43,6 +55,7 @@ class RelationFinder extends BaseRelationFinder
                     $relation->getRelated()::class,
                 );
             })
+            ->merge($relations)
             ->filter();
     }
 }
