@@ -148,7 +148,7 @@ trait SupportsRelations
         $cached = Cache::get(config('tall-datatables.cache_key') . '.with');
 
         if ($cached && data_get($cached, $cacheKey, false)) {
-            //return $cached[$cacheKey];
+            return $cached[$cacheKey];
         }
 
         $modelBase = app($this->getModel());
