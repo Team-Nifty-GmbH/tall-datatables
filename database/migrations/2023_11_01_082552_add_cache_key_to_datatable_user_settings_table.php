@@ -17,7 +17,7 @@ return new class extends Migration
 
         });
 
-        DB::statement('UPDATE datatable_user_settings SET cache_key = component');
+        DB::table('datatable_user_settings')->update(['cache_key' => DB::raw('component')]);
     }
 
     /**

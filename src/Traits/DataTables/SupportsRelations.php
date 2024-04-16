@@ -4,7 +4,7 @@ namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -148,7 +148,7 @@ trait SupportsRelations
         $cached = Cache::get(config('tall-datatables.cache_key') . '.with');
 
         if ($cached && data_get($cached, $cacheKey, false)) {
-            //return $cached[$cacheKey];
+            return $cached[$cacheKey];
         }
 
         $modelBase = app($this->getModel());
@@ -252,16 +252,19 @@ trait SupportsRelations
         $modelQuery = new $modelInfo->class;
         $modelRelations = [];
         foreach ($modelInfo->relations as $relation) {
-            $reflection = new ReflectionMethod($modelQuery, $relation->name);
+            try {
+                $reflection = new ReflectionMethod($modelQuery, $relation->name);
 
-            if ($reflection->getModifiers() !== ReflectionMethod::IS_PUBLIC) {
-                continue;
+                if ($reflection->getModifiers() !== ReflectionMethod::IS_PUBLIC) {
+                    continue;
+                }
+            } catch (\ReflectionException $e) {
             }
 
             $relationInstance = $modelQuery->{$relation->name}();
 
             // exclude morph relations
-            if ($relationInstance instanceof MorphOneOrMany || $relationInstance instanceof MorphToMany) {
+            if ($relationInstance instanceof MorphToMany || $relationInstance instanceof MorphTo) {
                 continue;
             }
 
@@ -286,6 +289,10 @@ trait SupportsRelations
 
             if (method_exists($relationInstance, 'getForeignPivotKeyName')) {
                 data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getForeignPivotKeyName());
+            }
+
+            if (method_exists($relationInstance, 'getMorphType')) {
+                data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getMorphType());
             }
         }
 
