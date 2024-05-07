@@ -15,6 +15,8 @@ class ModelInfo extends BaseModelInfo
 {
     public ?string $morphClass = null;
 
+    public array $implements = [];
+
     private static ?array $cachedModelInfos = null;
 
     public static function forModel(string|Model|ReflectionClass $model): BaseModelInfo
@@ -68,6 +70,8 @@ class ModelInfo extends BaseModelInfo
         );
 
         $modelInfo->morphClass = $morphClass;
+
+        $modelInfo->implements = class_implements($model) ?: [];
 
         $modelInfo->attributes = $modelInfo
             ->attributes
