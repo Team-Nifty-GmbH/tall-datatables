@@ -3,6 +3,7 @@
 namespace TeamNiftyGmbH\DataTable\Traits;
 
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 
 trait HasEloquentListeners
 {
@@ -34,13 +35,16 @@ trait HasEloquentListeners
 
     public function echoUpdated($eventData): void
     {
-        $model = $this->getBuilder($this->getModel()::query()->whereKey($eventData['model'][$this->modelKeyName]))->first();
+        $model = $this->buildSearch()->whereKey($eventData['model'][$this->modelKeyName])->first();
         if ($model === null) {
+            // seems like the model doesnt match the search criteria
+            $this->echoDeleted($eventData);
+
             return;
         }
 
         $item = $this->itemToArray($model);
-        $data = \Arr::keyBy($this->data['data'], $this->modelKeyName);
+        $data = Arr::keyBy($this->data['data'], $this->modelKeyName);
         $data[$model->getKey()] = $item;
         $this->data['data'] = array_values($data);
 
@@ -49,7 +53,7 @@ trait HasEloquentListeners
 
     public function echoCreated($eventData): void
     {
-        $model = $this->getBuilder($this->getModel()::query()->whereKey($eventData['model'][$this->modelKeyName]))->first();
+        $model = $this->buildSearch()->whereKey($eventData['model'][$this->modelKeyName])->first();
         if ($model === null) {
             return;
         }
@@ -70,7 +74,7 @@ trait HasEloquentListeners
 
     public function echoDeleted($eventData): void
     {
-        $data = \Arr::keyBy($this->data['data'], $this->modelKeyName);
+        $data = Arr::keyBy($this->data['data'], $this->modelKeyName);
         unset(
             $data[$eventData['model'][$this->modelKeyName]],
             $this->broadcastChannels[$eventData['model'][$this->modelKeyName]]
