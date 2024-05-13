@@ -14,6 +14,8 @@ trait BroadcastsEvents
 
     public bool $broadcastAfterCommit = true;
 
+    protected static bool $includeRelations = false;
+
     public function broadcastChannel(bool $generic = false): string
     {
         $default = parent::broadcastChannel();
@@ -53,5 +55,11 @@ trait BroadcastsEvents
     public function broadcastOn($event): array
     {
         return [new PrivateChannel($this->broadcastChannel($event === 'created'))];
+    }
+
+    public function broadcastWith(): array
+    {
+        // This ensures the payload doesnt get too large
+        return ['model' => static::$includeRelations ? $this->toArray() : $this->withoutRelations()->toArray()];
     }
 }

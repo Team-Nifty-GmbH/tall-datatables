@@ -42,9 +42,9 @@
                 />
                 <template x-for="link in data.links">
                     <x-button
-                        x-bind:disabled="link.active"
+                        x-bind:disabled="link.active || link.url === null"
                         x-html="link.label"
-                        wire:click="goToPage(link.label)"
+                        x-on:click="if (link.url !== null) $wire.goToPage(link.label)"
                         x-bind:class="link.active && 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'"
                     />
                 </template>
