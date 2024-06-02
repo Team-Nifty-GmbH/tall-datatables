@@ -12,8 +12,6 @@ trait BroadcastsEvents
 {
     use BaseBroadcastsEvents, InteractsWithSockets;
 
-    public bool $broadcastAfterCommit = true;
-
     protected static bool $includeRelations = false;
 
     public function broadcastChannel(bool $generic = false): string
@@ -61,5 +59,10 @@ trait BroadcastsEvents
     {
         // This ensures the payload doesnt get too large
         return ['model' => static::$includeRelations ? $this->toArray() : $this->withoutRelations()->toArray()];
+    }
+
+    public function broadcastAfterCommit(): bool
+    {
+        return true;
     }
 }

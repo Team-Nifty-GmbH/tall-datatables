@@ -33,7 +33,7 @@ trait HasEloquentListeners
         $this->{$event}($data);
     }
 
-    public function echoUpdated($eventData): void
+    public function echoUpdated(array $eventData): void
     {
         $model = $this->buildSearch()->whereKey($eventData['model'][$this->modelKeyName])->first();
         if ($model === null) {
@@ -51,7 +51,7 @@ trait HasEloquentListeners
         $this->skipRender();
     }
 
-    public function echoCreated($eventData): void
+    public function echoCreated(array $eventData): void
     {
         $model = $this->buildSearch()->whereKey($eventData['model'][$this->modelKeyName])->first();
         if ($model === null) {
@@ -69,10 +69,12 @@ trait HasEloquentListeners
             array_pop($this->data['data']);
         }
 
+        $this->broadcastChannels[$model->getKey()] = $model->broadcastChannel();
+
         $this->skipRender();
     }
 
-    public function echoDeleted($eventData): void
+    public function echoDeleted(array $eventData): void
     {
         $data = Arr::keyBy($this->data['data'], $this->modelKeyName);
         unset(
@@ -87,12 +89,12 @@ trait HasEloquentListeners
         $this->skipRender();
     }
 
-    public function echoTrashed($eventData): void
+    public function echoTrashed(array $eventData): void
     {
         $this->echoDeleted($eventData);
     }
 
-    public function echoRestored($eventData): void
+    public function echoRestored(array $eventData): void
     {
         $this->echoCreated($eventData);
     }
