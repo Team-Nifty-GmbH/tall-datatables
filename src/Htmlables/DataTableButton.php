@@ -64,8 +64,7 @@ class DataTableButton implements Htmlable
         public ?string $loadingDelay = null,
         public ?string $href = null,
         public ?array $attributes = []
-    ) {
-    }
+    ) {}
 
     /**
      * Render a button only if the closure is true

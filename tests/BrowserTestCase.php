@@ -8,8 +8,7 @@ class BrowserTestCase extends TestCase
 {
     public static function tweakApplicationHook()
     {
-        return function () {
-        };
+        return function () {};
     }
 
     public function setUp(): void
