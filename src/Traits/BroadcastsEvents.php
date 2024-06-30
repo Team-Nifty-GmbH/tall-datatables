@@ -6,6 +6,7 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Database\Eloquent\BroadcastableModelEventOccurred;
 use Illuminate\Database\Eloquent\BroadcastsEvents as BaseBroadcastsEvents;
+use Illuminate\Support\Arr;
 use ReflectionClass;
 
 trait BroadcastsEvents
@@ -58,7 +59,18 @@ trait BroadcastsEvents
     public function broadcastWith(): array
     {
         // This ensures the payload doesnt get too large
-        return ['model' => static::$includeRelations ? $this->toArray() : $this->withoutRelations()->toArray()];
+        return [
+            'model' => Arr::except(
+                static::$includeRelations
+                    ? $this->toArray()
+                    : $this->withoutRelations()->toArray(), $this->broadcastWithout()
+            ),
+        ];
+    }
+
+    protected function broadcastWithout(): array
+    {
+        return [];
     }
 
     public function broadcastAfterCommit(): bool
