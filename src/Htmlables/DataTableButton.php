@@ -7,19 +7,18 @@ use Illuminate\Support\Arr;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\ComponentAttributeBag;
 use WireUi\View\Components\Button;
-use WireUi\View\Components\CircleButton;
 
 class DataTableButton implements Htmlable
 {
     protected bool $shouldRender = true;
 
     public static function make(
-        bool $rounded = false,
-        bool $squared = false,
-        bool $outline = false,
-        bool $flat = false,
-        bool $full = false,
-        bool $circle = false,
+        ?bool $rounded = null,
+        ?bool $squared = null,
+        ?bool $outline = null,
+        ?bool $flat = null,
+        ?bool $full = null,
+        ?bool $circle = null,
         ?string $color = null,
         ?string $size = null,
         ?string $label = null,
@@ -49,12 +48,12 @@ class DataTableButton implements Htmlable
     }
 
     public function __construct(
-        public bool $rounded = false,
-        public bool $squared = false,
-        public bool $outline = false,
-        public bool $flat = false,
-        public bool $full = false,
-        public bool $circle = false,
+        public ?bool $rounded = null,
+        public ?bool $squared = null,
+        public ?bool $outline = null,
+        public ?bool $flat = null,
+        public ?bool $full = null,
+        public ?bool $circle = null,
         public ?string $color = null,
         public ?string $size = null,
         public ?string $label = null,
@@ -86,31 +85,38 @@ class DataTableButton implements Htmlable
         }
 
         if ($this->circle) {
-            $buttonClass = CircleButton::class;
+            $config = config('wireui.components.mini-button');
             $this->icon = is_null($this->icon) ? 'pencil' : $this->icon;
         } else {
-            $buttonClass = Button::class;
+            $config = config('wireui.components.button');
             $this->label = is_null($this->label) ? '' : $this->label;
         }
 
-        $button = new $buttonClass(
-            rounded: $this->rounded,
-            squared: $this->squared,
-            outline: $this->outline,
-            flat: $this->flat,
-            full: $this->full,
-            color: $this->color,
-            size: $this->size,
-            label: $this->label,
-            icon: $this->icon,
-            rightIcon: $this->rightIcon,
-            spinner: $this->spinner,
-            loadingDelay: $this->loadingDelay,
-            href: $this->href,
-        );
-        $button->attributes = new ComponentAttributeBag($this->attributes);
+        $buttonClass = data_get($config, 'class');
+        $button = new $buttonClass();
+        $button->attributes = (new ComponentAttributeBag($this->attributes))
+            ->merge(
+                array_filter(
+                    [
+                        'rounded' => $this->rounded,
+                        'squared' => $this->squared,
+                        'full' => $this->full,
+                        'flat' => $this->flat,
+                        'outline' => $this->outline,
+                        'color' => $this->color,
+                        'size' => $this->size,
+                        'label' => $this->label,
+                        'icon' => $this->icon,
+                        'rightIcon' => $this->rightIcon,
+                        'spinner' => $this->spinner,
+                        'loadingDelay' => $this->loadingDelay,
+                        'href' => $this->href,
+                    ],
+                    fn ($value) => ! is_null($value)
+                )
+            );
 
-        return BladeCompiler::renderComponent($button);
+        return BladeCompiler::renderComponent($button->withName(data_get($config, 'alias')));
     }
 
     public function attributes(array $attributes): static

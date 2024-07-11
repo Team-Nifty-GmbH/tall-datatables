@@ -28,7 +28,7 @@ use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsCache;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsExporting;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsRelations;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSelecting;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions as Actions;
 
 use function Livewire\store;
 
@@ -691,7 +691,7 @@ class DataTable extends Component
             } else {
                 $result = $query->paginate(
                     perPage: $this->perPage,
-                    page: (int) $this->page
+                    page: (int) $this->page,
                 );
             }
         } catch (QueryException $e) {

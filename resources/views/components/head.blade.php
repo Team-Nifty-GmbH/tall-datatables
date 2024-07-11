@@ -20,7 +20,7 @@
         <div class="flex-1">
             <x-input
                 type="search"
-                icon="search"
+                icon="magnifying-glass"
                 x-model.debounce.500ms="search"
                 :placeholder="__('Search in :model…', ['model' => __(\Illuminate\Support\Str::plural($modelName))])"
             >
@@ -44,10 +44,10 @@
                  x-bind:class="filterIndex === orIndex ? 'ring-2 ring-indigo-600' : 'ring-1 ring-slate-700/10'"
             >
                 <div class="absolute top-0.5 right-0.5">
-                    <x-button.circle
+                    <x-mini-button rounded
                         negative
                         2xs
-                        icon="x"
+                        icon="x-mark"
                         x-on:click="removeFilterGroup(orIndex)"
                     />
                 </div>
@@ -68,7 +68,7 @@
                                             x-on:click="removeFilter(index, orIndex)"
                                         >
                                             <x-icon
-                                                name="x"
+                                                name="x-mark"
                                                 class="w-4 h-4"
                                             />
                                         </button>
@@ -114,7 +114,7 @@
                     x-on:click="$wire.sortTable('')"
                 >
                     <x-icon
-                        name="x"
+                        name="x-mark"
                         class="w-4 h-4"
                     />
                 </button>

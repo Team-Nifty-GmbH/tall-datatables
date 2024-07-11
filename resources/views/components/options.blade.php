@@ -83,10 +83,10 @@
                                                             <span x-text="filter.name"></span>
                                                         </x-slot:title>
                                                         <x-slot:action>
-                                                            <x-button.circle
+                                                            <x-mini-button rounded
                                                                 negative
                                                                 2xs
-                                                                icon="x"
+                                                                icon="x-mark"
                                                                 x-on:click="
                                                                 savedFilters.splice(savedFilters.indexOf(index), 1);
                                                                 $wire.deleteSavedFilter(filter.id)
@@ -337,10 +337,10 @@
                                     dark:bg-secondary-800"
                                 >
                                     <div class="absolute top-0.5 right-0.5">
-                                        <x-button.circle
+                                        <x-mini-button rounded
                                             negative
                                             2xs
-                                            icon="x"
+                                            icon="x-mark"
                                             x-on:click="removeFilterGroup(orIndex)"
                                         />
                                     </div>
@@ -360,7 +360,7 @@
                                                                 type="button"
                                                                 x-on:click="removeFilter(index, orIndex)"
                                                             >
-                                                                <x-icon name="x" class="w-4 h-4" />
+                                                                <x-icon name="x-mark" class="w-4 h-4" />
                                                             </button>
                                                         </x-slot>
                                                     </x-badge>
@@ -403,7 +403,7 @@
                                         x-on:click="$wire.sortTable('')"
                                     >
                                         <x-icon
-                                            name="x"
+                                            name="x-mark"
                                             class="w-4 h-4"
                                         />
                                     </button>

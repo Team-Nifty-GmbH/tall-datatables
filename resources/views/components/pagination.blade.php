@@ -36,12 +36,14 @@
         <div>
             <nav class="isolate inline-flex space-x-1 rounded-md shadow-sm" aria-label="Pagination">
                 <x-button
+                    flat
                     x-bind:disabled="data.current_page === 1"
                     wire:click="goToPage(data.current_page - 1)"
                     icon="chevron-left"
                 />
                 <template x-for="link in data.links">
                     <x-button
+                        flat
                         x-bind:disabled="link.active || link.url === null"
                         x-html="link.label"
                         x-on:click="if (link.url !== null) $wire.goToPage(link.label)"
@@ -49,6 +51,7 @@
                     />
                 </template>
                 <x-button
+                    flat
                     x-bind:disabled="data.current_page === data.last_page"
                     wire:click="goToPage(data.current_page + 1)"
                     icon="chevron-right"

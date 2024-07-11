@@ -21,7 +21,7 @@
         "livewire/livewire": "^3.1",
         "maatwebsite/excel": "^3.1",
         "spatie/laravel-model-info": "^1.0|^2.0",
-        "wireui/wireui": "^1.17"
+        "wireui/wireui": "^2.0"
     },
     "require-dev": {
         "laravel/pint": "^1.0",

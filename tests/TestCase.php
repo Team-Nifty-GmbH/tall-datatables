@@ -4,7 +4,7 @@ namespace TeamNiftyGmbH\DataTable\Tests;
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
-use WireUi\Providers\WireUiServiceProvider;
+use WireUi\ServiceProvider as WireUiServiceProvider;
 
 class TestCase extends \Orchestra\Testbench\Dusk\TestCase
 {

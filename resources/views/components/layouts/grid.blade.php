@@ -10,7 +10,7 @@
                     <x-slot:trigger>
                         <x-button
                             :label="__('Sort')"
-                            icon="adjustments"
+                            icon="adjustments-vertical"
                         />
                     </x-slot:trigger>
                     <template x-for="sortableItem in sortable.filter((item) => item !== '*')">
@@ -34,7 +34,7 @@
         <div class="w-full p-8 w-24 h-24">
             <div class="w-full flex-col items-center dark:text-gray-50">
                 <x-icon
-                    name="emoji-sad"
+                    name="face-frown"
                     class="h-24 w-24 m-auto"
                 />
                 <div class="text-center">
@@ -63,7 +63,7 @@
                                         <div class="absolute right-2 top-2">
                                             <x-dropdown>
                                                 <x-slot:trigger>
-                                                    <x-button.circle white icon="dots-vertical" />
+                                                    <x-mini-button rounded white icon="bars-4" />
                                                 </x-slot:trigger>
                                                 <div class="grid grid-cols-1 gap-1.5">
                                                     @foreach($rowActions as $rowAction)

@@ -22,7 +22,7 @@
                     <div class="flex gap-3">
                         <x-button x-bind:class="newFilterCalculation.operator === '-' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '-'" negative>-</x-button>
                         <x-button x-bind:class="newFilterCalculation.operator === '+' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '+'" positive>+</x-button>
-                        <x-inputs.number min="0" x-model="newFilterCalculation.value" />
+                        <x-number min="0" x-model="newFilterCalculation.value" />
                         <x-native-select
                             x-model="newFilterCalculation.unit"
                             option-key-value="true"

@@ -174,6 +174,7 @@ trait SupportsRelations
                 } else {
                     $relationInstance = $modelBase->{$relationName}();
                 }
+
                 $model = $relationInstance->getRelated();
 
                 if ($relationInstance instanceof BelongsTo) {

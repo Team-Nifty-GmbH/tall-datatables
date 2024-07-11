@@ -111,7 +111,7 @@
                                 </div>
                             @endif
                             @if($isFilterable && ! $showFilterInputs)
-                                <x-icon name="filter"
+                                <x-icon name="funnel"
                                     x-show="filterable.includes(col)"
                                     class="h-4 w-4 cursor-pointer"
                                     x-on:click="loadSidebar({column: col, operator: '', value: '', relation: ''})"
@@ -129,6 +129,7 @@
                     <x-tall-datatables::table.head-cell class="!py-0 w-4 flex flex-row-reverse bg-white dark:bg-secondary-800 sticky right-0 shadow-inner">
                         <div class="flex w-full flex-row-reverse items-center">
                             <x-button
+                                flat
                                 icon="cog"
                                 x-on:click="loadSidebar()"
                             />
@@ -143,20 +144,23 @@
                         <td class="bg-gray-50 dark:bg-secondary-600 py-1 px-2"
                             x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
                             x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'">
-                            <template x-if="! filterValueLists.hasOwnProperty(col)">
-                                <x-input type="search" class="p-1" x-model.debounce.500ms="textFilter[col]" x-show="filterable.includes(col)" />
-                            </template>
-                            <template x-if="filterValueLists.hasOwnProperty(col)">
-                                <x-native-select
-                                    x-model="textFilter[col]"
-                                    placeholder="{{ __('Value') }}"
-                                >
-                                    <option value=""></option>
-                                    <template x-for="item in filterValueLists[col]">
-                                        <option x-bind:value="item.value" x-text="item.label"></option>
-                                    </template>
-                                </x-native-select>
-                            </template>
+                            <div x-show="filterable.includes(col)">
+                                <template x-if="! filterValueLists.hasOwnProperty(col)">
+
+                                    <x-input type="search" class="p-1" x-model.debounce.500ms="textFilter[col]" />
+                                </template>
+                                <template x-if="filterValueLists.hasOwnProperty(col)">
+                                    <x-native-select
+                                        x-model="textFilter[col]"
+                                        placeholder="{{ __('Value') }}"
+                                    >
+                                        <option value=""></option>
+                                        <template x-for="item in filterValueLists[col]">
+                                            <option x-bind:value="item.value" x-text="item.label"></option>
+                                        </template>
+                                    </x-native-select>
+                                </template>
+                            </div>
                         </td>
                     </template>
                     @if($rowActions ?? false)
@@ -175,7 +179,7 @@
             <td colspan="100%" class="p-8 w-24 h-24">
                 <div class="w-full flex-col items-center dark:text-gray-50">
                     <x-icon
-                        name="emoji-sad"
+                        name="face-frown"
                         class="h-24 w-24 m-auto"
                     />
                     <div class="text-center">
