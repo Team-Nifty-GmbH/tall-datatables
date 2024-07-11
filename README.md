@@ -272,7 +272,7 @@ Also, all formatters are applied before the column is appended.
 If you need to eager load additional data you can override the getBuilder method
 
 ```php
-public function getBuilder(Builder $builder): Builder
+protected function getBuilder(Builder $builder): Builder
 {
     return $builder->with('roles');
 }
@@ -285,7 +285,7 @@ In case you need a specific column to be always returned you can override the ge
 This is especially needed when you want to format money values in the frontend.
 
 ```php
-public function getReturnKeys(): array
+protected function getReturnKeys(): array
 {
     return array_merge(parent::getReturnKeys(), ['currency.iso']);
 }

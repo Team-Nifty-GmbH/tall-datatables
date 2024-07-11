@@ -125,7 +125,7 @@ trait SupportsRelations
     {
         $modelInfo = ModelInfo::forModel($this->getModel());
 
-        if ($relationName) {
+        if ($relationName && $modelInfo->relation($relationName)?->related) {
             $modelInfo = ModelInfo::forModel($modelInfo->relation($relationName)->related);
         }
 
@@ -174,7 +174,12 @@ trait SupportsRelations
                 } else {
                     $relationInstance = $modelBase->{$relationName}();
                 }
-                $model = $relationInstance->getRelated();
+
+                try {
+                    $model = $relationInstance->getRelated();
+                } catch (\Throwable) {
+                    $model = null;
+                }
 
                 if ($relationInstance instanceof BelongsTo) {
                     if (method_exists($relationInstance, 'getOwnerKeyName')) {

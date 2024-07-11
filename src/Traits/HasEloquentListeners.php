@@ -9,7 +9,7 @@ trait HasEloquentListeners
 {
     public array $broadcastChannels = [];
 
-    public function getPaginator(LengthAwarePaginator $paginator): LengthAwarePaginator
+    protected function getPaginator(LengthAwarePaginator $paginator): LengthAwarePaginator
     {
         $this->broadcastChannels = [];
         foreach ($paginator->items() as $item) {

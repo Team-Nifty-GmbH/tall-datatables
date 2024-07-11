@@ -4,6 +4,7 @@ namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Renderless;
@@ -31,7 +32,13 @@ trait SupportsAggregation
 
     protected function getAggregatable(): array
     {
-        $foreignKeys = collect(Schema::getForeignKeys($this->modelTable))
+        $foreignKeys = collect(
+            Cache::remember(
+                'column-listing:' . $this->modelTable,
+                86400,
+                fn () => Schema::getColumnListing($this->modelTable),
+            ),
+        )
             ->pluck('columns')
             ->flatten()
             ->unique()
