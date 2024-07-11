@@ -7,11 +7,13 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Scout\Builder;
+use Livewire\Livewire;
 use TeamNiftyGmbH\DataTable\Commands\MakeDataTableCommand;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCache;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCacheReset;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
+use TeamNiftyGmbH\DataTable\Livewire\Options;
 
 class DataTableServiceProvider extends ServiceProvider
 {
@@ -36,6 +38,7 @@ class DataTableServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Livewire::component('tall-datatables::options', Options::class);
         $this->offerPublishing();
 
         $this->commands([

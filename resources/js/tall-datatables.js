@@ -22,19 +22,6 @@ document.addEventListener('alpine:init', () => {
                                 }
                             );
                     });
-
-                    const sortable = document.getElementById(this.$id('table-cols'));
-
-                    if (sortable) new Sortable(sortable, {
-                        animation: 150,
-                        delay: 100,
-                        onEnd: (e) => {
-                            const name = e.item.dataset.column;
-                            const oldIndex = this.enabledCols.indexOf(name);
-                            const [movedItem] = this.enabledCols.splice(oldIndex, 1);
-                            this.enabledCols.splice(e.newIndex, 0, movedItem);
-                        }
-                    });
                 });
                 this.loadFilterable()
 
@@ -91,6 +78,18 @@ document.addEventListener('alpine:init', () => {
                         });
                     });
                 }
+            },
+            columnsSortable(sortable) {
+                if (sortable) new Sortable(sortable, {
+                    animation: 150,
+                    delay: 100,
+                    onEnd: (e) => {
+                        const name = e.item.dataset.column;
+                        const oldIndex = this.enabledCols.indexOf(name);
+                        const [movedItem] = this.enabledCols.splice(oldIndex, 1);
+                        this.enabledCols.splice(e.newIndex, 0, movedItem);
+                    }
+                });
             },
             loadTableConfig() {
                 this.$wire.getConfig().then(
@@ -372,7 +371,7 @@ document.addEventListener('alpine:init', () => {
                 this.filters[this.filterIndex].push(newFilter);
                 this.resetFilter();
                 this.filterSelectType = 'text';
-                this.$wire.getColLabels().then(result => {this.colLabels = result;});
+                this.$wire.$parent.getColLabels().then(result => {this.colLabels = result;});
 
                 this.$nextTick(() => this.$refs.filterColumn.focus());
             },
