@@ -573,14 +573,14 @@
                 <div class="text-sm font-medium text-gray-700 dark:text-gray-50">
                     <div class="flex overflow-x-auto">
                         <div class="flex gap-1.5 items-center">
-                            <x-button flat primary x-on:click="$wire.loadSlug()" >
+                            <x-button flat primary x-on:click="$wire.$parent.loadSlug()" >
                                 <span class="whitespace-nowrap">{{ __('This table') }}</span>
                             </x-button>
                             <x-icon name="chevron-right" class="h-4 w-4"/>
                         </div>
                         <template x-for="segment in $wire.$parent.displayPath">
                             <div class="flex gap-1.5 items-center">
-                                <x-button flat primary x-on:click="$wire.loadSlug(segment.value)" >
+                                <x-button flat primary x-on:click="$wire.$parent.loadSlug(segment.value)" >
                                     <span class="whitespace-nowrap" x-text="segment.label"></span>
                                 </x-button>
                                 <x-icon name="chevron-right" class="h-4 w-4"/>
