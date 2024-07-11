@@ -147,7 +147,7 @@
                             <div x-show="filterable.includes(col)">
                                 <template x-if="! filterValueLists.hasOwnProperty(col)">
 
-                                    <x-input type="search" class="p-1" x-model.debounce.500ms="textFilter[col]" />
+                                    <x-input type="search" padding="p-1" x-model.debounce.500ms="textFilter[col]" />
                                 </template>
                                 <template x-if="filterValueLists.hasOwnProperty(col)">
                                     <x-native-select
