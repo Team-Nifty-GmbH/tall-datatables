@@ -8,14 +8,14 @@ document.addEventListener('alpine:init', () => {
                 this.loadTableConfig();
                 this.$nextTick(() => {
                     this.$watch('enabledCols', () => {
-                        this.$wire.storeColLayout(this.enabledCols);
-                        this.$wire.getFormatters()
+                        $wire.storeColLayout(this.enabledCols);
+                        $wire.getFormatters()
                             .then(
                                 formatters => {
                                     this.formatters = formatters;
                                 }
                             );
-                        this.$wire.getColLabels(this.enabledCols)
+                        $wire.getColLabels(this.enabledCols)
                             .then(
                                 result => {
                                     this.colLabels = result;
@@ -26,11 +26,11 @@ document.addEventListener('alpine:init', () => {
                 this.loadFilterable()
 
                 this.$watch('search', () => {
-                    this.$wire.startSearch();
+                    $wire.startSearch();
                 });
 
                 this.$watch('aggregatableCols', () => {
-                    this.$wire.applyAggregations();
+                    $wire.applyAggregations();
                 });
 
                 this.$watch('newFilter.column', () => {
@@ -73,7 +73,7 @@ document.addEventListener('alpine:init', () => {
                         addedChannels.forEach(channel => {
                             Echo.private(channel)
                                 .listenToAll((event, data) => {
-                                    this.$wire.eloquentEventOccurred(event, data);
+                                    $wire.eloquentEventOccurred(event, data);
                                 });
                         });
                     });
@@ -92,7 +92,7 @@ document.addEventListener('alpine:init', () => {
                 });
             },
             loadTableConfig() {
-                this.$wire.getConfig().then(
+                $wire.getConfig().then(
                     result => {
                         this.enabledCols = result.enabledCols;
                         this.availableCols = result.availableCols;
@@ -371,7 +371,7 @@ document.addEventListener('alpine:init', () => {
                 this.filters[this.filterIndex].push(newFilter);
                 this.resetFilter();
                 this.filterSelectType = 'text';
-                this.$wire.$parent.getColLabels().then(result => {this.colLabels = result;});
+                $wire.getColLabels().then(result => {this.colLabels = result;});
 
                 this.$nextTick(() => this.$refs.filterColumn.focus());
             },
