@@ -254,7 +254,7 @@ trait SupportsRelations
 
     protected function getModelRelations($modelInfo): array
     {
-        $modelQuery = new $modelInfo->class;
+        $modelQuery = app($modelInfo->class);
         $modelRelations = [];
         foreach ($modelInfo->relations as $relation) {
             try {

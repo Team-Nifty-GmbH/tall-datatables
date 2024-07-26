@@ -36,7 +36,7 @@ class ModelInfo extends BaseModelInfo
         }
 
         if (is_string($model)) {
-            $model = new $model;
+            $model = app($model);
         }
 
         try {
