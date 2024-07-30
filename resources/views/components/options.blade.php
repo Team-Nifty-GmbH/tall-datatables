@@ -1,4 +1,4 @@
-<div class="mt-2" x-init.once="columnsSortable($el.querySelector('.table-cols'))">
+<div class="mt-2" x-data="{searchRelations: null, searchColumns: null, searchAggregatable: null}" x-init.once="columnsSortable($el.querySelector('.table-cols'))">
     @if(auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
         <x-dialog z-index="z-40" id="save-filter" :title="__('Save filter')">
             <x-input required :label="__('Filter name')" x-model="filterName" />
@@ -496,8 +496,16 @@
         @endif
         @if($this->aggregatable)
             <div x-cloak x-show="tab === 'summarize'">
+                <div class="pb-2">
+                    <x-input
+                        type="search"
+                        x-model.debounce.300ms="searchAggregatable"
+                        placeholder="{{ __('Search') }}"
+                        class="w-full"
+                    />
+                </div>
                 <div class="grid grid-cols-1 gap-3">
-                    <template x-for="col in aggregatable">
+                    <template x-for="col in searchable(aggregatable, searchAggregatable)">
                         <div>
                             <x-label>
                                 <span x-text="getLabel(col)">
@@ -573,14 +581,14 @@
                 <div class="text-sm font-medium text-gray-700 dark:text-gray-50">
                     <div class="flex overflow-x-auto">
                         <div class="flex gap-1.5 items-center">
-                            <x-button flat primary x-on:click="$wire.$parent.loadSlug()" >
+                            <x-button flat primary x-on:click="searchRelations = null; searchColumns = null; $wire.$parent.loadSlug()" >
                                 <span class="whitespace-nowrap">{{ __('This table') }}</span>
                             </x-button>
                             <x-icon name="chevron-right" class="h-4 w-4"/>
                         </div>
                         <template x-for="segment in $wire.$parent.displayPath">
                             <div class="flex gap-1.5 items-center">
-                                <x-button flat primary x-on:click="$wire.$parent.loadSlug(segment.value)" >
+                                <x-button flat primary x-on:click="searchRelations = null; searchColumns = null; $wire.$parent.loadSlug(segment.value)" >
                                     <span class="whitespace-nowrap" x-text="segment.label"></span>
                                 </x-button>
                                 <x-icon name="chevron-right" class="h-4 w-4"/>
@@ -588,9 +596,17 @@
                         </template>
                     </div>
                     <hr class="pb-2.5">
-                    <div class="grid grid-cols-2">
+                    <div class="grid grid-cols-2 gap-1.5">
                         <div>
-                            <template x-for="col in $wire.$parent.selectedCols">
+                            <div class="pb-2">
+                                <x-input
+                                    type="search"
+                                    x-model.debounce.300ms="searchColumns"
+                                    placeholder="{{ __('Search') }}"
+                                    class="w-full"
+                                />
+                            </div>
+                            <template x-for="col in searchable($wire.$parent.selectedCols, searchColumns)">
                                 <div class="flex gap-1.5">
                                     <x-checkbox
                                         x-bind:checked="$wire.$parent.enabledCols.includes(col.attribute)"
@@ -605,8 +621,16 @@
                             </template>
                         </div>
                         <div>
-                            <template x-for="relation in $wire.$parent.selectedRelations">
-                                <div class="flex gap-1.5 cursor-pointer items-center" x-on:click="$wire.$parent.loadRelation(relation.model, relation.name)">
+                            <div class="pb-2">
+                                <x-input
+                                    type="search"
+                                    x-model.debounce.300ms="searchRelations"
+                                    placeholder="{{ __('Search') }}"
+                                    class="w-full"
+                                />
+                            </div>
+                            <template x-for="relation in searchable($wire.$parent.selectedRelations, searchRelations)">
+                                <div class="flex gap-1.5 cursor-pointer items-center" x-on:click="searchRelations = null; searchColumns = null; $wire.$parent.loadRelation(relation.model, relation.name);">
                                     <span class="overflow-hidden text-ellipsis whitespace-nowrap" x-text="relation.label"></span>
                                     <x-icon name="chevron-right" class="h-4 w-4"/>
                                 </div>

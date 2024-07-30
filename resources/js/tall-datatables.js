@@ -91,6 +91,29 @@ document.addEventListener('alpine:init', () => {
                     }
                 });
             },
+            searchable(data, search = null) {
+                if (!search) {
+                    return data;
+                }
+
+                // data could be an object or an array, search in both
+                // if its an object we have to return an object
+                if (typeof data === 'object') {
+                    let obj = {};
+                    for (const [key, value] of Object.entries(data)) {
+                        if (JSON.stringify(value).toLowerCase().includes(search.toLowerCase())) {
+                            obj[key] = value;
+                        }
+                    }
+
+                    return obj;
+                }
+
+                // its an array, return all items that include the search string
+                return data.filter(item => {
+                    return JSON.stringify(item).toLowerCase().includes(search.toLowerCase());
+                });
+            },
             loadTableConfig() {
                 $wire.getConfig().then(
                     result => {

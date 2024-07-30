@@ -365,7 +365,7 @@ trait SupportsRelations
             return;
         }
 
-        if ($attributeInfo->type === 'boolean') {
+        if ($attributeInfo->phpType === 'bool' || $attributeInfo->cast === 'boolean') {
             $this->filterValueLists[$enabledCol] = [
                 [
                     'value' => 1,
