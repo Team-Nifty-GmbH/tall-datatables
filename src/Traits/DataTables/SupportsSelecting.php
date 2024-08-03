@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\View\ComponentAttributeBag;
 use Livewire\Attributes\Locked;
@@ -38,9 +39,12 @@ trait SupportsSelecting
 
     protected function getSelectedModels(): Collection
     {
-        return $this->getModel()::query()
-            ->whereIntegerInRaw($this->modelKeyName, $this->getSelectedValues())
-            ->get();
+        return $this->getSelectedModelsQuery()->get();
+    }
+
+    protected function getSelectedModelsQuery(): Builder
+    {
+        return $this->getModel()::query()->whereIntegerInRaw($this->modelKeyName, $this->getSelectedValues());
     }
 
     #[Renderless]

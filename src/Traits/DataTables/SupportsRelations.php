@@ -263,41 +263,40 @@ trait SupportsRelations
                 if ($reflection->getModifiers() !== ReflectionMethod::IS_PUBLIC) {
                     continue;
                 }
-            } catch (\ReflectionException $e) {
-            }
+                $relationInstance = $modelQuery->{$relation->name}();
 
-            $relationInstance = $modelQuery->{$relation->name}();
+                // exclude morph relations
+                if ($relationInstance instanceof MorphToMany || $relationInstance instanceof MorphTo) {
+                    continue;
+                }
 
-            // exclude morph relations
-            if ($relationInstance instanceof MorphToMany || $relationInstance instanceof MorphTo) {
-                continue;
-            }
+                $currentPath = $relation->name;
 
-            $currentPath = $relation->name;
+                data_set($modelRelations, $currentPath . '.model', $relation->related);
+                data_set($modelRelations, $currentPath . '.label', __(Str::headline($relation->name)));
+                data_set($modelRelations, $currentPath . '.name', $relation->name);
+                data_set($modelRelations, $currentPath . '.type', $relation->type);
 
-            data_set($modelRelations, $currentPath . '.model', $relation->related);
-            data_set($modelRelations, $currentPath . '.label', __(Str::headline($relation->name)));
-            data_set($modelRelations, $currentPath . '.name', $relation->name);
-            data_set($modelRelations, $currentPath . '.type', $relation->type);
+                if (method_exists($relationInstance, 'getOwnerKeyName')) {
+                    data_set($modelRelations, $currentPath . '.keys.owner', $relationInstance->getOwnerKeyName());
+                }
 
-            if (method_exists($relationInstance, 'getOwnerKeyName')) {
-                data_set($modelRelations, $currentPath . '.keys.owner', $relationInstance->getOwnerKeyName());
-            }
+                if (method_exists($relationInstance, 'getForeignKeyName')) {
+                    data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getForeignKeyName());
+                }
 
-            if (method_exists($relationInstance, 'getForeignKeyName')) {
-                data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getForeignKeyName());
-            }
+                if (method_exists($relationInstance, 'getRelatedPivotKeyName')) {
+                    data_set($modelRelations, $currentPath . '.keys.owner', $relationInstance->getRelatedPivotKeyName());
+                }
 
-            if (method_exists($relationInstance, 'getRelatedPivotKeyName')) {
-                data_set($modelRelations, $currentPath . '.keys.owner', $relationInstance->getRelatedPivotKeyName());
-            }
+                if (method_exists($relationInstance, 'getForeignPivotKeyName')) {
+                    data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getForeignPivotKeyName());
+                }
 
-            if (method_exists($relationInstance, 'getForeignPivotKeyName')) {
-                data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getForeignPivotKeyName());
-            }
-
-            if (method_exists($relationInstance, 'getMorphType')) {
-                data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getMorphType());
+                if (method_exists($relationInstance, 'getMorphType')) {
+                    data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getMorphType());
+                }
+            } catch (\ReflectionException|\BadMethodCallException) {
             }
         }
 

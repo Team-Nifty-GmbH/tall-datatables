@@ -3,6 +3,7 @@
 namespace TeamNiftyGmbH\DataTable\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Illuminate\Support\Number;
 use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
 
 class Money implements CastsAttributes, HasFrontendFormatter
@@ -19,7 +20,13 @@ class Money implements CastsAttributes, HasFrontendFormatter
             return $model->getAttributeValue($key);
         }
 
-        return $value;
+        $value = Number::trim($value ?? 0);
+
+        return fmod($value, 1) === 0.0
+            // not a decimal number, pad with 2 decimal places
+            ? (float) number_format($value, 2, '.', '')
+            // a decimal number, return as is
+            : $value;
     }
 
     /**
