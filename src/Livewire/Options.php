@@ -17,6 +17,9 @@ class Options extends Component
     #[Locked]
     public ?array $aggregatable = null;
 
+    #[Locked]
+    public ?bool $allowSoftDeletes = null;
+
     public function render(): View
     {
         return view('tall-datatables::components.options');

@@ -367,6 +367,7 @@
                     >
                         {{ __('When using the like or not like filter, you can use the % sign as a placeholder. Examples: "test%" for values that start with "test", "%test" for values that end with "test", and "%test%" for values that contain "test" anywhere.') }}
                     </div>
+                    <x-checkbox x-model="$wire.$parent.withSoftDeletes" x-on:change="$wire.$parent.$call('startSearch')" :label="__('Include deleted')" />
                     <x-button
                         wire:target="loadFields"
                         wire:loading.attr="disabled"

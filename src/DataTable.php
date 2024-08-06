@@ -9,6 +9,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
@@ -53,6 +54,8 @@ class DataTable extends Component
      */
     #[Locked]
     public array $filters = [];
+
+    public bool $withSoftDeletes = false;
 
     /**
      * These are the columns that will be available to the user.
@@ -206,6 +209,21 @@ class DataTable extends Component
     protected function getEnabledCols(): array
     {
         return $this->enabledCols;
+    }
+
+    protected function allowSoftDeletes(): bool
+    {
+        return in_array(
+            SoftDeletes::class,
+            class_uses_recursive(
+                $this->getModel()
+            )
+        );
+    }
+
+    protected function showRestoreButton(): bool
+    {
+        return method_exists(static::class, 'restore');
     }
 
     #[Renderless]
@@ -460,6 +478,10 @@ class DataTable extends Component
                 ->toEloquentBuilder($this->enabledCols, $this->perPage, $this->page);
         } else {
             $query = $model::query();
+        }
+
+        if ($this->withSoftDeletes && $this->allowSoftDeletes()) {
+            $query->withTrashed();
         }
 
         if ($this->userOrderBy) {
@@ -776,7 +798,8 @@ class DataTable extends Component
     {
         return array_filter(array_merge(
             $this->enabledCols,
-            [$this->modelKeyName, 'href']
+            [$this->modelKeyName, 'href'],
+            $this->withSoftDeletes ? ['deleted_at'] : []
         ));
     }
 
@@ -846,6 +869,8 @@ class DataTable extends Component
             'colLabels' => $this->colLabels,
             'includeBefore' => $this->includeBefore,
             'selectValue' => $this->getSelectValue(),
+            'allowSoftDeletes' => $this->allowSoftDeletes(),
+            'showRestoreButton' => $this->showRestoreButton(),
         ];
     }
 

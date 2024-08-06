@@ -19,6 +19,7 @@
             :model-name="$modelName"
             :table-actions="$tableActions"
             :headline="$headline"
+            :allow-soft-deletes="$allowSoftDeletes"
         />
         @if($actions ?? false)
             <x-dropdown>
@@ -43,5 +44,7 @@
         :use-wire-navigate="$useWireNavigate"
         :is-selectable="$isSelectable"
         :select-value="$selectValue"
+        :allow-soft-deletes="$allowSoftDeletes"
+        :show-restore-button="$showRestoreButton"
     />
 </x-tall-datatables::data-table-wrapper>
