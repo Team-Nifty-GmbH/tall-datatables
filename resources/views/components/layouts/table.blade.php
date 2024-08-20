@@ -194,7 +194,7 @@
             x-bind:data-id="record.id"
             x-bind:key="record.id"
             x-on:click="$dispatch('data-table-row-clicked', record)"
-            x-bind:class="record.deleted_at ? 'opacity-50' : ''"
+            @if($allowSoftDeletes) x-bind:class="record.deleted_at ? 'opacity-50' : ''" @endif
             {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
         >
             @if($isSelectable)
