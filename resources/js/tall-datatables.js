@@ -519,10 +519,13 @@ window.formatters = {
         }
 
         const documentCurrencyCode = document.querySelector('meta[name="currency-code"]')?.getAttribute('content');
+        const bodyDocumentCurrencyCode = document.body.dataset.currencyCode;
 
         let currencyCode;
 
-        if (currency === null && documentCurrencyCode) {
+        if (currency === null && bodyDocumentCurrencyCode) {
+            currencyCode = bodyDocumentCurrencyCode;
+        } else if (currency === null && documentCurrencyCode) {
             currencyCode = documentCurrencyCode;
         } else if (typeof currency === 'string') {
             currencyCode = currency;
