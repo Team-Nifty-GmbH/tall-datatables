@@ -761,16 +761,24 @@ class DataTable extends Component
             $item->append($appends);
         }
 
-        $dotted = Arr::dot($item->toArray());
+        $rawArray = $item->toArray();
+        $dotted = Arr::dot($rawArray);
         $itemArray = [];
         $returnKeys = $this->getReturnKeys();
 
-        // n:n or 1:n or n:1 relations have numeric keys while the the relation path has not
+        // n:n or 1:n or n:1 relations have numeric keys while the relation path has not
         // so we need to filter out the numeric keys and convert them to the relation path
         foreach ($dotted as $key => $value) {
+            $originalKey = $key;
             $explodedKey = explode('.', $key);
             $key = array_filter($explodedKey, fn ($part) => ! is_numeric($part));
             $key = implode('.', $key);
+
+            $shortenedKey = Str::beforeLast($key, '.');
+            if (is_array(data_get($rawArray, Str::beforeLast($originalKey, '.'))) && in_array($shortenedKey, $returnKeys)) {
+                $key = $shortenedKey;
+            }
+
             if (! in_array($key, $returnKeys)) {
                 continue;
             }

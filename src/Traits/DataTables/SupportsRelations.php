@@ -189,6 +189,10 @@ trait SupportsRelations
                     if (method_exists($relationInstance, 'getForeignKeyName')) {
                         $with[$parentPath ?? '__root__'][] = $relationInstance->getForeignKeyName();
                     }
+                } elseif ($relationInstance instanceof MorphToMany) {
+                    if (method_exists($relationInstance, 'getRelatedKeyName')) {
+                        $with[$path][] = $relationInstance->getRelatedKeyName();
+                    }
                 } else {
                     if (method_exists($relationInstance, 'getOwnerKeyName')) {
                         $with[$parentPath ?? '__root__'][] = $relationInstance->getOwnerKeyName();
@@ -220,7 +224,15 @@ trait SupportsRelations
 
                 // only sortable if the field is not virtual
                 // and the relationInstance has getForeignKeyName or getForeignKey
-                if (! $segments || ($relationInstance && (method_exists($relationInstance, 'getForeignKeyName') || method_exists($relationInstance, 'getForeignKey')))) {
+                if (! $segments
+                    || (
+                        $relationInstance
+                        && (
+                            method_exists($relationInstance, 'getForeignKeyName')
+                            || method_exists($relationInstance, 'getForeignKey')
+                        )
+                    )
+                ) {
                     $sortable[] = $enabledCol;
                 }
             } else {
@@ -266,7 +278,7 @@ trait SupportsRelations
                 $relationInstance = $modelQuery->{$relation->name}();
 
                 // exclude morph relations
-                if ($relationInstance instanceof MorphToMany || $relationInstance instanceof MorphTo) {
+                if ($relationInstance instanceof MorphTo) {
                     continue;
                 }
 

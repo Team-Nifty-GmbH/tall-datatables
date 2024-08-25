@@ -61,7 +61,7 @@
                             x-anchor.bottom-start.offset.5="$refs.selectedActions"
                         >
                             <x-card x-on:click="showSelectedActions = false;">
-                                <div class="flex flex-col">
+                                <div class="flex flex-col gap-1.5">
                                     @foreach($selectedActions as $action)
                                         {{ $action }}
                                     @endforeach
