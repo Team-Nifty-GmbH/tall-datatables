@@ -3,17 +3,12 @@
 namespace TeamNiftyGmbH\DataTable\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Illuminate\Database\Eloquent\Model;
 use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
 
 class Percentage implements CastsAttributes, HasFrontendFormatter
 {
-    /**
-     * Cast the given value.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @param  mixed  $value
-     */
-    public function get($model, string $key, $value, array $attributes): mixed
+    public function get(Model $model, string $key, mixed $value, array $attributes): mixed
     {
         if ($model->hasAttributeMutator($key) || $model->hasGetMutator($key)) {
             return $model->getAttributeValue($key);
@@ -22,13 +17,7 @@ class Percentage implements CastsAttributes, HasFrontendFormatter
         return $value;
     }
 
-    /**
-     * Prepare the given value for storage.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @param  mixed  $value
-     */
-    public function set($model, string $key, $value, array $attributes): mixed
+    public function set(Model $model, string $key, mixed $value, array $attributes): mixed
     {
         return $value;
     }
