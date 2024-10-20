@@ -690,6 +690,10 @@ window.formatters = {
             return value;
         }
 
+        let inputValue = value;
+        // make the value absolute
+        value = Math.abs(value);
+
         let seconds = Math.floor(value / 1000);
         let minutes = Math.floor(seconds / 60);
         seconds = seconds % 60;
@@ -700,7 +704,7 @@ window.formatters = {
         minutes = minutes.toString().padStart(2, '0');
         seconds = seconds.toString().padStart(2, '0');
 
-        return `${hours}:${minutes}:${seconds}`;
+        return (inputValue < value ? '-' : '') + `${hours}:${minutes}:${seconds}`;
     },
     float(value) {
         if (isNaN(parseFloat(value))) {

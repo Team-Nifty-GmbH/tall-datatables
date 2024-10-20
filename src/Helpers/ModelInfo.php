@@ -43,7 +43,6 @@ class ModelInfo extends BaseModelInfo
             $relations = RelationFinder::forModel($model);
         } catch (\Throwable $e) {
             throw $e;
-            $relations = collect();
         }
 
         try {
