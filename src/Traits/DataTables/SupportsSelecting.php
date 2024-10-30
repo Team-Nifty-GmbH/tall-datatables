@@ -31,8 +31,8 @@ trait SupportsSelecting
     {
         return in_array('*', $this->selected)
             ? $this->buildSearch()
-                ->whereIntegerNotInRaw('id', $this->wildcardSelectExcluded)
-                ->pluck('id')
+                ->whereKeyNot($this->wildcardSelectExcluded)
+                ->pluck($this->modelKeyName)
                 ->toArray()
             : $this->selected;
     }

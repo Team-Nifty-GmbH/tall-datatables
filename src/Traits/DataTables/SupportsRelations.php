@@ -157,7 +157,7 @@ trait SupportsRelations
         $filterable = [];
         $sortable = [];
 
-        foreach ($this->enabledCols as $enabledCol) {
+        foreach (array_merge($this->enabledCols, $this->getReturnKeys()) as $enabledCol) {
             $segments = explode('.', $enabledCol);
             $fieldName = array_pop($segments);
 
