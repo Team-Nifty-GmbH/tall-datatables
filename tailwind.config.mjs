@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     content: [
         __dirname + '/js/**/*.js',
         __dirname + '/resources/views/**/*.blade.php',
