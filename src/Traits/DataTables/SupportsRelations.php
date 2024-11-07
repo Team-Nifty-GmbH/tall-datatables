@@ -3,6 +3,8 @@
 namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasRelationships;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -264,17 +266,20 @@ trait SupportsRelations
         return $returnValue;
     }
 
-    protected function getModelRelations($modelInfo): array
+    protected function getModelRelations(\Spatie\ModelInfo\ModelInfo $modelInfo): array
     {
         $modelQuery = app($modelInfo->class);
         $modelRelations = [];
         foreach ($modelInfo->relations as $relation) {
             try {
-                $reflection = new ReflectionMethod($modelQuery, $relation->name);
+                if (! $modelQuery->relationResolver($modelInfo->class, $relation->name)) {
+                    $reflection = new ReflectionMethod($modelQuery, $relation->name);
 
-                if ($reflection->getModifiers() !== ReflectionMethod::IS_PUBLIC) {
-                    continue;
+                    if ($reflection->getModifiers() !== ReflectionMethod::IS_PUBLIC) {
+                        continue;
+                    }
                 }
+
                 $relationInstance = $modelQuery->{$relation->name}();
 
                 // exclude morph relations
