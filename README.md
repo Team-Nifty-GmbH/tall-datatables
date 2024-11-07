@@ -43,13 +43,13 @@ composer require team-nifty-gmbh/tall-datatables
 Keep in mind to follow the wireui installation instructions starting at step 2:
 https://livewire-wireui.com/docs/get-started
 
-3. Add the following to your tailwind.config.js
+3. Add the following to your tailwind.config.mjs
 
 ```js
 module.exports = {
     presets: [
         ...
-        require('./vendor/team-nifty-gmbh/tall-datatables/tailwind.config.js')
+        require('./vendor/team-nifty-gmbh/tall-datatables/tailwind.config.mjs')
     ],
     content: [
         ...
