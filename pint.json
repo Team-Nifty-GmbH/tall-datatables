@@ -3,9 +3,7 @@
     "rules": {
         "concat_space": {
             "spacing": "one"
-        }
-    },
-    "exclude": [
-        "modules"
-    ]
+        },
+        "new_with_parentheses": true
+    }
 }
