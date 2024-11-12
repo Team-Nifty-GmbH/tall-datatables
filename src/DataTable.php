@@ -894,22 +894,22 @@ class DataTable extends Component
 
     protected function getComponentAttributes(): ComponentAttributeBag
     {
-        return new ComponentAttributeBag();
+        return new ComponentAttributeBag;
     }
 
     protected function getTableHeadColAttributes(): ComponentAttributeBag
     {
-        return new ComponentAttributeBag();
+        return new ComponentAttributeBag;
     }
 
     protected function getRowAttributes(): ComponentAttributeBag
     {
-        return new ComponentAttributeBag();
+        return new ComponentAttributeBag;
     }
 
     protected function getCellAttributes(): ComponentAttributeBag
     {
-        return new ComponentAttributeBag();
+        return new ComponentAttributeBag;
     }
 
     protected function getRowActions(): array

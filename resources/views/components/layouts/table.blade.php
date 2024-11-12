@@ -220,17 +220,17 @@
                     class="cursor-pointer"
                     x-bind:href="record?.href ?? false">
                     <div class="flex gap-1.5 flex-wrap">
-                        <div x-html="formatter(leftAppend[col], record)">
+                        <div class="flex flex-wrap gap-1" x-html="formatter(leftAppend[col], record)">
                         </div>
                         <div class="flex-grow">
-                            <div x-html="formatter(topAppend[col], record)">
+                            <div class="flex flex-wrap gap-1" x-html="formatter(topAppend[col], record)">
                             </div>
-                            <div {{ $cellAttributes->merge(['x-html' => 'formatter(col, record)']) }}>
+                            <div class="flex flex-wrap gap-1" {{ $cellAttributes->merge(['x-html' => 'formatter(col, record)']) }}>
                             </div>
-                            <div x-html="formatter(bottomAppend[col], record)">
+                            <div class="flex flex-wrap gap-1" x-html="formatter(bottomAppend[col], record)">
                             </div>
                         </div>
-                        <div x-html="formatter(rightAppend[col], record)">
+                        <div class="flex flex-wrap gap-1" x-html="formatter(rightAppend[col], record)">
                         </div>
                     </div>
                 </x-tall-datatables::table.cell>

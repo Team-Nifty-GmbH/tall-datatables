@@ -12,7 +12,7 @@ class DataTableTest extends BrowserTestCase
 {
     public function browser(): Browser
     {
-        return Livewire::visit(new class() extends \TeamNiftyGmbH\DataTable\DataTable
+        return Livewire::visit(new class extends \TeamNiftyGmbH\DataTable\DataTable
         {
             protected string $model = \TeamNiftyGmbH\DataTable\Tests\Models\Data::class;
 
@@ -38,7 +38,7 @@ class DataTableTest extends BrowserTestCase
         $factory = Factory::create();
 
         while (Data::count() < 20) {
-            $a = new Data();
+            $a = new Data;
             $a->string = $factory->word();
             $a->integer = $factory->randomNumber();
             $a->float = $factory->randomFloat();

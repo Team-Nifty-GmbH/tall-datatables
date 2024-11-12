@@ -78,17 +78,17 @@
                             </template>
                             <template x-if="formatters[col] !== 'image'">
                                 <div class="flex mt-4 px-2" x-bind:class="index === 1 && 'font-semibold'">
-                                    <div x-html="formatter(leftAppend[col], record)">
+                                    <div class="flex flex-wrap gap-1" x-html="formatter(leftAppend[col], record)">
                                     </div>
                                     <div>
-                                        <div x-html="formatter(topAppend[col], record)">
+                                        <div class="flex flex-wrap gap-1" x-html="formatter(topAppend[col], record)">
                                         </div>
-                                        <div x-html="formatter(col, record)">
+                                        <div class="flex flex-wrap gap-1" x-html="formatter(col, record)">
                                         </div>
                                         <div x-html="formatter(bottomAppend[col], record)">
                                         </div>
                                     </div>
-                                    <div x-html="formatter(rightAppend[col], record)">
+                                    <div class="flex flex-wrap gap-1" x-html="formatter(rightAppend[col], record)">
                                     </div>
                                 </div>
                             </template>

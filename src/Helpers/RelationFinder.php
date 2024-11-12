@@ -17,7 +17,7 @@ class RelationFinder extends BaseRelationFinder
             $model = app($model);
         }
 
-        return (new static())->relations($model);
+        return (new static)->relations($model);
     }
 
     /**
