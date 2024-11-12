@@ -66,11 +66,11 @@ class DataTableServiceProvider extends ServiceProvider
                 $attributes = [];
             }
 
-            return (new DataTableBladeDirectives())->scripts(attributes: $attributes);
+            return (new DataTableBladeDirectives)->scripts(attributes: $attributes);
         });
 
         Blade::directive('dataTableStyles', static function (): string {
-            return (new DataTableBladeDirectives())->styles();
+            return (new DataTableBladeDirectives)->styles();
         });
     }
 

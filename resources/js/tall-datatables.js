@@ -599,7 +599,8 @@ window.formatters = {
     },
     array(value) {
         if (! Array.isArray(value)) {
-            return value;
+            // map string or object to array
+            value = typeof value === 'object' ? Object.values(value) : [value];
         }
 
         return value.map(item => {
