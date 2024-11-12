@@ -50,7 +50,7 @@ trait SupportsSelecting
     #[Renderless]
     public function getSelectAttributes(): ComponentAttributeBag
     {
-        return new ComponentAttributeBag();
+        return new ComponentAttributeBag;
     }
 
     protected function getSelectedActions(): array

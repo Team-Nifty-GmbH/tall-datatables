@@ -31,7 +31,7 @@ class Attribute extends BaseAttribute
 
     public function getFormatterType(Model|string $model): string|array
     {
-        $modelInstance = is_string($model) ? new $model() : $model;
+        $modelInstance = is_string($model) ? new $model : $model;
 
         if (in_array($this->cast, ['accessor', 'attribute']) && $modelInstance->hasCast($this->name)) {
             $this->cast = $modelInstance->getCasts()[$this->name];
