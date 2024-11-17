@@ -858,7 +858,12 @@ class DataTable extends Component
 
     public function render(): View|Factory|Application|null
     {
-        return view($this->view, $this->getViewData());
+        return view($this->getView(), $this->getViewData());
+    }
+
+    protected function getView(): string
+    {
+        return $this->view;
     }
 
     protected function getViewData(): array
