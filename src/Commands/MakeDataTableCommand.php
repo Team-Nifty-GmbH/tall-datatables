@@ -46,14 +46,14 @@ class MakeDataTableCommand extends GeneratorCommand
                 config('tall-datatables.view_path'),
                 $this->argument('name'),
             );
-            $livewireMakeCommand = new \Livewire\Commands\MakeCommand;
+            $livewireMakeCommand = new \Livewire\Commands\MakeCommand();
         } else {
             $this->parser = new ComponentParser(
                 config('tall-datatables.data_table_namespace'),
                 config('tall-datatables.view_path'),
                 $this->argument('name'),
             );
-            $livewireMakeCommand = new MakeLivewireCommand;
+            $livewireMakeCommand = new MakeLivewireCommand();
         }
 
         if ($livewireMakeCommand->isReservedClassName($name = $this->parser->className())) {
