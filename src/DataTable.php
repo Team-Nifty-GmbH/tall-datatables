@@ -158,6 +158,8 @@ class DataTable extends Component
 
     protected ?string $includeBefore = null;
 
+    protected ?string $includeAfter = null;
+
     protected bool $useWireNavigate = true;
 
     protected $listeners = ['loadData'];
@@ -884,6 +886,7 @@ class DataTable extends Component
             'useWireNavigate' => $this->useWireNavigate,
             'colLabels' => $this->colLabels,
             'includeBefore' => $this->includeBefore,
+            'includeAfter' => $this->includeAfter,
             'selectValue' => $this->getSelectValue(),
             'allowSoftDeletes' => $this->allowSoftDeletes(),
             'showRestoreButton' => $this->showRestoreButton(),

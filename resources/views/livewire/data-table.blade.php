@@ -47,4 +47,5 @@
         :allow-soft-deletes="$allowSoftDeletes"
         :show-restore-button="$showRestoreButton"
     />
+    @includeWhen($includeAfter, $includeAfter)
 </x-tall-datatables::data-table-wrapper>
