@@ -14,7 +14,7 @@
                 <div class="flex gap-3">
                     <x-button x-bind:class="newFilterCalculation.operator === '-' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '-'" negative>-</x-button>
                     <x-button x-bind:class="newFilterCalculation.operator === '+' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '+'" positive>+</x-button>
-                    <x-inputs.number min="0" x-model="newFilterCalculation.value" />
+                    <x-number min="0" x-model="newFilterCalculation.value" />
                     <x-native-select
                         x-model="newFilterCalculation.unit"
                         option-key-value="true"
@@ -134,10 +134,11 @@
                                                         <span x-text="filter.name"></span>
                                                     </x-slot:title>
                                                     <x-slot:action>
-                                                        <x-button.circle
+                                                        <x-mini-button
+                                                            rounded
                                                             negative
                                                             2xs
-                                                            icon="x"
+                                                            icon="x-mark"
                                                             x-on:click="
                                                             savedFilters.splice(savedFilters.indexOf(index), 1);
                                                             $wire.$parent.deleteSavedFilter(filter.id)
@@ -389,10 +390,11 @@
                                 dark:bg-secondary-800"
                             >
                                 <div class="absolute top-0.5 right-0.5">
-                                    <x-button.circle
+                                    <x-mini-button
+                                        rounded
                                         negative
                                         2xs
-                                        icon="x"
+                                        icon="x-mark"
                                         x-on:click="removeFilterGroup(orIndex)"
                                     />
                                 </div>
@@ -412,7 +414,7 @@
                                                             type="button"
                                                             x-on:click="removeFilter(index, orIndex)"
                                                         >
-                                                            <x-icon name="x" class="w-4 h-4" />
+                                                            <x-icon name="x-mark" class="w-4 h-4" />
                                                         </button>
                                                     </x-slot>
                                                 </x-badge>
@@ -455,7 +457,7 @@
                                     x-on:click="$wire.$parent.sortTable('')"
                                 >
                                     <x-icon
-                                        name="x"
+                                        name="x-mark"
                                         class="w-4 h-4"
                                     />
                                 </button>
