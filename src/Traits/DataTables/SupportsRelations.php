@@ -3,6 +3,7 @@
 namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -125,7 +126,7 @@ trait SupportsRelations
     {
         $modelInfo = ModelInfo::forModel($this->getModel());
 
-        if ($relationName) {
+        if ($relationName && $modelInfo->relation($relationName)?->related) {
             $modelInfo = ModelInfo::forModel($modelInfo->relation($relationName)->related);
         }
 
@@ -157,7 +158,7 @@ trait SupportsRelations
         $filterable = [];
         $sortable = [];
 
-        foreach ($this->enabledCols as $enabledCol) {
+        foreach (array_merge($this->enabledCols, $this->getReturnKeys()) as $enabledCol) {
             $segments = explode('.', $enabledCol);
             $fieldName = array_pop($segments);
 
@@ -175,7 +176,11 @@ trait SupportsRelations
                     $relationInstance = $modelBase->{$relationName}();
                 }
 
-                $model = $relationInstance->getRelated();
+                try {
+                    $model = $relationInstance->getRelated();
+                } catch (\Throwable) {
+                    $model = null;
+                }
 
                 if ($relationInstance instanceof BelongsTo) {
                     if (method_exists($relationInstance, 'getOwnerKeyName')) {
@@ -184,6 +189,10 @@ trait SupportsRelations
 
                     if (method_exists($relationInstance, 'getForeignKeyName')) {
                         $with[$parentPath ?? '__root__'][] = $relationInstance->getForeignKeyName();
+                    }
+                } elseif ($relationInstance instanceof MorphToMany) {
+                    if (method_exists($relationInstance, 'getRelatedKeyName')) {
+                        $with[$path][] = $relationInstance->getRelatedKeyName();
                     }
                 } else {
                     if (method_exists($relationInstance, 'getOwnerKeyName')) {
@@ -216,7 +225,15 @@ trait SupportsRelations
 
                 // only sortable if the field is not virtual
                 // and the relationInstance has getForeignKeyName or getForeignKey
-                if (! $segments || ($relationInstance && (method_exists($relationInstance, 'getForeignKeyName') || method_exists($relationInstance, 'getForeignKey')))) {
+                if (! $segments
+                    || (
+                        $relationInstance
+                        && (
+                            method_exists($relationInstance, 'getForeignKeyName')
+                            || method_exists($relationInstance, 'getForeignKey')
+                        )
+                    )
+                ) {
                     $sortable[] = $enabledCol;
                 }
             } else {
@@ -248,52 +265,54 @@ trait SupportsRelations
         return $returnValue;
     }
 
-    protected function getModelRelations($modelInfo): array
+    protected function getModelRelations(\Spatie\ModelInfo\ModelInfo $modelInfo): array
     {
-        $modelQuery = new $modelInfo->class;
+        $modelQuery = app($modelInfo->class);
         $modelRelations = [];
         foreach ($modelInfo->relations as $relation) {
             try {
-                $reflection = new ReflectionMethod($modelQuery, $relation->name);
+                if (! $modelQuery->relationResolver($modelInfo->class, $relation->name)) {
+                    $reflection = new ReflectionMethod($modelQuery, $relation->name);
 
-                if ($reflection->getModifiers() !== ReflectionMethod::IS_PUBLIC) {
+                    if ($reflection->getModifiers() !== ReflectionMethod::IS_PUBLIC) {
+                        continue;
+                    }
+                }
+
+                $relationInstance = $modelQuery->{$relation->name}();
+
+                // exclude morph relations
+                if ($relationInstance instanceof MorphTo) {
                     continue;
                 }
-            } catch (\ReflectionException $e) {
-            }
 
-            $relationInstance = $modelQuery->{$relation->name}();
+                $currentPath = $relation->name;
 
-            // exclude morph relations
-            if ($relationInstance instanceof MorphToMany || $relationInstance instanceof MorphTo) {
-                continue;
-            }
+                data_set($modelRelations, $currentPath . '.model', $relation->related);
+                data_set($modelRelations, $currentPath . '.label', __(Str::headline($relation->name)));
+                data_set($modelRelations, $currentPath . '.name', $relation->name);
+                data_set($modelRelations, $currentPath . '.type', $relation->type);
 
-            $currentPath = $relation->name;
+                if (method_exists($relationInstance, 'getOwnerKeyName')) {
+                    data_set($modelRelations, $currentPath . '.keys.owner', $relationInstance->getOwnerKeyName());
+                }
 
-            data_set($modelRelations, $currentPath . '.model', $relation->related);
-            data_set($modelRelations, $currentPath . '.label', __(Str::headline($relation->name)));
-            data_set($modelRelations, $currentPath . '.name', $relation->name);
-            data_set($modelRelations, $currentPath . '.type', $relation->type);
+                if (method_exists($relationInstance, 'getForeignKeyName')) {
+                    data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getForeignKeyName());
+                }
 
-            if (method_exists($relationInstance, 'getOwnerKeyName')) {
-                data_set($modelRelations, $currentPath . '.keys.owner', $relationInstance->getOwnerKeyName());
-            }
+                if (method_exists($relationInstance, 'getRelatedPivotKeyName')) {
+                    data_set($modelRelations, $currentPath . '.keys.owner', $relationInstance->getRelatedPivotKeyName());
+                }
 
-            if (method_exists($relationInstance, 'getForeignKeyName')) {
-                data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getForeignKeyName());
-            }
+                if (method_exists($relationInstance, 'getForeignPivotKeyName')) {
+                    data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getForeignPivotKeyName());
+                }
 
-            if (method_exists($relationInstance, 'getRelatedPivotKeyName')) {
-                data_set($modelRelations, $currentPath . '.keys.owner', $relationInstance->getRelatedPivotKeyName());
-            }
-
-            if (method_exists($relationInstance, 'getForeignPivotKeyName')) {
-                data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getForeignPivotKeyName());
-            }
-
-            if (method_exists($relationInstance, 'getMorphType')) {
-                data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getMorphType());
+                if (method_exists($relationInstance, 'getMorphType')) {
+                    data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getMorphType());
+                }
+            } catch (\ReflectionException|\BadMethodCallException) {
             }
         }
 
@@ -361,7 +380,7 @@ trait SupportsRelations
             return;
         }
 
-        if ($attributeInfo->type === 'boolean') {
+        if ($attributeInfo->phpType === 'bool' || $attributeInfo->cast === 'boolean') {
             $this->filterValueLists[$enabledCol] = [
                 [
                     'value' => 1,

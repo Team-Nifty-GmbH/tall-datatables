@@ -8,42 +8,29 @@ document.addEventListener('alpine:init', () => {
                 this.loadTableConfig();
                 this.$nextTick(() => {
                     this.$watch('enabledCols', () => {
-                        this.$wire.storeColLayout(this.enabledCols);
-                        this.$wire.getFormatters()
+                        $wire.storeColLayout(this.enabledCols);
+                        $wire.getFormatters()
                             .then(
                                 formatters => {
                                     this.formatters = formatters;
                                 }
                             );
-                        this.$wire.getColLabels(this.enabledCols)
+                        $wire.getColLabels(this.enabledCols)
                             .then(
                                 result => {
                                     this.colLabels = result;
                                 }
                             );
                     });
-
-                    const sortable = document.getElementById(this.$id('table-cols'));
-
-                    if (sortable) new Sortable(sortable, {
-                        animation: 150,
-                        delay: 100,
-                        onEnd: (e) => {
-                            const name = e.item.dataset.column;
-                            const oldIndex = this.enabledCols.indexOf(name);
-                            const [movedItem] = this.enabledCols.splice(oldIndex, 1);
-                            this.enabledCols.splice(e.newIndex, 0, movedItem);
-                        }
-                    });
                 });
                 this.loadFilterable()
 
                 this.$watch('search', () => {
-                    this.$wire.startSearch();
+                    $wire.startSearch();
                 });
 
                 this.$watch('aggregatableCols', () => {
-                    this.$wire.applyAggregations();
+                    $wire.applyAggregations();
                 });
 
                 this.$watch('newFilter.column', () => {
@@ -86,14 +73,49 @@ document.addEventListener('alpine:init', () => {
                         addedChannels.forEach(channel => {
                             Echo.private(channel)
                                 .listenToAll((event, data) => {
-                                    this.$wire.eloquentEventOccurred(event, data);
+                                    $wire.eloquentEventOccurred(event, data);
                                 });
                         });
                     });
                 }
             },
+            columnsSortable(sortable) {
+                if (sortable) new Sortable(sortable, {
+                    animation: 150,
+                    delay: 100,
+                    onEnd: (e) => {
+                        const name = e.item.dataset.column;
+                        const oldIndex = this.enabledCols.indexOf(name);
+                        const [movedItem] = this.enabledCols.splice(oldIndex, 1);
+                        this.enabledCols.splice(e.newIndex, 0, movedItem);
+                    }
+                });
+            },
+            searchable(data, search = null) {
+                if (!search) {
+                    return data;
+                }
+
+                // data could be an object or an array, search in both
+                // if its an object we have to return an object
+                if (typeof data === 'object') {
+                    let obj = {};
+                    for (const [key, value] of Object.entries(data)) {
+                        if (JSON.stringify(value).toLowerCase().includes(search.toLowerCase())) {
+                            obj[key] = value;
+                        }
+                    }
+
+                    return obj;
+                }
+
+                // its an array, return all items that include the search string
+                return data.filter(item => {
+                    return JSON.stringify(item).toLowerCase().includes(search.toLowerCase());
+                });
+            },
             loadTableConfig() {
-                this.$wire.getConfig().then(
+                $wire.getConfig().then(
                     result => {
                         this.enabledCols = result.enabledCols;
                         this.availableCols = result.availableCols;
@@ -372,7 +394,7 @@ document.addEventListener('alpine:init', () => {
                 this.filters[this.filterIndex].push(newFilter);
                 this.resetFilter();
                 this.filterSelectType = 'text';
-                this.$wire.getColLabels().then(result => {this.colLabels = result;});
+                $wire.getColLabels().then(result => {this.colLabels = result;});
 
                 this.$nextTick(() => this.$refs.filterColumn.focus());
             },
@@ -497,10 +519,13 @@ window.formatters = {
         }
 
         const documentCurrencyCode = document.querySelector('meta[name="currency-code"]')?.getAttribute('content');
+        const bodyDocumentCurrencyCode = document.body.dataset.currencyCode;
 
         let currencyCode;
 
-        if (currency === null && documentCurrencyCode) {
+        if (currency === null && bodyDocumentCurrencyCode) {
+            currencyCode = bodyDocumentCurrencyCode;
+        } else if (currency === null && documentCurrencyCode) {
             currencyCode = documentCurrencyCode;
         } else if (typeof currency === 'string') {
             currencyCode = currency;
@@ -574,7 +599,8 @@ window.formatters = {
     },
     array(value) {
         if (! Array.isArray(value)) {
-            return value;
+            // map string or object to array
+            value = typeof value === 'object' ? Object.values(value) : [value];
         }
 
         return value.map(item => {
@@ -665,6 +691,10 @@ window.formatters = {
             return value;
         }
 
+        let inputValue = value;
+        // make the value absolute
+        value = Math.abs(value);
+
         let seconds = Math.floor(value / 1000);
         let minutes = Math.floor(seconds / 60);
         seconds = seconds % 60;
@@ -675,7 +705,7 @@ window.formatters = {
         minutes = minutes.toString().padStart(2, '0');
         seconds = seconds.toString().padStart(2, '0');
 
-        return `${hours}:${minutes}:${seconds}`;
+        return (inputValue < value ? '-' : '') + `${hours}:${minutes}:${seconds}`;
     },
     float(value) {
         if (isNaN(parseFloat(value))) {

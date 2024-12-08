@@ -61,7 +61,7 @@
                             x-anchor.bottom-start.offset.5="$refs.selectedActions"
                         >
                             <x-card x-on:click="showSelectedActions = false;">
-                                <div class="flex flex-col">
+                                <div class="flex flex-col gap-1.5">
                                     @foreach($selectedActions as $action)
                                         {{ $action }}
                                     @endforeach
@@ -198,6 +198,7 @@
             x-bind:data-id="record.id"
             x-bind:key="record.id"
             x-on:click="$dispatch('data-table-row-clicked', record)"
+            @if($allowSoftDeletes) x-bind:class="record.deleted_at ? 'opacity-50' : ''" @endif
             {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
         >
             @if($isSelectable)
@@ -222,29 +223,39 @@
                     x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
                     class="cursor-pointer"
                     x-bind:href="record?.href ?? false">
-                    <div class="flex gap-1.5">
-                        <div x-html="formatter(leftAppend[col], record)">
+                    <div class="flex gap-1.5 flex-wrap">
+                        <div class="flex flex-wrap gap-1" x-html="formatter(leftAppend[col], record)">
                         </div>
                         <div class="flex-grow">
-                            <div x-html="formatter(topAppend[col], record)">
+                            <div class="flex flex-wrap gap-1" x-html="formatter(topAppend[col], record)">
                             </div>
-                            <div  {{ $cellAttributes->merge(['x-html' => 'formatter(col, record)']) }}>
+                            <div class="flex flex-wrap gap-1" {{ $cellAttributes->merge(['x-html' => 'formatter(col, record)']) }}>
                             </div>
-                            <div x-html="formatter(bottomAppend[col], record)">
+                            <div class="flex flex-wrap gap-1" x-html="formatter(bottomAppend[col], record)">
                             </div>
                         </div>
-                        <div x-html="formatter(rightAppend[col], record)">
+                        <div class="flex flex-wrap gap-1" x-html="formatter(rightAppend[col], record)">
                         </div>
                     </div>
                 </x-tall-datatables::table.cell>
             </template>
             @if($rowActions ?? false)
                 <td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap px-3 py-4">
-                    <div class="flex gap-1.5">
+                    <div class="flex gap-1.5" @if($allowSoftDeletes) x-bind:class="record.deleted_at ? 'hidden' : ''" @endif>
                         @foreach($rowActions as $rowAction)
                             {{ $rowAction }}
                         @endforeach
                     </div>
+                    @if($showRestoreButton && $allowSoftDeletes)
+                        <div class="flex gap-1.5" x-show="record.deleted_at">
+                            <x-button
+                                primary
+                                wire:click="restore(record.id)"
+                            >
+                                {{ __('Restore') }}
+                            </x-button>
+                        </div>
+                    @endif
                 </td>
             @endif
             {{-- Empty cell for the col selection--}}

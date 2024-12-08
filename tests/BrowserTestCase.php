@@ -11,14 +11,14 @@ class BrowserTestCase extends TestCase
         return function () {};
     }
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
         trigger('browser.testCase.setUp', $this);
     }
 
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         trigger('browser.testCase.tearDown', $this);
 

@@ -24,7 +24,7 @@ class SearchController extends Controller
         /** @var Builder $query */
         if ($request->has('selected')) {
             $selected = $request->get('selected');
-            $optionValue = $request->get('option-value') ?: (new $model)->getKeyName();
+            $optionValue = $request->get('option-value') ?: app($model)->getKeyName();
 
             $query = $model::query();
             is_array($selected)

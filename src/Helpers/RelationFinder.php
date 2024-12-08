@@ -14,7 +14,7 @@ class RelationFinder extends BaseRelationFinder
     public static function forModel(string|Model $model): Collection
     {
         if (is_string($model)) {
-            $model = new $model;
+            $model = app($model);
         }
 
         return (new static())->relations($model);

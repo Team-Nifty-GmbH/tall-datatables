@@ -36,14 +36,13 @@ class ModelInfo extends BaseModelInfo
         }
 
         if (is_string($model)) {
-            $model = new $model;
+            $model = app($model);
         }
 
         try {
             $relations = RelationFinder::forModel($model);
         } catch (\Throwable $e) {
             throw $e;
-            $relations = collect();
         }
 
         try {

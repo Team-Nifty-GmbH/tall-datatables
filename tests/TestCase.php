@@ -8,7 +8,7 @@ use WireUi\ServiceProvider as WireUiServiceProvider;
 
 class TestCase extends \Orchestra\Testbench\Dusk\TestCase
 {
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->afterApplicationCreated(function () {
             $this->makeACleanSlate();

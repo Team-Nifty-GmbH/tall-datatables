@@ -9,6 +9,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
@@ -53,6 +54,8 @@ class DataTable extends Component
      */
     #[Locked]
     public array $filters = [];
+
+    public bool $withSoftDeletes = false;
 
     /**
      * These are the columns that will be available to the user.
@@ -155,6 +158,8 @@ class DataTable extends Component
 
     protected ?string $includeBefore = null;
 
+    protected ?string $includeAfter = null;
+
     protected bool $useWireNavigate = true;
 
     protected $listeners = ['loadData'];
@@ -206,6 +211,21 @@ class DataTable extends Component
     protected function getEnabledCols(): array
     {
         return $this->enabledCols;
+    }
+
+    protected function allowSoftDeletes(): bool
+    {
+        return in_array(
+            SoftDeletes::class,
+            class_uses_recursive(
+                $this->getModel()
+            )
+        );
+    }
+
+    protected function showRestoreButton(): bool
+    {
+        return method_exists(static::class, 'restore');
     }
 
     #[Renderless]
@@ -319,7 +339,7 @@ class DataTable extends Component
         foreach ($this->getIncludedRelations() as $loadedRelation) {
             $relationFormatters = method_exists($loadedRelation['model'], 'typeScriptAttributes')
                 ? $loadedRelation['model']::typeScriptAttributes()
-                : (new $loadedRelation['model'])->getCasts();
+                : app($loadedRelation['model'])->getCasts();
 
             foreach ($loadedRelation['loaded_columns'] as $loadedColumn) {
                 $formatters[$loadedColumn['loaded_as']] = $relationFormatters[$loadedColumn['column']] ?? null;
@@ -431,7 +451,10 @@ class DataTable extends Component
         $this->setData(is_array($result) ? $result : $result->toArray());
 
         if (in_array('*', $this->selected)) {
-            $this->selected = array_diff(array_column($this->data['data'], 'id'), $this->wildcardSelectExcluded);
+            $this->selected = array_diff(
+                array_column($this->data['data'] ?? $this->data, $this->modelKeyName),
+                $this->wildcardSelectExcluded
+            );
             $this->selected[] = '*';
             $this->selected = array_values($this->selected);
         }
@@ -460,6 +483,10 @@ class DataTable extends Component
                 ->toEloquentBuilder($this->enabledCols, $this->perPage, $this->page);
         } else {
             $query = $model::query();
+        }
+
+        if ($this->withSoftDeletes && $this->allowSoftDeletes()) {
+            $query->withTrashed();
         }
 
         if ($this->userOrderBy) {
@@ -739,16 +766,24 @@ class DataTable extends Component
             $item->append($appends);
         }
 
-        $dotted = Arr::dot($item->toArray());
+        $rawArray = $item->toArray();
+        $dotted = Arr::dot($rawArray);
         $itemArray = [];
         $returnKeys = $this->getReturnKeys();
 
-        // n:n or 1:n or n:1 relations have numeric keys while the the relation path has not
+        // n:n or 1:n or n:1 relations have numeric keys while the relation path has not
         // so we need to filter out the numeric keys and convert them to the relation path
         foreach ($dotted as $key => $value) {
+            $originalKey = $key;
             $explodedKey = explode('.', $key);
             $key = array_filter($explodedKey, fn ($part) => ! is_numeric($part));
             $key = implode('.', $key);
+
+            $shortenedKey = Str::beforeLast($key, '.');
+            if (is_array(data_get($rawArray, Str::beforeLast($originalKey, '.'))) && in_array($shortenedKey, $returnKeys)) {
+                $key = $shortenedKey;
+            }
+
             if (! in_array($key, $returnKeys)) {
                 continue;
             }
@@ -776,7 +811,8 @@ class DataTable extends Component
     {
         return array_filter(array_merge(
             $this->enabledCols,
-            [$this->modelKeyName, 'href']
+            [$this->modelKeyName, 'href'],
+            $this->withSoftDeletes ? ['deleted_at'] : []
         ));
     }
 
@@ -824,7 +860,12 @@ class DataTable extends Component
 
     public function render(): View|Factory|Application|null
     {
-        return view($this->view, $this->getViewData());
+        return view($this->getView(), $this->getViewData());
+    }
+
+    protected function getView(): string
+    {
+        return $this->view;
     }
 
     protected function getViewData(): array
@@ -845,7 +886,10 @@ class DataTable extends Component
             'useWireNavigate' => $this->useWireNavigate,
             'colLabels' => $this->colLabels,
             'includeBefore' => $this->includeBefore,
+            'includeAfter' => $this->includeAfter,
             'selectValue' => $this->getSelectValue(),
+            'allowSoftDeletes' => $this->allowSoftDeletes(),
+            'showRestoreButton' => $this->showRestoreButton(),
         ];
     }
 

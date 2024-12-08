@@ -1,7 +1,17 @@
 <x-tall-datatables::data-table-wrapper :attributes="$componentAttributes" >
     @includeWhen($includeBefore, $includeBefore)
     @if($hasSidebar)
-        <x-tall-datatables::options />
+        <x-tall-datatables::sidebar x-on:keydown.esc="showSidebar = false" x-show="showSidebar">
+            <livewire:tall-datatables::options
+                :is-filterable="$isFilterable"
+                :aggregatable="$aggregatable"
+                :is-exportable="$isExportable"
+                lazy
+            />
+            <x-slot:footer>
+                <x-button x-on:click="showSidebar = false">{{ __('Close') }}</x-button>
+            </x-slot:footer>
+        </x-tall-datatables::sidebar>
     @endif
     @if($hasHead)
         <x-tall-datatables::head
@@ -9,6 +19,7 @@
             :model-name="$modelName"
             :table-actions="$tableActions"
             :headline="$headline"
+            :allow-soft-deletes="$allowSoftDeletes"
         />
         @if($actions ?? false)
             <x-dropdown>
@@ -33,5 +44,8 @@
         :use-wire-navigate="$useWireNavigate"
         :is-selectable="$isSelectable"
         :select-value="$selectValue"
+        :allow-soft-deletes="$allowSoftDeletes"
+        :show-restore-button="$showRestoreButton"
     />
+    @includeWhen($includeAfter, $includeAfter)
 </x-tall-datatables::data-table-wrapper>
