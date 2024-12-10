@@ -669,6 +669,8 @@ window.formatters = {
         const years = days / 365;
 
         switch (true) {
+            case seconds < 10:
+                return 'now';
             case seconds < 60:
                 return timeFormatter.format(Math.round(seconds) * -1, 'second');
             case minutes < 60:
