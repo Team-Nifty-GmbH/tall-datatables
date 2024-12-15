@@ -1,17 +1,19 @@
-<x-tall-datatables::data-table-wrapper :attributes="$componentAttributes" >
+<x-tall-datatables::data-table-wrapper :attributes="$componentAttributes">
     @includeWhen($includeBefore, $includeBefore)
     @if($hasSidebar)
-        <x-tall-datatables::sidebar x-on:keydown.esc="showSidebar = false" x-show="showSidebar">
-            <livewire:tall-datatables::options
-                :is-filterable="$isFilterable"
-                :aggregatable="$aggregatable"
-                :is-exportable="$isExportable"
-                lazy
-            />
-            <x-slot:footer>
-                <x-button x-on:click="showSidebar = false">{{ __('Close') }}</x-button>
-            </x-slot:footer>
-        </x-tall-datatables::sidebar>
+        @teleport('body')
+            <x-tall-datatables::sidebar x-on:keydown.esc="showSidebar = false" x-show="showSidebar">
+                <livewire:tall-datatables::options
+                    :is-filterable="$isFilterable"
+                    :aggregatable="$aggregatable"
+                    :is-exportable="$isExportable"
+                    lazy
+                />
+                <x-slot:footer>
+                    <x-button x-on:click="showSidebar = false">{{ __('Close') }}</x-button>
+                </x-slot:footer>
+            </x-tall-datatables::sidebar>
+        @endteleport
     @endif
     @if($hasHead)
         <x-tall-datatables::head

@@ -1,5 +1,5 @@
-<div class="fixed inset-0 z-30 overflow-y-auto p-4" {{ $attributes->only('x-show') }}>
-    <div x-on:click="{{ $attributes->get('x-show') }} = false;" class="bg-secondary-400 dark:bg-secondary-700 fixed inset-0 transform bg-opacity-60 transition-opacity dark:bg-opacity-60" {{ $attributes }} x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+<div>
+    <div x-on:click="{{ $attributes->get('x-show') }} = false;" class="z-30 overflow-y-auto p-4 bg-secondary-400 dark:bg-secondary-700 fixed inset-0 transform bg-opacity-60 transition-opacity dark:bg-opacity-60" {{ $attributes }} x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
     </div>
     <aside
         x-cloak

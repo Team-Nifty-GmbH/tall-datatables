@@ -1,4 +1,4 @@
-<div class="mt-2" x-data="{searchRelations: null, searchColumns: null, searchAggregatable: null}" x-init.once="columnsSortable($el.querySelector('.table-cols'))">
+<div class="mt-2" x-data="{searchRelations: null, searchColumns: null, searchAggregatable: null}">
     @if(auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
         <x-dialog z-index="z-40" id="save-filter" :title="__('Save filter')">
             <x-input required :label="__('Filter name')" x-model="filterName" />
@@ -550,9 +550,9 @@
                     },
                 }"
             >
-                <div class="table-cols">
+                <div class="table-cols" x-sort="columnSortHandle($item, $position)">
                     <template x-for="col in availableCols">
-                        <div x-bind:data-column="col" x-show="col !== '__placeholder__'">
+                        <div x-sort:item="col" x-bind:data-column="col" x-show="col !== '__placeholder__'">
                             <label x-bind:for="col" class="flex items-center">
                                 <div class="relative flex items-start">
                                     <div class="flex items-center h-5">
