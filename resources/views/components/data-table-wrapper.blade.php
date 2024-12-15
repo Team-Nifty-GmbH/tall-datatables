@@ -1,4 +1,4 @@
-<div wire:init="loadData()">
+<div x-init.once="$wire.loadData()">
     <div
         class="relative"
         wire:ignore
