@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Traits;
 
+use Illuminate\Database\Eloquent\BroadcastsEvents;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 
@@ -9,21 +10,31 @@ trait HasEloquentListeners
 {
     public array $broadcastChannels = [];
 
+    protected bool $withoutEloquentListeners = false;
+
     protected function getPaginator(LengthAwarePaginator $paginator): LengthAwarePaginator
     {
+        if ($this->withoutEloquentListeners ||
+            ! in_array(BroadcastsEvents::class, class_uses_recursive($this->getModel()))
+        ) {
+            return $paginator;
+        }
+
         $this->broadcastChannels = [];
         foreach ($paginator->items() as $item) {
             $this->broadcastChannels[$item->getKey()] = $item->broadcastChannel();
         }
 
-        if (
-            in_array(BroadcastsEvents::class, class_uses_recursive($this->getModel()))
-            && $paginator->currentPage() === 1
-        ) {
+        if ($paginator->currentPage() === 1) {
             $this->broadcastChannels['created'] = $this->getModel()::getBroadcastChannel(true);
         }
 
         return $paginator;
+    }
+
+    protected function getKeyFromEventData(array $eventData): int|string|null
+    {
+        return data_get($eventData, 'model.' . $this->modelKeyName);
     }
 
     public function eloquentEventOccurred(string $event, array $data): void
@@ -35,8 +46,8 @@ trait HasEloquentListeners
 
     public function echoUpdated(array $eventData): void
     {
-        $model = $this->buildSearch()->whereKey($eventData['model'][$this->modelKeyName])->first();
-        if ($model === null) {
+        $model = $this->buildSearch()->whereKey($this->getKeyFromEventData($eventData))->first();
+        if (is_null($model)) {
             // seems like the model doesnt match the search criteria
             $this->echoDeleted($eventData);
 
@@ -53,8 +64,8 @@ trait HasEloquentListeners
 
     public function echoCreated(array $eventData): void
     {
-        $model = $this->buildSearch()->whereKey($eventData['model'][$this->modelKeyName])->first();
-        if ($model === null) {
+        $model = $this->buildSearch()->whereKey($this->getKeyFromEventData($eventData))->first();
+        if (is_null($model)) {
             return;
         }
 
