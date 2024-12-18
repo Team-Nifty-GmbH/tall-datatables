@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Traits;
 
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Database\Eloquent\BroadcastableModelEventOccurred;
@@ -51,7 +52,7 @@ trait BroadcastsEvents
         return (new BroadcastableModelEventOccurred($this, $event))->dontBroadcastToCurrentUser();
     }
 
-    public function broadcastOn($event): array
+    public function broadcastOn($event): array|Channel
     {
         return [new PrivateChannel($this->broadcastChannel($event === 'created'))];
     }
