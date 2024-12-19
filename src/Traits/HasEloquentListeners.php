@@ -5,7 +5,6 @@ namespace TeamNiftyGmbH\DataTable\Traits;
 use Illuminate\Database\Eloquent\BroadcastsEvents;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 
 trait HasEloquentListeners
 {
@@ -33,7 +32,6 @@ trait HasEloquentListeners
             $newModel = new $model();
             $this->broadcastChannels['created'] = $newModel->broadcastChannel() . $model::max($newModel->getKeyName()) + 1;
         }
-
 
         return $paginator;
     }
