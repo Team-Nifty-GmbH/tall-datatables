@@ -5,6 +5,7 @@ namespace TeamNiftyGmbH\DataTable\Traits;
 use Illuminate\Database\Eloquent\BroadcastsEvents;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 trait HasEloquentListeners
 {
@@ -14,8 +15,9 @@ trait HasEloquentListeners
 
     protected function getPaginator(LengthAwarePaginator $paginator): LengthAwarePaginator
     {
+        $model = $this->getModel();
         if ($this->withoutEloquentListeners ||
-            ! in_array(BroadcastsEvents::class, class_uses_recursive($this->getModel()))
+            ! in_array(BroadcastsEvents::class, class_uses_recursive($model))
         ) {
             return $paginator;
         }
@@ -25,9 +27,13 @@ trait HasEloquentListeners
             $this->broadcastChannels[$item->getKey()] = $item->broadcastChannel();
         }
 
-        if ($paginator->currentPage() === 1) {
-            $this->broadcastChannels['created'] = $this->getModel()::getBroadcastChannel(true);
+        if ($paginator->currentPage() === 1 && method_exists($model, 'getBroadcastChannel')) {
+            $this->broadcastChannels['created'] = $model::getBroadcastChannel(true);
+        } else {
+            $newModel = new $model();
+            $this->broadcastChannels['created'] = $newModel->broadcastChannel() . $model::max($newModel->getKeyName()) + 1;
         }
+
 
         return $paginator;
     }
