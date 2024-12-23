@@ -1,5 +1,5 @@
 <x-tall-datatables::table x-on:data-table-record-selected="if(! $wire.selected.includes('*')) return; ! $event.target.checked ? $wire.wildcardSelectExcluded.push($event.detail.{{ $selectValue }}) : console.log('adding')" class="relative">
-    <tr wire:loading.delay.longer class="absolute bottom-0 top-0 right-0 w-full">
+    <tr wire:loading.delay.longer wire:target.except="storeColLayout" x-cloak class="absolute bottom-0 top-0 right-0 w-full">
         <td>
             <x-tall-datatables::spinner />
         </td>
