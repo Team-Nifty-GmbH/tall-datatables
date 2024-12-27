@@ -45,6 +45,10 @@ trait HasEloquentListeners
     {
         $event = str_replace('.' . class_basename($this->getModel()), 'echo', $event);
 
+        if (! method_exists($this, $event)) {
+            return;
+        }
+
         $this->{$event}($data);
     }
 
