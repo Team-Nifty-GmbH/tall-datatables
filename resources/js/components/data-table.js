@@ -430,6 +430,7 @@ export default function data_table($wire)
             this.filters = [];
             this.filterIndex = 0;
             this.textFilter = {};
+            $wire.forgetSessionFilter();
             $wire.sortTable('');
         },
         resetFilter() {

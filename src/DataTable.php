@@ -23,6 +23,7 @@ use Livewire\Component;
 use Spatie\ModelInfo\Attributes\Attribute;
 use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
+use TeamNiftyGmbH\DataTable\Helpers\SessionFilter;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\StoresSettings;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsAggregation;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsCache;
@@ -71,6 +72,8 @@ class DataTable extends Component
     public array $columnLabels = [];
 
     public array $userFilters = [];
+
+    public array $sessionFilter = [];
 
     public ?int $loadedFilterId = null;
 
@@ -439,6 +442,17 @@ class DataTable extends Component
     }
 
     #[Renderless]
+    public function forgetSessionFilter(bool $loadData = false): void
+    {
+        session()->forget($this->getCacheKey() . '_query');
+        $this->sessionFilter = [];
+
+        if ($loadData) {
+            $this->loadData();
+        }
+    }
+
+    #[Renderless]
     public function loadData(): void
     {
         $this->initialized = true;
@@ -518,6 +532,25 @@ class DataTable extends Component
         $query->select(array_merge($select, [$this->modelTable . '.' . $this->modelKeyName]));
 
         $query = $this->getBuilder($query);
+
+        if (session()->has($this->getCacheKey() . '_query')) {
+            $sessionFilter = session()->get($this->getCacheKey() . '_query');
+
+            if ($sessionFilter instanceof SessionFilter) {
+                $sessionFilter->getClosure()($query, $this);
+
+                $this->sessionFilter = [
+                    'name' => $sessionFilter->name,
+                ];
+
+                if (! $sessionFilter->loaded) {
+                    $this->userFilters = [];
+                    $sessionFilter->loaded = true;
+
+                    session()->put($this->getCacheKey() . '_query', $sessionFilter);
+                }
+            }
+        }
 
         return $this->applyFilters($query);
     }
