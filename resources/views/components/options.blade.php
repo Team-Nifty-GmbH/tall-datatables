@@ -579,9 +579,9 @@
                             </label>
                         </div>
                     </template>
-                    <div class="flex justify-end pt-2">
-                        <x-button x-on:click="resetLayout" :label="__('Reset Layout')" />
-                    </div>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <x-button x-on:click="resetLayout" :label="__('Reset Layout')" />
                 </div>
                 <div class="text-sm font-medium text-gray-700 dark:text-gray-50">
                     <div class="flex overflow-x-auto">
