@@ -122,7 +122,7 @@ export default function formatters() {
             }
 
             return value.map(item => {
-                return this.badge(item, 'indigo');
+                return this.badge(this.format({value: item}), 'indigo');
             })
                 .join(' ');
         },
@@ -329,11 +329,11 @@ export default function formatters() {
                     return 'url';
                 }
 
-                if (value.includes('@')) {
+                if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
                     return 'email';
                 }
 
-                if (value.match(/^\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}(:\d{2})?$/)) {
+                if (value.match(/^\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$/)) {
                     return 'datetime';
                 }
 

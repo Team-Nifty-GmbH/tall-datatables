@@ -36,7 +36,7 @@ trait SupportsRelations
 
     public function mountSupportsRelations(): void
     {
-        $this->loadRelation($this->getModel(), null);
+        $this->loadRelation($this->getModel());
     }
 
     #[Renderless]
@@ -160,6 +160,7 @@ trait SupportsRelations
         $modelInfos = [];
         $filterable = [];
         $sortable = [];
+        $relatedFormatters = [];
 
         foreach (array_merge($this->enabledCols, $this->getReturnKeys()) as $enabledCol) {
             $segments = explode('.', $enabledCol);
@@ -219,6 +220,10 @@ trait SupportsRelations
 
             $attributeInfo = $modelInfo->attribute($fieldName);
 
+            $isManyRelation = $relationInstance instanceof HasMany
+                || $relationInstance instanceof HasManyThrough
+                || $relationInstance instanceof BelongsToMany;
+
             if (! ($attributeInfo?->virtual ?? true)) {
                 if (($with[$path ?? '__root__'] ?? false) !== ['*']) {
                     $with[$path ?? '__root__'][] = $fieldName;
@@ -232,10 +237,7 @@ trait SupportsRelations
                     ! $segments
                     || (
                         $relationInstance
-                        && ! $relationInstance instanceof MorphTo
-                        && ! $relationInstance instanceof HasMany
-                        && ! $relationInstance instanceof HasManyThrough
-                        && ! $relationInstance instanceof BelongsToMany
+                        && ! $isManyRelation
                         && (
                             method_exists($relationInstance, 'getForeignKeyName')
                             || method_exists($relationInstance, 'getForeignKey')
@@ -244,6 +246,13 @@ trait SupportsRelations
                 ) {
                     $sortable[] = $enabledCol;
                 }
+
+                if ($isManyRelation) {
+                    $relatedFormatters[$enabledCol] = 'array';
+                } elseif ($attributeInfo->formatter) {
+                    $relatedFormatters[$enabledCol] = $attributeInfo->formatter;
+                }
+
             } else {
                 // a virtual attribute is enabled, as we dont know which other fields are required
                 // for the virtual attribute we cant use the select statement
@@ -263,6 +272,7 @@ trait SupportsRelations
             $filterable,
             $this->filterValueLists ?? [],
             array_values(array_unique($sortable ?? [])),
+            $relatedFormatters,
         ];
 
         Cache::put(
