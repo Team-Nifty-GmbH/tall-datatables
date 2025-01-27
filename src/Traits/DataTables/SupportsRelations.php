@@ -5,6 +5,9 @@ namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
@@ -225,9 +228,14 @@ trait SupportsRelations
 
                 // only sortable if the field is not virtual
                 // and the relationInstance has getForeignKeyName or getForeignKey
-                if (! $segments
+                if (
+                    ! $segments
                     || (
                         $relationInstance
+                        && ! $relationInstance instanceof MorphTo
+                        && ! $relationInstance instanceof HasMany
+                        && ! $relationInstance instanceof HasManyThrough
+                        && ! $relationInstance instanceof BelongsToMany
                         && (
                             method_exists($relationInstance, 'getForeignKeyName')
                             || method_exists($relationInstance, 'getForeignKey')
@@ -327,6 +335,7 @@ trait SupportsRelations
         // Start with the columns from the main model
         $selects = [$model->getTable() . '.*'];
 
+        $relatedTable = null;
         foreach ($relationParts as $relationName) {
             $relationName = Str::camel($relationName);
 
@@ -344,12 +353,12 @@ trait SupportsRelations
             $relatedTable = $relatedModel->getTable();
             $parentTable = $model->getTable();
 
-            if (method_exists($relation, 'getForeignKeyName')) {
+            if (method_exists($relation, 'getForeignKeyName') && method_exists($relation, 'getOwnerKeyName')) {
                 // For belongsTo relationships
                 $foreignKey = $relation->getForeignKeyName();
                 $ownerKey = $relation->getOwnerKeyName();
                 $query->join($relatedTable, "$parentTable.$foreignKey", '=', "$relatedTable.$ownerKey");
-            } elseif (method_exists($relation, 'getForeignKey')) {
+            } elseif (method_exists($relation, 'getForeignKey') && method_exists($relation, 'getLocalKeyName')) {
                 // For hasOne and hasMany relationships
                 $foreignKey = $relation->getForeignKey();
                 $localKey = $relation->getLocalKeyName();
