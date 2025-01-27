@@ -462,6 +462,13 @@ class DataTable extends Component
 
         $result = $this->getResultFromQuery($query);
 
+        if ($result->isEmpty() && $this->page > 1) {
+            $this->reset('page');
+            $this->loadData();
+
+            return;
+        }
+
         $this->setData(is_array($result) ? $result : $result->toArray());
 
         if (in_array('*', $this->selected)) {
@@ -741,10 +748,11 @@ class DataTable extends Component
     {
         try {
             if (property_exists($query, 'scout_pagination')) {
-                $total = data_get($query->scout_pagination, 'estimatedTotalHits');
+                $items = $query->get();
+                $total = min(data_get($query->scout_pagination, 'estimatedTotalHits'), $query->count());
                 $limit = data_get($query->scout_pagination, 'limit');
                 $result = new LengthAwarePaginator(
-                    $query->get(),
+                    $items,
                     $total,
                     $limit,
                     ceil(data_get($query->scout_pagination, 'offset') / $limit) + 1,
