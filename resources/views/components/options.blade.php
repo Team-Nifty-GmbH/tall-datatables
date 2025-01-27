@@ -34,7 +34,7 @@
                         <x-radio :label="__('Start of')" value="1" x-model="newFilterCalculation.is_start_of" />
                         <x-radio :label="__('End of')" value="0" x-model="newFilterCalculation.is_start_of" />
                     </div>
-                    <div class="flex-1" x-show="newFilterCalculation.is_start_of?.length > 0">
+                    <div class="flex-1" x-cloak x-show="newFilterCalculation.is_start_of?.length > 0">
                         <x-native-select
                             x-model="newFilterCalculation.start_of"
                             option-key-value="true"
@@ -101,7 +101,7 @@
             <div x-cloak x-show="tab === 'edit-filters'">
                 <form class="grid grid-cols-1 gap-3" x-on:submit.prevent="addFilter();">
                     @if(auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
-                        <template x-if="savedFilters?.length > 0">
+                        <template x-if="$wire.$parent.savedFilters?.length > 0">
                             <div>
                                 <div class="flex justify-between block w-full px-3 py-2 text-base sm:text-sm shadow-sm
                                         rounded-md border bg-white focus:ring-1 focus:outline-none cursor-pointer
@@ -119,16 +119,16 @@
                                 </div>
                                 <div
                                     class="relative py-3"
+                                    x-collapse
                                     x-show="showSavedFilters"
                                     x-cloak
                                 >
-                                    <x-tall-datatables::spinner />
                                     <div
                                         class="grid grid-cols-1 gap-3 justify-center items-center"
                                         x-data="{detail: null}"
                                     >
-                                        <template x-for="(filter, index) in savedFilters">
-                                            <div x-show="! filter.is_layout">
+                                        <template x-for="(filter, index) in $wire.$parent.savedFilters">
+                                            <div>
                                                 <x-card>
                                                     <x-slot:title>
                                                         <span x-text="filter.name"></span>
@@ -167,11 +167,13 @@
                                                         </div>
                                                     </div>
                                                     <div
-                                                        x-transition
+                                                        x-collapse
+                                                        x-cloak
                                                         x-show="detail === index"
                                                     >
                                                         <div
                                                             class="flex flex-col space-y-4 justify-center items-center"
+                                                            x-cloak
                                                             x-show="filter.settings.userFilters.length > 0"
                                                         >
                                                             <template x-for="(orFilters, orIndex) in filter.settings.userFilters">
@@ -202,7 +204,7 @@
                                                                     </template>
                                                                 </div>
                                                             </template>
-                                                            <x-badge x-show="filter.settings.orderBy" flat amber>
+                                                            <x-badge x-cloak x-show="filter.settings.orderBy" flat amber>
                                                                 <x-slot:label>
                                                                     <span>{{ __('Order by') }}</span>
                                                                     <span x-text="filter.settings.orderBy"></span>
@@ -245,7 +247,7 @@
                             <option x-bind:value="col" x-text="getLabel(col)"></option>
                         </template>
                     </datalist>
-                    <div x-show="filterSelectType !== 'valueList' && filterSelectType !== 'search'">
+                    <div x-cloak x-show="filterSelectType !== 'valueList' && filterSelectType !== 'search'">
                         <x-input
                             name="new-filter-operator"
                             x-ref="filterOperator"
@@ -267,7 +269,7 @@
                             <option value="between">{{ __('between') }}</option>
                         </datalist>
                     </div>
-                    <div x-show="filterSelectType === 'valueList'">
+                    <div x-cloak x-show="filterSelectType === 'valueList'">
                         <x-native-select
                             name="new-filter-value-select"
                             x-model="newFilter.value"
@@ -279,7 +281,7 @@
                             </template>
                         </x-native-select>
                     </div>
-                    <div x-show="filterSelectType === 'text'" class="flex flex-col gap-1.5">
+                    <div x-cloak x-show="filterSelectType === 'text'" class="flex flex-col gap-1.5">
                         <div class="flex items-center gap-1.5">
                             <x-input
                                 name="new-filter-value"
@@ -289,11 +291,11 @@
                                 placeholder="{{ __('Value') }}"
                                 x-ref="filterValue"
                             />
-                            <div class="flex" x-show="newFilter.value[0]?.hasOwnProperty('calculation')">
+                            <div class="flex" x-cloak x-show="newFilter.value[0]?.hasOwnProperty('calculation')">
                                 <x-badge primary x-text="getCalculationLabel(newFilter.value[0]?.calculation)">
                                 </x-badge>
                             </div>
-                            <div x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
+                            <div x-cloak x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
                                 <x-button
                                     icon="calculator"
                                     class="w-full"
@@ -317,13 +319,14 @@
                                 </x-button>
                             </div>
                         </div>
-                        <div x-show="newFilter.operator === 'between'">
+                        <div x-cloak x-show="newFilter.operator === 'between'">
                             <x-label class="text-center">
                                 {{ __('and') }}
                             </x-label>
                             <div class="flex items-center gap-1.5">
                                 <x-input
                                     name="new-filter-value-2"
+                                    x-cloak
                                     x-show="! newFilter.value[1]?.hasOwnProperty('calculation')"
                                     x-bind:type="getFilterInputType(newFilter.relation + '.' + newFilter.column)"
                                     x-model="newFilter.value[1]"
@@ -334,7 +337,7 @@
                                     <x-badge primary x-text="getCalculationLabel(newFilter.value[1]?.calculation)">
                                     </x-badge>
                                 </div>
-                                <div x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
+                                <div x-cloak x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
                                     <x-button
                                         icon="calculator"
                                         class="w-full"
@@ -463,6 +466,7 @@
                         </x-badge>
                     </div>
                     <x-button
+                        x-cloak
                         x-show="filters.length > 0"
                         positive
                         :label="__('Add or')"
@@ -537,7 +541,7 @@
                 </div>
             </div>
         @endif
-        <div x-show="tab === 'columns'">
+        <div x-cloak x-show="tab === 'columns'">
             <div x-data="{
                     attributes: [],
                     availableCols: [...$wire.$parent.enabledCols, ...['__placeholder__']],
@@ -552,7 +556,7 @@
             >
                 <div class="table-cols" x-sort="columnSortHandle($item, $position)">
                     <template x-for="col in availableCols">
-                        <div x-sort:item="col" x-bind:data-column="col" x-show="col !== '__placeholder__'">
+                        <div x-sort:item="col" x-bind:data-column="col" x-cloak x-show="col !== '__placeholder__'">
                             <label x-bind:for="col" class="flex items-center">
                                 <div class="relative flex items-start">
                                     <div class="flex items-center h-5">
@@ -642,7 +646,7 @@
             </div>
         </div>
         @if($this->isExportable)
-            <div x-show="tab === 'export'">
+            <div x-cloak x-show="tab === 'export'">
                 <template x-for="columnName in exportableColumns">
                     <div>
                         <label for="" class="flex items-center ">
