@@ -462,7 +462,7 @@ class DataTable extends Component
 
         $result = $this->getResultFromQuery($query);
 
-        if ($result->isEmpty() && $this->page > 1) {
+        if (collect($result)->isEmpty() && $this->page > 1) {
             $this->reset('page');
             $this->loadData();
 
