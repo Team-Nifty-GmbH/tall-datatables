@@ -434,7 +434,7 @@ class DataTable extends Component
     #[Renderless]
     public function startSearch(): void
     {
-        $this->selected = [];
+        $this->reset('selected');
         $this->page = '1';
 
         $this->cacheState();
