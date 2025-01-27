@@ -2,6 +2,8 @@
 
 namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
+use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Renderless;
@@ -16,7 +18,9 @@ trait StoresSettings
 
     public function mountStoresSettings(): void
     {
-        $this->savedFilters = $this->getSavedFilters();
+        $this->savedFilters = $this->getSavedFilters(
+            fn (Builder $query) => $query->where('is_layout', false)
+        );
         $savedFilters = collect($this->savedFilters);
 
         $permanentFilter = $savedFilters->where('is_permanent', true)->first();
@@ -79,6 +83,10 @@ trait StoresSettings
             ],
             'is_permanent' => $permanent,
         ]);
+
+        $this->savedFilters = $this->getSavedFilters(
+            fn (Builder $query) => $query->where('is_layout', false)
+        );
     }
 
     /**
@@ -90,6 +98,10 @@ trait StoresSettings
         $this->ensureAuthHasTrait();
 
         Auth::user()->datatableUserSettings()->whereKey($id)->delete();
+
+        $this->savedFilters = $this->getSavedFilters(
+            fn (Builder $query) => $query->where('is_layout', false)
+        );
     }
 
     #[Renderless]
@@ -118,11 +130,11 @@ trait StoresSettings
     }
 
     #[Renderless]
-    public function getSavedFilters(): array
+    public function getSavedFilters(?Closure $filter = null): array
     {
         if (Auth::user() && method_exists(Auth::user(), 'getDataTableSettings')) {
             return Auth::user()
-                ->getDataTableSettings($this)
+                ->getDataTableSettings($this, $filter)
                 ?->toArray() ?? [];
         } else {
             return [];
