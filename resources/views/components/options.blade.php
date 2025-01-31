@@ -227,7 +227,7 @@
                         wire:loading.attr="disabled"
                         x-model="newFilter.relation"
                     >
-                        <option>{{  __('This table') }}</option>
+                        <option value="0">{{  __('This table') }}</option>
                         <template x-for="relation in $wire.$parent.selectedRelations">
                             <option x-bind:value="relation.name" x-text="relation.label"></option>
                         </template>

@@ -384,7 +384,7 @@ export default function data_table($wire)
             }
 
             newFilter.operator = Boolean(newFilter.operator) ? newFilter.operator : '=';
-            if (newFilter.relation) {
+            if (newFilter.relation && newFilter.relation !== '0') {
                 newFilter.column = newFilter.relation + '.' + newFilter.column;
                 newFilter.relation = '';
             }
