@@ -61,7 +61,7 @@ trait StoresSettings
      * @throws MissingTraitException
      */
     #[Renderless]
-    public function saveFilter(string $name, bool $permanent = false): void
+    public function saveFilter(string $name, bool $permanent = false, bool $withEnabledCols = true): void
     {
         $this->ensureAuthHasTrait();
 
@@ -73,16 +73,31 @@ trait StoresSettings
             'name' => $name,
             'component' => get_class($this),
             'cache_key' => $this->getCacheKey(),
-            'settings' => [
-                'enabledCols' => $this->enabledCols,
-                'aggregatableCols' => $this->aggregatableCols,
-                'userFilters' => $this->userFilters,
-                'userOrderBy' => $this->userOrderBy,
-                'userOrderAsc' => $this->userOrderAsc,
-                'perPage' => $this->perPage,
-            ],
+            'settings' => array_merge(
+                [
+                    'aggregatableCols' => $this->aggregatableCols,
+                    'userFilters' => $this->userFilters,
+                    'userOrderBy' => $this->userOrderBy,
+                    'userOrderAsc' => $this->userOrderAsc,
+                    'perPage' => $this->perPage,
+                ],
+                $withEnabledCols ? ['enabledCols' => $this->enabledCols] : []
+            ),
             'is_permanent' => $permanent,
         ]);
+
+        $this->savedFilters = $this->getSavedFilters(
+            fn (Builder $query) => $query->where('is_layout', false)
+        );
+    }
+
+    #[Renderless]
+    public function deleteSavedFilterEnabledCols(int $id): void
+    {
+        $savedFilter = Auth::user()->datatableUserSettings()->whereKey($id)->value('settings');
+        data_forget($savedFilter, 'enabledCols');
+
+        Auth::user()->datatableUserSettings()->whereKey($id)->update(['settings' => $savedFilter]);
 
         $this->savedFilters = $this->getSavedFilters(
             fn (Builder $query) => $query->where('is_layout', false)

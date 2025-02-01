@@ -533,7 +533,17 @@ class DataTable extends Component
         }
 
         // include selected relationships
-        [$with, $select, $filterable, $this->filterValueLists, $this->sortable, $formatters] = $this->constructWith();
+        [
+            $with,
+            $select,
+            $filterable,
+            $this->filterValueLists,
+            $this->sortable,
+            $formatters,
+            $enabledCols,
+        ] = $this->constructWith();
+
+        $this->enabledCols = $enabledCols;
         $this->formatters = array_merge($formatters, $this->formatters);
 
         $query->with($with);

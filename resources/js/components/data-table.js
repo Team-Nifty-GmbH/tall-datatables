@@ -439,6 +439,7 @@ export default function data_table($wire)
         },
         filterName: '',
         permanent: false,
+        withEnabledCols: true,
         exportColumns: [],
         exportableColumns: [],
         getColumns() {
@@ -451,6 +452,11 @@ export default function data_table($wire)
         savedFilters: [],
         getSavedFilters() {
             $wire.getSavedFilters().then(result => {this.savedFilters = result})
+        },
+        loadSavedFilter() {
+            $wire.loadSavedFilter().then(result => {
+                this.loadTableConfig();
+            });
         },
         toggleStickyCol(col) {
             if (this.stickyCols.includes(col)) {

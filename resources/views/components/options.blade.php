@@ -2,15 +2,15 @@
     @if(auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
         <x-dialog z-index="z-40" id="save-filter" :title="__('Save filter')">
             <x-input required :label="__('Filter name')" x-model="filterName" />
-            <div class="pt-3">
+            <div class="pt-3 flex flex-col gap-1.5">
                 <x-checkbox :label="__('Permanent')" x-model="permanent" />
+                <x-checkbox :label="__('With column layout')" x-model="withEnabledCols" />
             </div>
         </x-dialog>
     @endif
     @if($this->isFilterable)
         <x-dialog z-index="z-40" id="date-calculation">
             <div class="flex flex-col gap-3">
-
                 <div class="flex gap-3">
                     <x-button x-bind:class="newFilterCalculation.operator === '-' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '-'" negative>-</x-button>
                     <x-button x-bind:class="newFilterCalculation.operator === '+' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '+'" positive>+</x-button>
@@ -19,13 +19,14 @@
                         x-model="newFilterCalculation.unit"
                         option-key-value="true"
                         :options="[
-                                'minutes' => __('Minutes'),
-                                'hours' => __('Hours'),
-                                'days' => __('Days'),
-                                'weeks' => __('Weeks'),
-                                'months' => __('Months'),
-                                'years' => __('Years')
-                            ]">
+                            'minutes' => __('Minutes'),
+                            'hours' => __('Hours'),
+                            'days' => __('Days'),
+                            'weeks' => __('Weeks'),
+                            'months' => __('Months'),
+                            'years' => __('Years')
+                        ]"
+                    >
                     </x-native-select>
                 </div>
                 <div class="flex gap-3 w-full">
@@ -39,13 +40,14 @@
                             x-model="newFilterCalculation.start_of"
                             option-key-value="true"
                             :options="[
-                                        'minute' => __('Minute'),
-                                        'hour' => __('Hour'),
-                                        'day' => __('Day'),
-                                        'week' => __('Week'),
-                                        'month' => __('Month'),
-                                        'year' => __('Year')
-                                    ]">
+                                'minute' => __('Minute'),
+                                'hour' => __('Hour'),
+                                'day' => __('Day'),
+                                'week' => __('Week'),
+                                'month' => __('Month'),
+                                'year' => __('Year')
+                            ]"
+                        >
                         </x-native-select>
                     </div>
                 </div>
@@ -153,6 +155,12 @@
                                                             </x-badge>
                                                         </div>
                                                         <div class="flex gap-1 items-center">
+                                                            <x-button
+                                                                x-cloak
+                                                                x-show="filter.settings.enabledCols?.length"
+                                                                :label="__('Delete column layout')"
+                                                                wire:click="$wire.$parent.deleteSavedFilterEnabledCols(filter.id)"
+                                                            />
                                                             <x-button
                                                                 :label="__('Apply')"
                                                                 primary
@@ -482,7 +490,7 @@
                                     icon: 'question',
                                     accept: {
                                         label: '{{ __('Save') }}',
-                                        execute: () => {$wire.$parent.saveFilter(filterName, permanent); filterName = ''; permanent = false;},
+                                        execute: () => {$wire.$parent.saveFilter(filterName, permanent, withEnabledCols); filterName = ''; permanent = false;},
                                     },
                                     reject: {
                                         label: '{{ __('Cancel') }}',

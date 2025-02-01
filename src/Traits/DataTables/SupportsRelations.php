@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
+use BadMethodCallException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -174,10 +175,16 @@ trait SupportsRelations
                 $parentPath = $path;
                 $path = $path ? $path . '.' . $relationName : $relationName;
 
-                if ($model) {
-                    $relationInstance = $model->{$relationName}();
-                } else {
-                    $relationInstance = $modelBase->{$relationName}();
+                try {
+                    if ($model) {
+                        $relationInstance = $model->{$relationName}();
+                    } else {
+                        $relationInstance = $modelBase->{$relationName}();
+                    }
+                } catch (BadMethodCallException) {
+                    $this->enabledCols = array_diff($this->enabledCols, [$enabledCol]);
+
+                    continue 2;
                 }
 
                 try {
@@ -273,6 +280,7 @@ trait SupportsRelations
             $this->filterValueLists ?? [],
             array_values(array_unique($sortable ?? [])),
             $relatedFormatters,
+            $this->enabledCols,
         ];
 
         Cache::put(
@@ -330,7 +338,7 @@ trait SupportsRelations
                 if (method_exists($relationInstance, 'getMorphType')) {
                     data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getMorphType());
                 }
-            } catch (\ReflectionException|\BadMethodCallException) {
+            } catch (\ReflectionException|BadMethodCallException) {
             }
         }
 

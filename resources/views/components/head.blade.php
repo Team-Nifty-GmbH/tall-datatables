@@ -4,9 +4,9 @@
     </div>
 @endif
 <div class="flex w-full gap-5 justify-end">
-    @if(count($this->savedFilters) > 1 && $this->showSavedFilters)
+    @if(count($this->savedFilters) > 0 && $this->showSavedFilters)
         <div>
-            <x-select x-on:selected="$wire.loadSavedFilter()" wire:model="loadedFilterId" :placeholder="__('Saved filters')" :clearable="false">
+            <x-select x-on:selected="loadSavedFilter()" wire:model="loadedFilterId" :placeholder="__('Saved filters')" :clearable="false">
                 @foreach($this->savedFilters as $savedFilter)
                     @if(! $savedFilter['settings']['userFilters'] ?? false)
                         @continue
