@@ -133,7 +133,7 @@
                                             <div>
                                                 <x-card>
                                                     <x-slot:title>
-                                                        <span x-text="filter.name"></span>
+                                                        <x-input x-model="filter.name" x-on:input.debounce="$wire.$parent.updateSavedFilter(filter.id, filter)" />
                                                     </x-slot:title>
                                                     <x-slot:action>
                                                         <x-button.circle
@@ -159,7 +159,7 @@
                                                                 x-cloak
                                                                 x-show="filter.settings.enabledCols?.length"
                                                                 :label="__('Delete column layout')"
-                                                                wire:click="$wire.$parent.deleteSavedFilterEnabledCols(filter.id)"
+                                                                wire:click="$parent.deleteSavedFilterEnabledCols(filter.id)"
                                                             />
                                                             <x-button
                                                                 :label="__('Apply')"

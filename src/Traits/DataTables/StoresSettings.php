@@ -4,6 +4,7 @@ namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Renderless;
@@ -150,10 +151,21 @@ trait StoresSettings
         if (Auth::user() && method_exists(Auth::user(), 'getDataTableSettings')) {
             return Auth::user()
                 ->getDataTableSettings($this, $filter)
+                ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+                ->values()
                 ?->toArray() ?? [];
         } else {
             return [];
         }
+    }
+
+    #[Renderless]
+    public function updateSavedFilter($filterID, array $data): void
+    {
+        Auth::user()
+            ->datatableUserSettings()
+            ->whereKey($filterID)
+            ->update(Arr::only($data, ['name']));
     }
 
     /**
