@@ -775,7 +775,6 @@ class DataTable extends Component
                     ceil(data_get($query->scout_pagination, 'offset') / $limit) + 1,
                 );
             } else {
-                $query->ddRawSql();
                 $result = $query->paginate(
                     perPage: $this->perPage,
                     page: (int) $this->page
