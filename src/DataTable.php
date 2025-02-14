@@ -256,14 +256,14 @@ class DataTable extends Component
         $colLabels = array_flip(
             $cols
                 ?: array_merge(
-                    $this->enabledCols,
-                    $this->getAggregatable(),
-                    array_filter(
-                        Arr::dot($this->userFilters),
-                        fn ($key) => str_ends_with($key, '.column'),
-                        ARRAY_FILTER_USE_KEY
-                    )
+                $this->enabledCols,
+                $this->getAggregatable(),
+                array_filter(
+                    Arr::dot($this->userFilters),
+                    fn ($key) => str_ends_with($key, '.column'),
+                    ARRAY_FILTER_USE_KEY
                 )
+            )
         );
         array_walk($colLabels, function (&$value, $key) {
             if (str_contains($key, '.') && ! ($this->columnLabels[$key] ?? false)) {
@@ -673,6 +673,8 @@ class DataTable extends Component
 
                 if ($filter['value'] === '%*%') {
                     $this->whereHas($query, $filter['relation']);
+                } elseif ($filter['value'] === '%!*%') {
+                    $this->whereDoesntHave($query, $filter['relation']);
                 } else {
                     $query->whereHas($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
                         unset($filter['relation']);
@@ -754,6 +756,11 @@ class DataTable extends Component
         return $builder->whereHas(Str::camel($relation));
     }
 
+    private function whereDoesntHave(Builder $builder, string $relation): Builder
+    {
+        return $builder->whereDoesntHave(Str::camel($relation));
+    }
+
     protected function getResultFromQuery(Builder $query): LengthAwarePaginator|Collection|array
     {
         try {
@@ -768,6 +775,7 @@ class DataTable extends Component
                     ceil(data_get($query->scout_pagination, 'offset') / $limit) + 1,
                 );
             } else {
+                $query->ddRawSql();
                 $result = $query->paginate(
                     perPage: $this->perPage,
                     page: (int) $this->page
