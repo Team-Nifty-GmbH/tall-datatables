@@ -12,10 +12,10 @@
         <x-dialog z-index="z-40" id="date-calculation">
             <div class="flex flex-col gap-3">
                 <div class="flex gap-3">
-                    <x-button x-bind:class="newFilterCalculation.operator === '-' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '-'" negative>-</x-button>
-                    <x-button x-bind:class="newFilterCalculation.operator === '+' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '+'" positive>+</x-button>
-                    <x-inputs.number min="0" x-model="newFilterCalculation.value" />
-                    <x-native-select
+                    <x-button x-bind:class="newFilterCalculation.operator === '-' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '-'" color="red">-</x-button>
+                    <x-button x-bind:class="newFilterCalculation.operator === '+' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '+'" color="emerald">+</x-button>
+                    <x-number min="0" x-model="newFilterCalculation.value" />
+                    <x-select.native
                         x-model="newFilterCalculation.unit"
                         option-key-value="true"
                         :options="[
@@ -27,16 +27,16 @@
                             'years' => __('Years')
                         ]"
                     >
-                    </x-native-select>
+                    </x-select.native>
                 </div>
                 <div class="flex gap-3 w-full">
                     <div>
-                        <x-radio :label="__('Same time')" value="" x-model="newFilterCalculation.is_start_of" />
+                        <x-radio :text="__('Same time')" value="" x-model="newFilterCalculation.is_start_of" />
                         <x-radio :label="__('Start of')" value="1" x-model="newFilterCalculation.is_start_of" />
                         <x-radio :label="__('End of')" value="0" x-model="newFilterCalculation.is_start_of" />
                     </div>
                     <div class="flex-1" x-cloak x-show="newFilterCalculation.is_start_of?.length > 0">
-                        <x-native-select
+                        <x-select.native
                             x-model="newFilterCalculation.start_of"
                             option-key-value="true"
                             :options="[
@@ -48,7 +48,7 @@
                                 'year' => __('Year')
                             ]"
                         >
-                        </x-native-select>
+                        </x-select.native>
                     </div>
                 </div>
             </div>
@@ -135,35 +135,35 @@
                                                     <x-slot:title>
                                                         <x-input x-model="filter.name" x-on:input.debounce="$wire.$parent.updateSavedFilter(filter.id, filter)" />
                                                     </x-slot:title>
-                                                    <x-slot:action>
+                                                    <x-slot:header>
                                                         <x-button.circle
-                                                            negative
+                                                            color="red"
                                                             2xs
-                                                            icon="x"
+                                                            icon="x-mark"
                                                             x-on:click="
                                                             savedFilters.splice(savedFilters.indexOf(index), 1);
                                                             $wire.$parent.deleteSavedFilter(filter.id)
                                                         "
                                                         />
-                                                    </x-slot:action>
+                                                    </x-slot:header>
                                                     <div class="flex justify-between">
                                                         <div class="flex gap-1">
-                                                            <x-badge flat primary>
-                                                                <x-slot:label>
+                                                            <x-badge flat color="indigo">
+                                                                <x-slot:text>
                                                                     <span x-text="filter.is_permanent ? '{{ __('Permanent') }}' : '{{ __('Temporary') }}'"></span>
-                                                                </x-slot:label>
+                                                                </x-slot:text>
                                                             </x-badge>
                                                         </div>
                                                         <div class="flex gap-1 items-center">
-                                                            <x-button
+                                                            <x-button color="secondary" light
                                                                 x-cloak
                                                                 x-show="filter.settings.enabledCols?.length"
-                                                                :label="__('Delete column layout')"
+                                                                :text="__('Delete column layout')"
                                                                 wire:click="$parent.deleteSavedFilterEnabledCols(filter.id)"
                                                             />
                                                             <x-button
-                                                                :label="__('Apply')"
-                                                                primary
+                                                                :text="__('Apply')"
+                                                                color="indigo"
                                                                 x-on:click="$wire.$parent.loadFilter(filter.settings), detail = null, showSavedFilters = false"
                                                             />
                                                             <x-icon
@@ -190,13 +190,13 @@
                                                                         <div class="pt-1 flex gap-1">
                                                                             <template x-for="(filter, index) in orFilters">
                                                                                 <div>
-                                                                                    <x-badge flat primary>
-                                                                                        <x-slot:label>
+                                                                                    <x-badge flat color="indigo">
+                                                                                        <x-slot:text>
                                                                                             <span x-text="filterBadge(filter)"></span>
-                                                                                        </x-slot:label>
+                                                                                        </x-slot:text>
                                                                                     </x-badge>
                                                                                     <template x-if="(orFilters.length - 1) !== index">
-                                                                                        <x-badge flat negative :label="__('and')" />
+                                                                                        <x-badge flat color="red" :text="__('and')" />
                                                                                     </template>
                                                                                 </div>
                                                                             </template>
@@ -205,19 +205,19 @@
                                                                     <template x-if="(filter.settings.userFilters.length - 1) !== orIndex">
                                                                         <div class="pt-3">
                                                                             <x-badge
-                                                                                flat positive
-                                                                                :label="__('or')"
+                                                                                flat color="emerald"
+                                                                                :text="__('or')"
                                                                             />
                                                                         </div>
                                                                     </template>
                                                                 </div>
                                                             </template>
                                                             <x-badge x-cloak x-show="filter.settings.orderBy" flat amber>
-                                                                <x-slot:label>
+                                                                <x-slot:text>
                                                                     <span>{{ __('Order by') }}</span>
                                                                     <span x-text="filter.settings.orderBy"></span>
                                                                     <span x-text="filter.settings.orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
-                                                                </x-slot:label>
+                                                                </x-slot:text>
                                                             </x-badge>
                                                         </div>
                                                     </div>
@@ -229,7 +229,7 @@
                             </div>
                         </template>
                     @endif
-                    <x-native-select
+                    <x-select.native
                         name="new-filter-relation"
                         wire:target="loadFields"
                         wire:loading.attr="disabled"
@@ -239,7 +239,7 @@
                         <template x-for="relation in $wire.$parent.selectedRelations">
                             <option x-bind:value="relation.name" x-text="relation.label"></option>
                         </template>
-                    </x-native-select>
+                    </x-select.native>
                     <x-input
                         name="new-filter-column"
                         wire:target="loadFields"
@@ -278,7 +278,7 @@
                         </datalist>
                     </div>
                     <div x-cloak x-show="filterSelectType === 'valueList'">
-                        <x-native-select
+                        <x-select.native
                             name="new-filter-value-select"
                             x-model="newFilter.value"
                             placeholder="{{ __('Value') }}"
@@ -287,7 +287,7 @@
                             <template x-for="item in filterValueLists[newFilter.column]">
                                 <option x-bind:value="item.value" x-text="item.label"></option>
                             </template>
-                        </x-native-select>
+                        </x-select.native>
                     </div>
                     <div x-cloak x-show="filterSelectType === 'text'" class="flex flex-col gap-1.5">
                         <div class="flex items-center gap-1.5">
@@ -300,11 +300,11 @@
                                 x-ref="filterValue"
                             />
                             <div class="flex" x-cloak x-show="newFilter.value[0]?.hasOwnProperty('calculation')">
-                                <x-badge primary x-text="getCalculationLabel(newFilter.value[0]?.calculation)">
+                                <x-badge color="indigo" x-text="getCalculationLabel(newFilter.value[0]?.calculation)">
                                 </x-badge>
                             </div>
                             <div x-cloak x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
-                                <x-button
+                                <x-button color="secondary" light
                                     icon="calculator"
                                     class="w-full"
                                     x-on:click="
@@ -342,11 +342,11 @@
                                     x-ref="filterValue"
                                 />
                                 <div class="flex" x-show="newFilter.value[1]?.hasOwnProperty('calculation')">
-                                    <x-badge primary x-text="getCalculationLabel(newFilter.value[1]?.calculation)">
+                                    <x-badge color="indigo" x-text="getCalculationLabel(newFilter.value[1]?.calculation)">
                                     </x-badge>
                                 </div>
                                 <div x-cloak x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
-                                    <x-button
+                                    <x-button color="secondary" light
                                         icon="calculator"
                                         class="w-full"
                                         x-on:click="
@@ -384,7 +384,7 @@
                         wire:loading.attr="disabled"
                         type="submit"
                         x-ref="filterAddButton"
-                        primary
+                        color="indigo"
                     >
                         {{ __('Add filter') }}
                     </x-button>
@@ -401,9 +401,9 @@
                             >
                                 <div class="absolute top-0.5 right-0.5">
                                     <x-button.circle
-                                        negative
-                                        2xs
-                                        icon="x"
+                                        color="red"
+                                        sm
+                                        icon="x-mark"
                                         x-on:click="removeFilterGroup(orIndex)"
                                     />
                                 </div>
@@ -411,27 +411,27 @@
                                     <div class="pt-1 flex gap-1">
                                         <template x-for="(filter, index) in orFilters">
                                             <div>
-                                                <x-badge flat primary>
-                                                    <x-slot:label>
+                                                <x-badge flat color="indigo">
+                                                    <x-slot:text>
                                                         <span x-text="filterBadge(filter)"></span>
-                                                    </x-slot:label>
+                                                    </x-slot:text>
                                                     <x-slot
-                                                        name="append"
+                                                        name="right"
                                                         class="relative flex items-center w-2 h-2"
                                                     >
                                                         <button
                                                             type="button"
                                                             x-on:click="removeFilter(index, orIndex)"
                                                         >
-                                                            <x-icon name="x" class="w-4 h-4" />
+                                                            <x-icon name="x-mark" class="w-4 h-4" />
                                                         </button>
                                                     </x-slot>
                                                 </x-badge>
                                                 <template x-if="(orFilters.length - 1) !== index">
                                                     <x-badge
                                                         flat
-                                                        negative
-                                                        :label="__('and')"
+                                                        color="red"
+                                                        :text="__('and')"
                                                     />
                                                 </template>
                                             </div>
@@ -443,22 +443,22 @@
                                 <div class="pt-3">
                                     <x-badge
                                         flat
-                                        positive
-                                        :label="__('or')"
+                                        color="emerald"
+                                        :text="__('or')"
                                     />
                                 </div>
                             </template>
                         </div>
                     </template>
                     <div x-cloak x-show="orderByCol">
-                        <x-badge flat amber>
-                            <x-slot:label>
+                        <x-badge flat color="amber">
+                            <x-slot:text>
                                 <span>{{ __('Order by') }}</span>
                                 <span x-text="getLabel(orderByCol)"></span>
                                 <span x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
-                            </x-slot:label>
+                            </x-slot:text>
                             <x-slot
-                                name="append"
+                                name="right"
                                 class="relative flex items-center w-2 h-2"
                             >
                                 <button
@@ -466,23 +466,23 @@
                                     x-on:click="$wire.$parent.sortTable('')"
                                 >
                                     <x-icon
-                                        name="x"
+                                        name="x-mark"
                                         class="w-4 h-4"
                                     />
                                 </button>
                             </x-slot>
                         </x-badge>
                     </div>
-                    <x-button
+                    <x-button color="secondary" light
                         x-cloak
                         x-show="filters.length > 0"
-                        positive
-                        :label="__('Add or')"
+                        color="emerald"
+                        :text="__('Add or')"
                         x-on:click="addOrFilter()"
                     />
                     @if(auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
                         <x-button
-                            primary
+                            color="indigo"
                             class="w-full"
                             x-on:click="
                                 $wireui.confirmDialog({
@@ -521,8 +521,10 @@
                     <template x-for="col in searchable(aggregatable, searchAggregatable)">
                         <div>
                             <x-label>
-                                <span x-text="getLabel(col)">
-                            </span>
+                                <x-slot:word>
+                                    <span x-text="getLabel(col)">
+                                    </span>
+                                </x-slot:word>
                             </x-label>
                             <x-checkbox
                                 :label="__('Sum')"
@@ -589,19 +591,19 @@
                     </template>
                 </div>
                 <div class="flex justify-end pt-2">
-                    <x-button x-on:click="resetLayout" :label="__('Reset Layout')" />
+                    <x-button color="secondary" light x-on:click="resetLayout" :text="__('Reset Layout')" />
                 </div>
                 <div class="text-sm font-medium text-gray-700 dark:text-gray-50">
                     <div class="flex overflow-x-auto">
                         <div class="flex gap-1.5 items-center">
-                            <x-button flat primary x-on:click="searchRelations = null; searchColumns = null; $wire.$parent.loadSlug()" >
+                            <x-button flat color="indigo" x-on:click="searchRelations = null; searchColumns = null; $wire.$parent.loadSlug()" >
                                 <span class="whitespace-nowrap">{{ __('This table') }}</span>
                             </x-button>
                             <x-icon name="chevron-right" class="h-4 w-4"/>
                         </div>
                         <template x-for="segment in $wire.$parent.displayPath">
                             <div class="flex gap-1.5 items-center">
-                                <x-button flat primary x-on:click="searchRelations = null; searchColumns = null; $wire.$parent.loadSlug(segment.value)" >
+                                <x-button flat color="indigo" x-on:click="searchRelations = null; searchColumns = null; $wire.$parent.loadSlug(segment.value)" >
                                     <span class="whitespace-nowrap" x-text="segment.label"></span>
                                 </x-button>
                                 <x-icon name="chevron-right" class="h-4 w-4"/>
@@ -683,9 +685,9 @@
                 </template>
                 <div class="pt-3">
                     <x-button
-                        spinner
+                        loading
                         x-on:click="$wire.$parent.export(exportColumns)"
-                        primary
+                        color="indigo"
                         class="w-full"
                     >
                         {{ __('Export') }}

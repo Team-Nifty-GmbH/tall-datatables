@@ -85,7 +85,7 @@ trait SupportsAggregation
                 try {
                     $aggregates[$type][$column] = $builder->{$type}($column);
                 } catch (QueryException $e) {
-                    $this->notification()->error($e->getMessage());
+                    $this->toast()->error($e->getMessage());
 
                     continue;
                 }

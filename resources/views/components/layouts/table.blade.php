@@ -40,10 +40,12 @@
                                     />
                                 @endif
                             <x-button
+                                color="secondary"
+                                light
                                 class="px-1.5 py-1.5"
                                 x-ref="selectedActions"
                                 flat
-                                right-icon="chevron-down"
+                                icon="chevron-down"
                                 x-on:click="$wire.selected.length > 0 ? showSelectedActions = true : null"
                             />
                         </div>
@@ -111,7 +113,7 @@
                                 </div>
                             @endif
                             @if($isFilterable && ! $showFilterInputs)
-                                <x-icon name="filter"
+                                <x-icon name="funnel"
                                     x-show="filterable.includes(col)"
                                     class="h-4 w-4 cursor-pointer"
                                     x-on:click="loadSidebar({column: col, operator: '', value: '', relation: ''})"
@@ -128,7 +130,7 @@
                 @if($hasSidebar)
                     <x-tall-datatables::table.head-cell class="!py-0 w-4 flex flex-row-reverse bg-white dark:bg-secondary-800 sticky right-0 shadow-inner">
                         <div class="flex w-full flex-row-reverse items-center">
-                            <x-button
+                            <x-button color="secondary" light
                                 icon="cog"
                                 x-on:click="loadSidebar()"
                             />
@@ -147,7 +149,7 @@
                                 <x-input type="search" class="p-1" x-model.debounce.500ms="textFilter[col]" x-show="filterable.includes(col)" />
                             </template>
                             <template x-if="filterValueLists.hasOwnProperty(col)">
-                                <x-native-select
+                                <x-select.native
                                     x-model="textFilter[col]"
                                     placeholder="{{ __('Value') }}"
                                 >
@@ -155,7 +157,7 @@
                                     <template x-for="item in filterValueLists[col]">
                                         <option x-bind:value="item.value" x-text="item.label"></option>
                                     </template>
-                                </x-native-select>
+                                </x-select.native>
                             </template>
                         </td>
                     </template>
@@ -175,7 +177,7 @@
             <td colspan="100%" class="p-8 w-24 h-24">
                 <div class="w-full flex-col items-center dark:text-gray-50">
                     <x-icon
-                        name="emoji-sad"
+                        name="face-frown"
                         class="h-24 w-24 m-auto"
                     />
                     <div class="text-center">
@@ -245,7 +247,7 @@
                     @if($showRestoreButton && $allowSoftDeletes)
                         <div class="flex gap-1.5" x-show="record.deleted_at">
                             <x-button
-                                primary
+                                color="indigo"
                                 wire:click="restore(record.id)"
                             >
                                 {{ __('Restore') }}
@@ -293,7 +295,7 @@
         @else
             <tr>
                 <td x-intersect:enter="$wire.get('initialized') && $wire.loadMore()" colspan="100%">
-                    <x-button flat spinner wire:loading.delay.longer wire:target="loadMore" class="w-full">
+                    <x-button color="secondary" light flat loading="loadMore" delay="longer" class="w-full">
                         {{ __('Loading...') }}
                     </x-button>
                 </td>

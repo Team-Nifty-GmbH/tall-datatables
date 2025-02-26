@@ -1,18 +1,18 @@
 <div x-data="{showButtons: null}">
     @if($isFilterable)
         <div class="flex justify-between w-full flex-row-reverse items-center pt-2">
-            <x-button
+            <x-button color="secondary" light
                 icon="cog"
                 x-on:click="loadSidebar()"
             />
             <template x-if="sortable">
                 <x-dropdown align="left" persistent>
-                    <x-slot:trigger>
-                        <x-button
-                            :label="__('Sort')"
-                            icon="adjustments"
+                    <x-slot:action>
+                        <x-button color="secondary" light
+                            :text="__('Sort')"
+                            icon="adjustments-vertical"
                         />
-                    </x-slot:trigger>
+                    </x-slot:action>
                     <template x-for="sortableItem in sortable.filter((item) => item !== '*')">
                         <a class="flex justify-between text-secondary-600 px-4 py-2 text-sm flex items-center cursor-pointer rounded-md transition-colors duration-150 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:bg-secondary-700" x-on:click="$wire.sortTable(sortableItem)">
                             <div x-text="colLabels[sortableItem]">
@@ -34,7 +34,7 @@
         <div class="w-full p-8 w-24 h-24">
             <div class="w-full flex-col items-center dark:text-gray-50">
                 <x-icon
-                    name="emoji-sad"
+                    name="face-frown"
                     class="h-24 w-24 m-auto"
                 />
                 <div class="text-center">
@@ -61,10 +61,7 @@
                                 <div class="relative h-72 w-full overflow-hidden rounded-lg">
                                     @if($rowActions)
                                         <div class="absolute right-2 top-2">
-                                            <x-dropdown>
-                                                <x-slot:trigger>
-                                                    <x-button.circle white icon="dots-vertical" />
-                                                </x-slot:trigger>
+                                            <x-dropdown icon="ellipsis-vertical" static>
                                                 <div class="grid grid-cols-1 gap-1.5">
                                                     @foreach($rowActions as $rowAction)
                                                         {{ $rowAction }}
@@ -106,7 +103,7 @@
         </template>
     @else
         <div x-intersect:enter="$wire.get('initialized') && $wire.loadMore()" class="w-full">
-            <x-button flat spinner wire:loading.delay.longer wire:target="loadMore" class="w-full">
+            <x-button color="secondary" light flat delay="longer" loading="loadMore" class="w-full">
                 {{ __('Loading...') }}
             </x-button>
         </div>

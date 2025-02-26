@@ -10,7 +10,7 @@
                     lazy
                 />
                 <x-slot:footer>
-                    <x-button x-on:click="showSidebar = false">{{ __('Close') }}</x-button>
+                    <x-button color="secondary" light x-on:click="showSidebar = false">{{ __('Close') }}</x-button>
                 </x-slot:footer>
             </x-tall-datatables::sidebar>
         @endteleport
@@ -24,7 +24,7 @@
             :allow-soft-deletes="$allowSoftDeletes"
         />
         @if($actions ?? false)
-            <x-dropdown>
+            <x-dropdown icon="ellipsis-vertical" static>
                 {{ $actions }}
             </x-dropdown>
         @endif

@@ -21,6 +21,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
 use Spatie\ModelInfo\Attributes\Attribute;
+use TallStackUi\Traits\Interactions;
 use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Helpers\SessionFilter;
@@ -30,13 +31,12 @@ use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsCache;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsExporting;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsRelations;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSelecting;
-use WireUi\Traits\Actions;
 
 use function Livewire\store;
 
 class DataTable extends Component
 {
-    use Actions, StoresSettings, SupportsAggregation, SupportsCache, SupportsExporting, SupportsRelations,
+    use Interactions, StoresSettings, SupportsAggregation, SupportsCache, SupportsExporting, SupportsRelations,
         SupportsSelecting;
 
     public bool $initialized = false;
@@ -256,14 +256,14 @@ class DataTable extends Component
         $colLabels = array_flip(
             $cols
                 ?: array_merge(
-                $this->enabledCols,
-                $this->getAggregatable(),
-                array_filter(
-                    Arr::dot($this->userFilters),
-                    fn ($key) => str_ends_with($key, '.column'),
-                    ARRAY_FILTER_USE_KEY
+                    $this->enabledCols,
+                    $this->getAggregatable(),
+                    array_filter(
+                        Arr::dot($this->userFilters),
+                        fn ($key) => str_ends_with($key, '.column'),
+                        ARRAY_FILTER_USE_KEY
+                    )
                 )
-            )
         );
         array_walk($colLabels, function (&$value, $key) {
             if (str_contains($key, '.') && ! ($this->columnLabels[$key] ?? false)) {
@@ -781,7 +781,7 @@ class DataTable extends Component
                 );
             }
         } catch (QueryException $e) {
-            $this->notification()->error($e->getMessage());
+            $this->toast()->error($e->getMessage());
 
             return [];
         }

@@ -2,13 +2,11 @@
 
 namespace TeamNiftyGmbH\DataTable\Helpers;
 
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Support\Responsable;
-use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\View;
+use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\ComponentAttributeBag;
 
 class Icon implements Htmlable, Responsable
@@ -43,9 +41,6 @@ class Icon implements Htmlable, Responsable
         $this->name = strtolower($name);
         $this->variant = strtolower($variant);
         $this->attributes = $attributes;
-
-        View::exists($this->getComponentName())
-            || throw new \Exception('Icon not found: ' . $this->getComponentName());
     }
 
     /**
@@ -61,7 +56,7 @@ class Icon implements Htmlable, Responsable
      */
     public function getSvg(): string
     {
-        return $this->getView()->render();
+        return $this->getView();
     }
 
     public function getUrl(): string
@@ -72,16 +67,20 @@ class Icon implements Htmlable, Responsable
     /**
      * @throws \Exception
      */
-    public function getView(): Factory|\Illuminate\Contracts\View\View|Application
+    public function getView(): string
     {
-        $view = $this->getComponentName();
+        $view = BladeCompiler::render('<x-icon :name="$name" :attributes="$attributes" />', [
+            'name' => $this->name,
+            'variant' => $this->variant,
+            'attributes' => $this->attributes,
+        ]);
 
-        return view($view, ['attributes' => '']);
+        return $view;
     }
 
     private function getComponentName(): string
     {
-        return 'heroicons::components.' . ($this->variant ?? 'solid') . '.' . $this->name;
+        return 'tallstackui::icons.' . ($this->variant ?? 'solid') . '.' . $this->name;
     }
 
     /**
@@ -104,8 +103,6 @@ class Icon implements Htmlable, Responsable
      */
     public function toResponse($request): Response
     {
-        View::exists($this->getComponentName()) || abort(404);
-
         return response($this->getView())
             ->withHeaders([
                 'Content-Type' => 'image/svg+xml; charset=utf-8',

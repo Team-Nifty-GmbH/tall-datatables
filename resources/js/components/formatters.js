@@ -78,9 +78,9 @@ export default function formatters() {
         coloredMoney(value, currency = null, context) {
             const returnValue = this.money(value, currency, context);
             if (value < 0) {
-                return `<span class="text-negative-500 dark:text-negative-700 font-semibold">${returnValue}</span>`;
+                return `<span class="text-red-500 dark:text-red-700 font-semibold">${returnValue}</span>`;
             } else {
-                return `<span class="text-positive-500 dark:text-positive-700 font-semibold">${returnValue}</span>`;
+                return `<span class="text-emerald-500 dark:text-emerald-700 font-semibold">${returnValue}</span>`;
             }
         },
         percentage(value) {
@@ -93,13 +93,13 @@ export default function formatters() {
         },
         bool(value) {
             if (value === 'false' || value === false || value === 0 || value === '0' || value === null) {
-                return `<span class="bg-negative-500 dark:bg-negative-700 group inline-flex h-6 w-6 items-center justify-center rounded-full text-white outline-none">
+                return `<span class="bg-red-500 dark:bg-red-700 group inline-flex h-6 w-6 items-center justify-center rounded-full text-white outline-none">
                         <svg class="h-3 w-3 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </span>`;
             } else {
-                return `<span class="bg-positive-500 dark:bg-positive-700 group inline-flex h-6 w-6 items-center justify-center rounded-full text-white outline-none">
+                return `<span class="bg-emerald-500 dark:bg-emerald-700 group inline-flex h-6 w-6 items-center justify-center rounded-full text-white outline-none">
                     <svg class="h-3 w-3 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
@@ -110,7 +110,7 @@ export default function formatters() {
             const formatter = new Intl.NumberFormat('en-US', {style: 'percent'});
             return `<div class="relative pt-1">
                     <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
-                        <div style="width:${formatter.format(value)}" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-500 dark:bg-primary-700"></div>
+                        <div style="width:${formatter.format(value)}" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500 dark:bg-indigo-700"></div>
                     </div>
                     <span>${this.percentage(value)}</span>
                 </div>`;
@@ -271,16 +271,16 @@ export default function formatters() {
                 '    </div>';
         },
         email(value) {
-            return '<a href="mailto:' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
+            return '<a href="mailto:' + value + '" class="text-indigo-500 dark:text-indigo-400">' + value + '</a>';
         },
         url(value) {
-            return '<a href="' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
+            return '<a href="' + value + '" class="text-indigo-500 dark:text-indigo-400">' + value + '</a>';
         },
         tel(value) {
-            return '<a href="tel:' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
+            return '<a href="tel:' + value + '" class="text-indigo-500 dark:text-indigo-400">' + value + '</a>';
         },
         link(value) {
-            return '<a href="' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
+            return '<a href="' + value + '" class="text-indigo-500 dark:text-indigo-400">' + value + '</a>';
         },
         inputType(value) {
             switch (value) {
