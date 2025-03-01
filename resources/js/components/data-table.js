@@ -1,7 +1,6 @@
 export default function data_table($wire)
 {
     return {
-        showSidebar: false,
         async init() {
             this.loadTableConfig();
             this.$nextTick(() => {
@@ -227,7 +226,8 @@ export default function data_table($wire)
                 this.showSavedFilters = false;
             }
 
-            this.showSidebar = true;
+
+            $slideOpen('data-table-sidebar-' + $wire.id.toLowerCase());
         },
         filterable: [],
         relationTableFields: {},

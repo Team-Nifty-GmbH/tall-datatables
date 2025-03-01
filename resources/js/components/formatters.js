@@ -1,6 +1,32 @@
 export default function formatters() {
     return {
         label: null,
+        badgeClasses: {
+            primary: 'text-primary-600 bg-primary-100 dark:text-primary-400 dark:bg-slate-700',
+            secondary: 'text-secondary-600 bg-secondary-100 dark:text-secondary-400 dark:bg-slate-700',
+            slate: 'text-slate-600 bg-slate-100 dark:text-slate-400 dark:bg-slate-700',
+            gray: 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-slate-700',
+            zinc: 'text-zinc-600 bg-zinc-100 dark:text-zinc-400 dark:bg-slate-700',
+            neutral: 'text-neutral-600 bg-neutral-100 dark:text-neutral-400 dark:bg-slate-700',
+            stone: 'text-stone-600 bg-stone-100 dark:text-stone-400 dark:bg-slate-700',
+            red: 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-slate-700',
+            orange: 'text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-slate-700',
+            amber: 'text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-slate-700',
+            yellow: 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-slate-700',
+            lime: 'text-lime-600 bg-lime-100 dark:text-lime-400 dark:bg-slate-700',
+            green: 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-slate-700',
+            emerald: 'text-emerald-600 bg-emerald-100 dark:text-emerald-400 dark:bg-slate-700',
+            teal: 'text-teal-600 bg-teal-100 dark:text-teal-400 dark:bg-slate-700',
+            cyan: 'text-cyan-600 bg-cyan-100 dark:text-cyan-400 dark:bg-slate-700',
+            sky: 'text-sky-600 bg-sky-100 dark:text-sky-400 dark:bg-slate-700',
+            blue: 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-slate-700',
+            indigo: 'text-indigo-600 bg-indigo-100 dark:text-indigo-400 dark:bg-slate-700',
+            violet: 'text-violet-600 bg-violet-100 dark:text-violet-400 dark:bg-slate-700',
+            purple: 'text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-slate-700',
+            fuchsia: 'text-fuchsia-600 bg-fuchsia-100 dark:text-fuchsia-400 dark:bg-slate-700',
+            pink: 'text-pink-600 bg-pink-100 dark:text-pink-400 dark:bg-slate-700',
+            rose: 'text-rose-600 bg-rose-100 dark:text-rose-400 dark:bg-slate-700'
+        },
         setLabel(label) {
             this.label = label;
 
@@ -170,9 +196,9 @@ export default function formatters() {
                 value = this.label;
             }
 
-            return '<span class="outline-none inline-flex justify-center items-center group rounded gap-x-1 text-xs font-semibold px-2.5 py-0.5 text-' + color + '-600 bg-' + color + '-100 dark:text-' + color + '-400 dark:bg-slate-700">\n' +
-                value + '\n' +
-                '</span>';
+            return `<span class="outline-none inline-flex justify-center items-center group rounded gap-x-1 text-xs font-semibold px-2.5 py-0.5 ${this.badgeClasses[color]}">
+                ${value}
+            </span>`;
         },
         relativeTime(value) {
             const current = new Date().getTime();

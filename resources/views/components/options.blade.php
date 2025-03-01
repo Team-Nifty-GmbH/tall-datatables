@@ -328,9 +328,7 @@
                             </div>
                         </div>
                         <div x-cloak x-show="newFilter.operator === 'between'">
-                            <x-label class="text-center">
-                                {{ __('and') }}
-                            </x-label>
+                            <x-label class="text-center" :label="__('and')" />
                             <div class="flex items-center gap-1.5">
                                 <x-input
                                     name="new-filter-value-2"
