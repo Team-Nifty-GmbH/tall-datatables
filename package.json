@@ -1,17 +1,11 @@
 {
-  "name": "tall-datatables",
-  "main": "dist/tall-datatables.js",
+"private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Team-Nifty-GmbH/tall-datatables.git"
-  },
-  "author": "Patrick Weh",
-  "license": "MIT",
   "devDependencies": {
     "@alpinejs/focus": "^3.11.1",
     "@tailwindcss/forms": "^0.5.3",

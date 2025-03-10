@@ -33,15 +33,11 @@ composer require team-nifty-gmbh/tall-datatables
 ...
 <livewire:scripts/>
 
-<wireui:scripts />
 @dataTablesScripts
 
 @vite(['resources/js/alpine.js'])
 ...
 ```
-
-Keep in mind to follow the wireui installation instructions starting at step 2:
-https://livewire-wireui.com/docs/get-started
 
 3. Add the following to your tailwind.config.mjs
 
@@ -167,7 +163,6 @@ Your view should include the default data-table wrapper:
 ### Adding Buttons to the table
 
 You can add buttons to the table by overriding the getTableActions method.
-Check the WireUi documentation for the available options.
 
 These buttons will be rendered above the table on the right side.
 If your table has search enabled, the buttons will be rendered on the right side of the search input.
@@ -184,9 +179,9 @@ public function getTableActions(): array
 {
     return [
         DataTableButton::make()
-            ->label('Create')
+            ->text('Create')
             ->icon('plus')
-            ->color('primary')
+            ->color('indigo')
             ->attributes([
                 'x-on:click' => '$dispatch(\'create-user\')',
             ]),
@@ -204,7 +199,6 @@ public function getTableActions(): array
 > The Model key is always available.
 
 You can add buttons to a row by overriding the getRowActions method.
-Check the WireUi documentation for the available options.
 
 ```php
 use TeamNiftyGmbH\DataTable\Htmlables\DataTableButton;
@@ -215,17 +209,17 @@ public function getRowActions(): array
 {
     return [
         \TeamNiftyGmbH\DataTable\Htmlables\DataTableButton::make()
-            ->label('Edit')
+            ->text('Edit')
             ->icon('eye')
-            ->color('primary')
+            ->color('indigo')
             ->attributes([
                 'x-on:click' => '$wire.edit(record.id)',
                 'x-bind:class' => 'record.is_locked ? \'hidden\' : \'\''
             ]),
         \TeamNiftyGmbH\DataTable\Htmlables\DataTableButton::make()
-            ->label('Delete')
+            ->text('Delete')
             ->icon('trash')
-            ->color('negative'),
+            ->color('red'),
     ];
 }
 ```
@@ -234,9 +228,9 @@ public function getRowActions(): array
 > add the $event.stopPropagation() method to the button attributes.
 > ```php
 > DataTableButton::make()
->    ->label('Edit')
+>    ->text('Edit')
 >    ->icon('pencil')
->    ->color('primary')
+>    ->color('indigo')
 >    ->attributes([
 >        'x-on:click' => '$wire.edit(record.id); $event.stopPropagation()', // <--- here
 >      ]),

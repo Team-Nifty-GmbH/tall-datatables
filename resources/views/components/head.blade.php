@@ -6,21 +6,29 @@
 <div class="flex w-full gap-5 justify-end">
     @if(count($this->savedFilters) > 0 && $this->showSavedFilters)
         <div>
-            <x-select x-on:selected="loadSavedFilter()" wire:model="loadedFilterId" :placeholder="__('Saved filters')" :clearable="false">
-                @foreach($this->savedFilters as $savedFilter)
-                    @if(! $savedFilter['settings']['userFilters'] ?? false)
-                        @continue
-                    @endif
-                    <x-select.option :label="$savedFilter['name']" :value="$savedFilter['id']" />
-                @endforeach
-            </x-select>
+            <x-select.styled
+                x-on:select="loadSavedFilter()"
+                wire:model="loadedFilterId"
+                :placeholder="__('Saved filters')"
+                :options="collect($this->savedFilters)
+                    ->filter(fn(array $savedFilter) => data_get($savedFilter, 'settings.userFilters', false))
+                    ->map(function(array $savedFilter) {
+                        return [
+                            'label' => $savedFilter['name'],
+                            'value' => $savedFilter['id'],
+                        ];
+                    })
+                    ->toArray()"
+                required
+            >
+            </x-select.styled>
         </div>
     @endif
     @if($isSearchable)
         <div class="flex-1">
             <x-input
                 type="search"
-                icon="search"
+                icon="magnifying-glass"
                 x-model.debounce.500ms="search"
                 :placeholder="__('Search in :model…', ['model' => __(\Illuminate\Support\Str::plural($modelName))])"
             >
@@ -40,16 +48,16 @@
         <div class="relative pr-6.5 pointer-events-auto w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 dark:bg-secondary-800">
             <div class="absolute top-0.5 right-0.5">
                 <x-button.circle
-                    negative
-                    2xs
-                    icon="x"
+                    color="red"
+                    sm
+                    icon="x-mark"
                     x-on:click="$wire.forgetSessionFilter(true)"
                 />
             </div>
-            <x-badge flat primary>
-                <x-slot:label>
+            <x-badge flat>
+                <x-slot:text>
                     <span x-text="$wire.sessionFilter.name"></span>
-                </x-slot:label>
+                </x-slot:text>
             </x-badge>
         </div>
     </div>
@@ -62,9 +70,9 @@
             >
                 <div class="absolute top-0.5 right-0.5">
                     <x-button.circle
-                        negative
-                        2xs
-                        icon="x"
+                        color="red"
+                        sm
+                        icon="x-mark"
                         x-on:click="removeFilterGroup(orIndex)"
                     />
                 </div>
@@ -72,12 +80,12 @@
                     <div class="pt-1 flex gap-1">
                         <template x-for="(filter, index) in orFilters">
                             <div>
-                                <x-badge flat primary>
-                                    <x-slot:label>
+                                <x-badge flat color="indigo">
+                                    <x-slot:text>
                                         <span x-text="filterBadge(filter)"></span>
-                                    </x-slot:label>
+                                    </x-slot:text>
                                     <x-slot
-                                        name="append"
+                                        name="right"
                                         class="relative flex items-center w-2 h-2"
                                     >
                                         <button
@@ -85,7 +93,7 @@
                                             x-on:click="removeFilter(index, orIndex)"
                                         >
                                             <x-icon
-                                                name="x"
+                                                name="x-mark"
                                                 class="w-4 h-4"
                                             />
                                         </button>
@@ -93,8 +101,8 @@
                                 </x-badge>
                                 <template x-if="(orFilters.length - 1) !== index">
                                     <x-badge
-                                        flat negative
-                                        :label="__('and')"
+                                        flat color="red"
+                                        :text="__('and')"
                                     />
                                 </template>
                             </div>
@@ -109,21 +117,21 @@
             >
                 <x-badge
                     flat
-                    positive
-                    :label="__('or')"
+                    color="emerald"
+                    :text="__('or')"
                 />
             </div>
         </div>
     </template>
     <div x-cloak x-show="orderByCol">
-        <x-badge flat amber>
-            <x-slot:label>
+        <x-badge flat color="amber">
+            <x-slot:text>
                 <span>{{ __('Order by') }}</span>
                 <span x-text="getLabel(orderByCol)"></span>
                 <span x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"></span>
-            </x-slot:label>
+            </x-slot:text>
             <x-slot
-                name="append"
+                name="right"
                 class="relative flex items-center w-2 h-2"
             >
                 <button
@@ -131,7 +139,7 @@
                     x-on:click="$wire.sortTable('')"
                 >
                     <x-icon
-                        name="x"
+                        name="x-mark"
                         class="w-4 h-4"
                     />
                 </button>
@@ -140,7 +148,7 @@
     </div>
     <x-button
         rounded
-        negative
+        color="red"
         x-on:click="clearFilters"
         class="h-8"
     >

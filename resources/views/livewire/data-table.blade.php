@@ -2,17 +2,17 @@
     @includeWhen($includeBefore, $includeBefore)
     @if($hasSidebar)
         @teleport('body')
-            <x-tall-datatables::sidebar x-on:keydown.esc="showSidebar = false" x-show="showSidebar">
+            <x-slide id="data-table-sidebar-{{ $this->getId() }}">
                 <livewire:tall-datatables::options
-                    :is-filterable="$isFilterable"
-                    :aggregatable="$aggregatable"
-                    :is-exportable="$isExportable"
-                    lazy
-                />
-                <x-slot:footer>
-                    <x-button x-on:click="showSidebar = false">{{ __('Close') }}</x-button>
-                </x-slot:footer>
-            </x-tall-datatables::sidebar>
+                        :is-filterable="$isFilterable"
+                        :aggregatable="$aggregatable"
+                        :is-exportable="$isExportable"
+                        lazy
+                    />
+                    <x-slot:footer>
+                        <x-button color="secondary" light x-on:click="$slideClose('data-table-sidebar-' + $wire.id.toLowerCase());">{{ __('Close') }}</x-button>
+                    </x-slot:footer>
+            </x-slide>
         @endteleport
     @endif
     @if($hasHead)
@@ -24,7 +24,7 @@
             :allow-soft-deletes="$allowSoftDeletes"
         />
         @if($actions ?? false)
-            <x-dropdown>
+            <x-dropdown icon="ellipsis-vertical" static>
                 {{ $actions }}
             </x-dropdown>
         @endif

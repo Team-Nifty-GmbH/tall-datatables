@@ -5,15 +5,10 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
-                'resources/js/tall-datatables.js',
-                'resources/css/tall-datatables.css',
+                './resources/js/tall-datatables.js',
+                './resources/css/tall-datatables.css',
             ],
-            publicDirectory: 'dist',
-            buildDirectory: 'build',
-            refresh: true
+            refresh: false
         }),
     ],
-    build: {
-        manifest: 'manifest.json',
-    },
 });

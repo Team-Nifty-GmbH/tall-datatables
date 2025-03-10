@@ -1,6 +1,32 @@
 export default function formatters() {
     return {
         label: null,
+        badgeClasses: {
+            primary: 'text-primary-600 bg-primary-100 dark:text-primary-400 dark:bg-slate-700',
+            secondary: 'text-secondary-600 bg-secondary-100 dark:text-secondary-400 dark:bg-slate-700',
+            slate: 'text-slate-600 bg-slate-100 dark:text-slate-400 dark:bg-slate-700',
+            gray: 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-slate-700',
+            zinc: 'text-zinc-600 bg-zinc-100 dark:text-zinc-400 dark:bg-slate-700',
+            neutral: 'text-neutral-600 bg-neutral-100 dark:text-neutral-400 dark:bg-slate-700',
+            stone: 'text-stone-600 bg-stone-100 dark:text-stone-400 dark:bg-slate-700',
+            red: 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-slate-700',
+            orange: 'text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-slate-700',
+            amber: 'text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-slate-700',
+            yellow: 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-slate-700',
+            lime: 'text-lime-600 bg-lime-100 dark:text-lime-400 dark:bg-slate-700',
+            green: 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-slate-700',
+            emerald: 'text-emerald-600 bg-emerald-100 dark:text-emerald-400 dark:bg-slate-700',
+            teal: 'text-teal-600 bg-teal-100 dark:text-teal-400 dark:bg-slate-700',
+            cyan: 'text-cyan-600 bg-cyan-100 dark:text-cyan-400 dark:bg-slate-700',
+            sky: 'text-sky-600 bg-sky-100 dark:text-sky-400 dark:bg-slate-700',
+            blue: 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-slate-700',
+            indigo: 'text-indigo-600 bg-indigo-100 dark:text-indigo-400 dark:bg-slate-700',
+            violet: 'text-violet-600 bg-violet-100 dark:text-violet-400 dark:bg-slate-700',
+            purple: 'text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-slate-700',
+            fuchsia: 'text-fuchsia-600 bg-fuchsia-100 dark:text-fuchsia-400 dark:bg-slate-700',
+            pink: 'text-pink-600 bg-pink-100 dark:text-pink-400 dark:bg-slate-700',
+            rose: 'text-rose-600 bg-rose-100 dark:text-rose-400 dark:bg-slate-700'
+        },
         setLabel(label) {
             this.label = label;
 
@@ -78,9 +104,9 @@ export default function formatters() {
         coloredMoney(value, currency = null, context) {
             const returnValue = this.money(value, currency, context);
             if (value < 0) {
-                return `<span class="text-negative-500 dark:text-negative-700 font-semibold">${returnValue}</span>`;
+                return `<span class="text-red-500 dark:text-red-700 font-semibold">${returnValue}</span>`;
             } else {
-                return `<span class="text-positive-500 dark:text-positive-700 font-semibold">${returnValue}</span>`;
+                return `<span class="text-emerald-500 dark:text-emerald-700 font-semibold">${returnValue}</span>`;
             }
         },
         percentage(value) {
@@ -93,13 +119,13 @@ export default function formatters() {
         },
         bool(value) {
             if (value === 'false' || value === false || value === 0 || value === '0' || value === null) {
-                return `<span class="bg-negative-500 dark:bg-negative-700 group inline-flex h-6 w-6 items-center justify-center rounded-full text-white outline-none">
+                return `<span class="bg-red-500 dark:bg-red-700 group inline-flex h-6 w-6 items-center justify-center rounded-full text-white outline-none">
                         <svg class="h-3 w-3 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </span>`;
             } else {
-                return `<span class="bg-positive-500 dark:bg-positive-700 group inline-flex h-6 w-6 items-center justify-center rounded-full text-white outline-none">
+                return `<span class="bg-emerald-500 dark:bg-emerald-700 group inline-flex h-6 w-6 items-center justify-center rounded-full text-white outline-none">
                     <svg class="h-3 w-3 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
@@ -110,7 +136,7 @@ export default function formatters() {
             const formatter = new Intl.NumberFormat('en-US', {style: 'percent'});
             return `<div class="relative pt-1">
                     <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
-                        <div style="width:${formatter.format(value)}" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-500 dark:bg-primary-700"></div>
+                        <div style="width:${formatter.format(value)}" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500 dark:bg-indigo-700"></div>
                     </div>
                     <span>${this.percentage(value)}</span>
                 </div>`;
@@ -170,9 +196,9 @@ export default function formatters() {
                 value = this.label;
             }
 
-            return '<span class="outline-none inline-flex justify-center items-center group rounded gap-x-1 text-xs font-semibold px-2.5 py-0.5 text-' + color + '-600 bg-' + color + '-100 dark:text-' + color + '-400 dark:bg-slate-700">\n' +
-                value + '\n' +
-                '</span>';
+            return `<span class="outline-none inline-flex justify-center items-center group rounded gap-x-1 text-xs font-semibold px-2.5 py-0.5 ${this.badgeClasses[color]}">
+                ${value}
+            </span>`;
         },
         relativeTime(value) {
             const current = new Date().getTime();
@@ -271,16 +297,16 @@ export default function formatters() {
                 '    </div>';
         },
         email(value) {
-            return '<a href="mailto:' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
+            return '<a href="mailto:' + value + '" class="text-indigo-500 dark:text-indigo-400">' + value + '</a>';
         },
         url(value) {
-            return '<a href="' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
+            return '<a href="' + value + '" class="text-indigo-500 dark:text-indigo-400">' + value + '</a>';
         },
         tel(value) {
-            return '<a href="tel:' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
+            return '<a href="tel:' + value + '" class="text-indigo-500 dark:text-indigo-400">' + value + '</a>';
         },
         link(value) {
-            return '<a href="' + value + '" class="text-primary-500 dark:text-primary-400">' + value + '</a>';
+            return '<a href="' + value + '" class="text-indigo-500 dark:text-indigo-400">' + value + '</a>';
         },
         inputType(value) {
             switch (value) {

@@ -2,74 +2,75 @@
 
 namespace TeamNiftyGmbH\DataTable\Htmlables;
 
+use Closure;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Arr;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\ComponentAttributeBag;
-use WireUi\View\Components\Button;
-use WireUi\View\Components\CircleButton;
+use TallStackUi\View\Components\Button\Button;
+use TallStackUi\View\Components\Button\Circle;
 
 class DataTableButton implements Htmlable
 {
     protected bool $shouldRender = true;
 
     public static function make(
-        bool $rounded = false,
-        bool $squared = false,
+        bool $round = false,
+        bool $square = false,
         bool $outline = false,
         bool $flat = false,
-        bool $full = false,
         bool $circle = false,
         ?string $color = null,
         ?string $size = null,
-        ?string $label = null,
+        ?string $text = null,
         ?string $icon = null,
-        ?string $rightIcon = null,
-        ?string $spinner = null,
-        ?string $loadingDelay = null,
+        ?string $position = null,
+        ?string $loading = null,
+        ?string $delay = null,
         ?string $href = null,
+        ?bool $light = null,
         ?array $attributes = []
     ): static {
-        return new static(rounded: $rounded,
-            squared: $squared,
+        return new static(round: $round,
+            square: $square,
             outline: $outline,
             flat: $flat,
-            full: $full,
             circle: $circle,
             color: $color,
             size: $size,
-            label: $label,
+            text: $text,
             icon: $icon,
-            rightIcon: $rightIcon,
-            spinner: $spinner,
-            loadingDelay: $loadingDelay,
+            position: $position,
+            loading: $loading,
+            delay: $delay,
             href: $href,
+            light: $light,
             attributes: $attributes,
         );
     }
 
     public function __construct(
-        public bool $rounded = false,
-        public bool $squared = false,
+        public bool $round = false,
+        public bool $square = false,
         public bool $outline = false,
         public bool $flat = false,
-        public bool $full = false,
         public bool $circle = false,
         public ?string $color = null,
         public ?string $size = null,
-        public ?string $label = null,
+        public ?string $text = null,
         public ?string $icon = null,
-        public ?string $rightIcon = null,
-        public ?string $spinner = null,
-        public ?string $loadingDelay = null,
+        public ?string $position = null,
+        public ?string $loading = null,
+        public ?string $delay = null,
         public ?string $href = null,
+        public ?bool $light = null,
         public ?array $attributes = []
     ) {}
 
     /**
      * Render a button only if the closure is true
      */
-    public function when(\Closure|bool $condition): static
+    public function when(Closure|bool $condition): static
     {
         $this->shouldRender = (bool) value($condition);
 
@@ -86,27 +87,27 @@ class DataTableButton implements Htmlable
         }
 
         if ($this->circle) {
-            $buttonClass = CircleButton::class;
+            $buttonClass = Circle::class;
             $this->icon = is_null($this->icon) ? 'pencil' : $this->icon;
         } else {
+            $this->text = is_null($this->text) ? '' : $this->text;
             $buttonClass = Button::class;
-            $this->label = is_null($this->label) ? '' : $this->label;
         }
 
         $button = new $buttonClass(
-            rounded: $this->rounded,
-            squared: $this->squared,
+            text: $this->text ?? null,
+            icon: $this->icon,
+            position: $this->position ?? 'left',
+            color: $this->color ?? 'secondary',
+            square: $this->square,
+            round: $this->round,
+            href: $this->href,
+            loading: $this->loading,
+            delay: $this->delay,
             outline: $this->outline,
             flat: $this->flat,
-            full: $this->full,
-            color: $this->color,
-            size: $this->size,
-            label: $this->label,
-            icon: $this->icon,
-            rightIcon: $this->rightIcon,
-            spinner: $this->spinner,
-            loadingDelay: $this->loadingDelay,
-            href: $this->href,
+            size: $this->size ?? 'md',
+            light: $this->light ?? false,
         );
         $button->attributes = new ComponentAttributeBag($this->attributes);
 
@@ -161,9 +162,9 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function rounded(bool $rounded = true): static
+    public function round(bool $round = true): static
     {
-        $this->rounded = $rounded;
+        $this->round = $round;
 
         return $this;
     }
@@ -171,9 +172,19 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function squared(bool $squared = true): static
+    public function square(bool $square = true): static
     {
-        $this->squared = $squared;
+        $this->square = $square;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function light(bool $light = true): static
+    {
+        $this->light = $light;
 
         return $this;
     }
@@ -241,9 +252,9 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function label(?string $label = null): static
+    public function text(?string $text = null): static
     {
-        $this->label = $label;
+        $this->text = $text;
 
         return $this;
     }
@@ -261,9 +272,9 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function rightIcon(string $rightIcon): static
+    public function position(string $position): static
     {
-        $this->rightIcon = $rightIcon;
+        $this->position = $position;
 
         return $this;
     }
@@ -271,9 +282,9 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function spinner(string $spinner): static
+    public function loading(string $loading): static
     {
-        $this->spinner = $spinner;
+        $this->loading = $loading;
 
         return $this;
     }
@@ -281,9 +292,9 @@ class DataTableButton implements Htmlable
     /**
      * @return $this
      */
-    public function loadingDelay(string $loadingDelay): static
+    public function delay(string $delay): static
     {
-        $this->loadingDelay = $loadingDelay;
+        $this->delay = $delay;
 
         return $this;
     }
