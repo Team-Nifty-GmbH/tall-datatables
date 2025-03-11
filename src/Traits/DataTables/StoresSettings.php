@@ -25,7 +25,9 @@ trait StoresSettings
         $savedFilters = collect($this->savedFilters);
 
         $permanentFilter = $savedFilters->where('is_permanent', true)->first();
-        $layoutFilter = $savedFilters->where('is_layout', true)->first();
+        $layoutFilter = data_get($this->getSavedFilters(
+            fn (Builder $query) => $query->where('is_layout', true)
+        ), 0);
 
         if (! is_null($layoutFilter) || ! is_null($permanentFilter)) {
             $this->loadFilter(data_get($permanentFilter ?? $layoutFilter, 'settings'));

@@ -146,7 +146,9 @@
                             x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
                             x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'">
                             <template x-if="! filterValueLists.hasOwnProperty(col)">
-                                <x-input type="search" class="p-1" x-model.debounce.500ms="textFilter[col]" x-show="filterable.includes(col)" />
+                                <div x-cloak x-show="filterable.includes(col)">
+                                    <x-input type="search" class="p-1" x-model.debounce.500ms="textFilter[col]" />
+                                </div>
                             </template>
                             <template x-if="filterValueLists.hasOwnProperty(col)">
                                 <x-select.native
@@ -177,6 +179,7 @@
             <td colspan="100%" class="p-8 w-24 h-24">
                 <div class="w-full flex-col items-center dark:text-gray-50">
                     <x-icon
+                        outline
                         name="face-frown"
                         class="h-24 w-24 m-auto"
                     />

@@ -45,8 +45,13 @@
 </div>
 <div class="flex flex-wrap pt-3 items-center gap-1.5" x-cloak x-show="filters.length > 0 || orderByCol || Object.keys($wire.sessionFilter).length !== 0">
     <div x-show="Object.keys($wire.sessionFilter).length !== 0" x-cloak>
-        <div class="relative pr-6.5 pointer-events-auto w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 dark:bg-secondary-800">
-            <div class="absolute top-0.5 right-0.5">
+        <div class="flex pr-6.5 pointer-events-auto w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 dark:bg-secondary-800">
+            <x-badge light flat>
+                <x-slot:text>
+                    <span x-text="$wire.sessionFilter.name"></span>
+                </x-slot:text>
+            </x-badge>
+            <div class="top-0.5 right-0.5">
                 <x-button.circle
                     color="red"
                     sm
@@ -54,33 +59,20 @@
                     x-on:click="$wire.forgetSessionFilter(true)"
                 />
             </div>
-            <x-badge flat>
-                <x-slot:text>
-                    <span x-text="$wire.sessionFilter.name"></span>
-                </x-slot:text>
-            </x-badge>
         </div>
     </div>
     <template x-for="(orFilters, orIndex) in filters">
         <div class="flex justify-center items-center">
-            <div class="relative pr-6.5 pointer-events-auto w-full rounded-lg bg-white p-1.5
+            <div class="flex pointer-events-auto w-full rounded-lg bg-white p-1.5
                                 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 dark:bg-secondary-800"
                  x-on:click="filterIndex = orIndex"
                  x-bind:class="filterIndex === orIndex ? 'ring-2 ring-indigo-600' : 'ring-1 ring-slate-700/10'"
             >
-                <div class="absolute top-0.5 right-0.5">
-                    <x-button.circle
-                        color="red"
-                        sm
-                        icon="x-mark"
-                        x-on:click="removeFilterGroup(orIndex)"
-                    />
-                </div>
                 <div class="flex justify-between">
                     <div class="pt-1 flex gap-1">
                         <template x-for="(filter, index) in orFilters">
                             <div>
-                                <x-badge flat color="indigo">
+                                <x-badge flat light color="indigo">
                                     <x-slot:text>
                                         <span x-text="filterBadge(filter)"></span>
                                     </x-slot:text>
@@ -101,13 +93,22 @@
                                 </x-badge>
                                 <template x-if="(orFilters.length - 1) !== index">
                                     <x-badge
-                                        flat color="red"
+                                        flat
+                                        color="red"
                                         :text="__('and')"
                                     />
                                 </template>
                             </div>
                         </template>
                     </div>
+                </div>
+                <div class="top-0.5 right-0.5">
+                    <x-button.circle
+                        color="red"
+                        sm
+                        icon="x-mark"
+                        x-on:click="removeFilterGroup(orIndex)"
+                    />
                 </div>
             </div>
             <div
@@ -124,7 +125,7 @@
         </div>
     </template>
     <div x-cloak x-show="orderByCol">
-        <x-badge flat color="amber">
+        <x-badge light flat color="amber">
             <x-slot:text>
                 <span>{{ __('Order by') }}</span>
                 <span x-text="getLabel(orderByCol)"></span>
