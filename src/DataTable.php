@@ -766,7 +766,7 @@ class DataTable extends Component
         try {
             if (property_exists($query, 'scout_pagination')) {
                 $items = $query->get();
-                $total = min(data_get($query->scout_pagination, 'estimatedTotalHits'), $query->count());
+                $total = max(data_get($query->scout_pagination, 'estimatedTotalHits'), $query->count());
                 $limit = data_get($query->scout_pagination, 'limit');
                 $result = new LengthAwarePaginator(
                     $items,
