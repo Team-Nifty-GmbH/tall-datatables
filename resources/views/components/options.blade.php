@@ -1,58 +1,98 @@
-<div class="mt-2" x-data="{searchRelations: null, searchColumns: null, searchAggregatable: null}">
+<div class="mt-2" x-data="{searchRelations: null, searchColumns: null, searchAggregatable: null, dateCalculation: 0}">
     @if(auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
-        <x-dialog z-index="z-40" id="save-filter" :title="__('Save filter')">
+        <x-modal persistent id="save-filter" :title="__('Save filter')" x-on:close="filterName = ''; permanent = false;">
             <x-input required :label="__('Filter name')" x-model="filterName" />
             <div class="pt-3 flex flex-col gap-1.5">
                 <x-checkbox :label="__('Permanent')" x-model="permanent" />
                 <x-checkbox :label="__('With column layout')" x-model="withEnabledCols" />
             </div>
-        </x-dialog>
+            <x-slot:footer>
+                <x-button color="secondary" light flat :text="__('Cancel')" x-on:click="$modalClose('save-filter')" />
+                <x-button :text="__('Save')" x-on:click="$wire.$parent.saveFilter(filterName, permanent, withEnabledCols).then(() => $modalClose('save-filter'));" />
+            </x-slot:footer>
+        </x-modal>
     @endif
     @if($this->isFilterable)
-        <x-dialog z-index="z-40" id="date-calculation">
+        <x-modal persistent id="date-calculation">
             <div class="flex flex-col gap-3">
                 <div class="flex gap-3">
                     <x-button x-bind:class="newFilterCalculation.operator === '-' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '-'" color="red">-</x-button>
                     <x-button x-bind:class="newFilterCalculation.operator === '+' && 'ring-2 ring-offset-2'" x-on:click="newFilterCalculation.operator = '+'" color="emerald">+</x-button>
                     <x-number min="0" x-model="newFilterCalculation.value" />
-                    <x-select.native
+                    <x-select.styled
                         x-model="newFilterCalculation.unit"
-                        option-key-value="true"
                         :options="[
-                            'minutes' => __('Minutes'),
-                            'hours' => __('Hours'),
-                            'days' => __('Days'),
-                            'weeks' => __('Weeks'),
-                            'months' => __('Months'),
-                            'years' => __('Years')
+                            [
+                                'label' => __('Minutes'),
+                                'value' => 'minutes',
+                            ],
+                            [
+                                'label' => __('Hours'),
+                                'value' => 'hours',
+                            ],
+                            [
+                                'label' => __('Days'),
+                                'value' => 'days',
+                            ],
+                            [
+                                'label' => __('Weeks'),
+                                'value' => 'weeks',
+                            ],
+                            [
+                                'label' => __('Months'),
+                                'value' => 'months',
+                            ],
+                            [
+                                'label' => __('Years'),
+                                'value' => 'years',
+                            ]
                         ]"
-                    >
-                    </x-select.native>
+                    />
                 </div>
                 <div class="flex gap-3 w-full">
                     <div>
-                        <x-radio :text="__('Same time')" value="" x-model="newFilterCalculation.is_start_of" />
+                        <x-radio :label="__('Same time')" value="" x-model="newFilterCalculation.is_start_of" />
                         <x-radio :label="__('Start of')" value="1" x-model="newFilterCalculation.is_start_of" />
                         <x-radio :label="__('End of')" value="0" x-model="newFilterCalculation.is_start_of" />
                     </div>
                     <div class="flex-1" x-cloak x-show="newFilterCalculation.is_start_of?.length > 0">
-                        <x-select.native
+                        <x-select.styled
                             x-model="newFilterCalculation.start_of"
-                            option-key-value="true"
                             :options="[
-                                'minute' => __('Minute'),
-                                'hour' => __('Hour'),
-                                'day' => __('Day'),
-                                'week' => __('Week'),
-                                'month' => __('Month'),
-                                'year' => __('Year')
+                                [
+                                    'label' => __('Minute'),
+                                    'value' => 'minute',
+                                ],
+                                [
+                                    'label' => __('Hour'),
+                                    'value' => 'hour',
+                                ],
+                                [
+                                    'label' => __('Day'),
+                                    'value' => 'day',
+                                ],
+                                [
+                                    'label' => __('Week'),
+                                    'value' => 'week',
+                                ],
+                                [
+                                    'label' => __('Month'),
+                                    'value' => 'month',
+                                ],
+                                [
+                                    'label' => __('Year'),
+                                    'value' => 'year',
+                                ],
                             ]"
-                        >
-                        </x-select.native>
+                        />
                     </div>
                 </div>
             </div>
-        </x-dialog>
+            <x-slot:footer>
+                <x-button color="secondary" light flat :text="__('Cancel')" x-on:click="$modalClose('date-calculation')" />
+                <x-button :text="__('Save')" x-on:click="addCalculation(dateCalculation); $modalClose('date-calculation');" />
+            </x-slot:footer>
+        </x-modal>
     @endif
     <div class="pb-2.5">
         <div class="border-b border-gray-200 dark:border-secondary-700">
@@ -304,25 +344,12 @@
                                 </x-badge>
                             </div>
                             <div x-cloak x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
-                                <x-button color="secondary" light
+                                <x-button
+                                    color="secondary"
+                                    light
                                     icon="calculator"
                                     class="w-full"
-                                    x-on:click="
-                                        $wireui.confirmDialog({
-                                            id: 'date-calculation',
-                                            icon: 'question',
-                                            accept: {
-                                                label: '{{ __('Save') }}',
-                                                execute: () => {addCalculation(0);},
-                                            },
-                                            reject: {
-                                                label: '{{ __('Cancel') }}',
-                                                execute: () => {
-                                                    filterName = ''
-                                                }
-                                            }
-                                        })
-                                    "
+                                    x-on:click="dateCalculation = 0; $modalOpen('date-calculation');"
                                 >
                                 </x-button>
                             </div>
@@ -344,25 +371,12 @@
                                     </x-badge>
                                 </div>
                                 <div x-cloak x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')">
-                                    <x-button color="secondary" light
+                                    <x-button
+                                        color="secondary"
+                                        light
                                         icon="calculator"
                                         class="w-full"
-                                        x-on:click="
-                                            $wireui.confirmDialog({
-                                                id: 'date-calculation',
-                                                icon: 'question',
-                                                accept: {
-                                                    label: '{{ __('Save') }}',
-                                                    execute: () => {addCalculation(1);},
-                                                },
-                                                reject: {
-                                                    label: '{{ __('Cancel') }}',
-                                                    execute: () => {
-                                                        filterName = ''
-                                                    }
-                                                }
-                                            })
-                                        "
+                                        x-on:click="dateCalculation = 1; $modalOpen('date-calculation');"
                                     >
                                     </x-button>
                                 </div>
@@ -482,22 +496,7 @@
                         <x-button
                             color="indigo"
                             class="w-full"
-                            x-on:click="
-                                $wireui.confirmDialog({
-                                    id: 'save-filter',
-                                    icon: 'question',
-                                    accept: {
-                                        label: '{{ __('Save') }}',
-                                        execute: () => {$wire.$parent.saveFilter(filterName, permanent, withEnabledCols); filterName = ''; permanent = false;},
-                                    },
-                                    reject: {
-                                        label: '{{ __('Cancel') }}',
-                                        execute: () => {
-                                            filterName = ''
-                                        }
-                                    }
-                                })
-                            "
+                            x-on:click="$modalOpen('save-filter')"
                         >
                             {{ __('Save') }}
                         </x-button>
@@ -519,27 +518,29 @@
                     <template x-for="col in searchable(aggregatable, searchAggregatable)">
                         <div>
                             <x-label>
-                                <x-slot:word>
-                                    <span x-text="getLabel(col)">
-                                    </span>
-                                </x-slot:word>
+                                <span x-text="getLabel(col)">
+                                </span>
                             </x-label>
                             <x-checkbox
+                                sm
                                 :label="__('Sum')"
                                 x-bind:value="col"
                                 x-model="aggregatableCols.sum"
                             />
                             <x-checkbox
+                                sm
                                 :label="__('Average')"
                                 x-bind:value="col"
                                 x-model="aggregatableCols.avg"
                             />
                             <x-checkbox
+                                sm
                                 :label="__('Minimum')"
                                 x-bind:value="col"
                                 x-model="aggregatableCols.min"
                             />
                             <x-checkbox
+                                sm
                                 :label="__('Maximum')"
                                 x-bind:value="col"
                                 x-model="aggregatableCols.max"
@@ -569,19 +570,16 @@
                                 <div class="relative flex items-start">
                                     <div class="flex items-center h-5">
                                         <x-checkbox
+                                            sm
                                             x-bind:id="col"
                                             x-bind:value="col"
                                             x-model="enabledCols"
                                             wire:loading.attr="disabled"
-                                        />
-                                    </div>
-                                    <div class="ml-2 text-sm">
-                                        <label
-                                            x-text="getLabel(col)"
-                                            class="block text-sm font-medium text-gray-700 dark:text-gray-50"
-                                            x-bind:for="col"
                                         >
-                                        </label>
+                                            <x-slot:label>
+                                                <span x-text="getLabel(col)" />
+                                            </x-slot:label>
+                                        </x-checkbox>
                                     </div>
                                 </div>
                             </label>
@@ -622,14 +620,18 @@
                             <template x-for="col in searchable($wire.$parent.selectedCols, searchColumns)">
                                 <div class="flex gap-1.5">
                                     <x-checkbox
+                                        sm
                                         x-bind:checked="$wire.$parent.enabledCols.includes(col.attribute)"
                                         wire:loading.attr="disabled"
                                         x-bind:id="col.attribute"
                                         x-bind:value="col.attribute"
                                         x-on:change="loadFilterable; addCol(col.attribute);"
                                         x-model="enabledCols"
-                                    />
-                                    <span class="overflow-hidden text-ellipsis whitespace-nowrap" x-text="col.label"></span>
+                                    >
+                                        <x-slot:label>
+                                            <span class="overflow-hidden text-ellipsis whitespace-nowrap" x-text="col.label"></span>
+                                        </x-slot:label>
+                                    </x-checkbox>
                                 </div>
                             </template>
                         </div>
