@@ -256,14 +256,14 @@ class DataTable extends Component
         $colLabels = array_flip(
             $cols
                 ?: array_merge(
-                $this->enabledCols,
-                $this->getAggregatable(),
-                array_filter(
-                    Arr::dot($this->userFilters),
-                    fn ($key) => str_ends_with($key, '.column'),
-                    ARRAY_FILTER_USE_KEY
+                    $this->enabledCols,
+                    $this->getAggregatable(),
+                    array_filter(
+                        Arr::dot($this->userFilters),
+                        fn ($key) => str_ends_with($key, '.column'),
+                        ARRAY_FILTER_USE_KEY
+                    )
                 )
-            )
         );
         array_walk($colLabels, function (&$value, $key) {
             if (str_contains($key, '.') && ! ($this->columnLabels[$key] ?? false)) {
