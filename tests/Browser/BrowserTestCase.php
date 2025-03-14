@@ -4,24 +4,21 @@ namespace Tests\Browser;
 
 use Closure;
 use Illuminate\Config\Repository;
-use Illuminate\Http\Request;
-use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\Dusk\Options;
 use Orchestra\Testbench\Dusk\TestCase;
-use TallStackUi\Facades\TallStackUi;
 use TallStackUi\TallStackUiServiceProvider;
-
 use TeamNiftyGmbH\DataTable\DataTableServiceProvider;
+
 use function Livewire\trigger;
 
 class BrowserTestCase extends TestCase
 {
     public static function tmp(): string
     {
-        return __DIR__.'/tmp/';
+        return __DIR__ . '/tmp/';
     }
 
     public static function tweakApplicationHook(): Closure
@@ -51,7 +48,7 @@ class BrowserTestCase extends TestCase
         tap($app['config'], function (Repository $config) {
             $config->set('app.env', 'testing');
             $config->set('app.debug', true);
-            $config->set('view.paths', [__DIR__.'/views', resource_path('views')]);
+            $config->set('view.paths', [__DIR__ . '/views', resource_path('views')]);
             $config->set('app.key', 'base64:Hupx3yAySikrM2/edkZQNQHslgDWYfiBfCuSThJ5SK8=');
             $config->set('database.default', 'testbench');
             $config->set('database.connections.testbench', [
@@ -83,17 +80,17 @@ class BrowserTestCase extends TestCase
 
     protected function livewireClassesPath($path = ''): string
     {
-        return app_path('Livewire'.($path ? '/'.$path : ''));
+        return app_path('Livewire' . ($path ? '/' . $path : ''));
     }
 
     protected function livewireTestsPath($path = ''): string
     {
-        return base_path('tests/Feature/Livewire'.($path ? '/'.$path : ''));
+        return base_path('tests/Feature/Livewire' . ($path ? '/' . $path : ''));
     }
 
     protected function livewireViewsPath($path = ''): string
     {
-        return resource_path('views').'/livewire'.($path ? '/'.$path : '');
+        return resource_path('views') . '/livewire' . ($path ? '/' . $path : '');
     }
 
     protected function paused(int $seconds = 3): int
