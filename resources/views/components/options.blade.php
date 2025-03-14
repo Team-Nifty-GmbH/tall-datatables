@@ -658,9 +658,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <template
-                                x-if="filters.length - 1 !== orIndex"
-                            >
+                            <template x-if="filters.length - 1 !== orIndex">
                                 <div class="pt-3">
                                     <x-badge
                                         flat

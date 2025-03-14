@@ -340,9 +340,7 @@ hotfix exception caused by wrong order in mount
 - removed `stretchCol` property, use `getTableHeadColAttributes()` instead
 -
 - removed loadash dependency
--
-
-**Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.3.4...v0.4.0
+- **Full Changelog**: https://github.com/Team-Nifty-GmbH/tall-datatables/compare/v0.3.4...v0.4.0
 
 ## v0.3.4 - 2023-02-22
 
