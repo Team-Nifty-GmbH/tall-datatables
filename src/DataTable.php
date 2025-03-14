@@ -935,9 +935,9 @@ class DataTable extends Component
             'selectAttributes' => $this->getSelectAttributes(),
             'rowAttributes' => $this->getRowAttributes(),
             'cellAttributes' => $this->getCellAttributes(),
-            'rowActions' => $this->getRowActions(),
-            'tableActions' => $this->getTableActions(),
-            'selectedActions' => $this->getSelectedActions(),
+            'rowActions' => $this->compileActions('row'),
+            'tableActions' => $this->compileActions('table'),
+            'selectedActions' => $this->compileActions('selected'),
             'modelName' => Str::headline(class_basename($this->getModel())),
             'showFilterInputs' => $this->showFilterInputs,
             'layout' => $this->getLayout(),
@@ -978,9 +978,30 @@ class DataTable extends Component
         return new ComponentAttributeBag();
     }
 
-    protected function getRowActions(): array
+    protected function compileActions(string $type): array
     {
-        return [];
+        $actions = [];
+        $methodBaseName = 'get' . ucfirst($type) . 'Actions';
+
+        foreach (class_uses_recursive(static::class) as $trait) {
+            $method = $methodBaseName . class_basename($trait);
+
+            if (method_exists($this, $method)) {
+                $actions = array_merge(
+                    $this->$method(),
+                    $actions
+                );
+            }
+        }
+
+        if (method_exists($this, $methodBaseName)) {
+            $actions = array_merge(
+                $this->{$methodBaseName}(),
+                $actions
+            );
+        }
+
+        return $actions;
     }
 
     protected function getTableActions(): array

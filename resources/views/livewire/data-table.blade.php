@@ -1,21 +1,28 @@
 <x-tall-datatables::data-table-wrapper :attributes="$componentAttributes">
     @includeWhen($includeBefore, $includeBefore)
-    @if($hasSidebar)
+    @if ($hasSidebar)
         @teleport('body')
             <x-slide id="data-table-sidebar-{{ $this->getId() }}">
                 <livewire:tall-datatables::options
-                        :is-filterable="$isFilterable"
-                        :aggregatable="$aggregatable"
-                        :is-exportable="$isExportable"
-                        lazy
-                    />
-                    <x-slot:footer>
-                        <x-button color="secondary" light x-on:click="$slideClose('data-table-sidebar-' + $wire.id.toLowerCase());">{{ __('Close') }}</x-button>
-                    </x-slot:footer>
+                    :is-filterable="$isFilterable"
+                    :aggregatable="$aggregatable"
+                    :is-exportable="$isExportable"
+                    lazy
+                />
+                <x-slot:footer>
+                    <x-button
+                        color="secondary"
+                        light
+                        x-on:click="$slideClose('data-table-sidebar-' + $wire.id.toLowerCase());"
+                    >
+                        {{ __('Close') }}
+                    </x-button>
+                </x-slot>
             </x-slide>
         @endteleport
     @endif
-    @if($hasHead)
+
+    @if ($hasHead)
         <x-tall-datatables::head
             :is-searchable="$searchable"
             :model-name="$modelName"
@@ -23,12 +30,13 @@
             :headline="$headline"
             :allow-soft-deletes="$allowSoftDeletes"
         />
-        @if($actions ?? false)
+        @if ($actions ?? false)
             <x-dropdown icon="ellipsis-vertical" static>
                 {{ $actions }}
             </x-dropdown>
         @endif
     @endif
+
     <x-dynamic-component
         :component="$layout"
         :has-head="$hasHead"

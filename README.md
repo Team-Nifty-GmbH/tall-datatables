@@ -28,15 +28,14 @@ It relies mainly on alpinejs to avoid re-rendering the whole table when somethin
 ```bash
 composer require team-nifty-gmbh/tall-datatables
 ```
+
 2. Add the scripts tag to your layout BEFORE alpinejs
+
 ```html
 ...
-<livewire:scripts/>
+<livewire:scripts />
 
-@dataTablesScripts
-
-@vite(['resources/js/alpine.js'])
-...
+@dataTablesScripts @vite(['resources/js/alpine.js']) ...
 ```
 
 3. Add the following to your tailwind.config.mjs
@@ -87,7 +86,7 @@ php artisan vendor:publish --tag="tall-datatables-views"
 
 By default the package caches the state of the table in the session.
 If you want to disable this feature, you can set the `cache` option to false in the .env file.
-    
+
 ```dotenv
 TALL_DATATABLES_CACHE=false
 ```
@@ -96,7 +95,9 @@ The caching is done per datatable. If you want to use your datatable in a differ
 In your blade file pass the cache key to the component.
 
 ```html
-<livewire:data-tables.user-data-table :cache-key="profile.subusers.user-table" />
+<livewire:data-tables.user-data-table
+    :cache-key="profile.subusers.user-table"
+/>
 ```
 
 You have to ensure that all cache-keys you set across your application are unique.
@@ -104,6 +105,7 @@ You have to ensure that all cache-keys you set across your application are uniqu
 # Usage
 
 This command creates a new DataTable class.
+
 ```shell
 php artisan make:data-table UserDataTable "App\Models\User"
 ```
@@ -153,9 +155,7 @@ Your view should include the default data-table wrapper:
 ```html
 <div>
     <!-- your custom stuff like modals -->
-    <div>
-        hey i'm rendered above the table
-    </div>
+    <div>hey i'm rendered above the table</div>
     @include('tall-datatables::livewire.data-table')
 </div>
 ```
@@ -192,9 +192,9 @@ public function getTableActions(): array
 ### Adding Buttons to a row
 
 > **_NOTE:_** Keep in mind that tall-datatables relies on alpinejs to render the data.
-> 
+>
 > Each row is rendered using the `x-for` directive. This means that every record is available as a variable called `record`.
-> 
+>
 > Remember that the record variable contains only the columns that are returned by the `getReturnKeys` php method.
 > The Model key is always available.
 
@@ -226,6 +226,7 @@ public function getRowActions(): array
 
 > **_TIP:_** If you want to prevent the row-clicked event to be dispatched on a button click
 > add the $event.stopPropagation() method to the button attributes.
+>
 > ```php
 > DataTableButton::make()
 >    ->text('Edit')
@@ -234,6 +235,7 @@ public function getRowActions(): array
 >    ->attributes([
 >        'x-on:click' => '$wire.edit(record.id); $event.stopPropagation()', // <--- here
 >      ]),
+> ```
 
 ## Combining Columns
 
@@ -255,14 +257,15 @@ public function getLeftAppends(): array
     ];
 }
 ```
+
 This function would append the email below the name in the name column.
 This is just for view purposes. The data is still available in the record variable.
 Also, all formatters are applied before the column is appended.
 
 > **_NOTE:_** Keep in mind to add the appended Columns to the `getReturnKeys` method.
 
-
 ### Eager Loading
+
 If you need to eager load additional data you can override the getBuilder method
 
 ```php
@@ -273,6 +276,7 @@ protected function getBuilder(Builder $builder): Builder
 ```
 
 ### Minimized Network traffic
+
 The datatable component will only return the columns you defined in the enabledCols property.
 In case you need a specific column to be always returned you can override the getReturnKeys method.
 
@@ -286,8 +290,9 @@ protected function getReturnKeys(): array
 ```
 
 ### Using your DataTable inside another component
+
 To use this new Data table you can add a livewire tag in your blade file:
-    
+
 ```html
 <livewire:data-tables.user-data-table />
 ```
@@ -295,14 +300,16 @@ To use this new Data table you can add a livewire tag in your blade file:
 You can pass contextual attributes when you call the component like this:
 
 ```html
-<livewire:data-tables.user-data-table 
-    :searchable="false" 
-    :filters="[['is_active' => true]]" 
+<livewire:data-tables.user-data-table
+    :searchable="false"
+    :filters="[['is_active' => true]]"
 />
 ```
+
 This keeps your component reusable, and you can use it in different contexts.
 
 ### Using your DataTable as a full page component
+
 To use this new Data table as a full page component you can just point a route to the component.
 See the [Livewire documentation](https://laravel-livewire.com/docs/2.x/rendering-components#page-components) for more information.
 
@@ -311,9 +318,10 @@ Route::get('/users', \App\Http\Livewire\DataTables\UserDataTable::class);
 ```
 
 ### Row clicked
-> **_NOTE:_** The data-table-row-clicked event is always dispatched, however if your record has the InteractsWithDataTables 
+
+> **_NOTE:_** The data-table-row-clicked event is always dispatched, however if your record has the InteractsWithDataTables
 > interface implemented the getUrl() method will be called to get the url to redirect to.
-> 
+>
 > If you just need the click event without a redirect you can set the `$hasNoRedirect` property to true.
 
 ```php
@@ -331,10 +339,14 @@ You can listen to this event in your AlpineJS.
     <livewire:data-tables.user-data-table />
 </div>
 ```
+
 If you want to use your clicked row with livewire my recommendation is to use the `$wire` property from alpinejs.
 
 ```html
-<div x-data="{ ... }" x-on:data-table-row-clicked="$wire.set('user', $event.detail)">
+<div
+    x-data="{ ... }"
+    x-on:data-table-row-clicked="$wire.set('user', $event.detail)"
+>
     <livewire:data-tables.user-data-table />
 </div>
 ```
@@ -345,7 +357,7 @@ If you want to listen to eloquent events that occur on the model you can use the
 This trait will automatically register the Echo event listeners for `created`, `updated` and `deleted` events.
 
 Your models should use the BroadcastsEvents trait from this package.
-    
+
 ```php
 use TeamNiftyGmbH\DataTable\Traits\BroadcastsEvents;
 
@@ -386,7 +398,7 @@ use TeamNifty\TallDatatables\Traits\HasFrontendAttributes;
 class User extends Authenticatable
 {
     use HasFrontendAttributes;
-    
+
     protected string $detailRouteName = 'users.id';
     ...
 }
@@ -414,6 +426,7 @@ $user->href; // returns the detail route for the user
 ## Styling the table
 
 ### Adding Attributes to a row
+
 You can add attributes to a row by overriding the getRowAttributes method.
 
 ```php
@@ -431,6 +444,7 @@ public function getRowAttributes(): array
 ```
 
 ### Infinite Scrolling
+
 By default, the table shows pagination. If you want to use infinite scrolling you can set the `hasInfiniteScroll` property to true.
 
 ```php
@@ -455,6 +469,7 @@ Alpine.start();
 ```
 
 ### Show filter inputs below column names
+
 If you want to show the filter inputs below the column names you can set the `showFilterInputs` property to true.
 
 ```php
@@ -462,6 +477,7 @@ public bool $showFilterInputs = true;
 ```
 
 ### Hiding the header
+
 If you want to hide the header you can set the `hasHeader` property to false.
 
 ```php
@@ -490,12 +506,12 @@ use TeamNifty\TallDatatables\Contracts\InteractsWithDataTables;
 class User extends Authenticatable implements InteractsWithDataTables
 {
     ...
-    
+
     public function getLabel(): string
     {
         return $this->name;
     }
-    
+
     public function getDescription(): string
     {
         return $this->email;
@@ -519,7 +535,7 @@ If you want to search in your datatable you should use the Searchable trait from
 The package will automatically detect if your model is searchable and will add a search input to the datatable.
 
 If you don't want to use the search input you can set the isSearchable property to false in your DataTable.
-    
+
 ```php
 public bool $isSearchable = false;
 ```

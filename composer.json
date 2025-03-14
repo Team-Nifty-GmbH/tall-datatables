@@ -25,13 +25,12 @@
     "require-dev": {
         "laravel/pint": "^1.0",
         "nunomaduro/collision": "^8.5",
-        "nunomaduro/larastan": "^2.0.1",
         "orchestra/testbench": "^10.0",
         "orchestra/testbench-dusk": "^10.0",
+        "pestphp/pest": "^3.7",
         "phpstan/extension-installer": "^1.1",
         "phpstan/phpstan-deprecation-rules": "^1.0",
-        "phpstan/phpstan-phpunit": "^1.0",
-        "phpunit/phpunit": "^11.5"
+        "phpstan/phpstan-phpunit": "^1.0"
     },
     "autoload": {
         "psr-4": {
@@ -40,7 +39,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "TeamNiftyGmbH\\DataTable\\Tests\\": "tests"
+            "App\\": "vendor/orchestra/testbench-core/laravel/app",
+            "Tests\\": "tests/"
         }
     },
     "scripts": {
