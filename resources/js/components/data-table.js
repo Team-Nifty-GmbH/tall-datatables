@@ -1,26 +1,19 @@
-export default function data_table($wire)
-{
+export default function data_table($wire) {
     return {
         async init() {
             this.loadTableConfig();
             this.$nextTick(() => {
                 this.$watch('enabledCols', () => {
                     $wire.storeColLayout(this.enabledCols);
-                    $wire.getFormatters()
-                        .then(
-                            formatters => {
-                                this.formatters = formatters;
-                            }
-                        );
-                    $wire.getColLabels(this.enabledCols)
-                        .then(
-                            result => {
-                                this.colLabels = result;
-                            }
-                        );
+                    $wire.getFormatters().then((formatters) => {
+                        this.formatters = formatters;
+                    });
+                    $wire.getColLabels(this.enabledCols).then((result) => {
+                        this.colLabels = result;
+                    });
                 });
             });
-            this.loadFilterable()
+            this.loadFilterable();
 
             this.$watch('search', () => {
                 $wire.startSearch();
@@ -31,47 +24,57 @@ export default function data_table($wire)
             });
 
             this.$watch('newFilter.column', () => {
-                if (! Boolean(this.newFilter.column)) {
+                if (!Boolean(this.newFilter.column)) {
                     return;
                 }
 
-                let valueList = this.filterValueLists.hasOwnProperty(this.newFilter.column);
+                let valueList = this.filterValueLists.hasOwnProperty(
+                    this.newFilter.column,
+                );
 
                 if (valueList) {
                     this.filterSelectType = 'valueList';
                     this.newFilter.operator = '=';
                 }
-            })
+            });
 
             this.$watch('newFilter.operator', () => {
-                if (this.newFilter.operator === 'is null' || this.newFilter.operator === 'is not null') {
+                if (
+                    this.newFilter.operator === 'is null' ||
+                    this.newFilter.operator === 'is not null'
+                ) {
                     this.filterSelectType = 'none';
                 }
-            })
+            });
 
             this.$watch('newFilter.relation', () => {
                 this.newFilter.column = '';
                 this.loadRelationTableFields(this.newFilter.relation);
-            })
+            });
 
             this.$watch('selected', () => {
                 this.$dispatch('tall-datatables-selected', this.selected);
-            })
+            });
 
             if (window.Echo !== undefined) {
                 this.$watch('broadcastChannels', (newChannels, oldChannels) => {
-                    const removedChannels = Object.values(oldChannels).filter(channel => ! Object.values(newChannels).includes(channel));
-                    const addedChannels = Object.values(newChannels).filter(channel => ! Object.values(oldChannels).includes(channel));
+                    const removedChannels = Object.values(oldChannels).filter(
+                        (channel) =>
+                            !Object.values(newChannels).includes(channel),
+                    );
+                    const addedChannels = Object.values(newChannels).filter(
+                        (channel) =>
+                            !Object.values(oldChannels).includes(channel),
+                    );
 
-                    removedChannels.forEach(channel => {
+                    removedChannels.forEach((channel) => {
                         Echo.leave(channel);
                     });
 
-                    addedChannels.forEach(channel => {
-                        Echo.private(channel)
-                            .listenToAll((event, data) => {
-                                $wire.eloquentEventOccurred(event, data);
-                            });
+                    addedChannels.forEach((channel) => {
+                        Echo.private(channel).listenToAll((event, data) => {
+                            $wire.eloquentEventOccurred(event, data);
+                        });
                     });
                 });
             }
@@ -91,7 +94,11 @@ export default function data_table($wire)
             if (typeof data === 'object') {
                 let obj = {};
                 for (const [key, value] of Object.entries(data)) {
-                    if (JSON.stringify(value).toLowerCase().includes(search.toLowerCase())) {
+                    if (
+                        JSON.stringify(value)
+                            .toLowerCase()
+                            .includes(search.toLowerCase())
+                    ) {
                         obj[key] = value;
                     }
                 }
@@ -100,29 +107,29 @@ export default function data_table($wire)
             }
 
             // its an array, return all items that include the search string
-            return data.filter(item => {
-                return JSON.stringify(item).toLowerCase().includes(search.toLowerCase());
+            return data.filter((item) => {
+                return JSON.stringify(item)
+                    .toLowerCase()
+                    .includes(search.toLowerCase());
             });
         },
         loadTableConfig() {
-            $wire.getConfig().then(
-                result => {
-                    this.enabledCols = result.enabledCols;
-                    this.availableCols = result.availableCols;
-                    this.sortable = result.sortable;
-                    this.aggregatable = result.aggregatable;
-                    this.selectable = result.selectable;
-                    this.formatters = result.formatters;
-                    this.leftAppend = result.leftAppend;
-                    this.rightAppend = result.rightAppend;
-                    this.topAppend = result.topAppend;
-                    this.bottomAppend = result.bottomAppend;
-                    this.searchRoute = result.searchRoute;
-                    this.echoListeners = result.echoListeners;
-                    this.operatorLabels = result.operatorLabels;
-                    this.colLabels = result.colLabels;
-                }
-            )
+            $wire.getConfig().then((result) => {
+                this.enabledCols = result.enabledCols;
+                this.availableCols = result.availableCols;
+                this.sortable = result.sortable;
+                this.aggregatable = result.aggregatable;
+                this.selectable = result.selectable;
+                this.formatters = result.formatters;
+                this.leftAppend = result.leftAppend;
+                this.rightAppend = result.rightAppend;
+                this.topAppend = result.topAppend;
+                this.bottomAppend = result.bottomAppend;
+                this.searchRoute = result.searchRoute;
+                this.echoListeners = result.echoListeners;
+                this.operatorLabels = result.operatorLabels;
+                this.colLabels = result.colLabels;
+            });
         },
         data: $wire.entangle('data').live,
         enabledCols: [],
@@ -152,45 +159,63 @@ export default function data_table($wire)
         search: $wire.entangle('search'),
         selected: $wire.entangle('selected'),
         filterBadge(filter) {
-            if (! filter) {
+            if (!filter) {
                 return;
             }
 
             const label = this.getLabel(filter.column) ?? filter.column;
-            let value = this.filterValueLists[filter.column]?.find(item => {
-                return item.value == filter.value
-            })?.label ?? filter.value;
+            let value =
+                this.filterValueLists[filter.column]?.find((item) => {
+                    return item.value == filter.value;
+                })?.label ?? filter.value;
 
             if (Array.isArray(value)) {
-                value = filter.value.map((item) => {
-                    if (item.hasOwnProperty('calculation')) {
-                        return this.getCalculationLabel(item.calculation);
-                    }
+                value = filter.value
+                    .map((item) => {
+                        if (item.hasOwnProperty('calculation')) {
+                            return this.getCalculationLabel(item.calculation);
+                        }
 
-                    return formatters.format({value: item});
-                }).join(' ' + this.operatorLabels.and + ' ');
+                        return formatters.format({ value: item });
+                    })
+                    .join(' ' + this.operatorLabels.and + ' ');
             } else {
-                value = formatters.format({value: value});
+                value = formatters.format({ value: value });
             }
 
-
-            return label + ' ' +
-                (this.operatorLabels[filter.operator] || filter.operator) + ' ' +
-                value;
+            return (
+                label +
+                ' ' +
+                (this.operatorLabels[filter.operator] || filter.operator) +
+                ' ' +
+                value
+            );
         },
         getCalculationLabel(calculation) {
-            if (! calculation) {
+            if (!calculation) {
                 return;
             }
 
             let label = this.getLabel('Now');
 
             if (calculation.value !== 0) {
-                label = label + ' ' + calculation.operator + ' ' + calculation.value + ' ' + this.getLabel(calculation.unit);
+                label =
+                    label +
+                    ' ' +
+                    calculation.operator +
+                    ' ' +
+                    calculation.value +
+                    ' ' +
+                    this.getLabel(calculation.unit);
             }
 
             if (calculation.is_start_of) {
-                label = label + ' ' + this.getLabel('Start of') + ' ' + this.getLabel(calculation.start_of);
+                label =
+                    label +
+                    ' ' +
+                    this.getLabel('Start of') +
+                    ' ' +
+                    this.getLabel(calculation.start_of);
             }
 
             return label;
@@ -218,14 +243,13 @@ export default function data_table($wire)
 
                 if (Boolean(this.newFilter.column)) {
                     this.$nextTick(() => this.$refs.filterOperator?.focus());
-                } else if(Boolean(this.newFilter.operator)) {
+                } else if (Boolean(this.newFilter.operator)) {
                     this.$nextTick(() => this.$refs.filterValue?.focus());
                 } else {
                     this.$nextTick(() => this.$refs.filterColumn?.focus());
                 }
                 this.showSavedFilters = false;
             }
-
 
             $slideOpen('data-table-sidebar-' + $wire.id.toLowerCase());
         },
@@ -234,17 +258,21 @@ export default function data_table($wire)
         relationFormatters: {},
         relationColLabels: {},
         resetLayout() {
-            $wire.resetLayout().then(
-                () => {
-                    this.loadTableConfig();
-                }
-            )
+            $wire.resetLayout().then(() => {
+                this.loadTableConfig();
+            });
         },
         getLabel(col) {
-            return this.colLabels[col] || col.label || this.relationColLabels[col] || this.operatorLabels[col] || col;
+            return (
+                this.colLabels[col] ||
+                col.label ||
+                this.relationColLabels[col] ||
+                this.operatorLabels[col] ||
+                col
+            );
         },
         getFilterInputType(col) {
-            if (! col || col === '.') {
+            if (!col || col === '.') {
                 return 'text';
             }
 
@@ -258,7 +286,7 @@ export default function data_table($wire)
 
             const formatter = this.relationFormatters?.[table]?.[col] ?? null;
 
-            return formatters.inputType(formatter)
+            return formatters.inputType(formatter);
         },
         loadRelationTableFields(table = null) {
             let tableAlias = table;
@@ -270,59 +298,65 @@ export default function data_table($wire)
                 return;
             }
 
-            $wire.getRelationTableCols(table).then(
-                result => {
-                    this.relationTableFields[tableAlias] = Object.keys(result);
-                    this.relationFormatters[tableAlias] = result;
-                    $wire.getColLabels(this.relationTableFields[tableAlias])
-                        .then(
-                            result => {
-                                Object.assign(this.relationColLabels, result);
-                            }
-                        );
+            $wire.getRelationTableCols(table).then((result) => {
+                this.relationTableFields[tableAlias] = Object.keys(result);
+                this.relationFormatters[tableAlias] = result;
+                $wire
+                    .getColLabels(this.relationTableFields[tableAlias])
+                    .then((result) => {
+                        Object.assign(this.relationColLabels, result);
+                    });
 
-                    if (! this.textFilter) {
-                        this.textFilter = result.reduce((acc, curr) => {
-                            acc[curr] = '';
-                            return acc;
-                        }, {});
-                        this.$watch('textFilter', () => {
-                            this.parseFilter();
-                        });
-                    }
+                if (!this.textFilter) {
+                    this.textFilter = result.reduce((acc, curr) => {
+                        acc[curr] = '';
+                        return acc;
+                    }, {});
+                    this.$watch('textFilter', () => {
+                        this.parseFilter();
+                    });
                 }
-            );
+            });
         },
         loadFilterable(table = null) {
-            $wire.getFilterableColumns(table)
-                .then(
-                    result => {
-                        this.filterable = result;
+            $wire.getFilterableColumns(table).then((result) => {
+                this.filterable = result;
 
-                        if (! this.textFilter) {
-                            this.textFilter = result.reduce((acc, curr) => {
-                                acc[curr] = '';
-                                return acc;
-                            }, {});
-                            this.$watch('textFilter', () => {
-                                this.parseFilter();
-                            });
-                        }
-                    }
-                );
+                if (!this.textFilter) {
+                    this.textFilter = result.reduce((acc, curr) => {
+                        acc[curr] = '';
+                        return acc;
+                    }, {});
+                    this.$watch('textFilter', () => {
+                        this.parseFilter();
+                    });
+                }
+            });
         },
         filterIndex: 0,
         textFilter: null,
-        newFilter: {column: '', operator: '', value: [], relation: ''},
-        newFilterCalculation: {value: 0, operator: '-', unit: 'days', is_start_of: "", start_of: 'day'},
+        newFilter: { column: '', operator: '', value: [], relation: '' },
+        newFilterCalculation: {
+            value: 0,
+            operator: '-',
+            unit: 'days',
+            is_start_of: '',
+            start_of: 'day',
+        },
         addCalculation(index) {
             // check if the index exists, otherwise add it
-            if (! this.newFilter.value[index]) {
+            if (!this.newFilter.value[index]) {
                 this.newFilter.value[index] = {};
             }
 
             this.newFilter.value[index].calculation = this.newFilterCalculation;
-            this.newFilterCalculation = {value: 0, operator: '-', unit: 'days', is_start_of: "", start_of: 'day'};
+            this.newFilterCalculation = {
+                value: 0,
+                operator: '-',
+                unit: 'days',
+                is_start_of: '',
+                start_of: 'day',
+            };
         },
         parseFilter() {
             let filters = [];
@@ -335,15 +369,20 @@ export default function data_table($wire)
 
                 let operator = null;
                 if (this.filterValueLists.hasOwnProperty(key)) {
-                    operator = '='
+                    operator = '=';
                 } else {
-                    operator = value.match(/^(>=|<=|!=|=|like|not like|>|<|is null|is not null)/i);
+                    operator = value.match(
+                        /^(>=|<=|!=|=|like|not like|>|<|is null|is not null)/i,
+                    );
                 }
 
-                if (! operator
-                    && (this.formatters[key] === 'date' || this.formatters[key] === 'datetime')
-                    && filterValue.length > 6
-                    && (new Date(filterValue) !== 'Invalid Date' && ! isNaN(new Date(filterValue)))
+                if (
+                    !operator &&
+                    (this.formatters[key] === 'date' ||
+                        this.formatters[key] === 'datetime') &&
+                    filterValue.length > 6 &&
+                    new Date(filterValue) !== 'Invalid Date' &&
+                    !isNaN(new Date(filterValue))
                 ) {
                     operator = '=';
                 }
@@ -361,7 +400,10 @@ export default function data_table($wire)
                 }
 
                 // check if value starts or ends with %, if so use like and dont add % to value
-                if (! value.trim().startsWith('%') && ! value.trim().endsWith('%')) {
+                if (
+                    !value.trim().startsWith('%') &&
+                    !value.trim().endsWith('%')
+                ) {
                     filterValue = '%' + value.trim() + '%';
                 }
 
@@ -383,7 +425,9 @@ export default function data_table($wire)
                 this.filterIndex = 0;
             }
 
-            newFilter.operator = Boolean(newFilter.operator) ? newFilter.operator : '=';
+            newFilter.operator = Boolean(newFilter.operator)
+                ? newFilter.operator
+                : '=';
             if (newFilter.relation && newFilter.relation !== '0') {
                 newFilter.column = newFilter.relation + '.' + newFilter.column;
                 newFilter.relation = '';
@@ -392,7 +436,9 @@ export default function data_table($wire)
             this.filters[this.filterIndex].push(newFilter);
             this.resetFilter();
             this.filterSelectType = 'text';
-            $wire.getColLabels().then(result => {this.colLabels = result;});
+            $wire.getColLabels().then((result) => {
+                this.colLabels = result;
+            });
 
             this.$nextTick(() => this.$refs.filterColumn.focus());
         },
@@ -416,7 +462,7 @@ export default function data_table($wire)
                     }
 
                     if (innerArray.length === 0) {
-                        this.removeFilterGroup(groupIndex)
+                        this.removeFilterGroup(groupIndex);
                     }
                 }
             }
@@ -435,7 +481,12 @@ export default function data_table($wire)
         },
         resetFilter() {
             this.filterSelectType = 'text';
-            this.newFilter = {column: '', operator: '', value: [], relation: ''};
+            this.newFilter = {
+                column: '',
+                operator: '',
+                value: [],
+                relation: '',
+            };
         },
         filterName: '',
         permanent: false,
@@ -443,18 +494,20 @@ export default function data_table($wire)
         exportColumns: [],
         exportableColumns: [],
         getColumns() {
-            $wire.getExportableColumns().then(result => {
+            $wire.getExportableColumns().then((result) => {
                 this.exportableColumns = result;
                 this.exportColumns = this.enabledCols;
-            })
+            });
         },
         relations: [],
         savedFilters: [],
         getSavedFilters() {
-            $wire.getSavedFilters().then(result => {this.savedFilters = result})
+            $wire.getSavedFilters().then((result) => {
+                this.savedFilters = result;
+            });
         },
         loadSavedFilter() {
-            $wire.loadSavedFilter().then(result => {
+            $wire.loadSavedFilter().then((result) => {
                 this.loadTableConfig();
             });
         },
@@ -470,17 +523,22 @@ export default function data_table($wire)
             let label;
 
             if (this.filterValueLists.hasOwnProperty(col)) {
-                label = this.filterValueLists[col].find(item => {
-                    return item.value == val
-                })?.label ?? val;
+                label =
+                    this.filterValueLists[col].find((item) => {
+                        return item.value == val;
+                    })?.label ?? val;
             }
 
             if (this.formatters.hasOwnProperty(col)) {
                 let type = this.formatters[col];
-                return formatters.setLabel(label).format({value: val, type: type, context: record});
+                return formatters
+                    .setLabel(label)
+                    .format({ value: val, type: type, context: record });
             } else {
-                return formatters.setLabel(label).format({value: val, context: record});
+                return formatters
+                    .setLabel(label)
+                    .format({ value: val, context: record });
             }
         },
-    }
+    };
 }

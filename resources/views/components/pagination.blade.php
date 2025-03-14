@@ -17,15 +17,18 @@
     </div>
     <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
         <div>
-            <div class="text-sm text-slate-400 flex gap-1 items-center">
+            <div class="flex items-center gap-1 text-sm text-slate-400">
                 {{ __('Showing') }}
-                <div x-text="data.from ?? 0" class="font-medium align-middle"></div>
+                <div
+                    x-text="data.from ?? 0"
+                    class="align-middle font-medium"
+                ></div>
                 {{ __('to') }}
                 <div x-text="data.to ?? 0" class="font-medium"></div>
                 {{ __('of') }}
                 <div x-text="data.total" class="font-medium"></div>
                 {{ __('results') }}
-                @if($this->perPage ?? false)
+                @if ($this->perPage ?? false)
                     <x-select.styled
                         class="pl-4"
                         x-on:select="$wire.setPerPage($event.detail.select.value)"
@@ -42,7 +45,10 @@
             </div>
         </div>
         <div>
-            <nav class="isolate inline-flex space-x-1 rounded-md shadow-sm" aria-label="Pagination">
+            <nav
+                class="isolate inline-flex space-x-1 rounded-md shadow-sm"
+                aria-label="Pagination"
+            >
                 <x-button
                     color="secondary"
                     light
