@@ -981,7 +981,7 @@ class DataTable extends Component
     protected function compileActions(string $type): array
     {
         $actions = [];
-        $methodBaseName = 'get' . ucfirst($type) .'Actions';
+        $methodBaseName = 'get' . ucfirst($type) . 'Actions';
 
         foreach (class_uses_recursive(static::class) as $trait) {
             $method = $methodBaseName . class_basename($trait);
