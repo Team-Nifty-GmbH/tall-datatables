@@ -1,0 +1,2 @@
+resources/views/components/tabs.blade.php
+resources/views/emails/orders/order-confirmation.blade.php

@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Traits;
 
+use Exception;
 use TeamNiftyGmbH\DataTable\Helpers\Icon;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 
@@ -10,7 +11,7 @@ trait HasFrontendAttributes
     public array $detailRouteParams = [];
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public static function icon(): Icon
     {
@@ -27,16 +28,6 @@ trait HasFrontendAttributes
             ->toArray();
     }
 
-    /**
-     * @return $this
-     */
-    public function setDetailRouteParams(array $routeParams): self
-    {
-        $this->detailRouteParams = $routeParams;
-
-        return $this;
-    }
-
     public function detailRoute(bool $absolute = true): ?string
     {
         return $this->getDetailRouteName()
@@ -50,6 +41,16 @@ trait HasFrontendAttributes
             $this->detailRouteParams,
             method_exists($this, 'detailRouteParams') ? $this->detailRouteParams() : ['id' => $this->getKey()]
         );
+    }
+
+    /**
+     * @return $this
+     */
+    public function setDetailRouteParams(array $routeParams): self
+    {
+        $this->detailRouteParams = $routeParams;
+
+        return $this;
     }
 
     private function getDetailRouteName(): ?string

@@ -13,6 +13,12 @@ trait SupportsCache
     #[Locked]
     public ?string $cacheKey = null;
 
+    #[Renderless]
+    public function getCacheKey(): string
+    {
+        return $this->cacheKey ?: get_called_class();
+    }
+
     public function mountSupportsCache(): void
     {
         if (config('tall-datatables.should_cache')) {
@@ -56,12 +62,6 @@ trait SupportsCache
             );
         } catch (MissingTraitException) {
         }
-    }
-
-    #[Renderless]
-    public function getCacheKey(): string
-    {
-        return $this->cacheKey ?: get_called_class();
     }
 
     protected function compileStoredLayout(): array

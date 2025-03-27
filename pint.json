@@ -4,6 +4,87 @@
         "concat_space": {
             "spacing": "one"
         },
-        "new_with_parentheses": true
+        "no_extra_blank_lines": {
+            "tokens": [
+                "use",
+                "use_trait",
+                "extra",
+                "return",
+                "throw",
+                "curly_brace_block",
+                "parenthesis_brace_block",
+                "square_brace_block",
+                "switch",
+                "case",
+                "default"
+            ]
+        },
+        "ordered_imports": {
+            "sort_algorithm": "alpha",
+            "imports_order": ["class", "function", "const"]
+        },
+        "no_unused_imports": true,
+        "global_namespace_import": {
+            "import_classes": true,
+            "import_constants": true,
+            "import_functions": true
+        },
+        "ordered_class_elements": {
+            "order": [
+                "use_trait",
+                "constant_public",
+                "constant_protected",
+                "constant_private",
+                "property_public_static",
+                "property_protected_static",
+                "property_private_static",
+                "property_public",
+                "property_protected",
+                "property_private",
+                "method_abstract",
+                "construct",
+                "destruct",
+                "magic",
+                "method_public_static",
+                "method_protected_static",
+                "method_private_static",
+
+                "phpunit",
+
+                "method:up",
+                "method:down",
+
+                "method:getRulesets",
+
+                "method:mount",
+                "method:render",
+                "method:hydrate",
+                "method:boot",
+                "method:updating",
+                "method:updated",
+                "method:rendering",
+                "method:rendered",
+                "method:dehydrate",
+                "method:exception",
+
+                "method:casts",
+
+                "method:getTableActions",
+                "method:getRowActions",
+                "method:getSelectedActions",
+
+                "method_public",
+                "method_protected",
+                "method_private"
+            ],
+            "sort_algorithm": "alpha"
+        },
+        "blank_line_between_import_groups": false,
+        "new_with_parentheses": true,
+        "return_type_declaration": {
+            "space_before": "none"
+        },
+        "fully_qualified_strict_types": true,
+        "void_return": true
     }
 }

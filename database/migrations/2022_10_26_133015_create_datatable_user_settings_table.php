@@ -12,7 +12,7 @@ return new class() extends Migration
             return;
         }
 
-        Schema::create('datatable_user_settings', function (Blueprint $table) {
+        Schema::create('datatable_user_settings', function (Blueprint $table): void {
             $table->id();
 
             $table->string('name');

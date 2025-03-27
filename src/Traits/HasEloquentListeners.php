@@ -12,64 +12,6 @@ trait HasEloquentListeners
 
     protected bool $withoutEloquentListeners = false;
 
-    protected function getPaginator(LengthAwarePaginator $paginator): LengthAwarePaginator
-    {
-        $model = $this->getModel();
-        if ($this->withoutEloquentListeners ||
-            ! in_array(BroadcastsEvents::class, class_uses_recursive($model))
-        ) {
-            return $paginator;
-        }
-
-        $this->broadcastChannels = [];
-        foreach ($paginator->items() as $item) {
-            $this->broadcastChannels[$item->getKey()] = $item->broadcastChannel();
-        }
-
-        if ($paginator->currentPage() === 1 && method_exists($model, 'getBroadcastChannel')) {
-            $this->broadcastChannels['created'] = $model::getBroadcastChannel(true);
-        } else {
-            $newModel = new $model();
-            $this->broadcastChannels['created'] = $newModel->broadcastChannel() . $model::max($newModel->getKeyName()) + 1;
-        }
-
-        return $paginator;
-    }
-
-    protected function getKeyFromEventData(array $eventData): int|string|null
-    {
-        return data_get($eventData, 'model.' . $this->modelKeyName);
-    }
-
-    public function eloquentEventOccurred(string $event, array $data): void
-    {
-        $event = str_replace('.' . class_basename($this->getModel()), 'echo', $event);
-
-        if (! method_exists($this, $event)) {
-            return;
-        }
-
-        $this->{$event}($data);
-    }
-
-    public function echoUpdated(array $eventData): void
-    {
-        $model = $this->buildSearch()->whereKey($this->getKeyFromEventData($eventData))->first();
-        if (is_null($model)) {
-            // seems like the model doesnt match the search criteria
-            $this->echoDeleted($eventData);
-
-            return;
-        }
-
-        $item = $this->itemToArray($model);
-        $data = Arr::keyBy($this->data['data'], $this->modelKeyName);
-        $data[$model->getKey()] = $item;
-        $this->data['data'] = array_values($data);
-
-        $this->skipRender();
-    }
-
     public function echoCreated(array $eventData): void
     {
         $model = $this->buildSearch()->whereKey($this->getKeyFromEventData($eventData))->first();
@@ -108,13 +50,71 @@ trait HasEloquentListeners
         $this->skipRender();
     }
 
+    public function echoRestored(array $eventData): void
+    {
+        $this->echoCreated($eventData);
+    }
+
     public function echoTrashed(array $eventData): void
     {
         $this->echoDeleted($eventData);
     }
 
-    public function echoRestored(array $eventData): void
+    public function echoUpdated(array $eventData): void
     {
-        $this->echoCreated($eventData);
+        $model = $this->buildSearch()->whereKey($this->getKeyFromEventData($eventData))->first();
+        if (is_null($model)) {
+            // seems like the model doesnt match the search criteria
+            $this->echoDeleted($eventData);
+
+            return;
+        }
+
+        $item = $this->itemToArray($model);
+        $data = Arr::keyBy($this->data['data'], $this->modelKeyName);
+        $data[$model->getKey()] = $item;
+        $this->data['data'] = array_values($data);
+
+        $this->skipRender();
+    }
+
+    public function eloquentEventOccurred(string $event, array $data): void
+    {
+        $event = str_replace('.' . class_basename($this->getModel()), 'echo', $event);
+
+        if (! method_exists($this, $event)) {
+            return;
+        }
+
+        $this->{$event}($data);
+    }
+
+    protected function getKeyFromEventData(array $eventData): int|string|null
+    {
+        return data_get($eventData, 'model.' . $this->modelKeyName);
+    }
+
+    protected function getPaginator(LengthAwarePaginator $paginator): LengthAwarePaginator
+    {
+        $model = $this->getModel();
+        if ($this->withoutEloquentListeners ||
+            ! in_array(BroadcastsEvents::class, class_uses_recursive($model))
+        ) {
+            return $paginator;
+        }
+
+        $this->broadcastChannels = [];
+        foreach ($paginator->items() as $item) {
+            $this->broadcastChannels[$item->getKey()] = $item->broadcastChannel();
+        }
+
+        if ($paginator->currentPage() === 1 && method_exists($model, 'getBroadcastChannel')) {
+            $this->broadcastChannels['created'] = $model::getBroadcastChannel(true);
+        } else {
+            $newModel = new $model();
+            $this->broadcastChannels['created'] = $newModel->broadcastChannel() . $model::max($newModel->getKeyName()) + 1;
+        }
+
+        return $paginator;
     }
 }

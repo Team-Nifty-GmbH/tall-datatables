@@ -7,11 +7,11 @@ use Illuminate\Support\Facades\Cache;
 
 class ModelInfoCacheReset extends Command
 {
-    protected $signature = 'model-info:cache-reset';
-
     protected $description = 'Reset the model info cache';
 
-    public function handle()
+    protected $signature = 'model-info:cache-reset';
+
+    public function handle(): void
     {
         if (
             Cache::forget(config('tall-datatables.cache_key') . '.modelFinder')

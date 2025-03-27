@@ -1,0 +1,12 @@
+{
+    "$schema": "http://laravel-ide.com/schema/laravel-ide-v1.json",
+    "blade": {
+        "components": {
+            "viewPaths": [
+                {
+                    "path": "vendor/tallstackui/tallstackui/resources/views/components"
+                }
+            ]
+        }
+    }
+}

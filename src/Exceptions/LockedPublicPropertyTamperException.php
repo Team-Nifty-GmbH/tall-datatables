@@ -2,7 +2,9 @@
 
 namespace TeamNiftyGmbH\DataTable\Exceptions;
 
-final class LockedPublicPropertyTamperException extends \Exception
+use Exception;
+
+final class LockedPublicPropertyTamperException extends Exception
 {
     /**
      * @return static

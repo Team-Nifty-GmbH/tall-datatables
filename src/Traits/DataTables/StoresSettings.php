@@ -17,6 +17,60 @@ trait StoresSettings
 
     public bool $showSavedFilters = true;
 
+    /**
+     * @throws MissingTraitException
+     */
+    #[Renderless]
+    public function deleteSavedFilter(string $id): void
+    {
+        $this->ensureAuthHasTrait();
+
+        Auth::user()->datatableUserSettings()->whereKey($id)->delete();
+
+        $this->savedFilters = $this->getSavedFilters(
+            fn (Builder $query) => $query->where('is_layout', false)
+        );
+    }
+
+    #[Renderless]
+    public function deleteSavedFilterEnabledCols(int $id): void
+    {
+        $savedFilter = Auth::user()->datatableUserSettings()->whereKey($id)->value('settings');
+        data_forget($savedFilter, 'enabledCols');
+
+        Auth::user()->datatableUserSettings()->whereKey($id)->update(['settings' => $savedFilter]);
+
+        $this->savedFilters = $this->getSavedFilters(
+            fn (Builder $query) => $query->where('is_layout', false)
+        );
+    }
+
+    #[Renderless]
+    public function getSavedFilters(?Closure $filter = null): array
+    {
+        if (Auth::user() && method_exists(Auth::user(), 'getDataTableSettings')) {
+            return Auth::user()
+                ->getDataTableSettings($this, $filter)
+                ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+                ->values()
+                ?->toArray() ?? [];
+        } else {
+            return [];
+        }
+    }
+
+    #[Renderless]
+    public function loadSavedFilter(): void
+    {
+        $this->loadFilter(
+            data_get(
+                collect($this->savedFilters)->where('id', $this->loadedFilterId)->first(),
+                'settings',
+                []
+            )
+        );
+    }
+
     public function mountStoresSettings(): void
     {
         $this->savedFilters = $this->getSavedFilters(
@@ -36,28 +90,28 @@ trait StoresSettings
     }
 
     #[Renderless]
-    public function storeColLayout(array $cols): void
+    public function resetLayout(): void
     {
-        $reload = count($cols) > count($this->enabledCols);
+        try {
+            $this->ensureAuthHasTrait();
+            $layout = Auth::user()
+                ->datatableUserSettings()
+                ->where('component', $this->getCacheKey())
+                ->where('is_layout', true)
+                ->first();
+            $cached = Session::get(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
 
-        $this->enabledCols = $cols;
+            if (! $layout && ! $cached) {
+                return;
+            }
 
-        $this->cacheState();
-        if ($reload) {
+            $layout?->delete();
+            Session::remove(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
+
+            $this->reset(array_keys(array_merge($layout?->settings ?? [], $cached ?? [])));
             $this->loadData();
+        } catch (MissingTraitException) {
         }
-    }
-
-    #[Renderless]
-    public function loadSavedFilter(): void
-    {
-        $this->loadFilter(
-            data_get(
-                collect($this->savedFilters)->where('id', $this->loadedFilterId)->first(),
-                'settings',
-                []
-            )
-        );
     }
 
     /**
@@ -95,69 +149,15 @@ trait StoresSettings
     }
 
     #[Renderless]
-    public function deleteSavedFilterEnabledCols(int $id): void
+    public function storeColLayout(array $cols): void
     {
-        $savedFilter = Auth::user()->datatableUserSettings()->whereKey($id)->value('settings');
-        data_forget($savedFilter, 'enabledCols');
+        $reload = count($cols) > count($this->enabledCols);
 
-        Auth::user()->datatableUserSettings()->whereKey($id)->update(['settings' => $savedFilter]);
+        $this->enabledCols = $cols;
 
-        $this->savedFilters = $this->getSavedFilters(
-            fn (Builder $query) => $query->where('is_layout', false)
-        );
-    }
-
-    /**
-     * @throws MissingTraitException
-     */
-    #[Renderless]
-    public function deleteSavedFilter(string $id): void
-    {
-        $this->ensureAuthHasTrait();
-
-        Auth::user()->datatableUserSettings()->whereKey($id)->delete();
-
-        $this->savedFilters = $this->getSavedFilters(
-            fn (Builder $query) => $query->where('is_layout', false)
-        );
-    }
-
-    #[Renderless]
-    public function resetLayout(): void
-    {
-        try {
-            $this->ensureAuthHasTrait();
-            $layout = Auth::user()
-                ->datatableUserSettings()
-                ->where('component', $this->getCacheKey())
-                ->where('is_layout', true)
-                ->first();
-            $cached = Session::get(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
-
-            if (! $layout && ! $cached) {
-                return;
-            }
-
-            $layout?->delete();
-            Session::remove(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
-
-            $this->reset(array_keys(array_merge($layout?->settings ?? [], $cached ?? [])));
+        $this->cacheState();
+        if ($reload) {
             $this->loadData();
-        } catch (MissingTraitException) {
-        }
-    }
-
-    #[Renderless]
-    public function getSavedFilters(?Closure $filter = null): array
-    {
-        if (Auth::user() && method_exists(Auth::user(), 'getDataTableSettings')) {
-            return Auth::user()
-                ->getDataTableSettings($this, $filter)
-                ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
-                ->values()
-                ?->toArray() ?? [];
-        } else {
-            return [];
         }
     }
 

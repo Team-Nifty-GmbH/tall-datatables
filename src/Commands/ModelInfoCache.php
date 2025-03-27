@@ -7,11 +7,11 @@ use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 
 class ModelInfoCache extends Command
 {
-    protected $signature = 'model-info:cache';
-
     protected $description = 'Reset the model info cache';
 
-    public function handle()
+    protected $signature = 'model-info:cache';
+
+    public function handle(): void
     {
         $this->call(ModelInfoCacheReset::class);
 

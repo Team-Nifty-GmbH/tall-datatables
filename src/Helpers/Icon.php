@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Helpers;
 
+use Exception;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\Request;
@@ -11,27 +12,16 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Icon implements Htmlable, Responsable
 {
+    public array|ComponentAttributeBag $attributes;
+
     public string $name;
 
     public ?string $variant;
 
     public string $view;
 
-    public array|ComponentAttributeBag $attributes;
-
     /**
-     * @throws \Exception
-     */
-    public static function make(
-        string $name,
-        string $variant = 'solid',
-        array|ComponentAttributeBag $attributes = []
-    ): self {
-        return new self($name, $variant, $attributes);
-    }
-
-    /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function __construct(
         string $name,
@@ -44,7 +34,7 @@ class Icon implements Htmlable, Responsable
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function __toString(): string
     {
@@ -52,7 +42,18 @@ class Icon implements Htmlable, Responsable
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
+     */
+    public static function make(
+        string $name,
+        string $variant = 'solid',
+        array|ComponentAttributeBag $attributes = []
+    ): self {
+        return new self($name, $variant, $attributes);
+    }
+
+    /**
+     * @throws Exception
      */
     public function getSvg(): string
     {
@@ -65,7 +66,7 @@ class Icon implements Htmlable, Responsable
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function getView(): string
     {
@@ -78,16 +79,11 @@ class Icon implements Htmlable, Responsable
         return $view;
     }
 
-    private function getComponentName(): string
-    {
-        return 'tallstackui::icons.' . ($this->variant ?? 'solid') . '.' . $this->name;
-    }
-
     /**
      * Get content as a string of HTML.
      *
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function toHtml(): string
     {
@@ -99,7 +95,7 @@ class Icon implements Htmlable, Responsable
      *
      * @param  Request  $request
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function toResponse($request): Response
     {
@@ -108,5 +104,10 @@ class Icon implements Htmlable, Responsable
                 'Content-Type' => 'image/svg+xml; charset=utf-8',
                 'Cache-Control' => 'public, only-if-cached, max-age=31536000',
             ]);
+    }
+
+    private function getComponentName(): string
+    {
+        return 'tallstackui::icons.' . ($this->variant ?? 'solid') . '.' . $this->name;
     }
 }

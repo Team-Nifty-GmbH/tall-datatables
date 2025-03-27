@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Controllers;
 
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use TeamNiftyGmbH\DataTable\Helpers\Icon;
@@ -9,7 +10,7 @@ use TeamNiftyGmbH\DataTable\Helpers\Icon;
 class IconController
 {
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function __invoke(Request $request, string $name, ?string $variant = null): Response
     {

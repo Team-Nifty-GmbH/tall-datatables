@@ -18,22 +18,6 @@ use TeamNiftyGmbH\DataTable\Livewire\Options;
 class DataTableServiceProvider extends ServiceProvider
 {
     /**
-     * Register the service provider.
-     */
-    public function register(): void
-    {
-        $this->registerBladeDirectives();
-        $this->registerTagCompiler();
-        $this->registerMacros();
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-
-        $this->mergeConfigFrom(
-            __DIR__ . '/../config/tall-datatables.php',
-            'tall-datatables'
-        );
-    }
-
-    /**
      * Bootstrap the application services.
      */
     public function boot(): void
@@ -52,11 +36,39 @@ class DataTableServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
     }
 
-    protected function registerTagCompiler(): void
+    /**
+     * Register the service provider.
+     */
+    public function register(): void
     {
-        Blade::precompiler(static function (string $string): string {
-            return app(DataTableTagCompiler::class)->compile($string);
-        });
+        $this->registerBladeDirectives();
+        $this->registerTagCompiler();
+        $this->registerMacros();
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/tall-datatables.php',
+            'tall-datatables'
+        );
+    }
+
+    protected function offerPublishing(): void
+    {
+        $this->publishes([
+            __DIR__ . '/../database/migrations' => database_path('migrations'),
+        ], 'tall-datatables-migrations');
+
+        $this->publishes([
+            __DIR__ . '/../config/tall-datatables.php' => config_path('tall-datatables.php'),
+        ], 'tall-datatables-config');
+
+        $this->publishes([
+            __DIR__ . '/../resources/views' => resource_path('views/vendor/tall-datatables'),
+        ], 'tall-datatables-views');
+
+        $this->publishes([
+            __DIR__ . '/../stubs/livewire.data-table.stub' => base_path('stubs/livewire.data-table.stub'),
+        ], 'tall-datatables-stub');
     }
 
     protected function registerBladeDirectives(): void
@@ -112,7 +124,7 @@ class DataTableServiceProvider extends ServiceProvider
 
                     return DB::table($this->model->getTable())
                         ->whereIn($this->model->getTable() . '.' . $this->model->getKeyName(), $searchResult['ids'])
-                        ->tap(function ($builder) use ($searchResult) {
+                        ->tap(function ($builder) use ($searchResult): void {
                             $builder->hits = $searchResult['hits'];
                             $builder->scout_pagination = $searchResult['searchResult'];
                         });
@@ -127,7 +139,7 @@ class DataTableServiceProvider extends ServiceProvider
 
                     return $this->model::query()
                         ->whereIn($this->model->getKeyName(), $searchResult['ids'])
-                        ->tap(function ($builder) use ($searchResult) {
+                        ->tap(function ($builder) use ($searchResult): void {
                             $builder->hits = $searchResult['hits'];
                             $builder->scout_pagination = $searchResult['searchResult'];
                         });
@@ -136,22 +148,10 @@ class DataTableServiceProvider extends ServiceProvider
         }
     }
 
-    protected function offerPublishing(): void
+    protected function registerTagCompiler(): void
     {
-        $this->publishes([
-            __DIR__ . '/../database/migrations' => database_path('migrations'),
-        ], 'tall-datatables-migrations');
-
-        $this->publishes([
-            __DIR__ . '/../config/tall-datatables.php' => config_path('tall-datatables.php'),
-        ], 'tall-datatables-config');
-
-        $this->publishes([
-            __DIR__ . '/../resources/views' => resource_path('views/vendor/tall-datatables'),
-        ], 'tall-datatables-views');
-
-        $this->publishes([
-            __DIR__ . '/../stubs/livewire.data-table.stub' => base_path('stubs/livewire.data-table.stub'),
-        ], 'tall-datatables-stub');
+        Blade::precompiler(static function (string $string): string {
+            return app(DataTableTagCompiler::class)->compile($string);
+        });
     }
 }

@@ -8,6 +8,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use Spatie\ModelInfo\Relations\Relation;
 use Spatie\ModelInfo\Relations\RelationFinder as BaseRelationFinder;
+use Throwable;
 
 class RelationFinder extends BaseRelationFinder
 {
@@ -45,7 +46,7 @@ class RelationFinder extends BaseRelationFinder
                 /** @var \Illuminate\Database\Eloquent\Relations\BelongsTo $relation */
                 try {
                     $relation = $method->invoke($model);
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     return null;
                 }
 

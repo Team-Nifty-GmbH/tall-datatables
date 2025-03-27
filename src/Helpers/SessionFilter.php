@@ -19,60 +19,6 @@ class SessionFilter implements Serializable
         $this->setClosure($this->closure);
     }
 
-    public static function make(string|DataTable $dataTableCacheKey, Closure $closure, string $name): static
-    {
-        return new static($dataTableCacheKey, $closure, $name);
-    }
-
-    public function setClosure(callable $closure): static
-    {
-        $this->closure = $closure instanceof SerializableClosure
-            ? $closure
-            : new SerializableClosure($closure);
-
-        return $this;
-    }
-
-    public function getClosure(): Closure
-    {
-        return $this->closure->getClosure();
-    }
-
-    public function setName(string $name): static
-    {
-        $this->name = $name;
-
-        return $this;
-    }
-
-    public function setDataTableCacheKey(string|DataTable $dataTableCacheKey): static
-    {
-        $this->dataTableCacheKey = $dataTableCacheKey instanceof DataTable
-            ? $dataTableCacheKey->getCacheKey()
-            : $dataTableCacheKey;
-
-        return $this;
-    }
-
-    public function store(): void
-    {
-        session()
-            ->put(
-                $this->dataTableCacheKey . '_query',
-                $this
-            );
-    }
-
-    public function serialize(): string
-    {
-        return serialize($this->__serialize());
-    }
-
-    public function unserialize(string $data): void
-    {
-        $this->__unserialize(unserialize($data));
-    }
-
     public function __serialize(): array
     {
         return [
@@ -89,5 +35,59 @@ class SessionFilter implements Serializable
         $this->closure = data_get($data, 'closure');
         $this->name = data_get($data, 'name');
         $this->loaded = data_get($data, 'loaded', false);
+    }
+
+    public static function make(string|DataTable $dataTableCacheKey, Closure $closure, string $name): static
+    {
+        return new static($dataTableCacheKey, $closure, $name);
+    }
+
+    public function getClosure(): Closure
+    {
+        return $this->closure->getClosure();
+    }
+
+    public function serialize(): string
+    {
+        return serialize($this->__serialize());
+    }
+
+    public function setClosure(callable $closure): static
+    {
+        $this->closure = $closure instanceof SerializableClosure
+            ? $closure
+            : new SerializableClosure($closure);
+
+        return $this;
+    }
+
+    public function setDataTableCacheKey(string|DataTable $dataTableCacheKey): static
+    {
+        $this->dataTableCacheKey = $dataTableCacheKey instanceof DataTable
+            ? $dataTableCacheKey->getCacheKey()
+            : $dataTableCacheKey;
+
+        return $this;
+    }
+
+    public function setName(string $name): static
+    {
+        $this->name = $name;
+
+        return $this;
+    }
+
+    public function store(): void
+    {
+        session()
+            ->put(
+                $this->dataTableCacheKey . '_query',
+                $this
+            );
+    }
+
+    public function unserialize(string $data): void
+    {
+        $this->__unserialize(unserialize($data));
     }
 }
