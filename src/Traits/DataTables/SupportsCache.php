@@ -52,18 +52,7 @@ trait SupportsCache
                     'cache_key' => $this->getCacheKey(),
                     'is_layout' => true,
                 ],
-                [
-                    'name' => 'layout',
-                    'cache_key' => $this->getCacheKey(),
-                    'component' => get_class($this),
-                    'settings' => [
-                        'userFilters' => [],
-                        'enabledCols' => $this->enabledCols,
-                        'aggregatableCols' => $this->aggregatableCols,
-                        'perPage' => $this->perPage,
-                    ],
-                    'is_layout' => true,
-                ]
+                $this->compileStoredLayout()
             );
         } catch (MissingTraitException) {
         }
@@ -73,5 +62,21 @@ trait SupportsCache
     public function getCacheKey(): string
     {
         return $this->cacheKey ?: get_called_class();
+    }
+
+    protected function compileStoredLayout(): array
+    {
+        return [
+            'name' => 'layout',
+            'cache_key' => $this->getCacheKey(),
+            'component' => static::class,
+            'settings' => [
+                'userFilters' => [],
+                'enabledCols' => $this->enabledCols,
+                'aggregatableCols' => $this->aggregatableCols,
+                'perPage' => $this->perPage,
+            ],
+            'is_layout' => true,
+        ];
     }
 }
