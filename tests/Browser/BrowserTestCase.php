@@ -11,7 +11,6 @@ use Orchestra\Testbench\Dusk\Options;
 use Orchestra\Testbench\Dusk\TestCase;
 use TallStackUi\TallStackUiServiceProvider;
 use TeamNiftyGmbH\DataTable\DataTableServiceProvider;
-
 use function Livewire\trigger;
 
 class BrowserTestCase extends TestCase
@@ -23,7 +22,36 @@ class BrowserTestCase extends TestCase
 
     public static function tweakApplicationHook(): Closure
     {
-        return function () {};
+        return function (): void {};
+    }
+
+    protected function setUp(): void
+    {
+        if (isset($_SERVER['CI'])) {
+            Options::withoutUI();
+        }
+
+        $this->afterApplicationCreated(fn () => $this->clean());
+
+        $this->beforeApplicationDestroyed(fn () => $this->clean());
+
+        parent::setUp();
+
+        trigger('browser.testCase.setUp', $this);
+    }
+
+    protected function tearDown(): void
+    {
+        trigger('browser.testCase.tearDown', $this);
+
+        if (! $this->status()->isSuccess()) {
+            $this->captureFailuresFor(collect(static::$browsers));
+            $this->storeSourceLogsFor(collect(static::$browsers));
+        }
+
+        $this->closeAll();
+
+        parent::tearDown();
     }
 
     protected function clean(): void
@@ -41,11 +69,11 @@ class BrowserTestCase extends TestCase
 
     protected function defineEnvironment($app): void
     {
-        tap($app['session'], function ($session) {
+        tap($app['session'], function ($session): void {
             $session->put('_token', str()->random(40));
         });
 
-        tap($app['config'], function (Repository $config) {
+        tap($app['config'], function (Repository $config): void {
             $config->set('app.env', 'testing');
             $config->set('app.debug', true);
             $config->set('view.paths', [__DIR__ . '/views', resource_path('views')]);
@@ -98,21 +126,6 @@ class BrowserTestCase extends TestCase
         return 1000 * $seconds;
     }
 
-    protected function setUp(): void
-    {
-        if (isset($_SERVER['CI'])) {
-            Options::withoutUI();
-        }
-
-        $this->afterApplicationCreated(fn () => $this->clean());
-
-        $this->beforeApplicationDestroyed(fn () => $this->clean());
-
-        parent::setUp();
-
-        trigger('browser.testCase.setUp', $this);
-    }
-
     protected function skipOnGitHubActions(?string $message = null): void
     {
         if ((bool) getenv('GITHUB_ACTIONS') === false) {
@@ -120,19 +133,5 @@ class BrowserTestCase extends TestCase
         }
 
         $this->markTestSkipped($message ?? 'For some unknown reason this test fails on GitHub Actions.');
-    }
-
-    protected function tearDown(): void
-    {
-        trigger('browser.testCase.tearDown', $this);
-
-        if (! $this->status()->isSuccess()) {
-            $this->captureFailuresFor(collect(static::$browsers));
-            $this->storeSourceLogsFor(collect(static::$browsers));
-        }
-
-        $this->closeAll();
-
-        parent::tearDown();
     }
 }

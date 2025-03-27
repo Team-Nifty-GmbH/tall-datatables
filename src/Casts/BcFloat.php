@@ -9,6 +9,17 @@ use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
 class BcFloat implements CastsAttributes, HasFrontendFormatter
 {
     /**
+     * This should return the name of the frontend formatter to use.
+     * See javascript formatters in resources/js/formatters for available formatters.
+     *
+     * @param  null  ...$args
+     */
+    public static function getFrontendFormatter(...$args): string|array
+    {
+        return 'float';
+    }
+
+    /**
      * Cast the given value.
      *
      * @param  \Illuminate\Database\Eloquent\Model  $model
@@ -38,16 +49,5 @@ class BcFloat implements CastsAttributes, HasFrontendFormatter
     public function set($model, string $key, $value, array $attributes): mixed
     {
         return $value;
-    }
-
-    /**
-     * This should return the name of the frontend formatter to use.
-     * See javascript formatters in resources/js/formatters for available formatters.
-     *
-     * @param  null  ...$args
-     */
-    public static function getFrontendFormatter(...$args): string|array
-    {
-        return 'float';
     }
 }

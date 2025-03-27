@@ -16,21 +16,6 @@ trait BroadcastsEvents
 
     protected static bool $includeRelations = false;
 
-    public function broadcastChannel(bool $generic = false): string
-    {
-        $default = parent::broadcastChannel();
-
-        if (! $generic) {
-            return $default;
-        }
-
-        // Remove the id from the channel to get a non id specific channel.
-        $broadcastChannelGeneric = explode('.', $default);
-        array_pop($broadcastChannelGeneric);
-
-        return implode('.', $broadcastChannelGeneric);
-    }
-
     public static function getBroadcastChannel(bool $generic = true): string
     {
         $reflection = new ReflectionClass(static::class);
@@ -47,9 +32,24 @@ trait BroadcastsEvents
         return $instance->broadcastChannelRoute();
     }
 
-    protected function newBroadcastableEvent($event): BroadcastableModelEventOccurred
+    public function broadcastAfterCommit(): bool
     {
-        return (new BroadcastableModelEventOccurred($this, $event))->dontBroadcastToCurrentUser();
+        return true;
+    }
+
+    public function broadcastChannel(bool $generic = false): string
+    {
+        $default = parent::broadcastChannel();
+
+        if (! $generic) {
+            return $default;
+        }
+
+        // Remove the id from the channel to get a non id specific channel.
+        $broadcastChannelGeneric = explode('.', $default);
+        array_pop($broadcastChannelGeneric);
+
+        return implode('.', $broadcastChannelGeneric);
     }
 
     public function broadcastOn($event): array|Channel
@@ -74,8 +74,8 @@ trait BroadcastsEvents
         return [];
     }
 
-    public function broadcastAfterCommit(): bool
+    protected function newBroadcastableEvent($event): BroadcastableModelEventOccurred
     {
-        return true;
+        return (new BroadcastableModelEventOccurred($this, $event))->dontBroadcastToCurrentUser();
     }
 }

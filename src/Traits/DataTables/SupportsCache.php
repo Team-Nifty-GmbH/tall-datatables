@@ -13,6 +13,12 @@ trait SupportsCache
     #[Locked]
     public ?string $cacheKey = null;
 
+    #[Renderless]
+    public function getCacheKey(): string
+    {
+        return $this->cacheKey ?: get_called_class();
+    }
+
     public function mountSupportsCache(): void
     {
         if (config('tall-datatables.should_cache')) {
@@ -52,26 +58,25 @@ trait SupportsCache
                     'cache_key' => $this->getCacheKey(),
                     'is_layout' => true,
                 ],
-                [
-                    'name' => 'layout',
-                    'cache_key' => $this->getCacheKey(),
-                    'component' => get_class($this),
-                    'settings' => [
-                        'userFilters' => [],
-                        'enabledCols' => $this->enabledCols,
-                        'aggregatableCols' => $this->aggregatableCols,
-                        'perPage' => $this->perPage,
-                    ],
-                    'is_layout' => true,
-                ]
+                $this->compileStoredLayout()
             );
         } catch (MissingTraitException) {
         }
     }
 
-    #[Renderless]
-    public function getCacheKey(): string
+    protected function compileStoredLayout(): array
     {
-        return $this->cacheKey ?: get_called_class();
+        return [
+            'name' => 'layout',
+            'cache_key' => $this->getCacheKey(),
+            'component' => static::class,
+            'settings' => [
+                'userFilters' => [],
+                'enabledCols' => $this->enabledCols,
+                'aggregatableCols' => $this->aggregatableCols,
+                'perPage' => $this->perPage,
+            ],
+            'is_layout' => true,
+        ];
     }
 }

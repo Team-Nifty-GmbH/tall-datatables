@@ -11,9 +11,16 @@ use Spatie\ModelInfo\ModelFinder;
 
 class MakeDataTableCommand extends GeneratorCommand
 {
-    protected ComponentParser|\Livewire\Commands\ComponentParser $parser;
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Create a new Livewire DataTable component';
 
     protected string $model;
+
+    protected ComponentParser|\Livewire\Commands\ComponentParser $parser;
 
     /**
      * The name and signature of the console command.
@@ -25,13 +32,6 @@ class MakeDataTableCommand extends GeneratorCommand
         {model : The name of the model you want to use in this table}
         {--force}
         {--stub}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Create a new Livewire DataTable component';
 
     /**
      * Execute the console command.
@@ -84,6 +84,27 @@ class MakeDataTableCommand extends GeneratorCommand
         return true;
     }
 
+    /**
+     * Get the stub file for the generator.
+     */
+    protected function getStub(): string
+    {
+        if (File::exists($stubPath = base_path('stubs' . DIRECTORY_SEPARATOR . 'livewire.data-table.stub'))) {
+            return file_get_contents($stubPath);
+        }
+
+        return file_get_contents(__DIR__ . '/../../stubs/livewire.data-table.stub');
+    }
+
+    private function classContents(): string
+    {
+        return str_replace(
+            ['[namespace]', '[class]', '[model]', '[model_import]', '[columns]'],
+            [$this->parser->classNamespace(), $this->parser->className(), class_basename($this->model), $this->model],
+            $this->getStub()
+        );
+    }
+
     private function createClass(bool $force = false): string|bool
     {
         $classPath = $this->parser->classPath();
@@ -106,26 +127,5 @@ class MakeDataTableCommand extends GeneratorCommand
         if (! File::isDirectory(dirname($path))) {
             File::makeDirectory(dirname($path), 0777, true, true);
         }
-    }
-
-    private function classContents(): string
-    {
-        return str_replace(
-            ['[namespace]', '[class]', '[model]', '[model_import]', '[columns]'],
-            [$this->parser->classNamespace(), $this->parser->className(), class_basename($this->model), $this->model],
-            $this->getStub()
-        );
-    }
-
-    /**
-     * Get the stub file for the generator.
-     */
-    protected function getStub(): string
-    {
-        if (File::exists($stubPath = base_path('stubs' . DIRECTORY_SEPARATOR . 'livewire.data-table.stub'))) {
-            return file_get_contents($stubPath);
-        }
-
-        return file_get_contents(__DIR__ . '/../../stubs/livewire.data-table.stub');
     }
 }

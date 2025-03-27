@@ -10,19 +10,13 @@ use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
 
 trait SupportsExporting
 {
+    public array $exportColumns = [];
+
     /**
      * If set to false the table will not show the export tab in the sidebar.
      */
     #[Locked]
     public bool $isExportable = true;
-
-    public array $exportColumns = [];
-
-    #[Renderless]
-    public function getExportableColumns(): array
-    {
-        return array_unique(array_merge($this->availableCols, $this->enabledCols));
-    }
 
     #[Renderless]
     public function export(array $columns = []): Response|BinaryFileResponse
@@ -31,5 +25,11 @@ trait SupportsExporting
 
         return (new DataTableExport($query, array_filter($columns)))
             ->download(class_basename($this->getModel()) . '_' . now()->toDateTimeLocalString('minute') . '.xlsx');
+    }
+
+    #[Renderless]
+    public function getExportableColumns(): array
+    {
+        return array_unique(array_merge($this->availableCols, $this->enabledCols));
     }
 }

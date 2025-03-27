@@ -14,6 +14,24 @@ class DataTableButton implements Htmlable
 {
     protected bool $shouldRender = true;
 
+    public function __construct(
+        public bool $round = false,
+        public bool $square = false,
+        public bool $outline = false,
+        public bool $flat = false,
+        public bool $circle = false,
+        public ?string $color = null,
+        public ?string $size = null,
+        public ?string $text = null,
+        public ?string $icon = null,
+        public ?string $position = null,
+        public ?string $loading = null,
+        public ?string $delay = null,
+        public ?string $href = null,
+        public ?bool $light = null,
+        public ?array $attributes = []
+    ) {}
+
     public static function make(
         bool $round = false,
         bool $square = false,
@@ -49,30 +67,183 @@ class DataTableButton implements Htmlable
         );
     }
 
-    public function __construct(
-        public bool $round = false,
-        public bool $square = false,
-        public bool $outline = false,
-        public bool $flat = false,
-        public bool $circle = false,
-        public ?string $color = null,
-        public ?string $size = null,
-        public ?string $text = null,
-        public ?string $icon = null,
-        public ?string $position = null,
-        public ?string $loading = null,
-        public ?string $delay = null,
-        public ?string $href = null,
-        public ?bool $light = null,
-        public ?array $attributes = []
-    ) {}
+    public function attributes(array $attributes): static
+    {
+        $this->attributes = $attributes;
+
+        return $this;
+    }
 
     /**
-     * Render a button only if the closure is true
+     * @return $this
      */
-    public function when(Closure|bool $condition): static
+    public function circle(bool $circle = true): static
     {
-        $this->shouldRender = (bool) value($condition);
+        $this->circle = $circle;
+
+        return $this;
+    }
+
+    public function class(string|array $class): static
+    {
+        $this->attributes['class'] = is_string($class) ? $class : Arr::toCssClasses($class);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function color(?string $color = null): static
+    {
+        $this->color = $color;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function delay(string $delay): static
+    {
+        $this->delay = $delay;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function flat(bool $flat = true): static
+    {
+        $this->flat = $flat;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function full(bool $full = true): static
+    {
+        $this->full = $full;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function href(string $href): static
+    {
+        $this->href = $href;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function icon(?string $icon = null): static
+    {
+        $this->icon = $icon;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function light(bool $light = true): static
+    {
+        $this->light = $light;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function loading(string $loading): static
+    {
+        $this->loading = $loading;
+
+        return $this;
+    }
+
+    public function mergeAttributes(array $attributes): static
+    {
+        $this->attributes = array_merge($this->attributes, $attributes);
+
+        return $this;
+    }
+
+    public function mergeClass(string|array $class): static
+    {
+        $this->attributes['class'] = array_merge(
+            explode(' ', $this->attributes['class'] ?? ''),
+            is_string($class) ? [$class] : Arr::fromCssClasses($class)
+        );
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function outline(bool $outline = true): static
+    {
+        $this->outline = $outline;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function position(string $position): static
+    {
+        $this->position = $position;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function round(bool $round = true): static
+    {
+        $this->round = $round;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function size(?string $size = null): static
+    {
+        $this->size = $size;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function square(bool $square = true): static
+    {
+        $this->square = $square;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function text(?string $text = null): static
+    {
+        $this->text = $text;
 
         return $this;
     }
@@ -114,40 +285,12 @@ class DataTableButton implements Htmlable
         return BladeCompiler::renderComponent($button);
     }
 
-    public function attributes(array $attributes): static
+    /**
+     * Render a button only if the closure is true
+     */
+    public function when(Closure|bool $condition): static
     {
-        $this->attributes = $attributes;
-
-        return $this;
-    }
-
-    public function mergeAttributes(array $attributes): static
-    {
-        $this->attributes = array_merge($this->attributes, $attributes);
-
-        return $this;
-    }
-
-    public function class(string|array $class): static
-    {
-        $this->attributes['class'] = is_string($class) ? $class : Arr::toCssClasses($class);
-
-        return $this;
-    }
-
-    public function mergeClass(string|array $class): static
-    {
-        $this->attributes['class'] = array_merge(
-            explode(' ', $this->attributes['class'] ?? ''),
-            is_string($class) ? [$class] : Arr::fromCssClasses($class)
-        );
-
-        return $this;
-    }
-
-    public function xOnClick(string $js): static
-    {
-        $this->attributes['x-on:click'] = $js;
+        $this->shouldRender = (bool) value($condition);
 
         return $this;
     }
@@ -159,152 +302,9 @@ class DataTableButton implements Htmlable
         return $this;
     }
 
-    /**
-     * @return $this
-     */
-    public function round(bool $round = true): static
+    public function xOnClick(string $js): static
     {
-        $this->round = $round;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function square(bool $square = true): static
-    {
-        $this->square = $square;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function light(bool $light = true): static
-    {
-        $this->light = $light;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function outline(bool $outline = true): static
-    {
-        $this->outline = $outline;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function flat(bool $flat = true): static
-    {
-        $this->flat = $flat;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function full(bool $full = true): static
-    {
-        $this->full = $full;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function circle(bool $circle = true): static
-    {
-        $this->circle = $circle;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function color(?string $color = null): static
-    {
-        $this->color = $color;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function size(?string $size = null): static
-    {
-        $this->size = $size;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function text(?string $text = null): static
-    {
-        $this->text = $text;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function icon(?string $icon = null): static
-    {
-        $this->icon = $icon;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function position(string $position): static
-    {
-        $this->position = $position;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function loading(string $loading): static
-    {
-        $this->loading = $loading;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function delay(string $delay): static
-    {
-        $this->delay = $delay;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function href(string $href): static
-    {
-        $this->href = $href;
+        $this->attributes['x-on:click'] = $js;
 
         return $this;
     }

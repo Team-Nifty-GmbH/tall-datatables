@@ -8,12 +8,6 @@ use Illuminate\Support\Facades\Auth;
 
 class DatatableUserSetting extends Model
 {
-    protected $guarded = [
-        'id',
-        'created_at',
-        'updated_at',
-    ];
-
     protected $casts = [
         'settings' => 'array',
         'is_layout' => 'boolean',
@@ -22,9 +16,15 @@ class DatatableUserSetting extends Model
         'updated_at' => 'datetime',
     ];
 
+    protected $guarded = [
+        'id',
+        'created_at',
+        'updated_at',
+    ];
+
     protected static function booted(): void
     {
-        static::creating(function ($model) {
+        static::creating(function ($model): void {
             $model->authenticatable_id = $model->authenticatable_id ?? Auth::user()->id;
             $model->authenticatable_type = $model->authenticatable_type ?? Auth::user()->getMorphClass();
         });

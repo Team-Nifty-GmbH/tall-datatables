@@ -3,6 +3,7 @@
 namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
 use BadMethodCallException;
+use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,28 +17,52 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
+use ReflectionClass;
+use ReflectionException;
 use ReflectionMethod;
 use Spatie\ModelInfo\Attributes\Attribute;
 use Spatie\ModelInfo\Relations\Relation;
 use Spatie\ModelStates\State;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
+use Throwable;
 
 trait SupportsRelations
 {
-    public array $selectedRelations = [];
+    public array $displayPath = [];
 
     public ?string $loadedPath = null;
 
-    public array $displayPath = [];
-
     public array $selectedCols = [];
+
+    public array $selectedRelations = [];
 
     #[Locked]
     public array $with = [];
 
-    public function mountSupportsRelations(): void
+    #[Renderless]
+    public function getFilterableColumns(?string $name = null): array
     {
-        $this->loadRelation($this->getModel());
+        return $this->constructWith()[2];
+    }
+
+    public function getRelationTableCols(?string $relationName = null): array
+    {
+        $modelInfo = ModelInfo::forModel($this->getModel());
+
+        if ($relationName && $modelInfo->relation($relationName)?->related) {
+            $modelInfo = ModelInfo::forModel($modelInfo->relation($relationName)->related);
+        }
+
+        return $modelInfo
+            ->attributes
+            ->filter(fn ($attribute) => ! $attribute->virtual)
+            ->when(
+                $this->availableCols !== ['*'],
+                fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
+            )
+            ->each(fn (Attribute $attribute) => $this->getFilterValueList($relationName . '.' . $attribute->name, $attribute))
+            ->pluck('formatter', 'name')
+            ->toArray();
     }
 
     #[Renderless]
@@ -120,30 +145,65 @@ trait SupportsRelations
         $this->displayPath = $data['displayPath'];
     }
 
-    #[Renderless]
-    public function getFilterableColumns(?string $name = null): array
+    public function mountSupportsRelations(): void
     {
-        return $this->constructWith()[2];
+        $this->loadRelation($this->getModel());
     }
 
-    public function getRelationTableCols(?string $relationName = null): array
+    protected function addDynamicJoin(Builder $query, string $relationPath, array $additionalSelects = []): string
     {
-        $modelInfo = ModelInfo::forModel($this->getModel());
+        $relationParts = explode('.', $relationPath);
+        $model = $query->getModel();
 
-        if ($relationName && $modelInfo->relation($relationName)?->related) {
-            $modelInfo = ModelInfo::forModel($modelInfo->relation($relationName)->related);
+        // Start with the columns from the main model
+        $selects = [$model->getTable() . '.*'];
+
+        $relatedTable = null;
+        foreach ($relationParts as $relationName) {
+            $relationName = Str::camel($relationName);
+
+            if (! method_exists($model, $relationName)) {
+                throw new Exception("Relation '{$relationName}' is not defined on " . get_class($model));
+            }
+
+            $relation = $model->$relationName();
+
+            if (! $relation instanceof \Illuminate\Database\Eloquent\Relations\Relation) {
+                throw new Exception("Method '{$relationName}' on " . get_class($model) . ' does not return a relation.');
+            }
+
+            $relatedModel = $relation->getRelated();
+            $relatedTable = $relatedModel->getTable();
+            $parentTable = $model->getTable();
+
+            if (method_exists($relation, 'getForeignKeyName') && method_exists($relation, 'getOwnerKeyName')) {
+                // For belongsTo relationships
+                $foreignKey = $relation->getForeignKeyName();
+                $ownerKey = $relation->getOwnerKeyName();
+                $query->join($relatedTable, "$parentTable.$foreignKey", '=', "$relatedTable.$ownerKey");
+            } elseif (method_exists($relation, 'getForeignKey') && method_exists($relation, 'getLocalKeyName')) {
+                // For hasOne and hasMany relationships
+                $foreignKey = $relation->getForeignKey();
+                $localKey = $relation->getLocalKeyName();
+                $query->join($relatedTable, "$relatedTable.$foreignKey", '=', "$parentTable.$localKey");
+            } else {
+                throw new Exception("Unsupported relation type for '{$relationName}' on " . get_class($model));
+            }
+
+            $selects[] = "$relatedTable.*";
+
+            // Update the model to the next relation's model
+            $model = $relatedModel;
         }
 
-        return $modelInfo
-            ->attributes
-            ->filter(fn ($attribute) => ! $attribute->virtual)
-            ->when(
-                $this->availableCols !== ['*'],
-                fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
-            )
-            ->each(fn (Attribute $attribute) => $this->getFilterValueList($relationName . '.' . $attribute->name, $attribute))
-            ->pluck('formatter', 'name')
-            ->toArray();
+        // Add any additional selects specified by the user
+        foreach ($additionalSelects as $additionalSelect) {
+            $selects[] = $additionalSelect;
+        }
+
+        $query->select($selects);
+
+        return $relatedTable;
     }
 
     protected function constructWith(): array
@@ -189,7 +249,7 @@ trait SupportsRelations
 
                 try {
                     $model = $relationInstance->getRelated();
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     $model = null;
                 }
 
@@ -259,7 +319,6 @@ trait SupportsRelations
                 } elseif ($attributeInfo->formatter) {
                     $relatedFormatters[$enabledCol] = $attributeInfo->formatter;
                 }
-
             } else {
                 // a virtual attribute is enabled, as we dont know which other fields are required
                 // for the virtual attribute we cant use the select statement
@@ -289,6 +348,57 @@ trait SupportsRelations
         );
 
         return $returnValue;
+    }
+
+    protected function getFilterValueList(string $enabledCol, Attribute $attributeInfo): void
+    {
+        if ($filterValueList[$enabledCol] ?? false) {
+            return;
+        }
+
+        if ($attributeInfo->phpType === 'bool' || $attributeInfo->cast === 'boolean') {
+            $this->filterValueLists[$enabledCol] = [
+                [
+                    'value' => 1,
+                    'label' => __('Yes'),
+                ],
+                [
+                    'value' => 0,
+                    'label' => __('No'),
+                ],
+            ];
+
+            return;
+        }
+
+        if (is_a($attributeInfo->cast, State::class, true)) {
+            $this->filterValueLists[$enabledCol] = $attributeInfo->cast::getStateMapping()
+                ->mapWithKeys(function ($state, $key) {
+                    return [$key => [
+                        'value' => $key,
+                        'label' => __($key),
+                    ]];
+                })
+                ->values()
+                ->toArray();
+
+            return;
+        }
+
+        if (! $attributeInfo->cast || ! class_exists($attributeInfo->cast)) {
+            return;
+        }
+
+        $castReflection = new ReflectionClass($attributeInfo->cast);
+
+        if ($castReflection->isEnum()) {
+            $this->filterValueLists[$enabledCol] = array_map(function ($enum) {
+                return [
+                    'value' => $enum->name,
+                    'label' => __($enum->value),
+                ];
+            }, $attributeInfo->cast::cases());
+        }
     }
 
     protected function getModelRelations(\Spatie\ModelInfo\ModelInfo $modelInfo): array
@@ -338,117 +448,10 @@ trait SupportsRelations
                 if (method_exists($relationInstance, 'getMorphType')) {
                     data_set($modelRelations, $currentPath . '.keys.foreign', $relationInstance->getMorphType());
                 }
-            } catch (\ReflectionException|BadMethodCallException) {
+            } catch (ReflectionException|BadMethodCallException) {
             }
         }
 
         return $modelRelations;
-    }
-
-    protected function addDynamicJoin(Builder $query, string $relationPath, array $additionalSelects = []): string
-    {
-        $relationParts = explode('.', $relationPath);
-        $model = $query->getModel();
-
-        // Start with the columns from the main model
-        $selects = [$model->getTable() . '.*'];
-
-        $relatedTable = null;
-        foreach ($relationParts as $relationName) {
-            $relationName = Str::camel($relationName);
-
-            if (! method_exists($model, $relationName)) {
-                throw new \Exception("Relation '{$relationName}' is not defined on " . get_class($model));
-            }
-
-            $relation = $model->$relationName();
-
-            if (! $relation instanceof \Illuminate\Database\Eloquent\Relations\Relation) {
-                throw new \Exception("Method '{$relationName}' on " . get_class($model) . ' does not return a relation.');
-            }
-
-            $relatedModel = $relation->getRelated();
-            $relatedTable = $relatedModel->getTable();
-            $parentTable = $model->getTable();
-
-            if (method_exists($relation, 'getForeignKeyName') && method_exists($relation, 'getOwnerKeyName')) {
-                // For belongsTo relationships
-                $foreignKey = $relation->getForeignKeyName();
-                $ownerKey = $relation->getOwnerKeyName();
-                $query->join($relatedTable, "$parentTable.$foreignKey", '=', "$relatedTable.$ownerKey");
-            } elseif (method_exists($relation, 'getForeignKey') && method_exists($relation, 'getLocalKeyName')) {
-                // For hasOne and hasMany relationships
-                $foreignKey = $relation->getForeignKey();
-                $localKey = $relation->getLocalKeyName();
-                $query->join($relatedTable, "$relatedTable.$foreignKey", '=', "$parentTable.$localKey");
-            } else {
-                throw new \Exception("Unsupported relation type for '{$relationName}' on " . get_class($model));
-            }
-
-            $selects[] = "$relatedTable.*";
-
-            // Update the model to the next relation's model
-            $model = $relatedModel;
-        }
-
-        // Add any additional selects specified by the user
-        foreach ($additionalSelects as $additionalSelect) {
-            $selects[] = $additionalSelect;
-        }
-
-        $query->select($selects);
-
-        return $relatedTable;
-    }
-
-    protected function getFilterValueList(string $enabledCol, Attribute $attributeInfo): void
-    {
-        if ($filterValueList[$enabledCol] ?? false) {
-            return;
-        }
-
-        if ($attributeInfo->phpType === 'bool' || $attributeInfo->cast === 'boolean') {
-            $this->filterValueLists[$enabledCol] = [
-                [
-                    'value' => 1,
-                    'label' => __('Yes'),
-                ],
-                [
-                    'value' => 0,
-                    'label' => __('No'),
-                ],
-            ];
-
-            return;
-        }
-
-        if (is_a($attributeInfo->cast, State::class, true)) {
-            $this->filterValueLists[$enabledCol] = $attributeInfo->cast::getStateMapping()
-                ->mapWithKeys(function ($state, $key) {
-                    return [$key => [
-                        'value' => $key,
-                        'label' => __($key),
-                    ]];
-                })
-                ->values()
-                ->toArray();
-
-            return;
-        }
-
-        if (! $attributeInfo->cast || ! class_exists($attributeInfo->cast)) {
-            return;
-        }
-
-        $castReflection = new \ReflectionClass($attributeInfo->cast);
-
-        if ($castReflection->isEnum()) {
-            $this->filterValueLists[$enabledCol] = array_map(function ($enum) {
-                return [
-                    'value' => $enum->name,
-                    'label' => __($enum->value),
-                ];
-            }, $attributeInfo->cast::cases());
-        }
     }
 }

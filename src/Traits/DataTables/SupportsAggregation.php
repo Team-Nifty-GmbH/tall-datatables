@@ -12,14 +12,14 @@ use Spatie\ModelInfo\Attributes\Attribute;
 
 trait SupportsAggregation
 {
+    public array $aggregatable = ['*'];
+
     public array $aggregatableCols = [
         'sum' => [],
         'avg' => [],
         'min' => [],
         'max' => [],
     ];
-
-    public array $aggregatable = ['*'];
 
     protected array $aggregatableRelationCols = [];
 

@@ -5,12 +5,10 @@ namespace TeamNiftyGmbH\DataTable\Contracts;
 interface InteractsWithDataTables
 {
     /**
-     * This should a short string that describes a single model.
-     * For example:
-     * An address model would return something like "John Doe".
-     * return $this->first_name . ' ' . $this->last_name;
+     * This should return a url to the avatar of the model.
+     * Can be a icon url, see the icons route.
      */
-    public function getLabel(): ?string;
+    public function getAvatarUrl(): ?string;
 
     /**
      * This should return a short description of the model.
@@ -21,13 +19,15 @@ interface InteractsWithDataTables
     public function getDescription(): ?string;
 
     /**
+     * This should a short string that describes a single model.
+     * For example:
+     * An address model would return something like "John Doe".
+     * return $this->first_name . ' ' . $this->last_name;
+     */
+    public function getLabel(): ?string;
+
+    /**
      * This should return a url to the detail page of the model.
      */
     public function getUrl(): ?string;
-
-    /**
-     * This should return a url to the avatar of the model.
-     * Can be a icon url, see the icons route.
-     */
-    public function getAvatarUrl(): ?string;
 }

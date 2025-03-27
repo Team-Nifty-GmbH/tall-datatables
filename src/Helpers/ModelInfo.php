@@ -10,14 +10,29 @@ use ReflectionClass;
 use Spatie\ModelInfo\Attributes\Attribute;
 use Spatie\ModelInfo\Attributes\AttributeFinder;
 use Spatie\ModelInfo\ModelInfo as BaseModelInfo;
+use Throwable;
 
 class ModelInfo extends BaseModelInfo
 {
-    public ?string $morphClass = null;
+    private static ?array $cachedModelInfos = null;
 
     public array $implements = [];
 
-    private static ?array $cachedModelInfos = null;
+    public ?string $morphClass = null;
+
+    /**
+     * @return Collection<BaseModelInfo>
+     */
+    public static function forAllModels(
+        ?string $directory = null,
+        ?string $basePath = null,
+        ?string $baseNamespace = null
+    ): Collection {
+        return ModelFinder::all($directory, $basePath, $baseNamespace)
+            ->map(function (string $model) {
+                return static::forModel($model);
+            });
+    }
 
     public static function forModel(string|Model|ReflectionClass $model): BaseModelInfo
     {
@@ -41,13 +56,13 @@ class ModelInfo extends BaseModelInfo
 
         try {
             $relations = RelationFinder::forModel($model);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw $e;
         }
 
         try {
             $attributes = AttributeFinder::forModel($model);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             $attributes = collect();
         }
 
@@ -85,19 +100,5 @@ class ModelInfo extends BaseModelInfo
         Cache::forever(config('tall-datatables.cache_key') . '.modelInfo', static::$cachedModelInfos);
 
         return $modelInfo;
-    }
-
-    /**
-     * @return Collection<\Spatie\ModelInfo\ModelInfo>
-     */
-    public static function forAllModels(
-        ?string $directory = null,
-        ?string $basePath = null,
-        ?string $baseNamespace = null
-    ): Collection {
-        return ModelFinder::all($directory, $basePath, $baseNamespace)
-            ->map(function (string $model) {
-                return static::forModel($model);
-            });
     }
 }

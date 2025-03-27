@@ -119,7 +119,7 @@ class SearchController extends Controller
         $result = $query->get();
 
         if ($request->has('appends')) {
-            $result->each(function ($item) use ($request) {
+            $result->each(function ($item) use ($request): void {
                 $item->append($request->get('appends'));
             });
         }

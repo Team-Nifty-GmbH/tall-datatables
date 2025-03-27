@@ -6,15 +6,6 @@ use Illuminate\Support\Str;
 
 class AggregatableRelationColumn
 {
-    public static function make(
-        string|array $relation,
-        string $column,
-        string $function = 'sum',
-        ?string $alias = null
-    ): static {
-        return new static($relation, $column, $function, $alias);
-    }
-
     public function __construct(
         public string|array $relation,
         public string $column,
@@ -28,5 +19,14 @@ class AggregatableRelationColumn
             $relation = array_pop($this->relation);
             $this->relation[$keyName] = $relation;
         }
+    }
+
+    public static function make(
+        string|array $relation,
+        string $column,
+        string $function = 'sum',
+        ?string $alias = null
+    ): static {
+        return new static($relation, $column, $function, $alias);
     }
 }

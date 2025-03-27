@@ -9,16 +9,16 @@ use Livewire\Component;
 class Options extends Component
 {
     #[Locked]
-    public ?bool $isFilterable = null;
+    public ?array $aggregatable = null;
+
+    #[Locked]
+    public ?bool $allowSoftDeletes = null;
 
     #[Locked]
     public ?bool $isExportable = null;
 
     #[Locked]
-    public ?array $aggregatable = null;
-
-    #[Locked]
-    public ?bool $allowSoftDeletes = null;
+    public ?bool $isFilterable = null;
 
     public function render(): View
     {

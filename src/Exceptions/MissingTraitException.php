@@ -2,7 +2,9 @@
 
 namespace TeamNiftyGmbH\DataTable\Exceptions;
 
-final class MissingTraitException extends \Exception
+use Exception;
+
+final class MissingTraitException extends Exception
 {
     /**
      * @return static

@@ -26,11 +26,6 @@ class DataTableExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMa
         $this->exportColumns = $exportColumns;
     }
 
-    public function query(): Relation|EloquentBuilder|Builder
-    {
-        return $this->builder;
-    }
-
     public function headings(): array
     {
         return collect($this->exportColumns)
@@ -46,5 +41,10 @@ class DataTableExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMa
             array_fill_keys($this->exportColumns, null),
             Arr::only(Arr::dot($row->toArray()), $this->exportColumns)
         );
+    }
+
+    public function query(): Relation|EloquentBuilder|Builder
+    {
+        return $this->builder;
     }
 }

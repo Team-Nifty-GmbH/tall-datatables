@@ -11,7 +11,7 @@ return new class() extends Migration
      */
     public function up(): void
     {
-        Schema::table('datatable_user_settings', function (Blueprint $table) {
+        Schema::table('datatable_user_settings', function (Blueprint $table): void {
             $table->boolean('is_layout')->default(false)->after('authenticatable_id');
         });
     }
@@ -21,7 +21,7 @@ return new class() extends Migration
      */
     public function down(): void
     {
-        Schema::table('datatable_user_settings', function (Blueprint $table) {
+        Schema::table('datatable_user_settings', function (Blueprint $table): void {
             $table->dropColumn('is_layout');
         });
     }
