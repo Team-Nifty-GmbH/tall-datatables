@@ -111,10 +111,12 @@ class DataTableServiceProvider extends ServiceProvider
                     $searchResult = $this->getScoutResults($highlight, $perPage, $page);
 
                     return DB::table($this->model->getTable())
-                        ->whereIn($this->model->getTable() . '.' . $this->model->getKeyName(), $searchResult['ids'])
-                        ->tap(function ($builder) use ($searchResult) {
-                            $builder->hits = $searchResult['hits'];
-                            $builder->scout_pagination = $searchResult['searchResult'];
+                        ->whereIn($this->model->getTable() . '.' . $this->model->getKeyName(), data_get($searchResult, 'ids', []))
+                        ->orderByRaw('FIELD(' . $this->model->getKeyName() . ', '
+                            . implode(',', data_get($searchResult, 'ids', [])) . ')')
+                        ->tap(function (QueryBuilder $builder) use ($searchResult): void {
+                            $builder->hits = data_get($searchResult, 'hits');
+                            $builder->scout_pagination = data_get($searchResult, 'searchResult');
                         });
                 });
         }
@@ -126,10 +128,12 @@ class DataTableServiceProvider extends ServiceProvider
                     $searchResult = $this->getScoutResults($highlight, $perPage, $page);
 
                     return $this->model::query()
-                        ->whereIn($this->model->getKeyName(), $searchResult['ids'])
-                        ->tap(function ($builder) use ($searchResult) {
-                            $builder->hits = $searchResult['hits'];
-                            $builder->scout_pagination = $searchResult['searchResult'];
+                        ->whereKey(data_get($searchResult, 'ids', []))
+                        ->orderByRaw('FIELD(' . $this->model->getKeyName() . ', '
+                            . implode(',', data_get($searchResult, 'ids', [])) . ')')
+                        ->tap(function (EloquentBuilder $builder) use ($searchResult): void {
+                            $builder->hits = data_get($searchResult, 'hits');
+                            $builder->scout_pagination = data_get($searchResult, 'searchResult');
                         });
                 }
             );
