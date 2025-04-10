@@ -1,7 +1,7 @@
 <div>
     <div
         x-on:click="{{ $attributes->get('x-show') }} = false"
-        class="bg-secondary-400 dark:bg-secondary-700 fixed inset-0 z-30 transform overflow-y-auto bg-opacity-60 p-4 transition-opacity dark:bg-opacity-60"
+        class="bg-secondary-400 dark:bg-secondary-700 bg-opacity-60 dark:bg-opacity-60 fixed inset-0 z-30 transform overflow-y-auto p-4 transition-opacity"
         {{ $attributes }}
         x-transition:enter="duration-300 ease-out"
         x-transition:enter-start="opacity-0"

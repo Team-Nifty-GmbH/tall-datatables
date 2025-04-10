@@ -336,7 +336,7 @@ class DataTable extends Component
     }
 
     #[Renderless]
-    public function goToPage(int $page): void
+    public function gotoPage(int $page): void
     {
         $this->page = $page;
         $this->cacheState();

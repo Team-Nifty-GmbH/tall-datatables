@@ -1,7 +1,7 @@
 @if ($headline)
     <div class="w-full">
         <h1
-            class="px-4 pb-2.5 text-base font-semibold leading-6 text-gray-900 dark:text-gray-50"
+            class="px-4 pb-2.5 text-base leading-6 font-semibold text-gray-900 dark:text-gray-50"
         >
             {{ $headline }}
         </h1>
@@ -59,14 +59,14 @@
 >
     <div x-show="Object.keys($wire.sessionFilter).length !== 0" x-cloak>
         <div
-            class="pr-6.5 dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
+            class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 pr-6.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
         >
             <x-badge light flat>
                 <x-slot:text>
                     <span x-text="$wire.sessionFilter.name"></span>
                 </x-slot>
             </x-badge>
-            <div class="right-0.5 top-0.5">
+            <div class="top-0.5 right-0.5">
                 <x-button.circle
                     color="red"
                     sm
@@ -121,7 +121,7 @@
                         </template>
                     </div>
                 </div>
-                <div class="right-0.5 top-0.5">
+                <div class="top-0.5 right-0.5">
                     <x-button.circle
                         color="red"
                         sm

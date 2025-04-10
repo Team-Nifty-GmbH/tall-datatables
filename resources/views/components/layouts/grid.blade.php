@@ -58,7 +58,7 @@
             wire:loading.delay.longer
             wire:target.except="storeColLayout"
             x-cloak
-            class="absolute bottom-0 right-0 top-0 w-full"
+            class="absolute top-0 right-0 bottom-0 w-full"
         >
             <x-tall-datatables::spinner />
         </div>
@@ -80,7 +80,7 @@
                                     class="relative h-72 w-full overflow-hidden rounded-lg"
                                 >
                                     @if ($rowActions)
-                                        <div class="absolute right-2 top-2">
+                                        <div class="absolute top-2 right-2">
                                             <x-dropdown
                                                 icon="ellipsis-vertical"
                                                 static
