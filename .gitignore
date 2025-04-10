@@ -10,3 +10,5 @@ testbench.yaml
 vendor
 node_modules
 /tests/database/database.sqlite
+/.phpunit.cache/test-results
+/build/report.junit.xml

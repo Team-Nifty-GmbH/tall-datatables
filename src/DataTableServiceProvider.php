@@ -140,11 +140,12 @@ class DataTableServiceProvider extends ServiceProvider
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
                     /** @var Builder $this */
                     $searchResult = $this->getScoutResults($highlight, $perPage, $page);
+                    $ids = data_get($searchResult, 'ids', []);
 
                     return $this->model::query()
-                        ->whereKey(data_get($searchResult, 'ids', []))
+                        ->whereKey($ids)
                         ->orderByRaw('FIELD(' . $this->model->getKeyName() . ', '
-                            . implode(',', data_get($searchResult, 'ids', [])) . ')')
+                            . implode(',', $ids) . ')')
                         ->tap(function (EloquentBuilder $builder) use ($searchResult): void {
                             $builder->hits = data_get($searchResult, 'hits');
                             $builder->scout_pagination = data_get($searchResult, 'searchResult');
