@@ -62,7 +62,7 @@ class Icon implements Htmlable, Responsable
 
     public function getUrl(): string
     {
-        return route('icons', ['name' => $this->name, 'variant' => $this->variant]);
+        return route('tall-datatables.icons', ['name' => $this->name, 'variant' => $this->variant]);
     }
 
     /**

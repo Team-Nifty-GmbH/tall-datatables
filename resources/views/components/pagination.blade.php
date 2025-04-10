@@ -5,14 +5,14 @@
             light
             :text="__('Previous')"
             x-bind:disabled="data.current_page === 1"
-            wire:click="goToPage(data.current_page - 1)"
+            wire:click="gotoPage(data.current_page - 1)"
         />
         <x-button
             color="secondary"
             light
             :text="__('Next')"
             x-bind:disabled="data.current_page === data.last_page"
-            wire:click="goToPage(data.current_page + 1)"
+            wire:click="gotoPage(data.current_page + 1)"
         />
     </div>
     <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
@@ -53,7 +53,7 @@
                     color="secondary"
                     light
                     x-bind:disabled="data.current_page === 1"
-                    wire:click="goToPage(data.current_page - 1)"
+                    wire:click="gotoPage(data.current_page - 1)"
                     icon="chevron-left"
                 />
                 <template x-for="link in data.links">
@@ -62,7 +62,7 @@
                         light
                         x-bind:disabled="link.active || link.url === null"
                         x-html="link.label"
-                        x-on:click="if (link.url !== null) $wire.goToPage(link.label)"
+                        x-on:click="if (link.url !== null) $wire.gotoPage(link.label)"
                         x-bind:class="link.active && 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'"
                     />
                 </template>
@@ -70,7 +70,7 @@
                     color="secondary"
                     light
                     x-bind:disabled="data.current_page === data.last_page"
-                    wire:click="goToPage(data.current_page + 1)"
+                    wire:click="gotoPage(data.current_page + 1)"
                     icon="chevron-right"
                 />
             </nav>

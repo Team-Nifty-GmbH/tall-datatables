@@ -607,7 +607,7 @@
                             <div
                                 x-on:click="filterIndex = orIndex"
                                 x-bind:class="filterIndex === orIndex ? 'ring-2 ring-indigo-600' : 'ring-1 ring-slate-700/10'"
-                                class="pr-6.5 dark:bg-secondary-800 pointer-events-auto relative w-full rounded-lg bg-white p-4 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
+                                class="dark:bg-secondary-800 pr-6.5 pointer-events-auto relative w-full rounded-lg bg-white p-4 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
                             >
                                 <div class="absolute right-0.5 top-0.5">
                                     <x-button.circle
