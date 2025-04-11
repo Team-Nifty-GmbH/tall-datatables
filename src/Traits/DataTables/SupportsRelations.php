@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
@@ -289,12 +290,14 @@ trait SupportsRelations
 
             $isManyRelation = $relationInstance instanceof HasMany
                 || $relationInstance instanceof HasManyThrough
-                || $relationInstance instanceof BelongsToMany;
+                || $relationInstance instanceof BelongsToMany
+                || $relationInstance instanceof MorphMany;
 
-            if (! ($attributeInfo?->virtual ?? true)) {
-                if (($with[$path ?? '__root__'] ?? false) !== ['*']) {
+            if (! data_get($attributeInfo, 'virtual', true)) {
+                if (data_get($with, $path ?? '__root__', false) !== ['*']) {
                     $with[$path ?? '__root__'][] = $fieldName;
                 }
+
                 $filterable[] = $enabledCol;
                 $this->getFilterValueList($enabledCol, $attributeInfo);
 
