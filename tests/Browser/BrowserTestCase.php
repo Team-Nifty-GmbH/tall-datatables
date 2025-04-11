@@ -4,15 +4,22 @@ namespace Tests\Browser;
 
 use Closure;
 use Illuminate\Config\Repository;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\File;
 use Livewire\LivewireServiceProvider;
+use Orchestra\Testbench\Attributes\WithMigration;
 use Orchestra\Testbench\Dusk\Options;
 use Orchestra\Testbench\Dusk\TestCase;
+use TallStackUi\Facades\TallStackUi;
 use TallStackUi\TallStackUiServiceProvider;
 use TeamNiftyGmbH\DataTable\DataTableServiceProvider;
+use Tests\Datatables\UserDataTable;
+use Tests\Models\User;
 use function Livewire\trigger;
 
+#[WithMigration('laravel')]
 class BrowserTestCase extends TestCase
 {
     public static function tmp(): string
@@ -81,7 +88,7 @@ class BrowserTestCase extends TestCase
             $config->set('database.default', 'testbench');
             $config->set('database.connections.testbench', [
                 'driver' => 'sqlite',
-                'database' => ':memory:',
+                'database' => realpath(__DIR__ . '/../database/testbench.sqlite'),
                 'prefix' => '',
             ]);
             $config->set('filesystems.disks.tmp-for-tests', [
@@ -92,9 +99,32 @@ class BrowserTestCase extends TestCase
         });
     }
 
+    /** @param  Router  $router */
+    protected function defineWebRoutes($router): void
+    {
+        $router->get('/component-test', UserDataTable::class)->name('component-test');
+        $router->get('/user/{user}', function (User $user) {
+            return Blade::render('
+                <html>
+                    <head>
+                        <title>user detail</title>
+                    </head>
+                    <body>
+                        <h1>user detail view</h1>
+                        {{ $user->getKey() }}
+                    </body>
+                </html>', ['user' => $user]);
+        })->name('users.show');
+    }
+
     protected function getApplicationTimezone($app): string
     {
-        return (bool) getenv('GITHUB_ACTIONS') === false ? 'Europe/Berlin' : $app['config']['app.timezone'];
+        return (bool) getenv('GITHUB_ACTIONS') === false ? 'America/Sao_Paulo' : $app['config']['app.timezone'];
+    }
+
+    protected function getPackageAliases($app): array
+    {
+        return ['TallStackUi' => TallStackUi::class];
     }
 
     protected function getPackageProviders($app): array

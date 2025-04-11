@@ -56,7 +56,9 @@
                     wire:click="gotoPage(data.current_page - 1)"
                     icon="chevron-left"
                 />
-                <template x-for="link in data.links">
+                <template
+                    x-for="link in data.links?.filter((link) => link.label && ! isNaN(link.label))"
+                >
                     <x-button
                         color="secondary"
                         light

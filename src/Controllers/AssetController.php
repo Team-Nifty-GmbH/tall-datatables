@@ -15,15 +15,15 @@ class AssetController extends Controller
      */
     public function scripts(): mixed
     {
-        $assetPath = dirname(__DIR__, 2) . '/dist/build/assets/';
+        $assetPath = dirname(__DIR__, 2) . '/dist/';
 
         $path = request()->has('id')
             ? 'tall-datatables-' . request()->get('id') :
             null;
 
-        $path = file_exists($assetPath . $path)
+        $path = file_exists($assetPath . $path) && is_file($assetPath . $path)
             ? $assetPath . $path
-            : File::glob($assetPath . 'tall-datatables*.js')[0];
+            : data_get(File::glob($assetPath . 'tall-datatables*.js'), 0);
 
         return Utils::pretendResponseIsFile($path, 'text/javascript');
     }
@@ -36,14 +36,14 @@ class AssetController extends Controller
      */
     public function styles(): mixed
     {
-        $assetPath = dirname(__DIR__, 2) . '/dist/build/assets/';
+        $assetPath = dirname(__DIR__, 2) . '/dist/';
 
         $path = request()->has('id')
             ? 'tall-datatables-' . request()->get('id') :
             null;
-        $path = file_exists($assetPath . $path)
+        $path = file_exists($assetPath . $path) && is_file($assetPath . $path)
             ? $assetPath . $path
-            : File::glob($assetPath . 'tall-datatables*.css')[0];
+            : data_get(File::glob($assetPath . 'tall-datatables*.css'), '0');
 
         return Utils::pretendResponseIsFile($path, 'text/css');
     }
