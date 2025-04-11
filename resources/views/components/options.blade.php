@@ -172,7 +172,7 @@
                         x-bind:class="{
                             '!border-indigo-500 text-indigo-600': tab === 'edit-filters',
                         }"
-                        class="cursor-pointer whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
+                        class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
                     >
                         {{ __('Filters') }}
                     </button>
@@ -183,7 +183,7 @@
                         wire:loading.attr="disabled"
                         x-on:click.prevent="sortCols = enabledCols; tab = 'summarize';"
                         x-bind:class="{ '!border-indigo-500 text-indigo-600': tab === 'summarize' }"
-                        class="cursor-pointer whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
+                        class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
                     >
                         {{ __('Summarize') }}
                     </button>
@@ -193,7 +193,7 @@
                     wire:loading.attr="disabled"
                     x-on:click.prevent="sortCols = enabledCols; tab = 'columns';"
                     x-bind:class="{ '!border-indigo-500 text-indigo-600': tab === 'columns' }"
-                    class="cursor-pointer whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
+                    class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
                 >
                     {{ __('Columns') }}
                 </button>
@@ -205,7 +205,7 @@
                             tab = 'export'
                         "
                         x-bind:class="{ '!border-indigo-500 text-indigo-600': tab === 'export' }"
-                        class="cursor-pointer whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
+                        class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
                     >
                         {{ __('Export') }}
                     </button>
@@ -226,7 +226,7 @@
                         >
                             <div>
                                 <div
-                                    class="dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-400 border-secondary-300 focus:ring-primary-500 focus:border-primary-500 block flex w-full cursor-pointer justify-between rounded-md border bg-white px-3 py-2 text-base shadow-sm focus:outline-none focus:ring-1 sm:text-sm"
+                                    class="dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-400 border-secondary-300 focus:ring-primary-500 focus:border-primary-500 block flex w-full cursor-pointer justify-between rounded-md border bg-white px-3 py-2 text-base shadow-sm focus:ring-1 focus:outline-none sm:text-sm"
                                     x-on:click="showSavedFilters = ! showSavedFilters"
                                 >
                                     <x-label class="mr-2">
@@ -607,9 +607,9 @@
                             <div
                                 x-on:click="filterIndex = orIndex"
                                 x-bind:class="filterIndex === orIndex ? 'ring-2 ring-indigo-600' : 'ring-1 ring-slate-700/10'"
-                                class="dark:bg-secondary-800 pr-6.5 pointer-events-auto relative w-full rounded-lg bg-white p-4 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
+                                class="dark:bg-secondary-800 pointer-events-auto relative w-full rounded-lg bg-white p-4 pr-6.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
                             >
-                                <div class="absolute right-0.5 top-0.5">
+                                <div class="absolute top-0.5 right-0.5">
                                     <x-button.circle
                                         color="red"
                                         sm
