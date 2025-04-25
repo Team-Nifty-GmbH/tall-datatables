@@ -123,15 +123,20 @@ class DataTableServiceProvider extends ServiceProvider
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
                     /** @var Builder $this */
                     $searchResult = $this->getScoutResults($highlight, $perPage, $page);
+                    $ids = data_get($searchResult, 'ids', []);
 
-                    return DB::table($this->model->getTable())
-                        ->whereIn($this->model->getTable() . '.' . $this->model->getKeyName(), data_get($searchResult, 'ids', []))
-                        ->orderByRaw('FIELD(' . $this->model->getKeyName() . ', '
-                            . implode(',', data_get($searchResult, 'ids', [])) . ')')
-                        ->tap(function (QueryBuilder $builder) use ($searchResult): void {
-                            $builder->hits = data_get($searchResult, 'hits');
-                            $builder->scout_pagination = data_get($searchResult, 'searchResult');
-                        });
+                    $query = DB::table($this->model->getTable())
+                        ->whereIn($this->model->getTable() . '.' . $this->model->getKeyName(), $ids);
+
+                    if ($ids) {
+                        $query->orderByRaw('FIELD(' . $this->model->getKeyName() . ', '
+                            . implode(',', $ids) . ')');
+                    }
+
+                    return $query->tap(function (QueryBuilder $builder) use ($searchResult): void {
+                        $builder->hits = data_get($searchResult, 'hits');
+                        $builder->scout_pagination = data_get($searchResult, 'searchResult');
+                    });
                 });
         }
 
@@ -142,14 +147,17 @@ class DataTableServiceProvider extends ServiceProvider
                     $searchResult = $this->getScoutResults($highlight, $perPage, $page);
                     $ids = data_get($searchResult, 'ids', []);
 
-                    return $this->model::query()
-                        ->whereKey($ids)
-                        ->orderByRaw('FIELD(' . $this->model->getKeyName() . ', '
-                            . implode(',', $ids) . ')')
-                        ->tap(function (EloquentBuilder $builder) use ($searchResult): void {
-                            $builder->hits = data_get($searchResult, 'hits');
-                            $builder->scout_pagination = data_get($searchResult, 'searchResult');
-                        });
+                    $query = $this->model::query()->whereKey($ids);
+
+                    if ($ids) {
+                        $query->orderByRaw('FIELD(' . $this->model->getKeyName() . ', '
+                            . implode(',', $ids) . ')');
+                    }
+
+                    return $query->tap(function (EloquentBuilder $builder) use ($searchResult): void {
+                        $builder->hits = data_get($searchResult, 'hits');
+                        $builder->scout_pagination = data_get($searchResult, 'searchResult');
+                    });
                 }
             );
         }
