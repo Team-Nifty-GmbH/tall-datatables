@@ -13,9 +13,11 @@
             id="save-filter"
             :title="__('Save filter')"
             x-on:close="filterName = ''; permanent = false;"
+            x-on:open="$focusOn('filter-name')"
         >
             <x-input
                 required
+                id="filter-name"
                 :label="__('Filter name')"
                 x-model="filterName"
             />
@@ -951,7 +953,7 @@
                 <div class="pt-3">
                     <x-button
                         loading
-                        x-on:click="$wire.$parent.export(exportColumns)"
+                        x-on:click="$wire.$parent.export(exportColumns); $slideClose('data-table-sidebar-' + $wire.$parent.id.toLowerCase());"
                         color="indigo"
                         class="w-full"
                     >
