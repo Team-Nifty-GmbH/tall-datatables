@@ -953,11 +953,13 @@ class DataTable extends Component
         $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
         $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
 
-        array_walk_recursive($filter['value'], function (&$value): void {
+        array_walk_recursive($filter['value'], function (&$value) use(&$filter): void {
             if (is_string($value) && ! is_numeric($value)) {
                 try {
                     $value = Carbon::parse($value)->toIso8601String();
                 } catch (InvalidFormatException) {
+                    $filter['operator'] = 'like';
+                    $value = '%' . $value . '%';
                 }
             } elseif (is_numeric($value)) {
                 $value = (float) $value;
