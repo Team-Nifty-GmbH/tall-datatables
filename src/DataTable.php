@@ -959,7 +959,7 @@ class DataTable extends Component
                     is_string($value)
                     && ! is_numeric($value)
                     && (
-                        is_string($this->formatters[$filter['column']])
+                        is_string($this->formatters[$filter['column']] ?? false)
                         && str_starts_with($this->formatters[$filter['column']], 'date')
                     )
                 ) {
