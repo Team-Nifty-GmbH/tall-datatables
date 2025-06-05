@@ -953,46 +953,49 @@ class DataTable extends Component
         $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
         $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
 
-        array_walk_recursive($filter['value'], function (&$value) use(&$filter): void {
-            if (is_string($value) && ! is_numeric($value)) {
-                try {
-                    $value = Carbon::parse($value)->toIso8601String();
-                } catch (InvalidFormatException) {
-                    $filter['operator'] = 'like';
-                    $value = '%' . $value . '%';
+        $filter['value'] = collect($filter['value'])
+            ->map(function ($value) use (&$filter) {
+                if (is_string($value) && ! is_numeric($value) && str_starts_with($this->formatters[$filter['column']] ?? '', 'date')) {
+                    try {
+                        return Carbon::parse($value)->toIso8601String();
+                    } catch (InvalidFormatException) {
+                        $filter['operator'] = 'like';
+
+                        return '%' . $value . '%';
+                    }
                 }
-            } elseif (is_numeric($value)) {
-                $value = (float) $value;
-            }
-        });
 
-        $filter['value'] = array_map(function ($value) {
-            if (! ($value['calculation'] ?? false)) {
-                return $value;
-            }
+                return is_numeric($value) ? (float) $value : $value;
+            })
+            ->map(function ($value) {
+                if (! ($value['calculation'] ?? false)) {
+                    return $value;
+                }
 
-            $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
-            $functionSuffix = ucfirst($value['calculation']['unit']);
+                $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
+                $functionSuffix = ucfirst($value['calculation']['unit']);
 
-            if (
-                array_key_exists('is_start_of', $value['calculation'])
-                && is_numeric($value['calculation']['is_start_of'])
-            ) {
-                $functionStartOfPrefix = $value['calculation']['is_start_of'] ? 'startOf' : 'endOf';
-                $functionStartOfSuffix = ucfirst($value['calculation']['start_of']);
+                if (
+                    array_key_exists('is_start_of', $value['calculation'])
+                    && is_numeric($value['calculation']['is_start_of'])
+                ) {
+                    $functionStartOfPrefix = $value['calculation']['is_start_of'] ? 'startOf' : 'endOf';
+                    $functionStartOfSuffix = ucfirst($value['calculation']['start_of']);
 
-                return [
-                    now()
-                        ->{$functionPrefix . $functionSuffix}($value['calculation']['value'])
-                        ->{$functionStartOfPrefix . $functionStartOfSuffix}(),
-                ];
-            } else {
-                return [
-                    now()
-                        ->{$functionPrefix . $functionSuffix}($value['calculation']['value']),
-                ];
-            }
-        }, $filter['value']);
+                    return [
+                        now()
+                            ->{$functionPrefix . $functionSuffix}($value['calculation']['value'])
+                            ->{$functionStartOfPrefix . $functionStartOfSuffix}(),
+                    ];
+                } else {
+                    return [
+                        now()
+                            ->{$functionPrefix . $functionSuffix}($value['calculation']['value']),
+                    ];
+                }
+            })
+            ->all();
+
         $filter['value'] = count($filter['value']) === 1
             ? $filter['value'][0]
             : $filter['value'];
