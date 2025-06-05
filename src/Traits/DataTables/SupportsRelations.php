@@ -397,8 +397,8 @@ trait SupportsRelations
         if ($castReflection->isEnum()) {
             $this->filterValueLists[$enabledCol] = array_map(function ($enum) {
                 return [
-                    'value' => $enum->name,
-                    'label' => __($enum->value),
+                    'value' => $enum->value,
+                    'label' => __(Str::headline($enum->name)),
                 ];
             }, $attributeInfo->cast::cases());
         }
