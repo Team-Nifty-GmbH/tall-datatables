@@ -955,7 +955,14 @@ class DataTable extends Component
 
         $filter['value'] = collect($filter['value'])
             ->map(function ($value) use (&$filter) {
-                if (is_string($value) && ! is_numeric($value) && str_starts_with($this->formatters[$filter['column']] ?? '', 'date')) {
+                if (
+                    is_string($value)
+                    && ! is_numeric($value)
+                    && (
+                        is_string($this->formatters[$filter['column']])
+                        && str_starts_with($this->formatters[$filter['column']], 'date')
+                    )
+                ) {
                     try {
                         return Carbon::parse($value)->toIso8601String();
                     } catch (InvalidFormatException) {
