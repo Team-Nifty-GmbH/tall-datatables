@@ -1,6 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@source '/resources/views/**/*.blade.php';
+@source '/resources/js/**/*.js';
+@source '/src/**/*.php';
+@source '../../vendor/tallstackui/tallstackui/**/*.php';
 
 [x-cloak] {
     display: none !important;

@@ -6,7 +6,7 @@
         wire:loading.delay.longer
         wire:target.except="storeColLayout"
         x-cloak
-        class="absolute bottom-0 right-0 top-0 w-full"
+        class="absolute top-0 right-0 bottom-0 w-full"
     >
         <td>
             <x-tall-datatables::spinner />
@@ -17,7 +17,7 @@
             <tr>
                 @if ($isSelectable)
                     <x-tall-datatables::table.head-cell
-                        class="min-w-24 !px-0 !py-0"
+                        class="min-w-24 px-0! py-0!"
                     >
                         <div class="flex items-center justify-center gap-1.5">
                             @if ($selectValue === 'index')
@@ -144,7 +144,7 @@
 
                 @if ($hasSidebar)
                     <x-tall-datatables::table.head-cell
-                        class="dark:bg-secondary-800 sticky right-0 flex w-4 flex-row-reverse bg-white !py-0 shadow-inner"
+                        class="dark:bg-secondary-800 sticky right-0 flex w-4 flex-row-reverse bg-white py-0! shadow-inner"
                     >
                         <div class="flex w-full flex-row-reverse items-center">
                             <x-button
@@ -246,7 +246,7 @@
         >
             @if ($isSelectable)
                 <td
-                    class="whitespace-nowrap border-b border-slate-200 px-3 py-4 text-sm dark:border-slate-600"
+                    class="border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
                 >
                     <div
                         {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}
@@ -261,7 +261,7 @@
                 </td>
             @else
                 <td
-                    class="max-w-0 whitespace-nowrap border-b border-slate-200 text-sm dark:border-slate-600"
+                    class="max-w-0 border-b border-slate-200 text-sm whitespace-nowrap dark:border-slate-600"
                 ></td>
             @endif
             <template x-for="col in enabledCols">
@@ -279,7 +279,7 @@
                             x-show="leftAppend[col]"
                             x-html="formatter(leftAppend[col], record)"
                         ></div>
-                        <div class="flex-grow">
+                        <div class="grow">
                             <div
                                 class="flex flex-wrap gap-1"
                                 x-cloak
@@ -308,7 +308,7 @@
             </template>
             @if ($rowActions ?? false)
                 <td
-                    class="whitespace-nowrap border-b border-slate-200 px-3 py-4 dark:border-slate-600"
+                    class="border-b border-slate-200 px-3 py-4 whitespace-nowrap dark:border-slate-600"
                 >
                     <div
                         class="flex gap-1.5"
@@ -334,7 +334,7 @@
             {{-- Empty cell for the col selection --}}
             @if ($hasSidebar)
                 <td
-                    class="sticky right-0 table-cell whitespace-nowrap border-b border-slate-200 px-3 py-4 text-sm shadow-sm dark:border-slate-600"
+                    class="sticky right-0 table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap shadow-sm dark:border-slate-600"
                 ></td>
             @endif
         </tr>
@@ -345,7 +345,7 @@
                 class="dark:hover:bg-secondary-800 dark:bg-secondary-900 bg-gray-50 hover:bg-gray-100"
             >
                 <td
-                    class="whitespace-nowrap border-b border-slate-200 px-3 py-4 text-sm font-bold dark:border-slate-600"
+                    class="border-b border-slate-200 px-3 py-4 text-sm font-bold whitespace-nowrap dark:border-slate-600"
                     x-text="getLabel(name)"
                 ></td>
                 <template x-for="col in enabledCols">
@@ -357,11 +357,11 @@
                     </x-tall-datatables::table.cell>
                 </template>
                 <td
-                    class="table-cell whitespace-nowrap border-b border-slate-200 px-3 py-4 text-sm dark:border-slate-600"
+                    class="table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
                 ></td>
                 @if ($rowActions)
                     <td
-                        class="table-cell whitespace-nowrap border-b border-slate-200 px-3 py-4 text-sm dark:border-slate-600"
+                        class="table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
                     ></td>
                 @endif
             </tr>
