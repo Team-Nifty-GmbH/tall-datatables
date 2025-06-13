@@ -270,7 +270,7 @@
                     x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50'"
                     x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
                     class="cursor-pointer"
-                    x-bind:href="record?.href ?? false"
+                    x-bind:href="record.deleted_at ? false : (record?.href ?? false)"
                 >
                     <div class="flex flex-wrap gap-1.5">
                         <div
@@ -306,7 +306,7 @@
                     </div>
                 </x-tall-datatables::table.cell>
             </template>
-            @if ($rowActions ?? false)
+            @if (($rowActions ?? false) || ($showRestoreButton && $allowSoftDeletes))
                 <td
                     class="border-b border-slate-200 px-3 py-4 whitespace-nowrap dark:border-slate-600"
                 >
@@ -314,7 +314,7 @@
                         class="flex gap-1.5"
                         @if($allowSoftDeletes) x-bind:class="record.deleted_at ? 'hidden' : ''" @endif
                     >
-                        @foreach ($rowActions as $rowAction)
+                        @foreach ($rowActions ?? [] as $rowAction)
                             {{ $rowAction }}
                         @endforeach
                     </div>
