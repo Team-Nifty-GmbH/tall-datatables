@@ -490,9 +490,14 @@ class DataTable extends Component
             } elseif ($filter['operator'] === 'between') {
                 $query->whereBetween($filter['column'], $filter['value']);
             } else {
-                $query->where([array_values(
+                $filteredData = array_values(
                     array_filter($filter, fn ($value) => $value == 0 || ! empty($value))
-                )]);
+                );
+
+                // Ensure we have at least column, operator and value for valid where clause
+                if (count($filteredData) >= 3) {
+                    $query->where($filteredData[0], $filteredData[1], $filteredData[2]);
+                }
             }
 
             return;
@@ -955,20 +960,25 @@ class DataTable extends Component
 
         $filter['value'] = collect($filter['value'])
             ->map(function ($value) use (&$filter) {
-                if (
-                    is_string($value)
-                    && ! is_numeric($value)
-                    && (
-                        is_string($this->formatters[$filter['column']] ?? false)
-                        && str_starts_with($this->formatters[$filter['column']], 'date')
-                    )
-                ) {
+                // Try to parse as date if it looks like a date
+                if (is_string($value) && ! is_numeric($value)) {
+                    $formats = ['d.m.Y', 'd/m/Y', 'm/d/Y', 'Y-m-d', 'd.m.Y H:i', 'd/m/Y H:i'];
+                    
+                    foreach ($formats as $format) {
+                        try {
+                            $date = Carbon::createFromFormat($format, $value);
+                            return $date->format('Y-m-d H:i:s');
+                        } catch (InvalidFormatException) {
+                            continue;
+                        }
+                    }
+                    
+                    // Try default Carbon parsing as last resort
                     try {
-                        return Carbon::parse($value)->toIso8601String();
+                        $date = Carbon::parse($value);
+                        return $date->format('Y-m-d H:i:s');
                     } catch (InvalidFormatException) {
-                        $filter['operator'] = 'like';
-
-                        return '%' . $value . '%';
+                        // Not a date, continue with original value
                     }
                 }
 

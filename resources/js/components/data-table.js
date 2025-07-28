@@ -14,6 +14,7 @@ export default function data_table($wire) {
                 });
             });
             this.loadFilterable();
+            this.loadRelationTableFields('');
 
             this.$watch('search', () => {
                 $wire.startSearch();
