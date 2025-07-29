@@ -962,20 +962,42 @@ class DataTable extends Component
             ->map(function ($value) use (&$filter) {
                 // Try to parse as date if it looks like a date
                 if (is_string($value) && ! is_numeric($value)) {
-                    $formats = ['d.m.Y', 'd/m/Y', 'm/d/Y', 'Y-m-d', 'd.m.Y H:i', 'd/m/Y H:i'];
-                    
-                    foreach ($formats as $format) {
+                    $dateFormats = ['d.m.Y', 'd/m/Y', 'm/d/Y', 'Y-m-d'];
+                    $dateTimeFormats = ['d.m.Y H:i', 'd/m/Y H:i', 'Y-m-d H:i:s', 'd.m.Y H:i:s', 'd/m/Y H:i:s'];
+
+                    // First try date-only formats
+                    foreach ($dateFormats as $format) {
                         try {
                             $date = Carbon::createFromFormat($format, $value);
+
+                            return $date->startOfDay()->format('Y-m-d H:i:s');
+                        } catch (InvalidFormatException) {
+                            continue;
+                        }
+                    }
+
+                    // Then try datetime formats
+                    foreach ($dateTimeFormats as $format) {
+                        try {
+                            $date = Carbon::createFromFormat($format, $value);
+
                             return $date->format('Y-m-d H:i:s');
                         } catch (InvalidFormatException) {
                             continue;
                         }
                     }
-                    
+
                     // Try default Carbon parsing as last resort
                     try {
                         $date = Carbon::parse($value);
+
+                        // Check if the input contains time information
+                        $hasTime = preg_match('/\d{1,2}:\d{2}/', $value);
+
+                        if (! $hasTime) {
+                            return $date->startOfDay()->format('Y-m-d H:i:s');
+                        }
+
                         return $date->format('Y-m-d H:i:s');
                     } catch (InvalidFormatException) {
                         // Not a date, continue with original value
