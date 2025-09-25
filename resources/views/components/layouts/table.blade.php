@@ -308,6 +308,7 @@
             </template>
             @if (($rowActions ?? false) || ($showRestoreButton && $allowSoftDeletes))
                 <td
+                    x-on:click.stop
                     class="border-b border-slate-200 px-3 py-4 whitespace-nowrap dark:border-slate-600"
                 >
                     <div
