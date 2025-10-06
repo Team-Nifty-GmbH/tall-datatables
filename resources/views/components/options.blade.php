@@ -255,22 +255,22 @@
                                         >
                                             <div>
                                                 <x-card>
-                                                    <x-slot:title>
-                                                        <x-input
-                                                            x-model="filter.name"
-                                                            x-on:input.debounce="$wire.$parent.updateSavedFilter(filter.id, filter)"
-                                                        />
-                                                    </x-slot>
                                                     <x-slot:header>
-                                                        <x-button.circle
-                                                            color="red"
-                                                            2xs
-                                                            icon="x-mark"
-                                                            x-on:click="
-                                                            savedFilters.splice(savedFilters.indexOf(index), 1);
-                                                            $wire.$parent.deleteSavedFilter(filter.id)
-                                                        "
-                                                        />
+                                                        <div class="flex gap-2 w-full">
+                                                            <x-input
+                                                                x-model="filter.name"
+                                                                x-on:input.debounce="$wire.$parent.updateSavedFilter(filter.id, filter)"
+                                                            />
+                                                            <x-button.circle
+                                                                color="red"
+                                                                2xs
+                                                                icon="x-mark"
+                                                                x-on:click="
+                                                                    savedFilters.splice(savedFilters.indexOf(index), 1);
+                                                                    $wire.$parent.deleteSavedFilter(filter.id)
+                                                                "
+                                                            />
+                                                        </div>
                                                     </x-slot>
                                                     <div
                                                         class="flex justify-between"

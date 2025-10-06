@@ -490,13 +490,14 @@ class DataTable extends Component
             } elseif ($filter['operator'] === 'between') {
                 $query->whereBetween($filter['column'], $filter['value']);
             } else {
-                $filteredData = array_values(
-                    array_filter($filter, fn ($value) => $value == 0 || ! empty($value))
-                );
+                // Extract column, operator and value in correct order
+                $column = $filter['column'] ?? null;
+                $operator = $filter['operator'] ?? null;
+                $value = $filter['value'] ?? null;
 
-                // Ensure we have at least column, operator and value for valid where clause
-                if (count($filteredData) >= 3) {
-                    $query->where($filteredData[0], $filteredData[1], $filteredData[2]);
+                // Ensure we have all required parts for valid where clause
+                if ($column && $operator && ($value !== null && $value !== '')) {
+                    $query->where($column, $operator, $value);
                 }
             }
 
@@ -543,7 +544,6 @@ class DataTable extends Component
                 $query->where(function (Builder $query) use ($orFilter): void {
                     foreach ($orFilter as $type => $filter) {
                         $this->addFilter($query, $type, $filter);
-                        $query->havingRaw('stock_postings_sum_posting > ?', [0]);
                     }
                 }, boolean: $index > 0 ? 'or' : 'and');
             }
