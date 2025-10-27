@@ -943,7 +943,7 @@
                                     <label
                                         class="block text-sm font-medium text-gray-700 dark:text-gray-400"
                                     >
-                                        <span x-text="columnName"></span>
+                                        <span x-text="getLabel(columnName)"></span>
                                     </label>
                                 </div>
                             </div>
