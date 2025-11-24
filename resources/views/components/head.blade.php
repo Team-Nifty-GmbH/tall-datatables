@@ -14,6 +14,7 @@
             <x-select.styled
                 x-on:select="loadSavedFilter()"
                 wire:model="loadedFilterId"
+                select="label:label|value:value"
                 :placeholder="__('Saved filters')"
                 :options="collect($this->savedFilters)
                     ->filter(fn(array $savedFilter) => data_get($savedFilter, 'settings.userFilters', false))
@@ -23,8 +24,9 @@
                             'value' => $savedFilter['id'],
                         ];
                     })
-                ->toArray()"
-                required
+                    ->toArray()
+                "
+                searchable
             ></x-select.styled>
         </div>
     @endif
