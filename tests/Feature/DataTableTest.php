@@ -6,7 +6,6 @@ use Tests\Fixtures\Livewire\PostWithRelationsDataTable;
 use Tests\Fixtures\Livewire\SelectablePostDataTable;
 use Tests\Fixtures\Livewire\UserDataTable;
 use Tests\Fixtures\Models\Post;
-use Tests\Fixtures\Models\User;
 
 beforeEach(function (): void {
     $this->user = createTestUser();
@@ -797,7 +796,7 @@ describe('Data Attributes', function (): void {
         $reflection = new ReflectionMethod($instance, 'getComponentAttributes');
         $attributes = $reflection->invoke($instance);
 
-        expect($attributes)->toBeInstanceOf(\Illuminate\View\ComponentAttributeBag::class);
+        expect($attributes)->toBeInstanceOf(Illuminate\View\ComponentAttributeBag::class);
     });
 
     it('returns cell attributes as ComponentAttributeBag', function (): void {
@@ -807,7 +806,7 @@ describe('Data Attributes', function (): void {
         $reflection = new ReflectionMethod($instance, 'getCellAttributes');
         $attributes = $reflection->invoke($instance);
 
-        expect($attributes)->toBeInstanceOf(\Illuminate\View\ComponentAttributeBag::class);
+        expect($attributes)->toBeInstanceOf(Illuminate\View\ComponentAttributeBag::class);
     });
 
     it('returns row attributes as ComponentAttributeBag', function (): void {
@@ -817,6 +816,6 @@ describe('Data Attributes', function (): void {
         $reflection = new ReflectionMethod($instance, 'getRowAttributes');
         $attributes = $reflection->invoke($instance);
 
-        expect($attributes)->toBeInstanceOf(\Illuminate\View\ComponentAttributeBag::class);
+        expect($attributes)->toBeInstanceOf(Illuminate\View\ComponentAttributeBag::class);
     });
 });

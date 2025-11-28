@@ -1,7 +1,7 @@
 <?php
 
-use Tests\Fixtures\Models\User;
 use TeamNiftyGmbH\DataTable\Models\DatatableUserSetting;
+use Tests\Fixtures\Models\User;
 
 beforeEach(function (): void {
     $this->user = createTestUser();

@@ -1,8 +1,8 @@
 <?php
 
+use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
 use Tests\Fixtures\Models\Post;
 use Tests\Fixtures\Models\User;
-use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
 
 describe('InteractsWithDataTables Contract', function (): void {
     it('Post implements InteractsWithDataTables', function (): void {

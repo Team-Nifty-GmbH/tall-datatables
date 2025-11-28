@@ -1,7 +1,7 @@
 <?php
 
-use TeamNiftyGmbH\DataTable\Helpers\SessionFilter;
 use Illuminate\Database\Eloquent\Builder;
+use TeamNiftyGmbH\DataTable\Helpers\SessionFilter;
 
 describe('SessionFilter', function (): void {
     it('can create a session filter using make', function (): void {

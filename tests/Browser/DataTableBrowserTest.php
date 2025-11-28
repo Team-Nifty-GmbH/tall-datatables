@@ -14,10 +14,6 @@
  * a running application with routes. When implementing in a real application,
  * remove the skip() calls.
  */
-
-use Tests\Fixtures\Models\Post;
-use Tests\Fixtures\Models\User;
-
 beforeEach(function (): void {
     $this->user = createTestUser(['name' => 'Test User', 'email' => 'test@example.com']);
 
@@ -556,7 +552,7 @@ describe('DataTable Browser Formatters', function (): void {
         $page = visit('/datatable');
 
         $page->waitForLivewire()
-            ->evaluate("() => formatters().money(1234.56)")
+            ->evaluate('() => formatters().money(1234.56)')
             ->toContain('1');
     })->skip('Browser tests require a running application with /datatable route');
 
@@ -564,7 +560,7 @@ describe('DataTable Browser Formatters', function (): void {
         $page = visit('/datatable');
 
         $page->waitForLivewire()
-            ->evaluate("() => formatters().bool(true)")
+            ->evaluate('() => formatters().bool(true)')
             ->toContain('bg-emerald');
     })->skip('Browser tests require a running application with /datatable route');
 
@@ -572,7 +568,7 @@ describe('DataTable Browser Formatters', function (): void {
         $page = visit('/datatable');
 
         $page->waitForLivewire()
-            ->evaluate("() => formatters().bool(false)")
+            ->evaluate('() => formatters().bool(false)')
             ->toContain('bg-red');
     })->skip('Browser tests require a running application with /datatable route');
 
@@ -596,7 +592,7 @@ describe('DataTable Browser Formatters', function (): void {
         $page = visit('/datatable');
 
         $page->waitForLivewire()
-            ->evaluate("() => formatters().percentage(0.5)")
+            ->evaluate('() => formatters().percentage(0.5)')
             ->toContain('50');
     })->skip('Browser tests require a running application with /datatable route');
 
@@ -661,16 +657,16 @@ describe('DataTable Browser Formatters', function (): void {
         $page = visit('/datatable');
 
         $page->waitForLivewire()
-            ->evaluate("() => formatters().guessType(null)")
+            ->evaluate('() => formatters().guessType(null)')
             ->toBe('null');
 
-        $page->evaluate("() => formatters().guessType([1, 2, 3])")
+        $page->evaluate('() => formatters().guessType([1, 2, 3])')
             ->toBe('array');
 
-        $page->evaluate("() => formatters().guessType({a: 1})")
+        $page->evaluate('() => formatters().guessType({a: 1})')
             ->toBe('object');
 
-        $page->evaluate("() => formatters().guessType(true)")
+        $page->evaluate('() => formatters().guessType(true)')
             ->toBe('boolean');
 
         $page->evaluate("() => formatters().guessType('test@test.com')")
@@ -687,7 +683,7 @@ describe('DataTable Browser Formatters', function (): void {
         $page = visit('/datatable');
 
         $page->waitForLivewire()
-            ->evaluate("() => formatters().time(3661000)")
+            ->evaluate('() => formatters().time(3661000)')
             ->toBe('01:01:01');
     })->skip('Browser tests require a running application with /datatable route');
 
@@ -695,7 +691,7 @@ describe('DataTable Browser Formatters', function (): void {
         $page = visit('/datatable');
 
         $page->waitForLivewire()
-            ->evaluate("() => formatters().time(-3600000)")
+            ->evaluate('() => formatters().time(-3600000)')
             ->toContain('-');
     })->skip('Browser tests require a running application with /datatable route');
 
@@ -703,10 +699,10 @@ describe('DataTable Browser Formatters', function (): void {
         $page = visit('/datatable');
 
         $page->waitForLivewire()
-            ->evaluate("() => formatters().coloredMoney(-100)")
+            ->evaluate('() => formatters().coloredMoney(-100)')
             ->toContain('text-red');
 
-        $page->evaluate("() => formatters().coloredMoney(100)")
+        $page->evaluate('() => formatters().coloredMoney(100)')
             ->toContain('text-emerald');
     })->skip('Browser tests require a running application with /datatable route');
 

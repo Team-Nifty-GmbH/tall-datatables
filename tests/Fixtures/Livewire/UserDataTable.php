@@ -2,20 +2,20 @@
 
 namespace Tests\Fixtures\Livewire;
 
-use Tests\Fixtures\Models\User;
 use TeamNiftyGmbH\DataTable\DataTable;
+use Tests\Fixtures\Models\User;
 
 class UserDataTable extends DataTable
 {
-    protected string $model = User::class;
-
     public array $enabledCols = [
         'name',
         'email',
         'created_at',
     ];
 
+    public bool $isFilterable = true;
+
     public bool $isSelectable = true;
 
-    public bool $isFilterable = true;
+    protected string $model = User::class;
 }

@@ -23,13 +23,9 @@ abstract class TestCase extends BaseTestCase
         }
     }
 
-    protected function getPackageProviders($app): array
+    protected function defineDatabaseMigrations(): void
     {
-        return [
-            LivewireServiceProvider::class,
-            TallStackUiServiceProvider::class,
-            TestDataTableServiceProvider::class,
-        ];
+        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
     }
 
     protected function getEnvironmentSetUp($app): void
@@ -53,9 +49,13 @@ abstract class TestCase extends BaseTestCase
         $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
     }
 
-    protected function defineDatabaseMigrations(): void
+    protected function getPackageProviders($app): array
     {
-        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+        return [
+            LivewireServiceProvider::class,
+            TallStackUiServiceProvider::class,
+            TestDataTableServiceProvider::class,
+        ];
     }
 }
 

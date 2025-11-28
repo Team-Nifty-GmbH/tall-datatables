@@ -16,24 +16,9 @@ class User extends Authenticatable implements InteractsWithDataTables
 
     protected $hidden = ['password'];
 
-    public function posts(): HasMany
-    {
-        return $this->hasMany(Post::class);
-    }
-
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
-    }
-
-    public function getLabel(): ?string
-    {
-        return $this->name;
-    }
-
-    public function getDescription(): ?string
-    {
-        return $this->email;
     }
 
     public function getAvatarUrl(): ?string
@@ -41,8 +26,23 @@ class User extends Authenticatable implements InteractsWithDataTables
         return null;
     }
 
+    public function getDescription(): ?string
+    {
+        return $this->email;
+    }
+
+    public function getLabel(): ?string
+    {
+        return $this->name;
+    }
+
     public function getUrl(): ?string
     {
         return '/users/' . $this->getKey();
+    }
+
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
     }
 }

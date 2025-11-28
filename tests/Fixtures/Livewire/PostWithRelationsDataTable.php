@@ -2,12 +2,15 @@
 
 namespace Tests\Fixtures\Livewire;
 
-use Tests\Fixtures\Models\Post;
 use TeamNiftyGmbH\DataTable\DataTable;
+use Tests\Fixtures\Models\Post;
 
 class PostWithRelationsDataTable extends DataTable
 {
-    protected string $model = Post::class;
+    public array $availableRelations = [
+        'user',
+        'comments',
+    ];
 
     public array $enabledCols = [
         'title',
@@ -19,12 +22,9 @@ class PostWithRelationsDataTable extends DataTable
         'created_at',
     ];
 
-    public array $availableRelations = [
-        'user',
-        'comments',
-    ];
+    public bool $isFilterable = true;
 
     public bool $isSelectable = true;
 
-    public bool $isFilterable = true;
+    protected string $model = Post::class;
 }

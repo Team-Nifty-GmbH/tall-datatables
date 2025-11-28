@@ -23,24 +23,9 @@ class Post extends Model implements InteractsWithDataTables
         ];
     }
 
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
-    }
-
-    public function getLabel(): ?string
-    {
-        return $this->title;
-    }
-
-    public function getDescription(): ?string
-    {
-        return substr($this->content, 0, 100);
     }
 
     public function getAvatarUrl(): ?string
@@ -48,8 +33,23 @@ class Post extends Model implements InteractsWithDataTables
         return null;
     }
 
+    public function getDescription(): ?string
+    {
+        return substr($this->content, 0, 100);
+    }
+
+    public function getLabel(): ?string
+    {
+        return $this->title;
+    }
+
     public function getUrl(): ?string
     {
         return '/posts/' . $this->getKey();
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

@@ -28,14 +28,9 @@ class Product extends Model implements InteractsWithDataTables
         ];
     }
 
-    public function user(): BelongsTo
+    public function getAvatarUrl(): ?string
     {
-        return $this->belongsTo(User::class);
-    }
-
-    public function getLabel(): ?string
-    {
-        return $this->name;
+        return $this->image_url;
     }
 
     public function getDescription(): ?string
@@ -43,13 +38,18 @@ class Product extends Model implements InteractsWithDataTables
         return $this->description;
     }
 
-    public function getAvatarUrl(): ?string
+    public function getLabel(): ?string
     {
-        return $this->image_url;
+        return $this->name;
     }
 
     public function getUrl(): ?string
     {
         return '/products/' . $this->getKey();
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

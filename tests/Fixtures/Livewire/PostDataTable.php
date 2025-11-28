@@ -2,13 +2,11 @@
 
 namespace Tests\Fixtures\Livewire;
 
-use Tests\Fixtures\Models\Post;
 use TeamNiftyGmbH\DataTable\DataTable;
+use Tests\Fixtures\Models\Post;
 
 class PostDataTable extends DataTable
 {
-    protected string $model = Post::class;
-
     public array $enabledCols = [
         'title',
         'content',
@@ -17,7 +15,9 @@ class PostDataTable extends DataTable
         'created_at',
     ];
 
+    public bool $isFilterable = true;
+
     public bool $isSelectable = true;
 
-    public bool $isFilterable = true;
+    protected string $model = Post::class;
 }
