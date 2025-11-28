@@ -1,0 +1,91 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [8.3, 8.4]
+        laravel: [12.*]
+        stability: [prefer-stable]
+        include:
+          - laravel: 12.*
+            testbench: 10.*
+
+    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+          coverage: xdebug
+
+      - name: Setup problem matchers
+        run: |
+          echo "::add-matcher::${{ runner.tool_cache }}/php.json"
+          echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install npm dependencies and build assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: Execute tests
+        run: ./vendor/bin/testbench package:test --ci --parallel
+
+      - name: Upload browser test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-artifacts-php-${{ matrix.php }}
+          path: |
+            tests/Browser/.screenshots
+            storage/logs
+          retention-days: 7
+
+  code-style:
+    runs-on: ubuntu-latest
+    name: Code Style
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction
+
+      - name: Check code style
+        run: vendor/bin/pint --test
