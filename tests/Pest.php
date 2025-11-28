@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /*
@@ -19,6 +20,7 @@ pest()->extend(TestCase::class)
     ->in('Feature', 'Unit');
 
 pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
     ->in('Browser');
 
 /*
@@ -96,4 +98,21 @@ function createTestComment(array $attributes = []): Tests\Fixtures\Models\Commen
         'post_id' => $post,
         'body' => fake()->paragraph(),
     ], $attributes));
+}
+
+/**
+ * Create a dynamic route to a Livewire component and visit it in the browser.
+ * This is useful for testing full-page Livewire components in browser tests.
+ *
+ * @param  string  $component  The Livewire component class or name
+ * @param  array<string, mixed>  $options  Options to pass to the visit function
+ * @return mixed The browser page instance
+ */
+function visitLivewire(string $component, array $options = []): mixed
+{
+    $uri = '/livewire-test/' . uniqid();
+
+    Route::get($uri, $component);
+
+    return visit($uri, $options);
 }

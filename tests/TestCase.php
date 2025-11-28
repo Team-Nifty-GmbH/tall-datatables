@@ -3,10 +3,15 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use TallStackUi\TallStackUiServiceProvider;
 use TeamNiftyGmbH\DataTable\DataTableServiceProvider;
+use Tests\Fixtures\Livewire\PostDataTable;
+use Tests\Fixtures\Livewire\PostWithRelationsDataTable;
+use Tests\Fixtures\Livewire\SelectablePostDataTable;
+use Tests\Fixtures\Livewire\UserDataTable;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -21,11 +26,24 @@ abstract class TestCase extends BaseTestCase
         if (! class_exists('TallStackUi', false)) {
             class_alias(\TallStackUi\Facades\TallStackUi::class, 'TallStackUi');
         }
+
+        // Register test Livewire components for browser tests
+        Livewire::component('post-data-table', PostDataTable::class);
+        Livewire::component('user-data-table', UserDataTable::class);
+        Livewire::component('selectable-post-data-table', SelectablePostDataTable::class);
+        Livewire::component('post-with-relations-data-table', PostWithRelationsDataTable::class);
     }
 
     protected function defineDatabaseMigrations(): void
     {
         $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+    }
+
+    protected function defineRoutes($router): void
+    {
+        // Register test routes for browser tests - these provide static routes
+        // for basic rendering tests before dynamic routes are needed
+        $router->get('/test-datatable', PostDataTable::class);
     }
 
     protected function getEnvironmentSetUp($app): void
@@ -47,6 +65,12 @@ abstract class TestCase extends BaseTestCase
         ]);
 
         $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
+
+        // Add test views path for browser test layouts
+        $app['config']->set('view.paths', array_merge(
+            $app['config']->get('view.paths', []),
+            [__DIR__ . '/resources/views']
+        ));
     }
 
     protected function getPackageProviders($app): array
