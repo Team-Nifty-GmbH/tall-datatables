@@ -79,6 +79,27 @@ export default function data_table($wire) {
                     });
                 });
             }
+
+            // Event delegation for pagination buttons in grouped view
+            this.$el.addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-action]');
+                if (!btn) return;
+
+                e.stopPropagation();
+                const action = btn.dataset.action;
+
+                if (action === 'prev-group-page' || action === 'next-group-page') {
+                    const groupKey = btn.dataset.groupKey;
+                    const page = parseInt(btn.dataset.page, 10);
+                    this.setGroupPage(groupKey, page);
+                } else if (
+                    action === 'prev-groups-page' ||
+                    action === 'next-groups-page'
+                ) {
+                    const page = parseInt(btn.dataset.page, 10);
+                    this.setGroupsPage(page);
+                }
+            });
         },
         columnSortHandle(item, position) {
             const oldIndex = this.enabledCols.indexOf(item);
@@ -90,15 +111,18 @@ export default function data_table($wire) {
                 return data;
             }
 
+            const searchLower = search.toLowerCase();
+
             // data could be an object or an array, search in both
             // if its an object we have to return an object
-            if (typeof data === 'object') {
+            if (typeof data === 'object' && !Array.isArray(data)) {
                 let obj = {};
                 for (const [key, value] of Object.entries(data)) {
+                    // Search in value and in translated label
+                    const label = this.getLabel(value) || '';
                     if (
-                        JSON.stringify(value)
-                            .toLowerCase()
-                            .includes(search.toLowerCase())
+                        JSON.stringify(value).toLowerCase().includes(searchLower) ||
+                        label.toString().toLowerCase().includes(searchLower)
                     ) {
                         obj[key] = value;
                     }
@@ -109,9 +133,12 @@ export default function data_table($wire) {
 
             // its an array, return all items that include the search string
             return data.filter((item) => {
-                return JSON.stringify(item)
-                    .toLowerCase()
-                    .includes(search.toLowerCase());
+                // Search in item and in translated label
+                const label = this.getLabel(item) || '';
+                return (
+                    JSON.stringify(item).toLowerCase().includes(searchLower) ||
+                    label.toString().toLowerCase().includes(searchLower)
+                );
             });
         },
         loadTableConfig() {
@@ -120,6 +147,7 @@ export default function data_table($wire) {
                 this.availableCols = result.availableCols;
                 this.sortable = result.sortable;
                 this.aggregatable = result.aggregatable;
+                this.groupable = result.groupable;
                 this.selectable = result.selectable;
                 this.formatters = result.formatters;
                 this.leftAppend = result.leftAppend;
@@ -130,6 +158,7 @@ export default function data_table($wire) {
                 this.echoListeners = result.echoListeners;
                 this.operatorLabels = result.operatorLabels;
                 this.colLabels = result.colLabels;
+                this.groupLabels = result.groupLabels;
             });
         },
         data: $wire.entangle('data').live,
@@ -137,8 +166,12 @@ export default function data_table($wire) {
         availableCols: [],
         colLabels: [],
         operatorLabels: [],
+        groupLabels: {},
         sortable: [],
         aggregatable: [],
+        groupable: [],
+        groupBy: $wire.entangle('groupBy'),
+        expandedGroups: $wire.entangle('expandedGroups'),
         selectable: false,
         showSelectedActions: false,
         formatters: [],
@@ -229,6 +262,292 @@ export default function data_table($wire) {
             }
 
             return this.data;
+        },
+        isGrouped() {
+            return Boolean(this.groupBy) && this.data && this.data.hasOwnProperty('groups');
+        },
+        getGroups() {
+            return this.data.groups ?? [];
+        },
+        /**
+         * Returns a flat array of rows for grouped view.
+         * Each row has a 'rowType' property: 'group-header', 'data', or 'pagination'.
+         * This allows using a single x-for loop in the template.
+         */
+        getFlatGroupedRows() {
+            const groups = this.getGroups();
+            const rows = [];
+
+            for (const group of groups) {
+                // Add group header row
+                rows.push({
+                    rowType: 'group-header',
+                    group: group,
+                    _key: 'header-' + group.key,
+                });
+
+                // Add data rows (only for expanded groups)
+                if (this.isGroupExpanded(group.key) && group.data) {
+                    for (let i = 0; i < group.data.length; i++) {
+                        rows.push({
+                            rowType: 'data',
+                            group: group,
+                            record: group.data[i],
+                            index: i,
+                            _key: 'data-' + group.key + '-' + (group.data[i].id ?? i),
+                        });
+                    }
+                }
+
+                // Add pagination row for data within group if needed
+                if (
+                    this.isGroupExpanded(group.key) &&
+                    group.pagination &&
+                    group.pagination.last_page > 1
+                ) {
+                    rows.push({
+                        rowType: 'pagination',
+                        group: group,
+                        _key: 'pagination-' + group.key,
+                    });
+                }
+            }
+
+            // Add groups pagination row at the end if there are multiple pages of groups
+            const groupsPagination = this.getGroupsPagination();
+            if (groupsPagination && groupsPagination.last_page > 1) {
+                rows.push({
+                    rowType: 'groups-pagination',
+                    pagination: groupsPagination,
+                    _key: 'groups-pagination',
+                });
+            }
+
+            return rows;
+        },
+        /**
+         * Returns the correct plural form based on count.
+         * Expects format "singular|plural" like Laravel's trans_choice.
+         */
+        transChoice(key, count) {
+            const translation = this.groupLabels[key] || key;
+            const parts = translation.split('|');
+            if (parts.length === 2) {
+                return count === 1 ? parts[0] : parts[1];
+            }
+            return translation;
+        },
+        /**
+         * Renders the complete HTML content for a grouped row based on its type.
+         * This handles all row types: group-header, data, pagination, and groups-pagination.
+         */
+        renderGroupedRow(row) {
+            const labels = this.groupLabels;
+
+            if (row.rowType === 'group-header') {
+                const isExpanded = this.isGroupExpanded(row.group.key);
+                const entriesLabel = this.transChoice('entries', row.group.count);
+                const hasAggregates =
+                    row.group.aggregates &&
+                    Object.keys(row.group.aggregates).length > 0;
+
+                // If we have aggregates, render cells per column
+                if (hasAggregates) {
+                    const aggTypeLabels = {
+                        sum: labels.sum || 'Sum',
+                        avg: labels.avg || 'Avg',
+                        min: labels.min || 'Min',
+                        max: labels.max || 'Max',
+                    };
+
+                    // First cell: group label with expand arrow
+                    let html = `<td class='border-b border-slate-300 px-3 py-3 text-sm whitespace-nowrap dark:border-slate-500'>
+                        <div class='flex items-center gap-3'>
+                            <svg class='h-5 w-5 transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'>
+                                <path fill-rule='evenodd' d='M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z' clip-rule='evenodd'/>
+                            </svg>
+                            <span class='font-semibold'>${row.group.label}</span>
+                            <span class='inline-flex items-center justify-center gap-x-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300'>${row.group.count} ${entriesLabel}</span>
+                        </div>
+                    </td>`;
+
+                    // Render cells for each enabled column with aggregate values
+                    for (const col of this.enabledCols) {
+                        const isSticky = this.stickyCols.includes(col);
+                        const stickyClass = isSticky
+                            ? 'sticky left-0 border-r bg-gray-100 dark:bg-secondary-700'
+                            : '';
+                        const stickyStyle = isSticky ? 'z-index: 2' : '';
+
+                        // Collect all aggregate values for this column
+                        let cellContent = '';
+                        for (const [aggType, columns] of Object.entries(
+                            row.group.aggregates,
+                        )) {
+                            if (columns && columns.hasOwnProperty(col)) {
+                                const formattedValue = this.formatter(col, {
+                                    [col]: columns[col],
+                                });
+                                cellContent += `<div class='flex items-center gap-1'>
+                                    <span class='font-semibold text-slate-500 dark:text-slate-400'>${aggTypeLabels[aggType]}:</span>
+                                    <span>${formattedValue}</span>
+                                </div>`;
+                            }
+                        }
+
+                        html += `<td class="border-b border-slate-300 dark:border-slate-500 whitespace-nowrap px-3 py-3 text-sm ${stickyClass}" style="${stickyStyle}">
+                            ${cellContent}
+                        </td>`;
+                    }
+
+                    // Last empty cell for actions column
+                    html += `<td class='sticky right-0 table-cell border-b border-slate-300 px-3 py-3 text-sm whitespace-nowrap shadow-sm dark:border-slate-500'></td>`;
+
+                    return html;
+                }
+
+                // No aggregates: use colspan for simple header
+                return `<td colspan='100%' class='border-b border-slate-300 px-3 py-3 text-sm dark:border-slate-500'>
+                    <div class='flex items-center gap-3'>
+                        <svg class='h-5 w-5 transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'>
+                            <path fill-rule='evenodd' d='M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z' clip-rule='evenodd'/>
+                        </svg>
+                        <span class='font-semibold'>${row.group.label}</span>
+                        <span class='inline-flex items-center justify-center gap-x-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300'>${row.group.count} ${entriesLabel}</span>
+                    </div>
+                </td>`;
+            }
+
+            if (row.rowType === 'data') {
+                return `<td class='max-w-0 border-b border-slate-200 text-sm whitespace-nowrap dark:border-slate-600'></td>` +
+                    this.renderGroupedDataCells(row.record) +
+                    `<td class='sticky right-0 table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap shadow-sm dark:border-slate-600'></td>`;
+            }
+
+            if (row.rowType === 'pagination' && row.group.pagination) {
+                const p = row.group.pagination;
+                const groupKey = row.group.key;
+                return `<td colspan='100%' class='px-4 py-3 sm:px-6'>
+                    <div class='flex items-center justify-between'>
+                        <div class='flex items-center gap-1 text-sm text-slate-400'>
+                            ${labels.showing || 'Showing'}
+                            <span class='font-medium'>${p.from}</span>
+                            ${labels.to || 'to'}
+                            <span class='font-medium'>${p.to}</span>
+                            ${labels.of || 'of'}
+                            <span class='font-medium'>${p.total}</span>
+                        </div>
+                        <nav class='isolate inline-flex space-x-1 rounded-md shadow-sm' aria-label='Pagination'>
+                            <button type='button' class='soft-scrollbar inline-flex items-center justify-center gap-x-1 rounded-md border border-secondary-200 bg-white text-sm text-secondary-600 ring-secondary-200 outline-hidden transition-colors duration-100 ease-linear hover:bg-secondary-100 focus:ring-2 dark:border-secondary-500 dark:bg-secondary-600 dark:text-secondary-200 dark:ring-secondary-400 dark:hover:bg-secondary-500 dark:focus:ring-offset-secondary-800 disabled:cursor-not-allowed disabled:opacity-50 px-2.5 py-1.5' ${p.current_page <= 1 ? 'disabled' : ''} data-action='prev-group-page' data-group-key='${groupKey}' data-page='${p.current_page - 1}'>
+                                <svg class='h-4 w-4' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' d='M15.75 19.5 8.25 12l7.5-7.5'/></svg>
+                            </button>
+                            <span class='inline-flex items-center px-3 py-1.5 text-sm text-secondary-600 dark:text-secondary-300'>${p.current_page} / ${p.last_page}</span>
+                            <button type='button' class='soft-scrollbar inline-flex items-center justify-center gap-x-1 rounded-md border border-secondary-200 bg-white text-sm text-secondary-600 ring-secondary-200 outline-hidden transition-colors duration-100 ease-linear hover:bg-secondary-100 focus:ring-2 dark:border-secondary-500 dark:bg-secondary-600 dark:text-secondary-200 dark:ring-secondary-400 dark:hover:bg-secondary-500 dark:focus:ring-offset-secondary-800 disabled:cursor-not-allowed disabled:opacity-50 px-2.5 py-1.5' ${p.current_page >= p.last_page ? 'disabled' : ''} data-action='next-group-page' data-group-key='${groupKey}' data-page='${p.current_page + 1}'>
+                                <svg class='h-4 w-4' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' d='m8.25 4.5 7.5 7.5-7.5 7.5'/></svg>
+                            </button>
+                        </nav>
+                    </div>
+                </td>`;
+            }
+
+            if (row.rowType === 'groups-pagination') {
+                const p = row.pagination;
+                const from = (p.current_page - 1) * p.per_page + 1;
+                const to = Math.min(p.current_page * p.per_page, p.total);
+                return `<td colspan='100%' class='px-4 py-3 sm:px-6'>
+                    <div class='flex items-center justify-between'>
+                        <div class='flex items-center gap-1 text-sm text-slate-400'>
+                            ${labels.groups || 'Groups'}
+                            <span class='font-medium'>${from}</span>
+                            -
+                            <span class='font-medium'>${to}</span>
+                            ${labels.of || 'of'}
+                            <span class='font-medium'>${p.total}</span>
+                        </div>
+                        <nav class='isolate inline-flex space-x-1 rounded-md shadow-sm' aria-label='Pagination'>
+                            <button type='button' class='soft-scrollbar inline-flex items-center justify-center gap-x-1 rounded-md border border-secondary-200 bg-white text-sm text-secondary-600 ring-secondary-200 outline-hidden transition-colors duration-100 ease-linear hover:bg-secondary-100 focus:ring-2 dark:border-secondary-500 dark:bg-secondary-600 dark:text-secondary-200 dark:ring-secondary-400 dark:hover:bg-secondary-500 dark:focus:ring-offset-secondary-800 disabled:cursor-not-allowed disabled:opacity-50 px-2.5 py-1.5' ${p.current_page <= 1 ? 'disabled' : ''} data-action='prev-groups-page' data-page='${p.current_page - 1}'>
+                                <svg class='h-4 w-4' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' d='M15.75 19.5 8.25 12l7.5-7.5'/></svg>
+                            </button>
+                            <span class='inline-flex items-center px-3 py-1.5 text-sm text-secondary-600 dark:text-secondary-300'>${p.current_page} / ${p.last_page}</span>
+                            <button type='button' class='soft-scrollbar inline-flex items-center justify-center gap-x-1 rounded-md border border-secondary-200 bg-white text-sm text-secondary-600 ring-secondary-200 outline-hidden transition-colors duration-100 ease-linear hover:bg-secondary-100 focus:ring-2 dark:border-secondary-500 dark:bg-secondary-600 dark:text-secondary-200 dark:ring-secondary-400 dark:hover:bg-secondary-500 dark:focus:ring-offset-secondary-800 disabled:cursor-not-allowed disabled:opacity-50 px-2.5 py-1.5' ${p.current_page >= p.last_page ? 'disabled' : ''} data-action='next-groups-page' data-page='${p.current_page + 1}'>
+                                <svg class='h-4 w-4' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' d='m8.25 4.5 7.5 7.5-7.5 7.5'/></svg>
+                            </button>
+                        </nav>
+                    </div>
+                </td>`;
+            }
+
+            return '';
+        },
+        /**
+         * Renders all cells for a data row in the grouped view.
+         * This is needed because we can't use nested x-for templates inside <tr>.
+         */
+        renderGroupedDataCells(record) {
+            let html = '';
+            for (const col of this.enabledCols) {
+                const isSticky = this.stickyCols.includes(col);
+                const stickyClass = isSticky
+                    ? 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50'
+                    : '';
+                const stickyStyle = isSticky ? 'z-index: 2' : '';
+                const cellContent = this.formatter(col, record);
+                const leftContent =
+                    this.leftAppend[col] ?
+                        this.formatter(this.leftAppend[col], record)
+                    :   '';
+                const rightContent =
+                    this.rightAppend[col] ?
+                        this.formatter(this.rightAppend[col], record)
+                    :   '';
+                const topContent =
+                    this.topAppend[col] ?
+                        this.formatter(this.topAppend[col], record)
+                    :   '';
+                const bottomContent =
+                    this.bottomAppend[col] ?
+                        this.formatter(this.bottomAppend[col], record)
+                    :   '';
+
+                html += `<td class="align-top border-b border-slate-200 dark:border-slate-600 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis px-3 py-4 text-sm cursor-pointer ${stickyClass}" style="${stickyStyle}">`;
+                html += '<div class="flex flex-wrap gap-1.5">';
+
+                if (leftContent) {
+                    html += `<div class="flex flex-wrap gap-1">${leftContent}</div>`;
+                }
+
+                html += '<div class="grow">';
+                if (topContent) {
+                    html += `<div class="flex flex-wrap gap-1">${topContent}</div>`;
+                }
+                html += `<div class="flex flex-wrap gap-1">${cellContent}</div>`;
+                if (bottomContent) {
+                    html += `<div class="flex flex-wrap gap-1">${bottomContent}</div>`;
+                }
+                html += '</div>';
+
+                if (rightContent) {
+                    html += `<div class="flex flex-wrap gap-1">${rightContent}</div>`;
+                }
+
+                html += '</div></td>';
+            }
+            return html;
+        },
+        toggleGroup(groupKey) {
+            $wire.toggleGroup(groupKey);
+        },
+        isGroupExpanded(groupKey) {
+            return this.expandedGroups.includes(groupKey);
+        },
+        setGroupPage(groupKey, page) {
+            $wire.setGroupPage(groupKey, page);
+        },
+        setGroupsPage(page) {
+            $wire.setGroupsPage(page);
+        },
+        getGroupsPagination() {
+            return this.data?.groups_pagination ?? null;
         },
         filterSelectType: 'text',
         loadSidebar(newFilter = null) {

@@ -44,6 +44,7 @@ trait SupportsCache
             'page' => $this->page,
             'search' => $this->search,
             'selected' => $this->selected,
+            'groupBy' => $this->groupBy,
         ];
 
         if (config('tall-datatables.should_cache')) {

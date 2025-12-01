@@ -193,6 +193,15 @@
 
                 <button
                     wire:loading.attr="disabled"
+                    x-on:click.prevent="tab = 'grouping';"
+                    x-bind:class="{ 'border-indigo-500! text-indigo-600': tab === 'grouping' }"
+                    class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
+                >
+                    {{ __('Group') }}
+                </button>
+
+                <button
+                    wire:loading.attr="disabled"
                     x-on:click.prevent="sortCols = enabledCols; tab = 'columns';"
                     x-bind:class="{ 'border-indigo-500! text-indigo-600': tab === 'columns' }"
                     class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
@@ -763,6 +772,59 @@
             </div>
         @endif
 
+        <div x-cloak x-show="tab === 'grouping'" x-data="{ searchGroupable: null }">
+            <div class="mb-3 pb-3 border-b border-gray-200 dark:border-secondary-700" x-show="groupBy" x-cloak>
+                <x-label class="mb-2">{{ __('Rows per group') }}</x-label>
+                <x-select.native
+                    x-model="$wire.$parent.groupPerPage"
+                    x-on:change="$wire.$parent.loadData()"
+                >
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </x-select.native>
+            </div>
+            <div class="pb-2">
+                <x-input
+                    type="search"
+                    x-model.debounce.300ms="searchGroupable"
+                    placeholder="{{ __('Search') }}"
+                    class="w-full"
+                />
+            </div>
+            <div class="space-y-2">
+                <div
+                    class="flex items-center justify-between rounded-lg border p-3"
+                    x-bind:class="! groupBy ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-secondary-700'"
+                >
+                    <x-radio
+                        :label="__('No grouping')"
+                        value=""
+                        x-bind:checked="! groupBy"
+                        x-on:change="$wire.$parent.setGroupBy(null)"
+                    />
+                    <x-icon
+                        name="view-columns"
+                        class="h-5 w-5 text-gray-400"
+                        x-bind:class="! groupBy && 'text-primary-500'"
+                    />
+                </div>
+                <template x-for="col in searchable(groupable, searchGroupable)">
+                    <x-radio
+                        x-bind:value="col"
+                        x-bind:checked="groupBy === col"
+                        x-on:change="$wire.$parent.setGroupBy(col)"
+                    >
+                        <x-slot:label>
+                            <span x-text="getLabel(col)"></span>
+                        </x-slot:label>
+                    </x-radio>
+                </template>
+            </div>
+        </div>
+
         <div x-cloak x-show="tab === 'columns'">
             <div
                 x-data="{
@@ -787,13 +849,14 @@
                             x-bind:data-column="col"
                             x-cloak
                             x-show="col !== '__placeholder__'"
+                            class="min-w-0"
                         >
                             <label
                                 x-bind:for="col"
-                                class="flex items-center"
+                                class="flex min-w-0 items-center"
                             >
-                                <div class="relative flex items-start">
-                                    <div class="flex h-5 items-center">
+                                <div class="relative flex min-w-0 items-start">
+                                    <div class="flex h-5 min-w-0 items-center">
                                         <x-checkbox
                                             sm
                                             x-bind:id="col"
@@ -803,6 +866,7 @@
                                         >
                                             <x-slot:label>
                                                 <span
+                                                    class="block truncate"
                                                     x-text="getLabel(col)"
                                                 />
                                             </x-slot>
@@ -856,8 +920,8 @@
                         </template>
                     </div>
                     <hr class="pb-2.5" />
-                    <div class="grid grid-cols-2 gap-1.5">
-                        <div>
+                    <div class="grid grid-cols-2 gap-1.5 overflow-hidden">
+                        <div class="min-w-0 overflow-hidden">
                             <div class="pb-2">
                                 <x-input
                                     type="search"
@@ -869,7 +933,7 @@
                             <template
                                 x-for="col in searchable($wire.$parent.selectedCols, searchColumns)"
                             >
-                                <div class="flex gap-1.5">
+                                <label class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden">
                                     <x-checkbox
                                         sm
                                         x-bind:checked="$wire.$parent.enabledCols.includes(col.attribute)"
@@ -878,18 +942,15 @@
                                         x-bind:value="col.attribute"
                                         x-on:change="loadFilterable; addCol(col.attribute);"
                                         x-model="enabledCols"
-                                    >
-                                        <x-slot:label>
-                                            <span
-                                                class="overflow-hidden text-ellipsis whitespace-nowrap"
-                                                x-text="col.label"
-                                            ></span>
-                                        </x-slot>
-                                    </x-checkbox>
-                                </div>
+                                    />
+                                    <span
+                                        class="truncate text-sm text-gray-700 dark:text-gray-300"
+                                        x-text="col.label"
+                                    ></span>
+                                </label>
                             </template>
                         </div>
-                        <div>
+                        <div class="min-w-0 overflow-hidden">
                             <div class="pb-2">
                                 <x-input
                                     type="search"
@@ -902,7 +963,7 @@
                                 x-for="relation in searchable($wire.$parent.selectedRelations, searchRelations)"
                             >
                                 <div
-                                    class="flex cursor-pointer items-center gap-1.5"
+                                    class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden"
                                     x-on:click="
                                         searchRelations = null
                                         searchColumns = null
@@ -910,12 +971,12 @@
                                     "
                                 >
                                     <span
-                                        class="overflow-hidden text-ellipsis whitespace-nowrap"
+                                        class="truncate text-sm text-gray-700 dark:text-gray-300"
                                         x-text="relation.label"
                                     ></span>
                                     <x-icon
                                         name="chevron-right"
-                                        class="h-4 w-4"
+                                        class="h-4 w-4 shrink-0"
                                     />
                                 </div>
                             </template>

@@ -29,14 +29,15 @@ use TeamNiftyGmbH\DataTable\Traits\DataTables\StoresSettings;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsAggregation;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsCache;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsExporting;
+use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsGrouping;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsRelations;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSelecting;
 use function Livewire\store;
 
 class DataTable extends Component
 {
-    use Interactions, StoresSettings, SupportsAggregation, SupportsCache, SupportsExporting, SupportsRelations,
-        SupportsSelecting;
+    use Interactions, StoresSettings, SupportsAggregation, SupportsCache, SupportsExporting, SupportsGrouping,
+        SupportsRelations, SupportsSelecting;
 
     public array $appends = [];
 
@@ -276,6 +277,7 @@ class DataTable extends Component
             'colLabels' => $this->getColLabels(),
             'selectable' => $this->isSelectable,
             'aggregatable' => $this->getAggregatable(),
+            'groupable' => $this->getGroupableCols(),
             'formatters' => $this->getFormatters(),
             'leftAppend' => $this->getLeftAppends(),
             'rightAppend' => $this->getRightAppends(),
@@ -283,6 +285,29 @@ class DataTable extends Component
             'bottomAppend' => $this->getBottomAppends(),
             'searchRoute' => $this->getSearchRoute(),
             'operatorLabels' => $this->getOperatorLabels(),
+            'groupLabels' => $this->getGroupLabels(),
+        ];
+    }
+
+    #[Renderless]
+    public function getGroupLabels(): array
+    {
+        // Format: "singular|plural" for JavaScript transChoice function
+        $entryTranslation = __('entry');
+        $entriesTranslation = __('entries');
+
+        return [
+            'entries' => $entryTranslation . '|' . $entriesTranslation,
+            'showing' => __('Showing'),
+            'to' => __('to'),
+            'of' => __('of'),
+            'groups' => __('Groups'),
+            'noGrouping' => __('No grouping'),
+            'empty' => __('(empty)'),
+            'sum' => __('Sum'),
+            'avg' => __('Avg'),
+            'min' => __('Min'),
+            'max' => __('Max'),
         ];
     }
 
@@ -350,6 +375,23 @@ class DataTable extends Component
 
         $query = $this->buildSearch();
         $baseQuery = $query->clone();
+
+        if ($this->isGrouped()) {
+            $groupedData = $this->loadGroupedData($query);
+
+            $this->setData([
+                'groups' => $groupedData['groups'],
+                'groups_pagination' => $groupedData['groups_pagination'],
+                'data' => [],
+                'total' => array_sum(array_column($groupedData['groups'], 'count')),
+            ]);
+
+            if ($aggregates = $this->getAggregate($baseQuery)) {
+                $this->data['aggregates'] = ! $this->search ? $aggregates : [];
+            }
+
+            return;
+        }
 
         $result = $this->getResultFromQuery($query);
 

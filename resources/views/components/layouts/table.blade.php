@@ -214,7 +214,7 @@
         </x-slot>
     @endif
 
-    <template x-if="! getData().length && initialized">
+    <template x-if="! getData().length && ! isGrouped() && initialized">
         <tr>
             <td colspan="100%" class="h-24 w-24 p-8">
                 <div class="w-full flex-col items-center dark:text-gray-50">
@@ -230,14 +230,50 @@
             </td>
         </tr>
     </template>
+
+    <template x-if="isGrouped() && ! getGroups().length && initialized">
+        <tr>
+            <td colspan="100%" class="h-24 w-24 p-8">
+                <div class="w-full flex-col items-center dark:text-gray-50">
+                    <x-icon
+                        outline
+                        name="face-frown"
+                        class="m-auto h-24 w-24"
+                    />
+                    <div class="text-center">
+                        {{ __('No data found') }}
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </template>
+
     <tr x-show="! initialized">
         <td colspan="100%" class="h-24 w-24 p-8"></td>
     </tr>
+
+    <template x-if="isGrouped()">
+        <x-tall-datatables::layouts.partials.table-groups
+            :is-selectable="$isSelectable"
+            :select-value="$selectValue"
+            :select-attributes="$selectAttributes"
+            :row-attributes="$rowAttributes"
+            :cell-attributes="$cellAttributes"
+            :allow-soft-deletes="$allowSoftDeletes"
+            :use-wire-navigate="$useWireNavigate"
+            :row-actions="$rowActions ?? []"
+            :show-restore-button="$showRestoreButton"
+            :has-sidebar="$hasSidebar"
+        />
+    </template>
+
     <template
         x-for="(record, index) in getData()"
-        :key="{{ $selectValue }}"
+        x-bind:key="{{ $selectValue }}"
     >
         <tr
+            x-show="! isGrouped()"
+            x-cloak
             x-bind:data-id="record.id"
             x-bind:key="record.id"
             x-on:click="$dispatch('data-table-row-clicked', {record: record})"

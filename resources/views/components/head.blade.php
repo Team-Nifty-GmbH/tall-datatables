@@ -56,6 +56,7 @@
     x-show="
         filters.length > 0 ||
             orderByCol ||
+            groupBy ||
             Object.keys($wire.sessionFilter).length !== 0
     "
 >
@@ -145,13 +146,29 @@
         <x-badge light flat color="amber">
             <x-slot:text>
                 <span>{{ __('Order by') }}</span>
+                &nbsp;
                 <span x-text="getLabel(orderByCol)"></span>
+                &nbsp;
                 <span
                     x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"
                 ></span>
             </x-slot>
             <x-slot name="right" class="relative flex h-2 w-2 items-center">
                 <button type="button" x-on:click="$wire.sortTable('')">
+                    <x-icon name="x-mark" class="h-4 w-4" />
+                </button>
+            </x-slot>
+        </x-badge>
+    </div>
+    <div x-cloak x-show="groupBy">
+        <x-badge light flat color="cyan">
+            <x-slot:text>
+                <span>{{ __('Grouped by') }}</span>
+                &nbsp;
+                <span x-text="getLabel(groupBy)"></span>
+            </x-slot>
+            <x-slot name="right" class="relative flex h-2 w-2 items-center">
+                <button type="button" x-on:click="$wire.setGroupBy(null)">
                     <x-icon name="x-mark" class="h-4 w-4" />
                 </button>
             </x-slot>

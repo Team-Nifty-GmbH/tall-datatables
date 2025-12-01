@@ -1,7 +1,7 @@
 # A package to create datatables using alpinejs, tailwind, livewire and laravel
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/team-nifty-gmbh/tall-datatables.svg?style=flat-square)](https://packagist.org/packages/team-nifty-gmbh/tall-datatables)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/team-nifty-gmbh/tall-datatables/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/team-nifty-gmbh/tall-datatables/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/Team-Nifty-GmbH/tall-datatables/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/Team-Nifty-GmbH/tall-datatables/actions?query=workflow%3ATests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/team-nifty-gmbh/tall-datatables/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/team-nifty-gmbh/tall-datatables/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/team-nifty-gmbh/tall-datatables.svg?style=flat-square)](https://packagist.org/packages/team-nifty-gmbh/tall-datatables)
 

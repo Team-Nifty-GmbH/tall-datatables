@@ -96,6 +96,41 @@ describe('DataTable Browser Data Loading', function (): void {
             ->assertSee('Post Title 1')
             ->assertSee('Post Title 2');
     });
+
+    it('renders each column in separate td cells', function (): void {
+        $page = visitLivewire(PostDataTable::class);
+
+        $page->wait(2);
+
+        // Check that the table has multiple td cells per row (not all in one)
+        // Each data row should have multiple td elements
+        $result = $page->script('() => {
+            const rows = document.querySelectorAll("tbody tr");
+            // Find data rows by looking for rows that have data-id attribute set by Alpine
+            let maxCellCount = 0;
+            let dataRowCount = 0;
+            let debugInfo = [];
+            for (const row of rows) {
+                const cells = row.querySelectorAll("td");
+                debugInfo.push({ rowCells: cells.length, hasDataId: row.hasAttribute("data-id") });
+                // Skip rows with no cells or only 1 cell (likely header/placeholder)
+                if (cells.length > 1) {
+                    dataRowCount++;
+                    if (cells.length > maxCellCount) {
+                        maxCellCount = cells.length;
+                    }
+                }
+            }
+            return { rowCount: dataRowCount, cellCount: maxCellCount, debug: debugInfo, totalRows: rows.length };
+        }');
+
+        $data = is_array($result) && isset($result[0]) ? $result[0] : $result;
+
+        expect($data['rowCount'])->toBeGreaterThan(0);
+        // Should have at least 3 cells per row to confirm columns are separate
+        // (not all jammed into one td)
+        expect($data['cellCount'])->toBeGreaterThanOrEqual(3);
+    });
 });
 
 describe('DataTable Browser Formatters', function (): void {
@@ -321,5 +356,171 @@ describe('DataTable Browser Performance', function (): void {
         $page = visitLivewire(PostDataTable::class);
 
         $page->assertNoJavascriptErrors();
+    });
+});
+
+describe('DataTable Browser Grouping', function (): void {
+    it('renders grouped view with correct column structure', function (): void {
+        $page = visitLivewire(PostDataTable::class);
+
+        $page->wait(2);
+
+        // Enable grouping by is_published
+        $page->script('() => {
+            const xDataEl = document.querySelector("[x-data]");
+            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
+                xDataEl._x_dataStack[0].$wire.setGroupBy("is_published");
+            }
+        }');
+
+        $page->wait(2);
+
+        // Expand the first group by calling toggleGroup directly via Livewire
+        $page->script('() => {
+            const xDataEl = document.querySelector("[x-data]");
+            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
+                // Get the first group key
+                const groups = xDataEl._x_dataStack[0].getGroups();
+                if (groups && groups.length > 0) {
+                    xDataEl._x_dataStack[0].$wire.toggleGroup(groups[0].key);
+                }
+            }
+        }');
+
+        $page->wait(2);
+
+        // Get HTML structure of grouped table
+        $result = $page->script('() => {
+            const table = document.querySelector("table");
+            const tbody = table ? table.querySelector("tbody") : null;
+
+            let rowsInfo = [];
+            if (tbody) {
+                const rows = tbody.querySelectorAll("tr");
+
+                for (const row of rows) {
+                    const cells = row.querySelectorAll("td");
+                    const computedDisplay = window.getComputedStyle(row).display;
+                    const rowType = row.getAttribute("data-row-type");
+
+                    rowsInfo.push({
+                        cellCount: cells.length,
+                        isVisible: computedDisplay !== "none",
+                        rowType: rowType,
+                    });
+                }
+            }
+
+            return { rows: rowsInfo };
+        }');
+
+        // The actual assertion: grouped rows should have multiple cells
+        $data = is_array($result) && isset($result[0]) ? $result[0] : $result;
+
+        // Should have at least one visible data row with multiple cells
+        $foundDataRow = false;
+        foreach ($data['rows'] as $row) {
+            // Look for visible data rows with more than 3 cells
+            if ($row['isVisible'] && $row['rowType'] === 'data' && $row['cellCount'] > 3) {
+                $foundDataRow = true;
+                // Should have at least 5 cells (the columns plus checkbox/sidebar)
+                expect($row['cellCount'])->toBeGreaterThanOrEqual(5);
+            }
+        }
+
+        expect($foundDataRow)->toBeTrue('Expected to find at least one data row with multiple cells');
+    });
+
+    it('shows groups pagination when there are many groups', function (): void {
+        $page = visitLivewire(PostDataTable::class);
+
+        $page->wait(2);
+
+        // Enable grouping by is_published
+        $page->script('() => {
+            const xDataEl = document.querySelector("[x-data]");
+            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
+                xDataEl._x_dataStack[0].$wire.setGroupBy("is_published");
+            }
+        }');
+
+        $page->wait(2);
+
+        // Check if getGroupsPagination() returns data
+        $result = $page->script('() => {
+            const xDataEl = document.querySelector("[x-data]");
+            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
+                const pagination = xDataEl._x_dataStack[0].getGroupsPagination();
+                const data = xDataEl._x_dataStack[0].data;
+                return {
+                    pagination: pagination,
+                    dataKeys: Object.keys(data),
+                    hasGroupsPagination: data.hasOwnProperty("groups_pagination"),
+                    rawGroupsPagination: data.groups_pagination
+                };
+            }
+            return null;
+        }');
+
+        $data = is_array($result) && isset($result[0]) ? $result[0] : $result;
+
+        // Groups pagination should exist in the data
+        expect($data['hasGroupsPagination'])->toBeTrue();
+        expect($data['pagination'])->not->toBeNull();
+        expect($data['pagination'])->toHaveKey('current_page');
+        expect($data['pagination'])->toHaveKey('last_page');
+        expect($data['pagination'])->toHaveKey('total');
+
+        // With only 2 groups (true/false), we should have 1 page
+        // The pagination UI only shows when last_page > 1
+        expect($data['pagination']['total'])->toBe(2);
+        expect($data['pagination']['last_page'])->toBe(1);
+    });
+
+    it('shows aggregates in group header when aggregation is enabled', function (): void {
+        $page = visitLivewire(PostDataTable::class);
+
+        $page->wait(2);
+
+        // Set aggregation for price column
+        $page->script('() => {
+            const xDataEl = document.querySelector("[x-data]");
+            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
+                xDataEl._x_dataStack[0].aggregatableCols = { sum: ["price"] };
+                xDataEl._x_dataStack[0].$wire.applyAggregations();
+            }
+        }');
+
+        $page->wait(2);
+
+        // Enable grouping by is_published
+        $page->script('() => {
+            const xDataEl = document.querySelector("[x-data]");
+            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
+                xDataEl._x_dataStack[0].$wire.setGroupBy("is_published");
+            }
+        }');
+
+        $page->wait(2);
+
+        // Check that groups have aggregates in their data (shown in header)
+        $result = $page->script('() => {
+            const xDataEl = document.querySelector("[x-data]");
+            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
+                const groups = xDataEl._x_dataStack[0].getGroups();
+                return {
+                    groupsCount: groups.length,
+                    firstGroupHasAggregates: groups.length > 0 && groups[0].aggregates && Object.keys(groups[0].aggregates).length > 0,
+                    firstGroupAggregateTypes: groups.length > 0 && groups[0].aggregates ? Object.keys(groups[0].aggregates) : []
+                };
+            }
+            return null;
+        }');
+
+        $data = is_array($result) && isset($result[0]) ? $result[0] : $result;
+
+        // Groups should have aggregates even without expanding (shown in header)
+        expect($data['firstGroupHasAggregates'])->toBeTrue();
+        expect($data['firstGroupAggregateTypes'])->toContain('sum');
     });
 });

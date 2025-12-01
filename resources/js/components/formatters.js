@@ -39,7 +39,7 @@ export default function formatters() {
         },
         format({ value, type, options, context }) {
             if (value === null) {
-                return value;
+                return '';
             }
 
             if (Array.isArray(value)) {
@@ -64,7 +64,7 @@ export default function formatters() {
         },
         money(value, currency = null, context) {
             if (value === null) {
-                return value;
+                return '';
             }
 
             const documentCurrencyCode = document
@@ -329,7 +329,7 @@ export default function formatters() {
         },
         string(value) {
             if (value === null) {
-                return value;
+                return '';
             }
 
             if (this.label) {
