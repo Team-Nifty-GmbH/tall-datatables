@@ -61,7 +61,7 @@ jobs:
 
       - name: Upload browser test artifacts
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: browser-test-artifacts-php-${{ matrix.php }}
           path: |
