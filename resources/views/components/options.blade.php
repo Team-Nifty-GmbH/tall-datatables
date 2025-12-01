@@ -391,14 +391,28 @@
                                                                 amber
                                                             >
                                                                 <x-slot:text>
-                                                                    <span>
-                                                                        {{ __('Order by') }}
-                                                                    </span>
+                                                                    <span>{{ __('Order by') }}</span>
+                                                                    &nbsp;
                                                                     <span
                                                                         x-text="filter.settings.orderBy"
                                                                     ></span>
+                                                                    &nbsp;
                                                                     <span
                                                                         x-text="filter.settings.orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"
+                                                                    ></span>
+                                                                </x-slot>
+                                                            </x-badge>
+                                                            <x-badge
+                                                                x-cloak
+                                                                x-show="filter.settings.groupBy"
+                                                                flat
+                                                                cyan
+                                                            >
+                                                                <x-slot:text>
+                                                                    <span>{{ __('Grouped by') }}</span>
+                                                                    &nbsp;
+                                                                    <span
+                                                                        x-text="filter.settings.groupBy"
                                                                     ></span>
                                                                 </x-slot>
                                                             </x-badge>
@@ -611,7 +625,7 @@
                 <div
                     class="flex flex-col items-center justify-center space-y-4"
                     x-cloak
-                    x-show="filters.length > 0 || orderByCol"
+                    x-show="filters.length > 0 || orderByCol || groupBy"
                 >
                     <template x-for="(orFilters, orIndex) in filters">
                         <div class="flex flex-col items-center justify-center">
@@ -684,7 +698,9 @@
                         <x-badge flat color="amber">
                             <x-slot:text>
                                 <span>{{ __('Order by') }}</span>
+                                &nbsp;
                                 <span x-text="getLabel(orderByCol)"></span>
+                                &nbsp;
                                 <span
                                     x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"
                                 ></span>
@@ -696,6 +712,26 @@
                                 <button
                                     type="button"
                                     x-on:click="$wire.$parent.sortTable('')"
+                                >
+                                    <x-icon name="x-mark" class="h-4 w-4" />
+                                </button>
+                            </x-slot>
+                        </x-badge>
+                    </div>
+                    <div x-cloak x-show="groupBy">
+                        <x-badge flat color="cyan">
+                            <x-slot:text>
+                                <span>{{ __('Grouped by') }}</span>
+                                &nbsp;
+                                <span x-text="getLabel(groupBy)"></span>
+                            </x-slot>
+                            <x-slot
+                                name="right"
+                                class="relative flex h-2 w-2 items-center"
+                            >
+                                <button
+                                    type="button"
+                                    x-on:click="$wire.$parent.setGroupBy(null)"
                                 >
                                     <x-icon name="x-mark" class="h-4 w-4" />
                                 </button>
