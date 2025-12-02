@@ -290,6 +290,23 @@ class DataTable extends Component
     }
 
     #[Renderless]
+    public function getFormatters(): array
+    {
+        $formatters = [];
+        foreach ($this->getIncludedRelations() as $loadedRelation) {
+            $relationFormatters = method_exists($loadedRelation['model'], 'typeScriptAttributes')
+                ? $loadedRelation['model']::typeScriptAttributes()
+                : app($loadedRelation['model'])->getCasts();
+
+            foreach ($loadedRelation['loaded_columns'] as $loadedColumn) {
+                $formatters[$loadedColumn['loaded_as']] = $relationFormatters[$loadedColumn['column']] ?? null;
+            }
+        }
+
+        return array_filter(array_merge($formatters, $this->formatters));
+    }
+
+    #[Renderless]
     public function getGroupLabels(): array
     {
         // Format: "singular|plural" for JavaScript transChoice function
@@ -309,23 +326,6 @@ class DataTable extends Component
             'min' => __('Min'),
             'max' => __('Max'),
         ];
-    }
-
-    #[Renderless]
-    public function getFormatters(): array
-    {
-        $formatters = [];
-        foreach ($this->getIncludedRelations() as $loadedRelation) {
-            $relationFormatters = method_exists($loadedRelation['model'], 'typeScriptAttributes')
-                ? $loadedRelation['model']::typeScriptAttributes()
-                : app($loadedRelation['model'])->getCasts();
-
-            foreach ($loadedRelation['loaded_columns'] as $loadedColumn) {
-                $formatters[$loadedColumn['loaded_as']] = $relationFormatters[$loadedColumn['column']] ?? null;
-            }
-        }
-
-        return array_filter(array_merge($formatters, $this->formatters));
     }
 
     #[Renderless]

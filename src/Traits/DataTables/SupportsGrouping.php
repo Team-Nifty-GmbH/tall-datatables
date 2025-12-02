@@ -8,6 +8,8 @@ use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 
 trait SupportsGrouping
 {
+    public int $currentGroupsPage = 1;
+
     public array $expandedGroups = [];
 
     public ?string $groupBy = null;
@@ -17,8 +19,6 @@ trait SupportsGrouping
     public int $groupPerPage = 5;
 
     public int $groupsPerPage = 25;
-
-    public int $currentGroupsPage = 1;
 
     #[Renderless]
     public function getGroupableCols(): array
@@ -45,16 +45,16 @@ trait SupportsGrouping
     }
 
     #[Renderless]
-    public function setGroupsPage(int $page): void
+    public function setGroupPage(string $groupKey, int $page): void
     {
-        $this->currentGroupsPage = $page;
+        $this->groupPages[$groupKey] = $page;
         $this->loadData();
     }
 
     #[Renderless]
-    public function setGroupPage(string $groupKey, int $page): void
+    public function setGroupsPage(int $page): void
     {
-        $this->groupPages[$groupKey] = $page;
+        $this->currentGroupsPage = $page;
         $this->loadData();
     }
 
