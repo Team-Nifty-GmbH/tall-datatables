@@ -583,11 +583,16 @@ export default function data_table($wire) {
             });
         },
         getLabel(col) {
+            if (!col) {
+                return '';
+            }
+
             return (
-                this.colLabels[col] ||
-                col.label ||
-                this.relationColLabels[col] ||
-                this.operatorLabels[col] ||
+                this.colLabels?.[col] ||
+                this.groupLabels?.[col] ||
+                col?.label ||
+                this.relationColLabels?.[col] ||
+                this.operatorLabels?.[col] ||
                 col
             );
         },
