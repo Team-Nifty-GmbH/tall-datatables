@@ -180,6 +180,15 @@
                     </button>
                 @endif
 
+                <button
+                    wire:loading.attr="disabled"
+                    x-on:click.prevent="sortCols = enabledCols; tab = 'columns';"
+                    x-bind:class="{ 'border-indigo-500! text-indigo-600': tab === 'columns' }"
+                    class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
+                >
+                    {{ __('Columns') }}
+                </button>
+
                 @if ($this->aggregatable)
                     <button
                         wire:loading.attr="disabled"
@@ -198,15 +207,6 @@
                     class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
                 >
                     {{ __('Group') }}
-                </button>
-
-                <button
-                    wire:loading.attr="disabled"
-                    x-on:click.prevent="sortCols = enabledCols; tab = 'columns';"
-                    x-bind:class="{ 'border-indigo-500! text-indigo-600': tab === 'columns' }"
-                    class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
-                >
-                    {{ __('Columns') }}
                 </button>
                 @if ($this->isExportable)
                     <button
@@ -760,107 +760,6 @@
             </div>
         @endif
 
-        @if ($this->aggregatable)
-            <div x-cloak x-show="tab === 'summarize'">
-                <div class="pb-2">
-                    <x-input
-                        type="search"
-                        x-model.debounce.300ms="searchAggregatable"
-                        placeholder="{{ __('Search') }}"
-                        class="w-full"
-                    />
-                </div>
-                <div class="grid grid-cols-1 gap-3">
-                    <template
-                        x-for="col in searchable(aggregatable, searchAggregatable)"
-                    >
-                        <div>
-                            <x-label>
-                                <span x-text="getLabel(col)"></span>
-                            </x-label>
-                            <x-checkbox
-                                sm
-                                :label="__('Sum')"
-                                x-bind:value="col"
-                                x-model="aggregatableCols.sum"
-                            />
-                            <x-checkbox
-                                sm
-                                :label="__('Average')"
-                                x-bind:value="col"
-                                x-model="aggregatableCols.avg"
-                            />
-                            <x-checkbox
-                                sm
-                                :label="__('Minimum')"
-                                x-bind:value="col"
-                                x-model="aggregatableCols.min"
-                            />
-                            <x-checkbox
-                                sm
-                                :label="__('Maximum')"
-                                x-bind:value="col"
-                                x-model="aggregatableCols.max"
-                            />
-                        </div>
-                    </template>
-                </div>
-            </div>
-        @endif
-
-        <div x-cloak x-show="tab === 'grouping'" x-data="{ searchGroupable: null }">
-            <div class="mb-3 pb-3 border-b border-gray-200 dark:border-secondary-700" x-show="groupBy" x-cloak>
-                <x-label class="mb-2">{{ __('Rows per group') }}</x-label>
-                <x-select.native
-                    x-model="$wire.$parent.groupPerPage"
-                    x-on:change="$wire.$parent.loadData()"
-                >
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="15">15</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                </x-select.native>
-            </div>
-            <div class="pb-2">
-                <x-input
-                    type="search"
-                    x-model.debounce.300ms="searchGroupable"
-                    placeholder="{{ __('Search') }}"
-                    class="w-full"
-                />
-            </div>
-            <div class="space-y-2">
-                <div
-                    class="flex items-center justify-between rounded-lg border p-3"
-                    x-bind:class="! groupBy ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-secondary-700'"
-                >
-                    <x-radio
-                        :label="__('No grouping')"
-                        value=""
-                        x-bind:checked="! groupBy"
-                        x-on:change="$wire.$parent.setGroupBy(null)"
-                    />
-                    <x-icon
-                        name="view-columns"
-                        class="h-5 w-5 text-gray-400"
-                        x-bind:class="! groupBy && 'text-primary-500'"
-                    />
-                </div>
-                <template x-for="col in searchable(groupable, searchGroupable)">
-                    <x-radio
-                        x-bind:value="col"
-                        x-bind:checked="groupBy === col"
-                        x-on:change="$wire.$parent.setGroupBy(col)"
-                    >
-                        <x-slot:label>
-                            <span x-text="getLabel(col)"></span>
-                        </x-slot:label>
-                    </x-radio>
-                </template>
-            </div>
-        </div>
-
         <div x-cloak x-show="tab === 'columns'">
             <div
                 x-data="{
@@ -1021,6 +920,108 @@
                 </div>
             </div>
         </div>
+
+        @if ($this->aggregatable)
+            <div x-cloak x-show="tab === 'summarize'">
+                <div class="pb-2">
+                    <x-input
+                        type="search"
+                        x-model.debounce.300ms="searchAggregatable"
+                        placeholder="{{ __('Search') }}"
+                        class="w-full"
+                    />
+                </div>
+                <div class="grid grid-cols-1 gap-3">
+                    <template
+                        x-for="col in searchable(aggregatable, searchAggregatable)"
+                    >
+                        <div>
+                            <x-label>
+                                <span x-text="getLabel(col)"></span>
+                            </x-label>
+                            <x-checkbox
+                                sm
+                                :label="__('Sum')"
+                                x-bind:value="col"
+                                x-model="aggregatableCols.sum"
+                            />
+                            <x-checkbox
+                                sm
+                                :label="__('Average')"
+                                x-bind:value="col"
+                                x-model="aggregatableCols.avg"
+                            />
+                            <x-checkbox
+                                sm
+                                :label="__('Minimum')"
+                                x-bind:value="col"
+                                x-model="aggregatableCols.min"
+                            />
+                            <x-checkbox
+                                sm
+                                :label="__('Maximum')"
+                                x-bind:value="col"
+                                x-model="aggregatableCols.max"
+                            />
+                        </div>
+                    </template>
+                </div>
+            </div>
+        @endif
+
+        <div x-cloak x-show="tab === 'grouping'" x-data="{ searchGroupable: null }">
+            <div class="mb-3 pb-3 border-b border-gray-200 dark:border-secondary-700" x-show="groupBy" x-cloak>
+                <x-label class="mb-2">{{ __('Rows per group') }}</x-label>
+                <x-select.native
+                    x-model="$wire.$parent.groupPerPage"
+                    x-on:change="$wire.$parent.loadData()"
+                >
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </x-select.native>
+            </div>
+            <div class="pb-2">
+                <x-input
+                    type="search"
+                    x-model.debounce.300ms="searchGroupable"
+                    placeholder="{{ __('Search') }}"
+                    class="w-full"
+                />
+            </div>
+            <div class="space-y-2">
+                <div
+                    class="flex items-center justify-between rounded-lg border p-3"
+                    x-bind:class="! groupBy ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-secondary-700'"
+                >
+                    <x-radio
+                        :label="__('No grouping')"
+                        value=""
+                        x-bind:checked="! groupBy"
+                        x-on:change="$wire.$parent.setGroupBy(null)"
+                    />
+                    <x-icon
+                        name="view-columns"
+                        class="h-5 w-5 text-gray-400"
+                        x-bind:class="! groupBy && 'text-primary-500'"
+                    />
+                </div>
+                <template x-for="col in searchable(groupable, searchGroupable)">
+                    <x-radio
+                        x-bind:value="col"
+                        x-bind:checked="groupBy === col"
+                        x-on:change="$wire.$parent.setGroupBy(col)"
+                    >
+                        <x-slot:label>
+                            <span x-text="getLabel(col)"></span>
+                        </x-slot:label>
+                    </x-radio>
+                </template>
+            </div>
+        </div>
+
         @if ($this->isExportable)
             <div x-cloak x-show="tab === 'export'">
                 <template x-for="columnName in exportableColumns">
