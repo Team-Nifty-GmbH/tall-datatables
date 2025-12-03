@@ -305,7 +305,6 @@
                     :use-wire-navigate="$useWireNavigate"
                     x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50'"
                     x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
-                    class="cursor-pointer"
                     x-bind:href="record.deleted_at ? false : (record?.href ?? false)"
                 >
                     <div class="flex flex-wrap gap-1.5">

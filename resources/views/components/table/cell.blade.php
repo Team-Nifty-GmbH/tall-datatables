@@ -2,18 +2,36 @@
     'useWireNavigate' => false,
     'href' => null,
 ])
+@php
+    $hasStaticHref = $href !== null;
+    $hasDynamicHref = $attributes->has('x-bind:href');
+    $dynamicHrefExpr = $hasDynamicHref ? $attributes->get('x-bind:href') : 'false';
+@endphp
 <td
-    {{ $attributes->only(['class', 'x-bind:class', 'x-bind:style'])->merge(['class' => 'align-top border-b border-slate-200 dark:border-slate-600 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis px-3 py-4 text-sm']) }}
+    {{ $attributes->only(['class', 'x-bind:class', 'x-bind:style'])->merge(['class' => 'border-b border-slate-200 dark:border-slate-600 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis text-sm p-0']) }}
 >
-    @if($attributes->get('x-bind:href') || $href)
+    @if($hasStaticHref)
         <a
             @if($useWireNavigate) x-on:click.prevent="$el.href && Livewire.navigate($el.href)" @endif
-            {{ $attributes->only(['x-bind:href', 'href']) }}
-            class="block"
+            href="{{ $href }}"
+            class="block px-3 py-4"
+        >
+            {{ $slot ?? '' }}
+        </a>
+    @elseif($hasDynamicHref)
+        <a
+            @if($useWireNavigate)
+                x-on:click.prevent="$el.href && Livewire.navigate($el.href)"
+            @endif
+            x-bind:href="{{ $dynamicHrefExpr }} || null"
+            x-bind:class="({{ $dynamicHrefExpr }}) && 'cursor-pointer'"
+            class="block px-3 py-4"
         >
             {{ $slot ?? '' }}
         </a>
     @else
-        {{ $slot ?? '' }}
+        <div class="px-3 py-4">
+            {{ $slot ?? '' }}
+        </div>
     @endif
 </td>

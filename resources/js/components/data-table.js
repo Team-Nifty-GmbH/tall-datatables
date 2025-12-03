@@ -485,6 +485,8 @@ export default function data_table($wire) {
          */
         renderGroupedDataCells(record) {
             let html = '';
+            const hasHref = record.href && !record.deleted_at;
+
             for (const col of this.enabledCols) {
                 const isSticky = this.stickyCols.includes(col);
                 const stickyClass = isSticky
@@ -509,7 +511,14 @@ export default function data_table($wire) {
                         this.formatter(this.bottomAppend[col], record)
                     :   '';
 
-                html += `<td class="align-top border-b border-slate-200 dark:border-slate-600 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis px-3 py-4 text-sm cursor-pointer ${stickyClass}" style="${stickyStyle}">`;
+                // td has p-0, link/div gets the padding
+                html += `<td class="border-b border-slate-200 dark:border-slate-600 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis text-sm p-0 ${stickyClass}" style="${stickyStyle}">`;
+
+                // Wrap content in <a> tag - always present, href only when available
+                const cursorClass = hasHref ? 'cursor-pointer' : '';
+                const hrefAttr = hasHref ? `href="${record.href}"` : '';
+                html += `<a ${hrefAttr} class="block px-3 py-4 ${cursorClass}" wire:navigate>`;
+
                 html += '<div class="flex flex-wrap gap-1.5">';
 
                 if (leftContent) {
@@ -530,7 +539,7 @@ export default function data_table($wire) {
                     html += `<div class="flex flex-wrap gap-1">${rightContent}</div>`;
                 }
 
-                html += '</div></td>';
+                html += '</div></a></td>';
             }
             return html;
         },
