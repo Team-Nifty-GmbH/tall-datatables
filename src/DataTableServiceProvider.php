@@ -96,7 +96,7 @@ class DataTableServiceProvider extends ServiceProvider
                     /** @var Builder $this */
                     $searchResult = $this->options(
                         [
-                            'attributesToHighlight' => $highlight,
+                            'attributesToHighlight' => array_values($highlight),
                             'highlightPreTag' => '<mark>',
                             'highlightPostTag' => '</mark>',
                             'limit' => $perPage,
