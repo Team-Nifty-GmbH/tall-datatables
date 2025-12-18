@@ -41,7 +41,6 @@ trait SupportsCache
             'userOrderBy' => $this->userOrderBy,
             'userOrderAsc' => $this->userOrderAsc,
             'perPage' => $this->perPage,
-            'page' => $this->page,
             'search' => $this->search,
             'selected' => $this->selected,
             'groupBy' => $this->groupBy,

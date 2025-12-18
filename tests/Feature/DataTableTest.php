@@ -819,3 +819,49 @@ describe('Data Attributes', function (): void {
         expect($attributes)->toBeInstanceOf(Illuminate\View\ComponentAttributeBag::class);
     });
 });
+
+describe('Session Cache', function (): void {
+    it('does not cache page in session to prevent stale pagination', function (): void {
+        config(['tall-datatables.should_cache' => true]);
+
+        for ($i = 0; $i < 30; $i++) {
+            createTestPost(['user_id' => $this->user->getKey()]);
+        }
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('perPage', 10)
+            ->call('loadData')
+            ->call('gotoPage', 3);
+
+        expect($component->get('page'))->toBe(3);
+
+        $cacheKey = config('tall-datatables.cache_key') . '.filter:' . $component->instance()->getCacheKey();
+        $cached = session()->get($cacheKey);
+
+        expect($cached)->toBeArray();
+        expect($cached)->not->toHaveKey('page');
+        expect($cached)->toHaveKey('perPage');
+        expect($cached)->toHaveKey('search');
+        expect($cached)->toHaveKey('userFilters');
+    });
+
+    it('caches other filter properties in session', function (): void {
+        config(['tall-datatables.should_cache' => true]);
+
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('perPage', 25)
+            ->set('search', 'test search')
+            ->call('loadData')
+            ->call('sortTable', 'title');
+
+        $cacheKey = config('tall-datatables.cache_key') . '.filter:' . $component->instance()->getCacheKey();
+        $cached = session()->get($cacheKey);
+
+        expect($cached)->toBeArray();
+        expect($cached['perPage'])->toBe(25);
+        expect($cached['search'])->toBe('test search');
+        expect($cached['userOrderBy'])->toBe('title');
+    });
+});
