@@ -1,28 +1,33 @@
 <?php
 
-namespace TeamNiftyGmbH\DataTable\Helpers;
+namespace TeamNiftyGmbH\DataTable\ModelInfo;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation as IlluminateRelation;
 use Illuminate\Support\Collection;
 use ReflectionClass;
 use ReflectionMethod;
-use Spatie\ModelInfo\Relations\Relation;
-use Spatie\ModelInfo\Relations\RelationFinder as BaseRelationFinder;
+use ReflectionNamedType;
+use ReflectionUnionType;
 use Throwable;
 
-class RelationFinder extends BaseRelationFinder
+class RelationFinder
 {
+    /**
+     * @param  class-string<Model>|Model  $model
+     * @return Collection<int, Relation>
+     */
     public static function forModel(string|Model $model): Collection
     {
         if (is_string($model)) {
             $model = app($model);
         }
 
-        return (new static())->relations($model);
+        return (new static)->relations($model);
     }
 
     /**
-     * @return Collection<Relation>
+     * @return Collection<int, Relation>
      */
     public function relations(Model $model): Collection
     {
@@ -43,7 +48,7 @@ class RelationFinder extends BaseRelationFinder
         return collect($class->getMethods())
             ->filter(fn (ReflectionMethod $method) => $this->hasRelationReturnType($method))
             ->map(function (ReflectionMethod $method) use ($model) {
-                /** @var \Illuminate\Database\Eloquent\Relations\BelongsTo $relation */
+                /** @var IlluminateRelation $relation */
                 try {
                     $relation = $method->invoke($model);
                 } catch (Throwable) {
@@ -58,5 +63,26 @@ class RelationFinder extends BaseRelationFinder
             })
             ->merge($relations)
             ->filter();
+    }
+
+    protected function hasRelationReturnType(ReflectionMethod $method): bool
+    {
+        if ($method->getReturnType() instanceof ReflectionNamedType) {
+            $returnType = $method->getReturnType()->getName();
+
+            return is_a($returnType, IlluminateRelation::class, true);
+        }
+
+        if ($method->getReturnType() instanceof ReflectionUnionType) {
+            foreach ($method->getReturnType()->getTypes() as $type) {
+                $returnType = $type->getName();
+
+                if (is_a($returnType, IlluminateRelation::class, true)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
