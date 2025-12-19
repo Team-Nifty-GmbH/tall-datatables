@@ -30,6 +30,15 @@ class ModelInfo implements Arrayable
     ) {}
 
     /**
+     * Clear the cached model info.
+     */
+    public static function clearCache(): void
+    {
+        static::$cachedModelInfos = null;
+        Cache::forget(config('tall-datatables.cache_key') . '.modelInfo');
+    }
+
+    /**
      * Get ModelInfo for all models from the morph map.
      *
      * @return Collection<int, ModelInfo>
@@ -40,19 +49,6 @@ class ModelInfo implements Arrayable
         ?string $baseNamespace = null
     ): Collection {
         return ModelFinder::all($directory, $basePath, $baseNamespace)
-            ->map(function (string $model) {
-                return static::forModel($model);
-            });
-    }
-
-    /**
-     * Get ModelInfo for all models from the morph map.
-     *
-     * @return Collection<int, ModelInfo>
-     */
-    public static function fromMorphMap(): Collection
-    {
-        return ModelFinder::fromMorphMap()
             ->map(function (string $model) {
                 return static::forModel($model);
             });
@@ -128,6 +124,19 @@ class ModelInfo implements Arrayable
         return $modelInfo;
     }
 
+    /**
+     * Get ModelInfo for all models from the morph map.
+     *
+     * @return Collection<int, ModelInfo>
+     */
+    public static function fromMorphMap(): Collection
+    {
+        return ModelFinder::fromMorphMap()
+            ->map(function (string $model) {
+                return static::forModel($model);
+            });
+    }
+
     protected static function getExtraModelInfo(Model $model): mixed
     {
         if (method_exists($model, 'extraModelInfo')) {
@@ -140,15 +149,6 @@ class ModelInfo implements Arrayable
     protected static function getTraits(Model $model): Collection
     {
         return collect(class_uses_recursive($model));
-    }
-
-    public function toArray(): array
-    {
-        $properties = get_object_vars($this);
-        $properties['relations'] = $properties['relations']->toArray();
-        $properties['attributes'] = $properties['attributes']->toArray();
-
-        return $properties;
     }
 
     public function attribute(string $name): ?Attribute
@@ -165,12 +165,12 @@ class ModelInfo implements Arrayable
         );
     }
 
-    /**
-     * Clear the cached model info.
-     */
-    public static function clearCache(): void
+    public function toArray(): array
     {
-        static::$cachedModelInfos = null;
-        Cache::forget(config('tall-datatables.cache_key') . '.modelInfo');
+        $properties = get_object_vars($this);
+        $properties['relations'] = $properties['relations']->toArray();
+        $properties['attributes'] = $properties['attributes']->toArray();
+
+        return $properties;
     }
 }

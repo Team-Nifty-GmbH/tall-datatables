@@ -21,10 +21,23 @@ class AttributeFinder
     public static function forModel(string|Model $model): Collection
     {
         if (is_string($model)) {
-            $model = new $model;
+            $model = new $model();
         }
 
-        return (new self)->attributes($model);
+        return (new self())->attributes($model);
+    }
+
+    protected function attributeIsHidden(string $attribute, Model $model): bool
+    {
+        if (count($model->getHidden()) > 0) {
+            return in_array($attribute, $model->getHidden());
+        }
+
+        if (count($model->getVisible()) > 0) {
+            return ! in_array($attribute, $model->getVisible());
+        }
+
+        return false;
     }
 
     /**
@@ -61,6 +74,48 @@ class AttributeFinder
                 );
             })
             ->merge($this->getVirtualAttributes($model, $columns));
+    }
+
+    protected function getCastsWithDates(Model $model): Collection
+    {
+        return collect($model->getDates())
+            ->whereNotNull()
+            ->flip()
+            ->map(fn () => 'datetime')
+            ->merge($model->getCasts());
+    }
+
+    protected function getCastType(string $column, Model $model): ?string
+    {
+        if ($model->hasGetMutator($column) || $model->hasSetMutator($column)) {
+            return 'accessor';
+        }
+
+        if ($model->hasAttributeMutator($column)) {
+            return 'attribute';
+        }
+
+        return $this->getCastsWithDates($model)->get($column) ?? null;
+    }
+
+    protected function getColumnDefault(array $column, Model $model): mixed
+    {
+        $attributeDefault = $model->getAttributes()[$column['name']] ?? null;
+
+        return match (true) {
+            $attributeDefault instanceof BackedEnum => $attributeDefault->value,
+            $attributeDefault instanceof UnitEnum => $attributeDefault->name,
+            default => $attributeDefault ?? $column['default'],
+        };
+    }
+
+    /**
+     * @return Collection<int, array>
+     */
+    protected function getIndexes(string $column, array $indexes): Collection
+    {
+        return collect($indexes)
+            ->filter(fn (array $index) => count($index['columns']) === 1 && $index['columns'][0] === $column);
     }
 
     protected function getPhpType(?string $cast, array $column): string
@@ -122,61 +177,6 @@ class AttributeFinder
         };
 
         return $type ?? 'string';
-    }
-
-    protected function getColumnDefault(array $column, Model $model): mixed
-    {
-        $attributeDefault = $model->getAttributes()[$column['name']] ?? null;
-
-        return match (true) {
-            $attributeDefault instanceof BackedEnum => $attributeDefault->value,
-            $attributeDefault instanceof UnitEnum => $attributeDefault->name,
-            default => $attributeDefault ?? $column['default'],
-        };
-    }
-
-    /**
-     * @return Collection<int, array>
-     */
-    protected function getIndexes(string $column, array $indexes): Collection
-    {
-        return collect($indexes)
-            ->filter(fn (array $index) => count($index['columns']) === 1 && $index['columns'][0] === $column);
-    }
-
-    protected function attributeIsHidden(string $attribute, Model $model): bool
-    {
-        if (count($model->getHidden()) > 0) {
-            return in_array($attribute, $model->getHidden());
-        }
-
-        if (count($model->getVisible()) > 0) {
-            return ! in_array($attribute, $model->getVisible());
-        }
-
-        return false;
-    }
-
-    protected function getCastType(string $column, Model $model): ?string
-    {
-        if ($model->hasGetMutator($column) || $model->hasSetMutator($column)) {
-            return 'accessor';
-        }
-
-        if ($model->hasAttributeMutator($column)) {
-            return 'attribute';
-        }
-
-        return $this->getCastsWithDates($model)->get($column) ?? null;
-    }
-
-    protected function getCastsWithDates(Model $model): Collection
-    {
-        return collect($model->getDates())
-            ->whereNotNull()
-            ->flip()
-            ->map(fn () => 'datetime')
-            ->merge($model->getCasts());
     }
 
     /**

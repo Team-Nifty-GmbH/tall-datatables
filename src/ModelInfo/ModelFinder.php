@@ -17,18 +17,6 @@ use SplFileInfo;
 class ModelFinder
 {
     /**
-     * Get all models from the morph map.
-     *
-     * @return Collection<int, class-string<Model>>
-     */
-    public static function fromMorphMap(): Collection
-    {
-        return collect(Relation::morphMap())
-            ->values()
-            ->filter(fn (string $class) => class_exists($class) && is_subclass_of($class, Model::class));
-    }
-
-    /**
      * Get all models from the filesystem (with caching).
      *
      * @return Collection<int, class-string<Model>>
@@ -50,6 +38,18 @@ class ModelFinder
         Cache::put(config('tall-datatables.cache_key') . '.modelFinder', $cached);
 
         return $cached[$paramHash];
+    }
+
+    /**
+     * Get all models from the morph map.
+     *
+     * @return Collection<int, class-string<Model>>
+     */
+    public static function fromMorphMap(): Collection
+    {
+        return collect(Relation::morphMap())
+            ->values()
+            ->filter(fn (string $class) => class_exists($class) && is_subclass_of($class, Model::class));
     }
 
     /**
