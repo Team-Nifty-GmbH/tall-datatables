@@ -21,10 +21,10 @@ use Livewire\Attributes\Renderless;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
-use Spatie\ModelInfo\Attributes\Attribute;
-use Spatie\ModelInfo\Relations\Relation;
 use Spatie\ModelStates\State;
-use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
+use TeamNiftyGmbH\DataTable\ModelInfo\Attribute;
+use TeamNiftyGmbH\DataTable\ModelInfo\ModelInfo;
+use TeamNiftyGmbH\DataTable\ModelInfo\Relation;
 use Throwable;
 
 trait SupportsRelations
@@ -404,7 +404,7 @@ trait SupportsRelations
         }
     }
 
-    protected function getModelRelations(\Spatie\ModelInfo\ModelInfo $modelInfo): array
+    protected function getModelRelations(ModelInfo $modelInfo): array
     {
         $modelQuery = app($modelInfo->class);
         $modelRelations = [];
