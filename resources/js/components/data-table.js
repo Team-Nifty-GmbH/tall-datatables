@@ -401,7 +401,7 @@ export default function data_table($wire) {
                     }
 
                     // Last empty cell for actions column
-                    html += `<td class='sticky right-0 table-cell border-b border-slate-300 px-3 py-3 text-sm whitespace-nowrap shadow-sm dark:border-slate-500'></td>`;
+                    html += `<td class='table-cell border-b border-slate-300 px-3 py-3 text-sm whitespace-nowrap dark:border-slate-500'></td>`;
 
                     return html;
                 }
@@ -421,7 +421,7 @@ export default function data_table($wire) {
             if (row.rowType === 'data') {
                 return `<td class='max-w-0 border-b border-slate-200 text-sm whitespace-nowrap dark:border-slate-600'></td>` +
                     this.renderGroupedDataCells(row.record) +
-                    `<td class='sticky right-0 table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap shadow-sm dark:border-slate-600'></td>`;
+                    `<td class='table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600'></td>`;
             }
 
             if (row.rowType === 'pagination' && row.group.pagination) {
