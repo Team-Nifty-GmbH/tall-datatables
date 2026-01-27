@@ -15,12 +15,13 @@ jobs:
       matrix:
         php: [8.3, 8.4]
         laravel: [12.*]
+        livewire: [3.*, 4.*]
         stability: [prefer-stable]
         include:
           - laravel: 12.*
             testbench: 10.*
 
-    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
+    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - Livewire ${{ matrix.livewire }} - ${{ matrix.stability }}
 
     steps:
       - name: Checkout code
@@ -40,7 +41,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "livewire/livewire:${{ matrix.livewire }}" --no-interaction --no-update
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
       - name: Setup Node.js
@@ -63,7 +64,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v5
         with:
-          name: browser-test-artifacts-php-${{ matrix.php }}
+          name: browser-test-artifacts-php-${{ matrix.php }}-livewire-${{ matrix.livewire }}
           path: |
             tests/Browser/.screenshots
             storage/logs

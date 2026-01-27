@@ -3,6 +3,7 @@
 namespace TeamNiftyGmbH\DataTable;
 
 use Carbon\Exceptions\InvalidFormatException;
+use Composer\InstalledVersions;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -546,8 +547,9 @@ class DataTable extends Component
             return;
         }
 
-        if (method_exists($this, $type)) {
-            $this->{$type}($query, $filter);
+        $method = $this->getFilterMethodName($type);
+        if (method_exists($this, $method)) {
+            $this->{$method}($query, $filter);
         }
     }
 
@@ -575,8 +577,9 @@ class DataTable extends Component
                 continue;
             }
 
-            if (method_exists($this, $type)) {
-                $this->{$type}($builder, $filter);
+            $method = $this->getFilterMethodName($type);
+            if (method_exists($this, $method)) {
+                $this->{$method}($builder, $filter);
             }
         }
 
@@ -724,9 +727,13 @@ class DataTable extends Component
     /**
      * When you need to re-render the table you can call this to force rendering.
      */
-    protected function forceRender(): void
+    function forceRender(): void
     {
-        store($this)->set('skipRender', false);
+        if (str_starts_with(InstalledVersions::getPrettyVersion('livewire/livewire'), 'v4.')) {
+            parent::forceRender();
+        } else {
+            store($this)->set('skipRender', false);
+        }
     }
 
     protected function getAppends(): array
@@ -1106,27 +1113,27 @@ class DataTable extends Component
             : '';
     }
 
-    private function where(Builder $builder, array $filter): Builder
+    private function applyFilterWhere(Builder $builder, array $filter): Builder
     {
         return $builder->where($filter);
     }
 
-    private function whereDoesntHave(Builder $builder, string $relation): Builder
+    private function applyFilterWhereDoesntHave(Builder $builder, string $relation): Builder
     {
         return $builder->whereDoesntHave(Str::camel($relation));
     }
 
-    private function whereHas(Builder $builder, string $relation): Builder
+    private function applyFilterWhereHas(Builder $builder, string $relation): Builder
     {
         return $builder->whereHas(Str::camel($relation));
     }
 
-    private function whereIn(Builder $builder, array $filter): Builder
+    private function applyFilterWhereIn(Builder $builder, array $filter): Builder
     {
         return $builder->whereIn($filter[0], $filter[1]);
     }
 
-    private function whereNull(Builder $builder, array $filter): Builder
+    private function applyFilterWhereNull(Builder $builder, array $filter): Builder
     {
         return $builder->whereNull(
             columns: $filter['column'],
@@ -1135,8 +1142,17 @@ class DataTable extends Component
         );
     }
 
-    private function with(Builder $builder, array $filter): Builder
+    private function applyFilterWith(Builder $builder, array $filter): Builder
     {
         return $builder->with($filter);
+    }
+
+    /**
+     * Get the method name for a filter type.
+     * This mapping prevents conflicts with Livewire's lifecycle methods.
+     */
+    private function getFilterMethodName(string $type): string
+    {
+        return 'applyFilter' . ucfirst($type);
     }
 }
