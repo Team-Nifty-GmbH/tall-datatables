@@ -3,6 +3,7 @@
 namespace TeamNiftyGmbH\DataTable;
 
 use Carbon\Exceptions\InvalidFormatException;
+use Composer\InstalledVersions;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -207,6 +208,18 @@ class DataTable extends Component
         $this->loadedFilterId = null;
 
         $this->startSearch();
+    }
+
+    /**
+     * When you need to re-render the table you can call this to force rendering.
+     */
+    public function forceRender(): void
+    {
+        if (str_starts_with(InstalledVersions::getPrettyVersion('livewire/livewire'), 'v4.')) {
+            parent::forceRender();
+        } else {
+            store($this)->set('skipRender', false);
+        }
     }
 
     #[Renderless]
@@ -546,8 +559,9 @@ class DataTable extends Component
             return;
         }
 
-        if (method_exists($this, $type)) {
-            $this->{$type}($query, $filter);
+        $method = $this->getFilterMethodName($type);
+        if (method_exists($this, $method)) {
+            $this->{$method}($query, $filter);
         }
     }
 
@@ -575,8 +589,9 @@ class DataTable extends Component
                 continue;
             }
 
-            if (method_exists($this, $type)) {
-                $this->{$type}($builder, $filter);
+            $method = $this->getFilterMethodName($type);
+            if (method_exists($this, $method)) {
+                $this->{$method}($builder, $filter);
             }
         }
 
@@ -719,14 +734,6 @@ class DataTable extends Component
         }
 
         return $actions;
-    }
-
-    /**
-     * When you need to re-render the table you can call this to force rendering.
-     */
-    protected function forceRender(): void
-    {
-        store($this)->set('skipRender', false);
     }
 
     protected function getAppends(): array
@@ -1094,6 +1101,49 @@ class DataTable extends Component
         return method_exists(static::class, 'restore');
     }
 
+    private function applyFilterWhere(Builder $builder, array $filter): Builder
+    {
+        return $builder->where($filter);
+    }
+
+    private function applyFilterWhereDoesntHave(Builder $builder, string $relation): Builder
+    {
+        return $builder->whereDoesntHave(Str::camel($relation));
+    }
+
+    private function applyFilterWhereHas(Builder $builder, string $relation): Builder
+    {
+        return $builder->whereHas(Str::camel($relation));
+    }
+
+    private function applyFilterWhereIn(Builder $builder, array $filter): Builder
+    {
+        return $builder->whereIn($filter[0], $filter[1]);
+    }
+
+    private function applyFilterWhereNull(Builder $builder, array $filter): Builder
+    {
+        return $builder->whereNull(
+            columns: $filter['column'],
+            boolean: ($filter['boolean'] ?? 'and') !== 'or' ? 'and' : 'or',
+            not: $filter['operator'] === 'is not null'
+        );
+    }
+
+    private function applyFilterWith(Builder $builder, array $filter): Builder
+    {
+        return $builder->with($filter);
+    }
+
+    /**
+     * Get the method name for a filter type.
+     * This mapping prevents conflicts with Livewire's lifecycle methods.
+     */
+    private function getFilterMethodName(string $type): string
+    {
+        return 'applyFilter' . ucfirst($type);
+    }
+
     /**
      * You should set the name of the route in your .env file.
      * e.g. TALL_DATATABLES_SEARCH_ROUTE=datatables.search
@@ -1104,39 +1154,5 @@ class DataTable extends Component
         return config('tall-datatables.search_route')
             ? route(config('tall-datatables.search_route'), '')
             : '';
-    }
-
-    private function where(Builder $builder, array $filter): Builder
-    {
-        return $builder->where($filter);
-    }
-
-    private function whereDoesntHave(Builder $builder, string $relation): Builder
-    {
-        return $builder->whereDoesntHave(Str::camel($relation));
-    }
-
-    private function whereHas(Builder $builder, string $relation): Builder
-    {
-        return $builder->whereHas(Str::camel($relation));
-    }
-
-    private function whereIn(Builder $builder, array $filter): Builder
-    {
-        return $builder->whereIn($filter[0], $filter[1]);
-    }
-
-    private function whereNull(Builder $builder, array $filter): Builder
-    {
-        return $builder->whereNull(
-            columns: $filter['column'],
-            boolean: ($filter['boolean'] ?? 'and') !== 'or' ? 'and' : 'or',
-            not: $filter['operator'] === 'is not null'
-        );
-    }
-
-    private function with(Builder $builder, array $filter): Builder
-    {
-        return $builder->with($filter);
     }
 }

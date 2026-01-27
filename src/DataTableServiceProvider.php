@@ -24,7 +24,7 @@ class DataTableServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Livewire::component('tall-datatables::options', Options::class);
+        Livewire::component('tall-datatables-options', Options::class);
         $this->offerPublishing();
 
         $this->commands([

@@ -3,7 +3,7 @@
     @if ($hasSidebar)
         @teleport('body')
             <x-slide id="data-table-sidebar-{{ $this->getId() }}" size="2xl">
-                <livewire:tall-datatables::options
+                <livewire:tall-datatables-options
                     :is-filterable="$isFilterable"
                     :aggregatable="$aggregatable"
                     :is-exportable="$isExportable"

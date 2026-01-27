@@ -27,11 +27,12 @@ abstract class TestCase extends BaseTestCase
             class_alias(\TallStackUi\Facades\TallStackUi::class, 'TallStackUi');
         }
 
-        // Register test Livewire components for browser tests
         Livewire::component('post-data-table', PostDataTable::class);
         Livewire::component('user-data-table', UserDataTable::class);
         Livewire::component('selectable-post-data-table', SelectablePostDataTable::class);
         Livewire::component('post-with-relations-data-table', PostWithRelationsDataTable::class);
+
+        Livewire::component('tall-datatables-options', \TeamNiftyGmbH\DataTable\Livewire\Options::class);
     }
 
     protected function defineDatabaseMigrations(): void
