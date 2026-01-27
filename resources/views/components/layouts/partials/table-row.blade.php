@@ -108,7 +108,7 @@
 
     @if ($hasSidebar)
         <td
-            class="sticky right-0 table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap shadow-sm dark:border-slate-600"
+            class="table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
         ></td>
     @endif
 </tr>

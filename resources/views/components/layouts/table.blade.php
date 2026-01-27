@@ -206,7 +206,7 @@
 
                     @if ($hasSidebar)
                         <td
-                            class="dark:bg-secondary-800 sticky right-0 bg-gray-50"
+                            class="dark:bg-secondary-800 bg-gray-50"
                         ></td>
                     @endif
                 </tr>
@@ -370,7 +370,7 @@
             {{-- Empty cell for the col selection --}}
             @if ($hasSidebar)
                 <td
-                    class="sticky right-0 table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap shadow-sm dark:border-slate-600"
+                    class="table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
                 ></td>
             @endif
         </tr>
