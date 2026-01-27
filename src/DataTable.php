@@ -210,6 +210,18 @@ class DataTable extends Component
         $this->startSearch();
     }
 
+    /**
+     * When you need to re-render the table you can call this to force rendering.
+     */
+    public function forceRender(): void
+    {
+        if (str_starts_with(InstalledVersions::getPrettyVersion('livewire/livewire'), 'v4.')) {
+            parent::forceRender();
+        } else {
+            store($this)->set('skipRender', false);
+        }
+    }
+
     #[Renderless]
     public function forgetSessionFilter(bool $loadData = false): void
     {
@@ -724,18 +736,6 @@ class DataTable extends Component
         return $actions;
     }
 
-    /**
-     * When you need to re-render the table you can call this to force rendering.
-     */
-    function forceRender(): void
-    {
-        if (str_starts_with(InstalledVersions::getPrettyVersion('livewire/livewire'), 'v4.')) {
-            parent::forceRender();
-        } else {
-            store($this)->set('skipRender', false);
-        }
-    }
-
     protected function getAppends(): array
     {
         return $this->appends;
@@ -1101,18 +1101,6 @@ class DataTable extends Component
         return method_exists(static::class, 'restore');
     }
 
-    /**
-     * You should set the name of the route in your .env file.
-     * e.g. TALL_DATATABLES_SEARCH_ROUTE=datatables.search
-     * The route should lead to the SearchController from this package.
-     */
-    private function getSearchRoute(): string
-    {
-        return config('tall-datatables.search_route')
-            ? route(config('tall-datatables.search_route'), '')
-            : '';
-    }
-
     private function applyFilterWhere(Builder $builder, array $filter): Builder
     {
         return $builder->where($filter);
@@ -1154,5 +1142,17 @@ class DataTable extends Component
     private function getFilterMethodName(string $type): string
     {
         return 'applyFilter' . ucfirst($type);
+    }
+
+    /**
+     * You should set the name of the route in your .env file.
+     * e.g. TALL_DATATABLES_SEARCH_ROUTE=datatables.search
+     * The route should lead to the SearchController from this package.
+     */
+    private function getSearchRoute(): string
+    {
+        return config('tall-datatables.search_route')
+            ? route(config('tall-datatables.search_route'), '')
+            : '';
     }
 }
