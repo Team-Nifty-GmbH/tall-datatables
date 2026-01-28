@@ -541,7 +541,7 @@ class DataTable extends Component
                     });
                 }
             } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
-                $this->whereNull($query, $filter);
+                $this->applyFilterWhereNull($query, $filter);
             } elseif ($filter['operator'] === 'between') {
                 $query->whereBetween($filter['column'], $filter['value']);
             } else {
