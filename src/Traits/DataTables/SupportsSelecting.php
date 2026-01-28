@@ -51,7 +51,7 @@ trait SupportsSelecting
     protected function getSelectedValues(): array
     {
         return in_array('*', $this->selected)
-            ? $this->buildSearch()
+            ? $this->buildSearch(unpaginated: true)
                 ->whereKeyNot($this->wildcardSelectExcluded)
                 ->pluck($this->modelKeyName)
                 ->toArray()
