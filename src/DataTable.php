@@ -541,7 +541,7 @@ class DataTable extends Component
                     });
                 }
             } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
-                $this->whereNull($query, $filter);
+                $this->applyFilterWhereNull($query, $filter);
             } elseif ($filter['operator'] === 'between') {
                 $query->whereBetween($filter['column'], $filter['value']);
             } else {
@@ -628,7 +628,7 @@ class DataTable extends Component
         return $builder;
     }
 
-    protected function buildSearch(): Builder
+    protected function buildSearch(bool $unpaginated = false): Builder
     {
         /** @var Model $model */
         $model = $this->getModel();
@@ -637,7 +637,7 @@ class DataTable extends Component
             $this->aggregatableRelationCols[] = $aggregatableRelationCol->alias;
         }
 
-        if ($this->search && method_exists($model, 'search')) {
+        if ($this->search && method_exists($model, 'search') && ! $unpaginated) {
             $query = $this->getScoutSearch()->toEloquentBuilder($this->enabledCols, $this->perPage, $this->page);
         } else {
             $query = $model::query();
