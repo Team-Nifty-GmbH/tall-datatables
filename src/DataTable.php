@@ -529,9 +529,9 @@ class DataTable extends Component
                 $filter['relation'] = Str::camel($relation);
 
                 if ($filter['value'] === '%*%') {
-                    $this->whereHas($query, $filter['relation']);
+                    $this->applyFilterWhereHas($query, $filter['relation']);
                 } elseif ($filter['value'] === '%!*%') {
-                    $this->whereDoesntHave($query, $filter['relation']);
+                    $this->applyFilterWhereDoesntHave($query, $filter['relation']);
                 } else {
                     $query->whereHas($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
                         unset($filter['relation']);

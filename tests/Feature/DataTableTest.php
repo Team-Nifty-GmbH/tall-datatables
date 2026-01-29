@@ -586,6 +586,37 @@ describe('Selection', function (): void {
         $selectableComponent = Livewire::test(SelectablePostDataTable::class);
         expect($selectableComponent->get('isSelectable'))->toBeTrue();
     });
+
+    it('wildcard selection returns all records across all pages', function (): void {
+        // Create 25 posts total (5 from Selection beforeEach + 20 here)
+        for ($i = 0; $i < 20; $i++) {
+            createTestPost(['user_id' => $this->user->getKey()]);
+        }
+
+        $totalPosts = Post::count();
+        expect($totalPosts)->toBe(25);
+
+        $component = Livewire::test(SelectablePostDataTable::class)
+            ->set('perPage', 10)
+            ->set('selected', ['*'])
+            ->call('loadData');
+
+        $instance = $component->instance();
+
+        // Test getSelectedModelsQuery - should return query for all 25 posts
+        $queryReflection = new ReflectionMethod($instance, 'getSelectedModelsQuery');
+        $query = $queryReflection->invoke($instance);
+        expect($query->count())->toBe(25);
+
+        // Test getSelectedModels - should return all 25 posts
+        $modelsReflection = new ReflectionMethod($instance, 'getSelectedModels');
+        $selectedModels = $modelsReflection->invoke($instance);
+        expect($selectedModels)->toHaveCount(25);
+
+        $selectedIds = $selectedModels->pluck('id')->sort()->values()->toArray();
+        $allPostIds = Post::pluck('id')->sort()->values()->toArray();
+        expect($selectedIds)->toBe($allPostIds);
+    });
 });
 
 describe('Configuration', function (): void {
