@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Renderless;
-use Spatie\ModelInfo\Attributes\Attribute;
+use TeamNiftyGmbH\DataTable\ModelInfo\Attribute;
 
 trait SupportsAggregation
 {
