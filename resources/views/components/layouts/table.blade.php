@@ -59,27 +59,6 @@
                                 x-on:click="$wire.selected.length > 0 ? showSelectedActions = true : null"
                             />
                         </div>
-                        <div
-                            x-on:click.outside="showSelectedActions = false"
-                            x-transition:enter="transition duration-200 ease-out"
-                            x-transition:enter-start="scale-95 opacity-0"
-                            x-transition:enter-end="scale-100 opacity-100"
-                            x-transition:leave="transition duration-75 ease-in"
-                            x-transition:leave-start="scale-100 opacity-100"
-                            x-transition:leave-end="scale-95 opacity-0"
-                            class="z-30"
-                            x-cloak
-                            x-show="showSelectedActions"
-                            x-anchor.bottom-start.offset.5="$refs.selectedActions"
-                        >
-                            <x-card x-on:click="showSelectedActions = false;">
-                                <div class="flex flex-col gap-1.5">
-                                    @foreach ($selectedActions as $action)
-                                        {{ $action }}
-                                    @endforeach
-                                </div>
-                            </x-card>
-                        </div>
                     </x-tall-datatables::table.head-cell>
                 @else
                     <th class="max-w-0"></th>
@@ -430,4 +409,29 @@
             </tr>
         @endif
     </x-slot>
+    @if ($isSelectable)
+        <x-slot:floatingElements>
+            <div
+                x-on:click.outside="showSelectedActions = false"
+                x-transition:enter="transition duration-200 ease-out"
+                x-transition:enter-start="scale-95 opacity-0"
+                x-transition:enter-end="scale-100 opacity-100"
+                x-transition:leave="transition duration-75 ease-in"
+                x-transition:leave-start="scale-100 opacity-100"
+                x-transition:leave-end="scale-95 opacity-0"
+                class="z-30"
+                x-cloak
+                x-show="showSelectedActions"
+                x-anchor.bottom-start.offset.5="$refs.selectedActions"
+            >
+                <x-card x-on:click="showSelectedActions = false;">
+                    <div class="flex flex-col gap-1.5">
+                        @foreach ($selectedActions as $action)
+                            {{ $action }}
+                        @endforeach
+                    </div>
+                </x-card>
+            </div>
+        </x-slot>
+    @endif
 </x-tall-datatables::table>
