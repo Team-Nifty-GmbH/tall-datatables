@@ -22,4 +22,5 @@
             </tfoot>
         </table>
     </div>
+    {{ $floatingElements ?? '' }}
 </div>
