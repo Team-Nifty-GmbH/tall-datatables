@@ -202,26 +202,44 @@ export default function formatters() {
             return this.bool(value);
         },
         date(value) {
+            const tz = document
+                .querySelector('meta[name="timezone"]')
+                ?.getAttribute('content');
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+            };
+
+            if (tz) {
+                options.timeZone = tz;
+            }
+
             return new Date(value).toLocaleDateString(
                 document.documentElement.lang,
-                {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                },
+                options,
             );
         },
         datetime(value) {
+            const tz = document
+                .querySelector('meta[name="timezone"]')
+                ?.getAttribute('content');
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            };
+
+            if (tz) {
+                options.timeZone = tz;
+            }
+
             return new Date(value).toLocaleString(
                 document.documentElement.lang,
-                {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                },
+                options,
             );
         },
         badge(value, colors) {
