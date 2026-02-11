@@ -1,6 +1,7 @@
 <?php
 
 use Livewire\Livewire;
+use TeamNiftyGmbH\DataTable\Models\DatatableUserSetting;
 use Tests\Fixtures\Livewire\PostDataTable;
 use Tests\Fixtures\Livewire\PostWithRelationsDataTable;
 use Tests\Fixtures\Livewire\SelectablePostDataTable;
@@ -894,5 +895,208 @@ describe('Session Cache', function (): void {
         expect($cached['perPage'])->toBe(25);
         expect($cached['search'])->toBe('test search');
         expect($cached['userOrderBy'])->toBe('title');
+    });
+});
+
+describe('Saved Filters', function (): void {
+    it('preserves loadedFilterId after loading a saved filter', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $savedFilter = DatatableUserSetting::create([
+            'name' => 'Published Only',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => [
+                'userFilters' => [
+                    [
+                        [
+                            'column' => 'is_published',
+                            'operator' => '=',
+                            'value' => true,
+                        ],
+                    ],
+                ],
+                'perPage' => 15,
+            ],
+        ]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('loadData');
+
+        expect($component->get('savedFilters'))->toHaveCount(1);
+
+        // Select the saved filter and load it
+        $component
+            ->set('loadedFilterId', $savedFilter->getKey())
+            ->call('loadSavedFilter');
+
+        // Verify userFilters were applied from the saved filter
+        expect($component->get('userFilters'))->toBe([
+            [
+                [
+                    'column' => 'is_published',
+                    'operator' => '=',
+                    'value' => true,
+                ],
+            ],
+        ]);
+
+        // Simulate the entangle sync: frontend sends back the same userFilters
+        // This triggers updatedUserFilters() which should NOT reset loadedFilterId
+        $component->set('userFilters', [
+            [
+                [
+                    'column' => 'is_published',
+                    'operator' => '=',
+                    'value' => true,
+                ],
+            ],
+        ]);
+
+        // loadedFilterId should still be set to the saved filter
+        expect($component->get('loadedFilterId'))->toBe($savedFilter->getKey());
+    });
+
+    it('clears loadedFilterId when user manually changes filters', function (): void {
+        $savedFilter = DatatableUserSetting::create([
+            'name' => 'Published Only',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => [
+                'userFilters' => [
+                    [
+                        [
+                            'column' => 'is_published',
+                            'operator' => '=',
+                            'value' => true,
+                        ],
+                    ],
+                ],
+                'perPage' => 15,
+            ],
+        ]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('loadData')
+            ->set('loadedFilterId', $savedFilter->getKey())
+            ->call('loadSavedFilter');
+
+        expect($component->get('loadedFilterId'))->toBe($savedFilter->getKey());
+
+        // Simulate the entangle sync (same userFilters come back from frontend)
+        $component->set('userFilters', [
+            [
+                [
+                    'column' => 'is_published',
+                    'operator' => '=',
+                    'value' => true,
+                ],
+            ],
+        ]);
+
+        // loadedFilterId should still be set after entangle sync
+        expect($component->get('loadedFilterId'))->toBe($savedFilter->getKey());
+
+        // User manually changes filters (different from saved filter)
+        $component->set('userFilters', [
+            [
+                [
+                    'column' => 'title',
+                    'operator' => 'like',
+                    'value' => '%test%',
+                ],
+            ],
+        ]);
+
+        // loadedFilterId should be cleared because filters were manually changed
+        expect($component->get('loadedFilterId'))->toBeNull();
+    });
+
+    it('loads saved filters from database on mount', function (): void {
+        DatatableUserSetting::create([
+            'name' => 'Filter A',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => [
+                'userFilters' => [
+                    [['column' => 'is_published', 'operator' => '=', 'value' => true]],
+                ],
+            ],
+        ]);
+
+        DatatableUserSetting::create([
+            'name' => 'Filter B',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => [
+                'userFilters' => [
+                    [['column' => 'title', 'operator' => 'like', 'value' => '%test%']],
+                ],
+            ],
+        ]);
+
+        $component = Livewire::test(PostDataTable::class);
+
+        expect($component->get('savedFilters'))->toHaveCount(2);
+    });
+
+    it('provides correctly structured options for saved filter dropdown', function (): void {
+        // Create 3 filters: first and third have userFilters, second has empty userFilters
+        DatatableUserSetting::create([
+            'name' => 'Filter A',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => [
+                'userFilters' => [
+                    [['column' => 'is_published', 'operator' => '=', 'value' => true]],
+                ],
+            ],
+        ]);
+
+        DatatableUserSetting::create([
+            'name' => 'Empty Filter',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => [
+                'userFilters' => [],
+            ],
+        ]);
+
+        DatatableUserSetting::create([
+            'name' => 'Filter C',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => [
+                'userFilters' => [
+                    [['column' => 'title', 'operator' => 'like', 'value' => '%draft%']],
+                ],
+            ],
+        ]);
+
+        $component = Livewire::test(PostDataTable::class);
+
+        // Build the options the same way the blade template does
+        $options = collect($component->get('savedFilters'))
+            ->filter(fn (array $savedFilter) => data_get($savedFilter, 'settings.userFilters', false))
+            ->map(function (array $savedFilter) {
+                return [
+                    'label' => $savedFilter['name'],
+                    'value' => $savedFilter['id'],
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        // Should have 2 options (empty filter is excluded)
+        expect($options)->toHaveCount(2);
+
+        // Keys should be sequential (0, 1) not (0, 2) - important for JSON encoding
+        expect(array_keys($options))->toBe([0, 1]);
+
+        // Each option should have label and value
+        expect($options[0])->toHaveKey('label');
+        expect($options[0])->toHaveKey('value');
+        expect($options[0]['label'])->toBe('Filter A');
+        expect($options[1]['label'])->toBe('Filter C');
     });
 });

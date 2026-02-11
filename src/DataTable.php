@@ -124,6 +124,8 @@ class DataTable extends Component
 
     public ?int $loadedFilterId = null;
 
+    public bool $loadingFilter = false;
+
     #[Locked]
     public ?string $modelKeyName = null;
 
@@ -505,6 +507,12 @@ class DataTable extends Component
     #[Renderless]
     public function updatedUserFilters(): void
     {
+        if ($this->loadingFilter) {
+            $this->loadingFilter = false;
+
+            return;
+        }
+
         $this->applyUserFilters();
     }
 
