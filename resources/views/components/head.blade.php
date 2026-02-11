@@ -24,6 +24,7 @@
                             'value' => $savedFilter['id'],
                         ];
                     })
+                    ->values()
                     ->toArray()
                 "
                 searchable

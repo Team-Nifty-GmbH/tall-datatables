@@ -62,6 +62,8 @@ trait StoresSettings
     #[Renderless]
     public function loadSavedFilter(): void
     {
+        $this->loadingFilter = true;
+
         $this->loadFilter(
             data_get(
                 collect($this->savedFilters)->where('id', $this->loadedFilterId)->first(),
