@@ -7,7 +7,7 @@ use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Facades\File;
 use Livewire\Features\SupportConsoleCommands\Commands\ComponentParser;
 use Livewire\Features\SupportConsoleCommands\Commands\MakeLivewireCommand;
-use Spatie\ModelInfo\ModelFinder;
+use TeamNiftyGmbH\DataTable\ModelInfo\ModelFinder;
 
 class MakeDataTableCommand extends GeneratorCommand
 {
