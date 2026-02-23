@@ -45,6 +45,12 @@ export default function data_table($wire) {
                     this.newFilter.operator === 'is not null'
                 ) {
                     this.filterSelectType = 'none';
+                } else if (
+                    this.filterValueLists.hasOwnProperty(
+                        this.newFilter.column,
+                    )
+                ) {
+                    this.filterSelectType = 'valueList';
                 }
             });
 
@@ -149,6 +155,7 @@ export default function data_table($wire) {
                 this.aggregatable = result.aggregatable;
                 this.groupable = result.groupable;
                 this.selectable = result.selectable;
+                this.rowSortable = result.rowSortable;
                 this.formatters = result.formatters;
                 this.leftAppend = result.leftAppend;
                 this.rightAppend = result.rightAppend;
@@ -173,6 +180,7 @@ export default function data_table($wire) {
         groupBy: $wire.entangle('groupBy'),
         expandedGroups: $wire.entangle('expandedGroups'),
         selectable: false,
+        rowSortable: false,
         showSelectedActions: false,
         formatters: [],
         leftAppend: [],

@@ -468,7 +468,7 @@
                     </datalist>
                     <div
                         x-cloak
-                        x-show="filterSelectType !== 'valueList' && filterSelectType !== 'search'"
+                        x-show="filterSelectType !== 'valueList' && filterSelectType !== 'search' && filterSelectType !== 'none'"
                     >
                         <x-input
                             name="new-filter-operator"
@@ -498,6 +498,25 @@
                                 {{ __('between') }}
                             </option>
                         </datalist>
+                    </div>
+                    <div
+                        x-cloak
+                        x-show="filterSelectType === 'valueList' || filterSelectType === 'none'"
+                    >
+                        <x-select.native
+                            name="new-filter-operator-valuelist"
+                            x-model="newFilter.operator"
+                            placeholder="{{ __('Operator') }}"
+                        >
+                            <option value="=">{{ __('=') }}</option>
+                            <option value="!=">{{ __('!=') }}</option>
+                            <option value="is null">
+                                {{ __('is null') }}
+                            </option>
+                            <option value="is not null">
+                                {{ __('is not null') }}
+                            </option>
+                        </x-select.native>
                     </div>
                     <div x-cloak x-show="filterSelectType === 'valueList'">
                         <x-select.native
