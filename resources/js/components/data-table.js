@@ -169,7 +169,7 @@ export default function data_table($wire) {
             });
         },
         get data() { return $wire.data },
-        set data(value) { $wire.data = value },
+        set data(value) { $wire.$set('data', value) },
         enabledCols: [],
         availableCols: [],
         colLabels: [],
@@ -179,9 +179,9 @@ export default function data_table($wire) {
         aggregatable: [],
         groupable: [],
         get groupBy() { return $wire.groupBy },
-        set groupBy(value) { $wire.groupBy = value },
+        set groupBy(value) { $wire.$set('groupBy', value) },
         get expandedGroups() { return $wire.expandedGroups },
-        set expandedGroups(value) { $wire.expandedGroups = value },
+        set expandedGroups(value) { $wire.$set('expandedGroups', value) },
         selectable: false,
         rowSortable: false,
         showSelectedActions: false,
@@ -195,23 +195,23 @@ export default function data_table($wire) {
         tab: 'edit-filters',
         showSavedFilters: false,
         get filterValueLists() { return $wire.filterValueLists },
-        set filterValueLists(value) { $wire.filterValueLists = value },
+        set filterValueLists(value) { $wire.$set('filterValueLists', value) },
         get filters() { return $wire.userFilters },
-        set filters(value) { $wire.userFilters = value },
+        set filters(value) { $wire.$set('userFilters', value) },
         get aggregatableCols() { return $wire.aggregatableCols },
-        set aggregatableCols(value) { $wire.aggregatableCols = value },
+        set aggregatableCols(value) { $wire.$set('aggregatableCols', value) },
         get orderByCol() { return $wire.userOrderBy },
-        set orderByCol(value) { $wire.userOrderBy = value },
+        set orderByCol(value) { $wire.$set('userOrderBy', value) },
         get orderAsc() { return $wire.userOrderAsc },
-        set orderAsc(value) { $wire.userOrderAsc = value },
+        set orderAsc(value) { $wire.$set('userOrderAsc', value) },
         get stickyCols() { return $wire.stickyCols },
-        set stickyCols(value) { $wire.stickyCols = value },
+        set stickyCols(value) { $wire.$set('stickyCols', value) },
         get initialized() { return $wire.initialized },
-        set initialized(value) { $wire.initialized = value },
+        set initialized(value) { $wire.$set('initialized', value) },
         get search() { return $wire.search },
-        set search(value) { $wire.search = value },
+        set search(value) { $wire.$set('search', value) },
         get selected() { return $wire.selected },
-        set selected(value) { $wire.selected = value },
+        set selected(value) { $wire.$set('selected', value) },
         filterBadge(filter) {
             if (!filter) {
                 return;
@@ -774,8 +774,9 @@ export default function data_table($wire) {
         },
         addFilter() {
             let newFilter = this.newFilter;
-            if (this.filters.length === 0) {
-                this.filters.push([]);
+            let filters = [...this.filters];
+            if (filters.length === 0) {
+                filters.push([]);
                 this.filterIndex = 0;
             }
 
@@ -787,7 +788,11 @@ export default function data_table($wire) {
                 newFilter.relation = '';
             }
 
-            this.filters[this.filterIndex].push(newFilter);
+            filters[this.filterIndex] = [
+                ...(filters[this.filterIndex] || []),
+                newFilter,
+            ];
+            this.filters = filters;
             this.resetFilter();
             this.filterSelectType = 'text';
             $wire.getColLabels().then((result) => {
@@ -803,27 +808,28 @@ export default function data_table($wire) {
             }
 
             this.filterIndex = this.filters.length;
-            this.filters.push([]);
+            this.filters = [...this.filters, []];
         },
         removeFilter(index, groupIndex) {
-            const innerArray = this.filters[groupIndex];
-            if (innerArray) {
-                if (index >= 0 && index < innerArray.length) {
-                    let removed = innerArray.splice(index, 1);
+            const filters = this.filters.map((group) => [...group]);
+            const innerArray = filters[groupIndex];
+            if (innerArray && index >= 0 && index < innerArray.length) {
+                const removed = innerArray.splice(index, 1);
 
-                    if (removed[0].textFilterKey) {
-                        this.textFilter[removed[0].column] = '';
-                    }
-
-                    if (innerArray.length === 0) {
-                        this.removeFilterGroup(groupIndex);
-                    }
+                if (removed[0].textFilterKey) {
+                    this.textFilter[removed[0].column] = '';
                 }
+
+                if (innerArray.length === 0) {
+                    filters.splice(groupIndex, 1);
+                }
+
+                this.filters = filters;
             }
         },
         removeFilterGroup(index) {
             if (index >= 0 && index < this.filters.length) {
-                this.filters.splice(index, 1);
+                this.filters = this.filters.filter((_, i) => i !== index);
             }
         },
         clearFilters() {
@@ -867,9 +873,9 @@ export default function data_table($wire) {
         },
         toggleStickyCol(col) {
             if (this.stickyCols.includes(col)) {
-                this.stickyCols.splice(this.stickyCols.indexOf(col), 1);
+                this.stickyCols = this.stickyCols.filter((c) => c !== col);
             } else {
-                this.stickyCols.push(col);
+                this.stickyCols = [...this.stickyCols, col];
             }
         },
         formatter(col, record) {
