@@ -524,3 +524,140 @@ describe('DataTable Browser Grouping', function (): void {
         expect($data['firstGroupAggregateTypes'])->toContain('sum');
     });
 });
+
+describe('DataTable Browser Filtering', function (): void {
+    it('filters data when typing in a text filter input', function (): void {
+        $page = visitLivewire(PostDataTable::class);
+
+        $page->wait(2)
+            ->assertSee('Post Title 1');
+
+        // Get initial row count
+        $before = $page->script('() => {
+            const comp = document.querySelector("[wire\\\\:id]");
+            const wireId = comp?.getAttribute("wire:id");
+            return window.Livewire?.find(wireId)?.$get("data")?.total;
+        }');
+        $beforeTotal = is_array($before) && isset($before[0]) ? $before[0] : $before;
+        expect($beforeTotal)->toBe(25);
+
+        // Type in the title text filter (first searchbox in second header row)
+        $page->script('() => {
+            const input = document.querySelector("table thead tr:nth-child(2) td input[type=search]");
+            if (input) {
+                input.value = "Post Title 1";
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        }');
+
+        // Wait for the debounce + Livewire request
+        $page->wait(3);
+
+        // Verify the data was filtered on the server
+        $after = $page->script('() => {
+            const comp = document.querySelector("[wire\\\\:id]");
+            const wireId = comp?.getAttribute("wire:id");
+            return window.Livewire?.find(wireId)?.$get("data")?.total;
+        }');
+        $afterTotal = is_array($after) && isset($after[0]) ? $after[0] : $after;
+
+        // "Post Title 1" matches: 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 = 11 posts
+        expect($afterTotal)->toBeLessThan($beforeTotal)
+            ->and($afterTotal)->toBeGreaterThan(0);
+    });
+
+    it('sends a livewire request when filter setter is called', function (): void {
+        $page = visitLivewire(PostDataTable::class);
+
+        $page->wait(2);
+
+        // Directly test that the setter triggers a $wire.$set call
+        $result = $page->script('() => {
+            const tableEl = document.querySelector("[x-data]");
+            const scope = tableEl?._x_dataStack?.[0];
+            if (!scope) return { error: "no scope" };
+
+            const desc = Object.getOwnPropertyDescriptor(scope, "filters");
+            const setterStr = desc?.set?.toString() || "";
+
+            return {
+                hasSetter: !!desc?.set,
+                usesSet: setterStr.includes("$set"),
+                setterSource: setterStr.substring(0, 200),
+            };
+        }');
+
+        $data = is_array($result) && isset($result[0]) ? $result[0] : $result;
+
+        expect($data['hasSetter'])->toBeTrue();
+        // The setter MUST use $wire.$set() to trigger a Livewire request
+        expect($data['usesSet'])->toBeTrue('Filter setter must use $wire.$set() to trigger server updates');
+    });
+
+    it('clears filters when clear button is clicked', function (): void {
+        $page = visitLivewire(PostDataTable::class);
+
+        $page->wait(2);
+
+        // Apply a filter first
+        $page->script('() => {
+            const input = document.querySelector("table thead tr:nth-child(2) td input[type=search]");
+            if (input) {
+                input.value = "Post Title 1";
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        }');
+
+        $page->wait(3);
+
+        // Get filtered count
+        $filtered = $page->script('() => {
+            const comp = document.querySelector("[wire\\\\:id]");
+            const wireId = comp?.getAttribute("wire:id");
+            return window.Livewire?.find(wireId)?.$get("data")?.total;
+        }');
+        $filteredTotal = is_array($filtered) && isset($filtered[0]) ? $filtered[0] : $filtered;
+        expect($filteredTotal)->toBeLessThan(25);
+
+        // Click clear button via JS (text is locale-dependent)
+        $page->script('() => {
+            const xDataEl = document.querySelector("[x-data]");
+            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
+                xDataEl._x_dataStack[0].clearFilters();
+            }
+        }');
+        $page->wait(3);
+
+        // Verify all data is back
+        $after = $page->script('() => {
+            const comp = document.querySelector("[wire\\\\:id]");
+            const wireId = comp?.getAttribute("wire:id");
+            return window.Livewire?.find(wireId)?.$get("data")?.total;
+        }');
+        $afterTotal = is_array($after) && isset($after[0]) ? $after[0] : $after;
+        expect($afterTotal)->toBe(25);
+    });
+
+    it('displays filter badge when filter is applied', function (): void {
+        $page = visitLivewire(PostDataTable::class);
+
+        $page->wait(2);
+
+        // Apply filter
+        $page->script('() => {
+            const input = document.querySelector("table thead tr:nth-child(2) td input[type=search]");
+            if (input) {
+                input.value = "xyz";
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        }');
+
+        $page->wait(2);
+
+        // Filter badge should contain the filter value
+        $page->assertSee('%xyz%');
+    });
+});
