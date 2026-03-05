@@ -878,7 +878,7 @@ export default function data_table($wire) {
 
             if (this.filterValueLists.hasOwnProperty(col)) {
                 label =
-                    this.filterValueLists[col].find((item) => {
+                    this.filterValueLists[col]?.find((item) => {
                         return item.value == val;
                     })?.label ?? val;
             }
