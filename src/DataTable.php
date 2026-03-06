@@ -217,10 +217,10 @@ class DataTable extends Component
      */
     public function forceRender(): void
     {
+        store($this)->set('skipRender', false);
+
         if (str_starts_with(InstalledVersions::getPrettyVersion('livewire/livewire'), 'v4.')) {
             parent::forceRender();
-        } else {
-            store($this)->set('skipRender', false);
         }
     }
 
@@ -514,6 +514,21 @@ class DataTable extends Component
         }
 
         $this->applyUserFilters();
+    }
+
+    #[Renderless]
+    public function syncFromAlpine(string $property, mixed $value): void
+    {
+        if (! property_exists($this, $property)) {
+            return;
+        }
+
+        $this->{$property} = $value;
+
+        $method = 'updated' . Str::studly($property);
+        if (method_exists($this, $method)) {
+            $this->{$method}();
+        }
     }
 
     protected function addFilter(Builder $query, string|int $type, array $filter): void
@@ -1102,6 +1117,7 @@ class DataTable extends Component
     protected function setData(array $data): void
     {
         $this->data = $data;
+        $this->dispatch('data-table-data-loaded', data: $data);
     }
 
     protected function showRestoreButton(): bool

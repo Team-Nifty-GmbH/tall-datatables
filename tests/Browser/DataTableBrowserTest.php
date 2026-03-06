@@ -572,7 +572,7 @@ describe('DataTable Browser Filtering', function (): void {
 
         $page->wait(2);
 
-        // Directly test that the setter triggers a $wire.$set call
+        // Directly test that the setter triggers a server call via syncFromAlpine
         $result = $page->script('() => {
             const tableEl = document.querySelector("[x-data]");
             const scope = tableEl?._x_dataStack?.[0];
@@ -583,7 +583,7 @@ describe('DataTable Browser Filtering', function (): void {
 
             return {
                 hasSetter: !!desc?.set,
-                usesSet: setterStr.includes("$set"),
+                usesSyncFromAlpine: setterStr.includes("syncFromAlpine"),
                 setterSource: setterStr.substring(0, 200),
             };
         }');
@@ -591,8 +591,8 @@ describe('DataTable Browser Filtering', function (): void {
         $data = is_array($result) && isset($result[0]) ? $result[0] : $result;
 
         expect($data['hasSetter'])->toBeTrue();
-        // The setter MUST use $wire.$set() to trigger a Livewire request
-        expect($data['usesSet'])->toBeTrue('Filter setter must use $wire.$set() to trigger server updates');
+        // The setter MUST use $wire.call('syncFromAlpine', ...) to trigger server updates
+        expect($data['usesSyncFromAlpine'])->toBeTrue('Filter setter must use syncFromAlpine to trigger server updates');
     });
 
     it('clears filters when clear button is clicked', function (): void {
@@ -638,6 +638,233 @@ describe('DataTable Browser Filtering', function (): void {
         }');
         $afterTotal = is_array($after) && isset($after[0]) ? $after[0] : $after;
         expect($afterTotal)->toBe(25);
+    });
+
+    it('updates visible row data after removing a filter via removeFilter', function (): void {
+        $user = createTestUser(['name' => 'Filter Test User', 'email' => 'filter-row@example.com']);
+        createTestPost(['user_id' => $user->getKey(), 'title' => 'UniqueAlpha Post']);
+        createTestPost(['user_id' => $user->getKey(), 'title' => 'UniqueAlpha Second']);
+
+        $page = visitLivewire(PostDataTable::class);
+
+        // Wait for data to load
+        $page->wait(3);
+
+        // Poll until data is loaded
+        $page->script('() => {
+            return new Promise((resolve) => {
+                const check = () => {
+                    const comp = document.querySelector("[wire\\\\:id]");
+                    const wireId = comp?.getAttribute("wire:id");
+                    const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;
+                    if (total > 0) return resolve(total);
+                    setTimeout(check, 200);
+                };
+                check();
+            });
+        }');
+
+        // Verify unfiltered total
+        $beforeTotal = $page->script('() => {
+            const comp = document.querySelector("[wire\\\\:id]");
+            const wireId = comp?.getAttribute("wire:id");
+            return window.Livewire?.find(wireId)?.$get("data")?.total;
+        }');
+        $beforeTotal = is_array($beforeTotal) && isset($beforeTotal[0]) ? $beforeTotal[0] : $beforeTotal;
+        expect($beforeTotal)->toBe(27);
+
+        // Apply filter for "UniqueAlpha"
+        $page->script('() => {
+            const input = document.querySelector("table thead tr:nth-child(2) td input[type=search]");
+            if (input) {
+                input.value = "UniqueAlpha";
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        }');
+
+        // Wait for filter + poll until total changes
+        $page->script('() => {
+            return new Promise((resolve) => {
+                const check = () => {
+                    const comp = document.querySelector("[wire\\\\:id]");
+                    const wireId = comp?.getAttribute("wire:id");
+                    const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;
+                    if (total > 0 && total < 27) return resolve(total);
+                    setTimeout(check, 200);
+                };
+                setTimeout(check, 1000);
+            });
+        }');
+
+        $filteredTotal = $page->script('() => {
+            const comp = document.querySelector("[wire\\\\:id]");
+            const wireId = comp?.getAttribute("wire:id");
+            return window.Livewire?.find(wireId)?.$get("data")?.total;
+        }');
+        $filteredTotal = is_array($filteredTotal) && isset($filteredTotal[0]) ? $filteredTotal[0] : $filteredTotal;
+        expect($filteredTotal)->toBe(2);
+
+        // Remove filter via removeFilter (simulates clicking X on badge)
+        $page->script('() => {
+            const xDataEl = document.querySelector("[x-data]");
+            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
+                xDataEl._x_dataStack[0].removeFilter(0, 0);
+            }
+        }');
+
+        // Poll until BOTH total=27 AND data rows contain non-UniqueAlpha titles
+        $debugResult = $page->script('() => {
+            return new Promise((resolve, reject) => {
+                const startTime = Date.now();
+                const check = () => {
+                    if (Date.now() - startTime > 10000) {
+                        // Timeout - capture debug state
+                        const comp = document.querySelector("[wire\\\\:id]");
+                        const wireId = comp?.getAttribute("wire:id");
+                        const lw = window.Livewire?.find(wireId);
+                        const data = lw?.$get("data");
+                        return resolve({
+                            timeout: true,
+                            total: data?.total,
+                            rowCount: data?.data?.length,
+                            titles: (data?.data || []).slice(0, 5).map(r => r.title),
+                            allKeys: data ? Object.keys(data) : [],
+                        });
+                    }
+                    const comp = document.querySelector("[wire\\\\:id]");
+                    const wireId = comp?.getAttribute("wire:id");
+                    const data = window.Livewire?.find(wireId)?.$get("data");
+                    const total = data?.total ?? 0;
+                    const rows = data?.data || [];
+                    const hasNonAlpha = rows.some(r => !r.title?.includes("UniqueAlpha"));
+                    if (total === 27 && hasNonAlpha) {
+                        return resolve({
+                            timeout: false,
+                            total: total,
+                            rowCount: rows.length,
+                            titles: rows.slice(0, 5).map(r => r.title),
+                        });
+                    }
+                    setTimeout(check, 200);
+                };
+                setTimeout(check, 500);
+            });
+        }');
+        $debugResult = is_array($debugResult) && isset($debugResult[0]) ? $debugResult[0] : $debugResult;
+
+        expect($debugResult['timeout'])->toBeFalse(
+            'Timed out waiting for data update. Debug: '
+            . json_encode($debugResult)
+        );
+
+        $hasNonAlpha = collect($debugResult['titles'])->contains(fn ($t) => ! str_contains($t, 'UniqueAlpha'));
+        expect($hasNonAlpha)->toBeTrue(
+            'After removing filter, data must show mixed titles. '
+            . 'Got: ' . json_encode($debugResult)
+        );
+    });
+
+    it('updates visible row data after clearFilters', function (): void {
+        $user = createTestUser(['name' => 'Clear Test User', 'email' => 'clear-row@example.com']);
+        createTestPost(['user_id' => $user->getKey(), 'title' => 'UniqueBeta Post']);
+        createTestPost(['user_id' => $user->getKey(), 'title' => 'UniqueBeta Second']);
+
+        $page = visitLivewire(PostDataTable::class);
+
+        // Wait for data to load
+        $page->script('() => {
+            return new Promise((resolve) => {
+                const check = () => {
+                    const comp = document.querySelector("[wire\\\\:id]");
+                    const wireId = comp?.getAttribute("wire:id");
+                    const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;
+                    if (total > 0) return resolve(total);
+                    setTimeout(check, 200);
+                };
+                setTimeout(check, 1000);
+            });
+        }');
+
+        // Apply filter for "UniqueBeta"
+        $page->script('() => {
+            const input = document.querySelector("table thead tr:nth-child(2) td input[type=search]");
+            if (input) {
+                input.value = "UniqueBeta";
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        }');
+
+        // Wait until filter takes effect
+        $page->script('() => {
+            return new Promise((resolve) => {
+                const check = () => {
+                    const comp = document.querySelector("[wire\\\\:id]");
+                    const wireId = comp?.getAttribute("wire:id");
+                    const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;
+                    if (total > 0 && total < 27) return resolve(total);
+                    setTimeout(check, 200);
+                };
+                setTimeout(check, 1000);
+            });
+        }');
+
+        // Clear all filters
+        $page->script('() => {
+            const xDataEl = document.querySelector("[x-data]");
+            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
+                xDataEl._x_dataStack[0].clearFilters();
+            }
+        }');
+
+        // Poll until BOTH total=27 AND data rows contain non-UniqueBeta titles
+        $debugResult = $page->script('() => {
+            return new Promise((resolve) => {
+                const startTime = Date.now();
+                const check = () => {
+                    if (Date.now() - startTime > 10000) {
+                        const comp = document.querySelector("[wire\\\\:id]");
+                        const wireId = comp?.getAttribute("wire:id");
+                        const data = window.Livewire?.find(wireId)?.$get("data");
+                        return resolve({
+                            timeout: true,
+                            total: data?.total,
+                            rowCount: data?.data?.length,
+                            titles: (data?.data || []).slice(0, 5).map(r => r.title),
+                        });
+                    }
+                    const comp = document.querySelector("[wire\\\\:id]");
+                    const wireId = comp?.getAttribute("wire:id");
+                    const data = window.Livewire?.find(wireId)?.$get("data");
+                    const total = data?.total ?? 0;
+                    const rows = data?.data || [];
+                    const hasNonBeta = rows.some(r => !r.title?.includes("UniqueBeta"));
+                    if (total === 27 && hasNonBeta) {
+                        return resolve({
+                            timeout: false,
+                            total: total,
+                            rowCount: rows.length,
+                            titles: rows.slice(0, 5).map(r => r.title),
+                        });
+                    }
+                    setTimeout(check, 200);
+                };
+                setTimeout(check, 500);
+            });
+        }');
+        $debugResult = is_array($debugResult) && isset($debugResult[0]) ? $debugResult[0] : $debugResult;
+
+        expect($debugResult['timeout'])->toBeFalse(
+            'Timed out waiting for data update. Debug: '
+            . json_encode($debugResult)
+        );
+
+        $hasNonBeta = collect($debugResult['titles'])->contains(fn ($t) => ! str_contains($t, 'UniqueBeta'));
+        expect($hasNonBeta)->toBeTrue(
+            'After clearFilters, data must show mixed titles. '
+            . 'Got: ' . json_encode($debugResult)
+        );
     });
 
     it('displays filter badge when filter is applied', function (): void {
