@@ -1,6 +1,22 @@
 export default function data_table($wire) {
     return {
+        _wireVersion: 0,
+        _dataVersion: 0,
+        _directData: null,
         async init() {
+            this._directData = $wire.data;
+            $wire.on('data-table-data-loaded', ({data}) => {
+                this._directData = data;
+                this._dataVersion++;
+            });
+            [
+                'groupBy', 'expandedGroups', 'filterValueLists',
+                'userFilters', 'aggregatableCols', 'userOrderBy', 'userOrderAsc',
+                'stickyCols', 'initialized', 'search', 'selected',
+            ].forEach(prop => {
+                $wire.$watch(prop, () => { this._wireVersion++; });
+            });
+
             this.loadTableConfig();
             this.$nextTick(() => {
                 this.$watch('enabledCols', () => {
@@ -168,8 +184,8 @@ export default function data_table($wire) {
                 this.groupLabels = result.groupLabels;
             });
         },
-        get data() { return $wire.data },
-        set data(value) { $wire.$set('data', value) },
+        get data() { void this._dataVersion; return this._directData ?? $wire.data },
+        set data(value) { $wire.call('syncFromAlpine', 'data', value) },
         enabledCols: [],
         availableCols: [],
         colLabels: [],
@@ -178,10 +194,10 @@ export default function data_table($wire) {
         sortable: [],
         aggregatable: [],
         groupable: [],
-        get groupBy() { return $wire.groupBy },
-        set groupBy(value) { $wire.$set('groupBy', value) },
-        get expandedGroups() { return $wire.expandedGroups },
-        set expandedGroups(value) { $wire.$set('expandedGroups', value) },
+        get groupBy() { void this._wireVersion; return $wire.groupBy },
+        set groupBy(value) { $wire.call('syncFromAlpine', 'groupBy', value) },
+        get expandedGroups() { void this._wireVersion; return $wire.expandedGroups },
+        set expandedGroups(value) { $wire.$set('expandedGroups', value, false); $wire.call('syncFromAlpine', 'expandedGroups', value) },
         selectable: false,
         rowSortable: false,
         showSelectedActions: false,
@@ -194,24 +210,24 @@ export default function data_table($wire) {
         searchRoute: '',
         tab: 'edit-filters',
         showSavedFilters: false,
-        get filterValueLists() { return $wire.filterValueLists },
-        set filterValueLists(value) { $wire.$set('filterValueLists', value) },
-        get filters() { return $wire.userFilters },
-        set filters(value) { $wire.$set('userFilters', value) },
-        get aggregatableCols() { return $wire.aggregatableCols },
-        set aggregatableCols(value) { $wire.$set('aggregatableCols', value) },
-        get orderByCol() { return $wire.userOrderBy },
-        set orderByCol(value) { $wire.$set('userOrderBy', value) },
-        get orderAsc() { return $wire.userOrderAsc },
-        set orderAsc(value) { $wire.$set('userOrderAsc', value) },
-        get stickyCols() { return $wire.stickyCols },
-        set stickyCols(value) { $wire.$set('stickyCols', value) },
-        get initialized() { return $wire.initialized },
-        set initialized(value) { $wire.$set('initialized', value) },
-        get search() { return $wire.search },
-        set search(value) { $wire.$set('search', value) },
-        get selected() { return $wire.selected },
-        set selected(value) { $wire.$set('selected', value) },
+        get filterValueLists() { void this._wireVersion; return $wire.filterValueLists },
+        set filterValueLists(value) { $wire.call('syncFromAlpine', 'filterValueLists', value) },
+        get filters() { void this._wireVersion; return $wire.userFilters },
+        set filters(value) { $wire.call('syncFromAlpine', 'userFilters', value) },
+        get aggregatableCols() { void this._wireVersion; return $wire.aggregatableCols },
+        set aggregatableCols(value) { $wire.call('syncFromAlpine', 'aggregatableCols', value) },
+        get orderByCol() { void this._wireVersion; return $wire.userOrderBy },
+        set orderByCol(value) { $wire.call('syncFromAlpine', 'userOrderBy', value) },
+        get orderAsc() { void this._wireVersion; return $wire.userOrderAsc },
+        set orderAsc(value) { $wire.call('syncFromAlpine', 'userOrderAsc', value) },
+        get stickyCols() { void this._wireVersion; return $wire.stickyCols },
+        set stickyCols(value) { $wire.$set('stickyCols', value, false); $wire.call('syncFromAlpine', 'stickyCols', value) },
+        get initialized() { void this._wireVersion; return $wire.initialized },
+        set initialized(value) { $wire.call('syncFromAlpine', 'initialized', value) },
+        get search() { void this._wireVersion; return $wire.search },
+        set search(value) { $wire.call('syncFromAlpine', 'search', value) },
+        get selected() { void this._wireVersion; return $wire.selected },
+        set selected(value) { $wire.$set('selected', value, false); $wire.call('syncFromAlpine', 'selected', value) },
         filterBadge(filter) {
             if (!filter) {
                 return;
@@ -667,7 +683,7 @@ export default function data_table($wire) {
                         return acc;
                     }, {});
                     this.$watch('textFilter', () => {
-                        this.parseFilter();
+                        if (!this._suppressParseFilter) this.parseFilter();
                     });
                 }
             });
@@ -682,12 +698,13 @@ export default function data_table($wire) {
                         return acc;
                     }, {});
                     this.$watch('textFilter', () => {
-                        this.parseFilter();
+                        if (!this._suppressParseFilter) this.parseFilter();
                     });
                 }
             });
         },
         filterIndex: 0,
+        _suppressParseFilter: false,
         textFilter: null,
         newFilter: { column: '', operator: '', value: [], relation: '' },
         newFilterCalculation: {
@@ -817,7 +834,9 @@ export default function data_table($wire) {
                 const removed = innerArray.splice(index, 1);
 
                 if (removed[0].textFilterKey) {
+                    this._suppressParseFilter = true;
                     this.textFilter[removed[0].column] = '';
+                    this._suppressParseFilter = false;
                 }
 
                 if (innerArray.length === 0) {
@@ -833,9 +852,11 @@ export default function data_table($wire) {
             }
         },
         clearFilters() {
+            this._suppressParseFilter = true;
+            this.textFilter = {};
+            this._suppressParseFilter = false;
             this.filters = [];
             this.filterIndex = 0;
-            this.textFilter = {};
             $wire.forgetSessionFilter();
             $wire.sortTable('');
         },
