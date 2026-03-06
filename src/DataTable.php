@@ -505,18 +505,6 @@ class DataTable extends Component
     }
 
     #[Renderless]
-    public function updatedUserFilters(): void
-    {
-        if ($this->loadingFilter) {
-            $this->loadingFilter = false;
-
-            return;
-        }
-
-        $this->applyUserFilters();
-    }
-
-    #[Renderless]
     public function syncFromAlpine(string $property, mixed $value): void
     {
         if (! property_exists($this, $property)) {
@@ -529,6 +517,18 @@ class DataTable extends Component
         if (method_exists($this, $method)) {
             $this->{$method}();
         }
+    }
+
+    #[Renderless]
+    public function updatedUserFilters(): void
+    {
+        if ($this->loadingFilter) {
+            $this->loadingFilter = false;
+
+            return;
+        }
+
+        $this->applyUserFilters();
     }
 
     protected function addFilter(Builder $query, string|int $type, array $filter): void
