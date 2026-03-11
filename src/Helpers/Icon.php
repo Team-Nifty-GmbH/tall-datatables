@@ -108,6 +108,6 @@ class Icon implements Htmlable, Responsable
 
     private function getComponentName(): string
     {
-        return 'tallstackui::icons.' . ($this->variant ?? 'solid') . '.' . $this->name;
+        return 'ts-ui::icons.' . ($this->variant ?? 'solid') . '.' . $this->name;
     }
 }

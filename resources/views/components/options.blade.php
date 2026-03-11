@@ -13,7 +13,7 @@
             id="save-filter"
             :title="__('Save filter')"
             x-on:close="filterName = ''; permanent = false;"
-            x-on:open="$focusOn('filter-name')"
+            x-on:open="$tsui.focus('filter-name')"
         >
             <x-input
                 required
@@ -34,11 +34,11 @@
                     light
                     flat
                     :text="__('Cancel')"
-                    x-on:click="$modalClose('save-filter')"
+                    x-on:click="$tsui.close.modal('save-filter')"
                 />
                 <x-button
                     :text="__('Save')"
-                    x-on:click="$wire.$parent.saveFilter(filterName, permanent, withEnabledCols).then(() => $modalClose('save-filter'));"
+                    x-on:click="$wire.$parent.saveFilter(filterName, permanent, withEnabledCols).then(() => $tsui.close.modal('save-filter'));"
                 />
             </x-slot>
         </x-modal>
@@ -154,11 +154,11 @@
                     light
                     flat
                     :text="__('Cancel')"
-                    x-on:click="$modalClose('date-calculation')"
+                    x-on:click="$tsui.close.modal('date-calculation')"
                 />
                 <x-button
                     :text="__('Save')"
-                    x-on:click="addCalculation(dateCalculation); $modalClose('date-calculation');"
+                    x-on:click="addCalculation(dateCalculation); $tsui.close.modal('date-calculation');"
                 />
             </x-slot>
         </x-modal>
@@ -572,7 +572,7 @@
                                     light
                                     icon="calculator"
                                     class="w-full"
-                                    x-on:click="dateCalculation = 0; $modalOpen('date-calculation');"
+                                    x-on:click="dateCalculation = 0; $tsui.open.modal('date-calculation');"
                                 ></x-button>
                             </div>
                         </div>
@@ -613,7 +613,7 @@
                                         light
                                         icon="calculator"
                                         class="w-full"
-                                        x-on:click="dateCalculation = 1; $modalOpen('date-calculation');"
+                                        x-on:click="dateCalculation = 1; $tsui.open.modal('date-calculation');"
                                     ></x-button>
                                 </div>
                             </div>
@@ -770,7 +770,7 @@
                         <x-button
                             color="indigo"
                             class="w-full"
-                            x-on:click="$modalOpen('save-filter')"
+                            x-on:click="$tsui.open.modal('save-filter')"
                         >
                             {{ __('Save') }}
                         </x-button>
@@ -1070,7 +1070,7 @@
                 <div class="pt-3">
                     <x-button
                         loading
-                        x-on:click="$wire.$parent.export(exportColumns); $slideClose('data-table-sidebar-' + $wire.$parent.id.toLowerCase());"
+                        x-on:click="$wire.$parent.export(exportColumns); $tsui.close.slide('data-table-sidebar-' + $wire.$parent.id.toLowerCase());"
                         color="indigo"
                         class="w-full"
                     >

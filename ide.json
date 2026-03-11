@@ -4,7 +4,7 @@
         "components": {
             "viewPaths": [
                 {
-                    "path": "vendor/tallstackui/tallstackui/resources/views/components"
+                    "path": "vendor/tallstackui/tallstackui/src/resources/views/components"
                 }
             ]
         }

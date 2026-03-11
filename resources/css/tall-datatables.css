@@ -1,6 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@source "../../src/**/*.php";
+@source "../views/**/*.blade.php";
+@source "../js/**/*.js";
+
+@plugin "@tailwindcss/forms";
+
+@variant dark (&:where(.dark, .dark *));
 
 [x-cloak] {
     display: none !important;

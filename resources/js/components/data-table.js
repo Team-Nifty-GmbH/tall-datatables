@@ -616,7 +616,7 @@ export default function data_table($wire) {
                 this.showSavedFilters = false;
             }
 
-            $slideOpen('data-table-sidebar-' + $wire.id.toLowerCase());
+            $tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase());
         },
         filterable: [],
         relationTableFields: {},
