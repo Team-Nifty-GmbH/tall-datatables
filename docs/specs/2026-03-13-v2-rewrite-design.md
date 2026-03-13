@@ -56,8 +56,9 @@ DataTable (main Livewire component)
 
 - **Rows are NOT Livewire components.** 15+ components per page is too expensive. For broadcasts, the main component handles `refreshRow($id)` to re-render a single row without reloading all data.
 - **Filters and Options are lazy.** They load only when the user opens the sidebar.
-- **Communication is one-directional.** Child components dispatch events upward. DataTable listens with `#[On(...)]` handlers. No bi-directional sync.
+- **Communication uses `$this->dispatch()->to(DataTable::class)`.** Since sidebar components may be teleported (e.g., `@teleport`), standard parent-child event bubbling may not work. Targeted dispatch ensures events reach the parent regardless of DOM position. DataTable listens with `#[On(...)]` handlers.
 - **Search uses `wire:model.live.debounce.300ms`** directly on the input. `updatedSearch()` lifecycle hook triggers `loadData()`. No Alpine watcher.
+- **Per-column text filters stay in the table header**, owned by the main DataTable component. The DataTableFilters sidebar manages the structured filter builder and saved filters. The text filter parsing (`FilterParser`) is invoked by the main component when `updatedTextFilter()` fires.
 
 ---
 
@@ -104,14 +105,32 @@ DataTable (Livewire)
 
 ### Approach
 
-Each Cast implementing `HasFrontendFormatter` gets a `formatForFrontend()` method:
+Standalone Formatter classes handle all formatting. Casts remain pure value objects — they do NOT implement formatting. The `HasFrontendFormatter` interface is **deprecated**; the `FormatterRegistry` replaces it entirely.
+
+### Formatter Contract
 
 ```php
-interface HasFrontendFormatter
+interface Formatter
 {
-    public function formatForFrontend(mixed $value, array $context = []): string;
+    /**
+     * @param  mixed  $value  The raw value from the model
+     * @param  array  $context  Sibling attributes from the model (e.g., currency_code for money)
+     * @return string  Sanitized HTML string (must call e() on any user-controlled data)
+     */
+    public function format(mixed $value, array $context = []): string;
 }
 ```
+
+The `$context` parameter receives the full model attribute array so formatters can access sibling fields (e.g., `MoneyFormatter` reads `$context['currency.iso']` for currency code, `BadgeFormatter` reads color mappings).
+
+### XSS Protection
+
+All formatters MUST sanitize output. The Formatter contract mandates:
+- Use `e()` on any user-controlled string values before embedding in HTML
+- Only produce raw HTML for known-safe structural elements (badges, icons, links with sanitized URLs)
+- The `RowTransformer` validates that all `display` values are strings before passing to Blade
+
+Blade renders with `{!! $cell['display'] !!}` for formatted output or `{{ $cell['raw'] }}` for plain values.
 
 ### Data Structure Per Cell
 
@@ -120,7 +139,7 @@ interface HasFrontendFormatter
 ```
 
 - `raw` — for filtering, sorting, aggregation
-- `display` — pre-formatted HTML string for rendering
+- `display` — pre-formatted, sanitized HTML string for rendering
 
 ### RowTransformer
 
@@ -131,10 +150,12 @@ class RowTransformer
 {
     public function transform(Model $model, array $enabledCols, FormatterRegistry $registry): array
     {
+        $context = $model->attributesToArray();
+
         // For each enabled column:
-        // 1. Get raw value
-        // 2. Look up formatter from registry
-        // 3. Format for display
+        // 1. Get raw value (supports dot notation for relations)
+        // 2. Look up formatter from registry (by Cast class or auto-detect)
+        // 3. format($raw, $context) → sanitized HTML string
         // 4. Return ['raw' => ..., 'display' => ...]
     }
 }
@@ -149,13 +170,31 @@ $registry->register(Money::class, new MoneyFormatter());
 $registry->register(Percentage::class, new PercentageFormatter());
 ```
 
-Auto-detection for unregistered types (string, int, float, bool, date, datetime).
+**Auto-detection** for unregistered types: inspects the Eloquent cast metadata from `$model->getCasts()`. For native PHP types (string, int, float, bool) and common cast types (date, datetime, timestamp), applies built-in formatters. Unknown types fall back to `e((string) $value)`.
+
+### Complete Formatter List
+
+To match v1 feature parity, the following formatters are needed:
+
+| Formatter | v1 JS equivalent | Notes |
+|-----------|-----------------|-------|
+| MoneyFormatter | `money`, `coloredMoney` | Color via option flag |
+| FloatFormatter | `float`, `coloredFloat` | Color via option flag |
+| PercentageFormatter | `percentage`, `progressPercentage` | Progress bar via option flag |
+| DateFormatter | `date`, `datetime`, `time`, `relativeTime` | Format string configurable |
+| BooleanFormatter | `bool` | |
+| BadgeFormatter | `state` | Maps value → color/label |
+| LinkFormatter | `link`, `url`, `email`, `tel` | Type configurable |
+| ImageFormatter | `image` | |
+| ArrayFormatter | `array`, `object` | |
+| StringFormatter | `string`, `int` | Default fallback |
 
 ### Result
 
 - `formatters.js` (502 lines) eliminated entirely
+- `HasFrontendFormatter` interface deprecated (registry-based lookup replaces it)
 - Aggregation footer also formatted server-side
-- Blade renders `{!! $cell['display'] !!}` or simple `{{ $cell['raw'] }}`
+- Payload tradeoff: sending `raw` + `display` doubles cell data volume. For columns where `raw === display` (plain strings, integers), the RowTransformer omits `display` and Blade falls back to `{{ $cell['raw'] }}`
 
 ---
 
@@ -196,13 +235,55 @@ Grouped rows as Blade partial instead of JS HTML string generation.
 
 ---
 
+## Broadcasting / Real-Time Updates
+
+### v1
+
+- `HasEloquentListeners` trait manages Echo channel subscriptions in JS
+- `BroadcastsEvents` trait on models dispatches events on create/update/delete
+- JS listeners (`echoCreated`, `echoUpdated`, etc.) directly mutate Alpine's `_directData`
+
+### v2
+
+- `BroadcastsEvents` model trait stays unchanged
+- `HasEloquentListeners` moves to the main DataTable component in PHP
+- Echo channel subscriptions managed via `getListeners()` returning Echo event → method mapping
+- `refreshRow($id)` re-queries a single model, runs it through `RowTransformer`, and replaces that row in `$this->data` — Livewire morphs only the changed row in the DOM
+- `refreshData()` for create/delete events triggers a full `loadData()` — same as v1 behavior but without the Alpine intermediary
+- Infinite scroll (`$hasInfiniteScroll`, `loadMore()`) stays as a DataTable feature, loading additional pages into `$this->data`
+
+---
+
+## Performance Considerations
+
+### Render Strategy
+
+v1 uses `skipRender()` aggressively — most methods are `#[Renderless]`, data loads dispatch to Alpine which updates the DOM. v2 renders from `$this->data` via Blade, so every data load triggers a Livewire morph diff.
+
+**Mitigation:**
+- Livewire v4's improved morphing algorithm handles large DOM diffs efficiently
+- `wire:key` on each row enables targeted morphing (only changed rows re-render)
+- For actions that don't change table data (sidebar open/close, selection toggle), use `#[Renderless]` + Alpine state for zero-roundtrip interactions
+- Benchmark early: measure morph diff time for 50-row / 15-column tables during alpha
+
+### Payload Size
+
+Sending `raw` + `display` per cell increases payload. Mitigation: `RowTransformer` omits `display` when it equals the string-cast `raw` value. Only cells with actual formatting (money, dates, badges, etc.) carry both values.
+
+### DataTable.php Target Size
+
+The ~400-line target is achievable with trait extraction, but may land closer to ~500 lines. The goal is "under 600 lines" as a hard limit, with traits handling query building, aggregation, grouping, selection, exporting, and settings.
+
+---
+
 ## PHP Class Structure
 
 ```
 src/
-├── DataTable.php                      — Main component (~400 lines)
+├── DataTable.php                      — Main component (~400-500 lines)
 │   ├── mount(), render(), loadData()
 │   ├── Event listeners (#[On(...)])
+│   ├── Echo listeners (refreshRow, refreshData)
 │   └── Customization hooks (getBuilder, getLayout, etc.)
 │
 ├── Components/
@@ -215,7 +296,9 @@ src/
 │   ├── SupportsGrouping.php          — loadGroupedData(), group pagination
 │   ├── SupportsRelations.php         — Relation loading & filtering
 │   ├── SupportsSelecting.php         — Row selection, wildcard, bulk
+│   ├── SupportsSorting.php           — Row drag & drop reorder (sortRows)
 │   ├── SupportsExporting.php         — Excel export
+│   ├── HasEloquentListeners.php      — Echo channel subscriptions, refreshRow
 │   └── StoresSettings.php            — User settings persistence
 │
 ├── Formatters/
@@ -223,13 +306,15 @@ src/
 │   ├── Contracts/
 │   │   └── Formatter.php             — interface: format(mixed $value, array $context): string
 │   ├── MoneyFormatter.php
+│   ├── FloatFormatter.php
 │   ├── DateFormatter.php
 │   ├── BooleanFormatter.php
 │   ├── BadgeFormatter.php
 │   ├── LinkFormatter.php
 │   ├── ImageFormatter.php
 │   ├── PercentageFormatter.php
-│   └── ArrayFormatter.php
+│   ├── ArrayFormatter.php
+│   └── StringFormatter.php
 │
 ├── Filters/
 │   ├── FilterParser.php              — Text input → filter array
@@ -243,11 +328,13 @@ src/
 
 ### Key Changes
 
-- **DataTable.php shrinks from 1,186 to ~400 lines** — query building, filter parsing, row transformation in own classes
+- **DataTable.php shrinks from 1,186 to ~400-500 lines** — query building, filter parsing, row transformation in own classes
 - **SupportsCache eliminated** — `_directData` caching no longer needed
 - **Filter logic split** — parser (text → structure) and applier (structure → WHERE) separated
-- **Formatters as own classes** — registrable via `FormatterRegistry`, not embedded in Casts
+- **Formatters as own classes** — registrable via `FormatterRegistry`, Casts stay as pure value objects
 - **RowTransformer** — single place for Model → `['raw' => ..., 'display' => ...]`
+- **SupportsSorting preserved** — row reorder stays as trait
+- **HasEloquentListeners moved to PHP** — Echo subscriptions managed server-side
 
 ---
 
@@ -289,8 +376,10 @@ class OrderDataTable extends DataTable
 
 - **JS files removed:** `data-table.js` and `formatters.js` no longer exist. Custom JS built on these must be rewritten.
 - **Events changed:** `data-table-data-loaded` no longer dispatched. Inter-component events have new names.
-- **HasFrontendFormatter interface:** Must implement `formatForFrontend()` instead of just returning a formatter name.
-- **Blade view namespaces:** Internal view paths may change.
+- **HasFrontendFormatter interface deprecated:** No longer used for formatting. The `FormatterRegistry` handles all formatting via standalone classes. Existing casts that implement `HasFrontendFormatter` can drop the interface.
+- **Blade view paths changed:** Internal views restructured from flat to grouped (`components/`, `filters/`, `options/`). Custom views referencing old paths must be updated.
+- **Composer constraints tightened:** `"livewire/livewire": "^4.0"` (was `"^3.1 || ^4"`), `"tallstackui/tallstackui": "^3.0"` (was `"^2.0"`).
+- **HasFrontendAttributes:** `typeScriptAttributes()` no longer called by the DataTable. The `FormatterRegistry` discovers formatters through cast metadata, not through the `HasFrontendAttributes` trait. Models using this trait for `detailRoute()` and icon support are unaffected.
 
 ### What stays
 
@@ -301,6 +390,53 @@ class OrderDataTable extends DataTable
 - `DatatableUserSetting` model + migration
 - Search route / SearchController
 - Config file
+
+---
+
+## Grouped View Architecture
+
+In v1, grouped rows are built entirely in JS (~200 lines of HTML string generation). In v2, the grouped view is a Blade partial.
+
+```
+views/components/
+├── grouped-table.blade.php      — Grouped layout with expand/collapse
+├── group-header.blade.php       — Group header row (label, count, group aggregate)
+└── group-rows.blade.php         — Rows within a group
+```
+
+- Expand/collapse state managed with Alpine `x-show` (no Livewire roundtrip)
+- Per-group pagination dispatches Livewire action to load next page within group
+- Per-group aggregates computed server-side alongside group data
+- `loadGroupedData()` returns structure: `[['key' => ..., 'label' => ..., 'rows' => [...], 'aggregates' => [...], 'pagination' => [...]]]`
+
+---
+
+## Test Strategy
+
+### Unit Tests (isolated, no Livewire)
+
+- `FilterParser` — text input → filter array for various operators and edge cases
+- `FilterApplier` — filter array → correct WHERE clauses (mock Builder)
+- `RowTransformer` — model → raw+display array with various cast types
+- `FormatterRegistry` — registration, lookup, auto-detection fallback
+- Each Formatter — format() produces expected output for edge cases (null, empty, locale variants)
+
+### Feature Tests (Livewire test helper)
+
+- `DataTable` — mount, loadData, sorting, pagination, search, selection, aggregation
+- `DataTableFilters` — filter building, text parsing, saved filters, dispatch to parent
+- `DataTableOptions` — column toggle, aggregation config, grouping config, dispatch to parent
+- Broadcasting — refreshRow updates single row, refreshData triggers full reload
+- Grouped view — group loading, per-group pagination, expand/collapse
+
+### Browser Tests (Pest v4 / Dusk)
+
+- End-to-end table interactions: sort click, filter type, pagination navigate
+- Drag & drop column reorder
+- Sidebar open/close
+- Keyboard shortcuts
+
+Existing v1 tests are migrated where applicable. New classes (FilterParser, RowTransformer, formatters) get unit tests from the start.
 
 ---
 
