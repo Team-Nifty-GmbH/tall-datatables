@@ -3,7 +3,6 @@
 namespace TeamNiftyGmbH\DataTable\Formatters;
 
 use Carbon\Carbon;
-use Carbon\Exceptions\InvalidFormatException;
 use TeamNiftyGmbH\DataTable\Formatters\Contracts\Formatter;
 use Throwable;
 
@@ -39,7 +38,7 @@ class DateFormatter implements Formatter
         return match ($this->mode) {
             'date' => e($carbon->format('d.m.Y')),
             'time' => e($carbon->format('H:i')),
-            'relative' => e($carbon->diffForHumans()),
+            'relative', 'relativeTime' => e($carbon->diffForHumans()),
             default => e($carbon->format('d.m.Y H:i')),
         };
     }

@@ -33,7 +33,7 @@ class FormatterRegistry
     public function resolveForColumn(string $column, array $casts): Formatter
     {
         if (! array_key_exists($column, $casts)) {
-            return new StringFormatter;
+            return new StringFormatter();
         }
 
         $castValue = $casts[$column];
@@ -49,10 +49,12 @@ class FormatterRegistry
     private function autoDetect(string $castClass): Formatter
     {
         return match (strtolower($castClass)) {
-            'boolean', 'bool' => new BooleanFormatter,
+            'boolean', 'bool' => new BooleanFormatter(),
+            'float', 'double', 'decimal' => new FloatFormatter(),
+            'integer', 'int' => new StringFormatter(),
             'date', 'immutable_date' => new DateFormatter(mode: 'date'),
             'datetime', 'immutable_datetime', 'timestamp' => new DateFormatter(mode: 'datetime'),
-            default => new StringFormatter,
+            default => new StringFormatter(),
         };
     }
 }
