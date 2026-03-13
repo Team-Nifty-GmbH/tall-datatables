@@ -69,7 +69,6 @@ trait StoresSettings
         }
     }
 
-    #[Renderless]
     public function loadSavedFilter(): void
     {
         $this->loadingFilter = true;
@@ -110,7 +109,6 @@ trait StoresSettings
         }
     }
 
-    #[Renderless]
     public function resetLayout(): void
     {
         try {
@@ -169,7 +167,6 @@ trait StoresSettings
         );
     }
 
-    #[Renderless]
     public function storeColLayout(array $cols): void
     {
         $reload = count($cols) > count($this->enabledCols);

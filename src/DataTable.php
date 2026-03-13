@@ -2,7 +2,6 @@
 
 namespace TeamNiftyGmbH\DataTable;
 
-use Composer\InstalledVersions;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -23,7 +22,6 @@ use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsExporting;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsGrouping;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsRelations;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSelecting;
-use function Livewire\store;
 
 class DataTable extends Component
 {
@@ -138,13 +136,12 @@ class DataTable extends Component
         return view($this->getView(), $this->getViewData());
     }
 
+    /**
+     * @deprecated No longer skips render - v2 always re-renders via Blade
+     */
     public function hydrate(): void
     {
-        if (! $this->initialized) {
-            return;
-        }
-
-        $this->skipRender();
+        // v2: Livewire always re-renders, no skipRender needed
     }
 
     protected function getTableActions(): array
@@ -152,7 +149,6 @@ class DataTable extends Component
         return [];
     }
 
-    #[Renderless]
     public function applyUserFilters(): void
     {
         $this->colLabels = $this->getColLabels();
@@ -160,16 +156,14 @@ class DataTable extends Component
         $this->startSearch();
     }
 
+    /**
+     * @deprecated No longer needed - v2 never skips render
+     */
     public function forceRender(): void
     {
-        store($this)->set('skipRender', false);
-
-        if (str_starts_with(InstalledVersions::getPrettyVersion('livewire/livewire'), 'v4.')) {
-            parent::forceRender();
-        }
+        // v2: kept for backwards compatibility but no-ops
     }
 
-    #[Renderless]
     public function forgetSessionFilter(bool $loadData = false): void
     {
         session()->forget($this->getCacheKey() . '_query');
@@ -285,7 +279,6 @@ class DataTable extends Component
         ];
     }
 
-    #[Renderless]
     public function gotoPage(int $page): void
     {
         $this->page = $page;
@@ -293,7 +286,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    #[Renderless]
     public function loadData(): void
     {
         $this->initialized = true;
@@ -348,7 +340,6 @@ class DataTable extends Component
         }
     }
 
-    #[Renderless]
     public function loadFilter(array $properties): void
     {
         if (! $properties) {
@@ -364,7 +355,6 @@ class DataTable extends Component
         }
     }
 
-    #[Renderless]
     public function loadMore(): void
     {
         $this->perPage += $this->perPage;
@@ -376,7 +366,6 @@ class DataTable extends Component
         return view('tall-datatables::livewire.placeholder');
     }
 
-    #[Renderless]
     public function setPerPage(int $perPage): void
     {
         if ($this->page > $this->data['total'] / $perPage) {
@@ -388,7 +377,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    #[Renderless]
     public function sortTable(string $col): void
     {
         if ($this->userOrderBy === $col) {
@@ -400,7 +388,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    #[Renderless]
     public function startSearch(): void
     {
         $this->reset('selected');
@@ -409,7 +396,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    #[Renderless]
     public function updatedUserFilters(): void
     {
         if ($this->loadingFilter) {
@@ -572,13 +558,14 @@ class DataTable extends Component
             'selectValue' => $this->getSelectValue(),
             'allowSoftDeletes' => $this->allowSoftDeletes(),
             'showRestoreButton' => $this->showRestoreButton(),
+            'aggregatable' => $this->getAggregatable(),
+            'isExportable' => $this->isExportable ?? false,
         ];
     }
 
     protected function setData(array $data): void
     {
         $this->data = $data;
-        $this->dispatch('data-table-data-loaded', data: $data);
     }
 
     protected function showRestoreButton(): bool

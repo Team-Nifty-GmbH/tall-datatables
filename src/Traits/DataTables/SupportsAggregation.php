@@ -7,7 +7,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Livewire\Attributes\Renderless;
 use Spatie\ModelInfo\Attributes\Attribute;
 
 trait SupportsAggregation
@@ -23,7 +22,6 @@ trait SupportsAggregation
 
     protected array $aggregatableRelationCols = [];
 
-    #[Renderless]
     public function applyAggregations(): void
     {
         $this->cacheState();

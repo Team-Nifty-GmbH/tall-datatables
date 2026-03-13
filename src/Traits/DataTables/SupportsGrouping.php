@@ -32,7 +32,6 @@ trait SupportsGrouping
             ->toArray();
     }
 
-    #[Renderless]
     public function setGroupBy(?string $column): void
     {
         $this->groupBy = $column;
@@ -44,21 +43,18 @@ trait SupportsGrouping
         $this->loadData();
     }
 
-    #[Renderless]
     public function setGroupPage(string $groupKey, int $page): void
     {
         $this->groupPages[$groupKey] = $page;
         $this->loadData();
     }
 
-    #[Renderless]
     public function setGroupsPage(int $page): void
     {
         $this->currentGroupsPage = $page;
         $this->loadData();
     }
 
-    #[Renderless]
     public function toggleGroup(string $groupKey): void
     {
         if (in_array($groupKey, $this->expandedGroups)) {
