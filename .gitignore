@@ -3,7 +3,8 @@
 composer.lock
 package-lock.json
 coverage
-docs
+docs/*
+!docs/specs
 phpunit.xml
 phpstan.neon
 testbench.yaml
