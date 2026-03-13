@@ -13,6 +13,7 @@ use Livewire\Livewire;
 use TeamNiftyGmbH\DataTable\Commands\MakeDataTableCommand;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCache;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCacheReset;
+use TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
 use TeamNiftyGmbH\DataTable\Components\DataTableFilters;
@@ -47,6 +48,10 @@ class DataTableServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(FormatterRegistry::class, function () {
+            return new FormatterRegistry();
+        });
+
         $this->registerBladeDirectives();
         $this->registerTagCompiler();
         $this->registerMacros();
