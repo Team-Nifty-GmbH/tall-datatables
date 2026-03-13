@@ -5,13 +5,13 @@ use TeamNiftyGmbH\DataTable\Formatters\DateFormatter;
 
 describe('DateFormatter', function (): void {
     it('returns empty string for null', function (): void {
-        $formatter = new DateFormatter;
+        $formatter = new DateFormatter();
 
         expect($formatter->format(null))->toBe('');
     });
 
     it('returns empty string for invalid date string', function (): void {
-        $formatter = new DateFormatter;
+        $formatter = new DateFormatter();
 
         expect($formatter->format('not-a-date'))->toBe('');
     });
@@ -73,7 +73,7 @@ describe('DateFormatter', function (): void {
     });
 
     it('uses datetime as default mode', function (): void {
-        $formatter = new DateFormatter;
+        $formatter = new DateFormatter();
 
         expect($formatter->format('2024-01-15 14:30:00'))->toBe('15.01.2024 14:30');
     });

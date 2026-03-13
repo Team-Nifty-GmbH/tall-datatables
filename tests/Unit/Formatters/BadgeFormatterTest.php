@@ -4,7 +4,7 @@ use TeamNiftyGmbH\DataTable\Formatters\BadgeFormatter;
 
 describe('BadgeFormatter', function (): void {
     it('returns empty string for null', function (): void {
-        $formatter = new BadgeFormatter;
+        $formatter = new BadgeFormatter();
 
         expect($formatter->format(null))->toBe('');
     });
@@ -23,7 +23,7 @@ describe('BadgeFormatter', function (): void {
     });
 
     it('renders unknown value with gray badge', function (): void {
-        $formatter = new BadgeFormatter;
+        $formatter = new BadgeFormatter();
         $result = $formatter->format('unknown-status');
 
         expect($result)
@@ -43,7 +43,7 @@ describe('BadgeFormatter', function (): void {
     });
 
     it('escapes XSS in value', function (): void {
-        $formatter = new BadgeFormatter;
+        $formatter = new BadgeFormatter();
         $result = $formatter->format('<script>alert(1)</script>');
 
         expect($result)
@@ -62,7 +62,7 @@ describe('BadgeFormatter', function (): void {
     });
 
     it('renders span with badge classes', function (): void {
-        $formatter = new BadgeFormatter;
+        $formatter = new BadgeFormatter();
         $result = $formatter->format('test');
 
         expect($result)

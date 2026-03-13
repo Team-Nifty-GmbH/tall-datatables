@@ -4,7 +4,7 @@ use TeamNiftyGmbH\DataTable\Formatters\LinkFormatter;
 
 describe('LinkFormatter', function (): void {
     it('returns empty string for null', function (): void {
-        $formatter = new LinkFormatter;
+        $formatter = new LinkFormatter();
 
         expect($formatter->format(null))->toBe('');
     });
@@ -47,8 +47,8 @@ describe('LinkFormatter', function (): void {
     });
 
     it('renders Link object with url, label and target', function (): void {
-        $formatter = new LinkFormatter;
-        $link = new stdClass;
+        $formatter = new LinkFormatter();
+        $link = new stdClass();
         $link->url = 'https://example.com';
         $link->label = 'Visit';
         $link->target = '_blank';
@@ -62,7 +62,7 @@ describe('LinkFormatter', function (): void {
     });
 
     it('escapes XSS in URL string', function (): void {
-        $formatter = new LinkFormatter;
+        $formatter = new LinkFormatter();
         $result = $formatter->format('javascript:alert(1)');
 
         // The result should contain the escaped version of the URL, not raw
@@ -70,8 +70,8 @@ describe('LinkFormatter', function (): void {
     });
 
     it('escapes XSS in link object url', function (): void {
-        $formatter = new LinkFormatter;
-        $link = new stdClass;
+        $formatter = new LinkFormatter();
+        $link = new stdClass();
         $link->url = '<script>alert(1)</script>';
         $link->label = 'Click me';
 
@@ -81,8 +81,8 @@ describe('LinkFormatter', function (): void {
     });
 
     it('escapes XSS in link object label', function (): void {
-        $formatter = new LinkFormatter;
-        $link = new stdClass;
+        $formatter = new LinkFormatter();
+        $link = new stdClass();
         $link->url = 'https://example.com';
         $link->label = '<script>evil()</script>';
 

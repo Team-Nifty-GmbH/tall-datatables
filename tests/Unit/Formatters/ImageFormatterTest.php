@@ -4,13 +4,13 @@ use TeamNiftyGmbH\DataTable\Formatters\ImageFormatter;
 
 describe('ImageFormatter', function (): void {
     it('returns empty string for null', function (): void {
-        $formatter = new ImageFormatter;
+        $formatter = new ImageFormatter();
 
         expect($formatter->format(null))->toBe('');
     });
 
     it('renders img tag for URL string', function (): void {
-        $formatter = new ImageFormatter;
+        $formatter = new ImageFormatter();
         $result = $formatter->format('https://example.com/image.jpg');
 
         expect($result)
@@ -20,15 +20,15 @@ describe('ImageFormatter', function (): void {
     });
 
     it('renders img tag with default classes for URL string', function (): void {
-        $formatter = new ImageFormatter;
+        $formatter = new ImageFormatter();
         $result = $formatter->format('https://example.com/image.jpg');
 
         expect($result)->toContain('h-8 w-8 object-cover rounded');
     });
 
     it('renders Image object with src, alt, title, class', function (): void {
-        $formatter = new ImageFormatter;
-        $image = new stdClass;
+        $formatter = new ImageFormatter();
+        $image = new stdClass();
         $image->src = 'https://example.com/photo.jpg';
         $image->alt = 'A photo';
         $image->title = 'My Photo';
@@ -44,15 +44,15 @@ describe('ImageFormatter', function (): void {
     });
 
     it('escapes XSS in src', function (): void {
-        $formatter = new ImageFormatter;
+        $formatter = new ImageFormatter();
         $result = $formatter->format('"><script>alert(1)</script>');
 
         expect($result)->not->toContain('<script>');
     });
 
     it('escapes XSS in Image object src', function (): void {
-        $formatter = new ImageFormatter;
-        $image = new stdClass;
+        $formatter = new ImageFormatter();
+        $image = new stdClass();
         $image->src = '"><script>alert(1)</script>';
 
         $result = $formatter->format($image);
@@ -61,8 +61,8 @@ describe('ImageFormatter', function (): void {
     });
 
     it('escapes XSS in alt text', function (): void {
-        $formatter = new ImageFormatter;
-        $image = new stdClass;
+        $formatter = new ImageFormatter();
+        $image = new stdClass();
         $image->src = 'https://example.com/image.jpg';
         $image->alt = '<script>evil()</script>';
 
@@ -72,8 +72,8 @@ describe('ImageFormatter', function (): void {
     });
 
     it('returns empty string for Image object with empty src', function (): void {
-        $formatter = new ImageFormatter;
-        $image = new stdClass;
+        $formatter = new ImageFormatter();
+        $image = new stdClass();
         $image->src = '';
 
         expect($formatter->format($image))->toBe('');

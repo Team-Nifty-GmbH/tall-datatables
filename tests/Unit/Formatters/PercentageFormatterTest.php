@@ -4,31 +4,31 @@ use TeamNiftyGmbH\DataTable\Formatters\PercentageFormatter;
 
 describe('PercentageFormatter', function (): void {
     it('returns empty string for null', function (): void {
-        $formatter = new PercentageFormatter;
+        $formatter = new PercentageFormatter();
 
         expect($formatter->format(null))->toBe('');
     });
 
     it('formats a plain percentage value', function (): void {
-        $formatter = new PercentageFormatter;
+        $formatter = new PercentageFormatter();
 
         expect($formatter->format(42))->toBe('42 %');
     });
 
     it('formats a decimal percentage', function (): void {
-        $formatter = new PercentageFormatter;
+        $formatter = new PercentageFormatter();
 
         expect($formatter->format(42.5))->toContain('%');
     });
 
     it('formats zero percent', function (): void {
-        $formatter = new PercentageFormatter;
+        $formatter = new PercentageFormatter();
 
         expect($formatter->format(0))->toBe('0 %');
     });
 
     it('formats 100 percent', function (): void {
-        $formatter = new PercentageFormatter;
+        $formatter = new PercentageFormatter();
 
         expect($formatter->format(100))->toBe('100 %');
     });

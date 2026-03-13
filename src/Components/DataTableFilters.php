@@ -24,6 +24,11 @@ class DataTableFilters extends Component
 
     public array $savedFilters = [];
 
+    public function render(): \Illuminate\View\View
+    {
+        return view('tall-datatables::livewire.filters');
+    }
+
     public function addFilter(array $filter): void
     {
         $this->filters[] = $filter;
@@ -46,10 +51,5 @@ class DataTableFilters extends Component
     public function getColumnType(string $column): string
     {
         return (new ColumnResolver($this->model))->getInputType($column);
-    }
-
-    public function render(): \Illuminate\View\View
-    {
-        return view('tall-datatables::livewire.filters');
     }
 }

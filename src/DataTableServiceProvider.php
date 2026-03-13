@@ -13,11 +13,11 @@ use Livewire\Livewire;
 use TeamNiftyGmbH\DataTable\Commands\MakeDataTableCommand;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCache;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCacheReset;
+use TeamNiftyGmbH\DataTable\Components\DataTableFilters;
+use TeamNiftyGmbH\DataTable\Components\DataTableOptions as DataTableOptionsV2;
 use TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
-use TeamNiftyGmbH\DataTable\Components\DataTableFilters;
-use TeamNiftyGmbH\DataTable\Components\DataTableOptions as DataTableOptionsV2;
 use TeamNiftyGmbH\DataTable\Livewire\Options;
 
 class DataTableServiceProvider extends ServiceProvider

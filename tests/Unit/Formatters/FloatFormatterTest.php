@@ -4,13 +4,13 @@ use TeamNiftyGmbH\DataTable\Formatters\FloatFormatter;
 
 describe('FloatFormatter', function (): void {
     it('returns empty string for null', function (): void {
-        $formatter = new FloatFormatter;
+        $formatter = new FloatFormatter();
 
         expect($formatter->format(null))->toBe('');
     });
 
     it('formats a basic float', function (): void {
-        $formatter = new FloatFormatter;
+        $formatter = new FloatFormatter();
         $result = $formatter->format(1234.56);
 
         expect($result)->toContain('1.234')
@@ -18,14 +18,14 @@ describe('FloatFormatter', function (): void {
     });
 
     it('formats an integer as float with two decimal places', function (): void {
-        $formatter = new FloatFormatter;
+        $formatter = new FloatFormatter();
         $result = $formatter->format(100);
 
         expect($result)->toBe('100,00');
     });
 
     it('formats zero', function (): void {
-        $formatter = new FloatFormatter;
+        $formatter = new FloatFormatter();
 
         expect($formatter->format(0))->toBe('0,00');
     });

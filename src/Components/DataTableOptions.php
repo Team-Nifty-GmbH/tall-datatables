@@ -25,6 +25,11 @@ class DataTableOptions extends Component
     #[Locked]
     public bool $isExportable = false;
 
+    public function render(): \Illuminate\View\View
+    {
+        return view('tall-datatables::livewire.options-v2');
+    }
+
     public function toggleColumn(string $column): void
     {
         if (in_array($column, $this->enabledCols)) {
@@ -57,10 +62,5 @@ class DataTableOptions extends Component
     {
         $this->enabledCols = $columns;
         $this->dispatch('options-changed', options: ['enabledCols' => $this->enabledCols])->to(DataTable::class);
-    }
-
-    public function render(): \Illuminate\View\View
-    {
-        return view('tall-datatables::livewire.options-v2');
     }
 }
