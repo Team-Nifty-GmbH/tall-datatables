@@ -13,10 +13,9 @@
                     <x-button
                         color="secondary"
                         light
+                        :text="__('Close')"
                         x-on:click="$slideClose('data-table-sidebar-' + $wire.id.toLowerCase());"
-                    >
-                        {{ __('Close') }}
-                    </x-button>
+                    />
                 </x-slot>
             </x-slide>
         @endteleport

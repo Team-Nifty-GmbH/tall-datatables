@@ -1,4 +1,6 @@
 @props([
+    'record' => [],
+    'index' => 0,
     'isSelectable' => false,
     'selectValue' => 'record.id',
     'selectAttributes' => new \Illuminate\View\ComponentAttributeBag(),
@@ -10,12 +12,14 @@
     'showRestoreButton' => false,
     'hasSidebar' => true,
 ])
-
+@php
+    $modelKeyName = $this->modelKeyName;
+    $enabledCols = $this->enabledCols;
+@endphp
 <tr
-    x-bind:data-id="record.id"
-    x-bind:key="record.id"
-    x-on:click="$dispatch('data-table-row-clicked', {record: record})"
-    @if($allowSoftDeletes) x-bind:class="record.deleted_at ? 'opacity-50' : ''" @endif
+    wire:key="row-{{ $record[$modelKeyName] ?? $index }}"
+    x-on:click="$dispatch('data-table-row-clicked', {record: {{ json_encode($record) }}})"
+    @if($allowSoftDeletes && ($record['deleted_at'] ?? null)) class="opacity-50" @endif
     {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
 >
     @if ($isSelectable)
@@ -25,11 +29,12 @@
             <div
                 {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}
             >
-                <x-checkbox
-                    x-on:click="$event.stopPropagation();"
-                    x-on:change="$dispatch('data-table-record-selected', {record: record, index: index, value: $el.checked});"
-                    x-bind:value="{{ $selectValue }}"
-                    x-model.number="$wire.selected"
+                <input
+                    type="checkbox"
+                    x-on:click.stop
+                    value="{{ $record[$modelKeyName] ?? $index }}"
+                    wire:model.number="selected"
+                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800"
                 />
             </div>
         </td>
@@ -38,69 +43,41 @@
             class="max-w-0 border-b border-slate-200 text-sm whitespace-nowrap dark:border-slate-600"
         ></td>
     @endif
-    <template x-for="col in enabledCols">
+    @foreach ($enabledCols as $col)
         <x-tall-datatables::table.cell
             :use-wire-navigate="$useWireNavigate"
-            x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50'"
-            x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
-            class="cursor-pointer"
-            x-bind:href="record.deleted_at ? false : (record?.href ?? false)"
+            :class="in_array($col, $this->stickyCols) ? 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50' : ''"
+            :style="in_array($col, $this->stickyCols) ? 'z-index: 2' : ''"
+            :href="(($allowSoftDeletes && ($record['deleted_at'] ?? null)) ? null : ($record['href'] ?? null))"
         >
-            <div class="flex flex-wrap gap-1.5">
-                <div
-                    class="flex flex-wrap gap-1"
-                    x-cloak
-                    x-show="leftAppend[col]"
-                    x-html="formatter(leftAppend[col], record)"
-                ></div>
-                <div class="grow">
-                    <div
-                        class="flex flex-wrap gap-1"
-                        x-cloak
-                        x-show="topAppend[col]"
-                        x-html="formatter(topAppend[col], record)"
-                    ></div>
-                    <div
-                        class="flex flex-wrap gap-1"
-                        {{ $cellAttributes->merge(['x-html' => 'formatter(col, record)']) }}
-                    ></div>
-                    <div
-                        class="flex flex-wrap gap-1"
-                        x-cloak
-                        x-show="bottomAppend[col]"
-                        x-html="formatter(bottomAppend[col], record)"
-                    ></div>
-                </div>
-                <div
-                    class="flex flex-wrap gap-1"
-                    x-cloak
-                    x-show="rightAppend[col]"
-                    x-html="formatter(rightAppend[col], record)"
-                ></div>
-            </div>
+            @if (is_array($record[$col] ?? null) && isset($record[$col]['display']))
+                {!! $record[$col]['display'] !!}
+            @elseif (is_array($record[$col] ?? null) && isset($record[$col]['raw']))
+                {{ $record[$col]['raw'] }}
+            @else
+                {{ $record[$col] ?? '' }}
+            @endif
         </x-tall-datatables::table.cell>
-    </template>
-    @if (($rowActions ?? false) || ($showRestoreButton && $allowSoftDeletes))
+    @endforeach
+    @if ($rowActions || ($showRestoreButton && $allowSoftDeletes))
         <td
             x-on:click.stop
             class="border-b border-slate-200 px-3 py-4 whitespace-nowrap dark:border-slate-600"
         >
-            <div
-                class="flex gap-1.5"
-                @if($allowSoftDeletes) x-bind:class="record.deleted_at ? 'hidden' : ''" @endif
-            >
-                @foreach ($rowActions ?? [] as $rowAction)
-                    {{ $rowAction }}
-                @endforeach
-            </div>
-            @if ($showRestoreButton && $allowSoftDeletes)
-                <div class="flex gap-1.5" x-show="record.deleted_at">
+            @if (! ($allowSoftDeletes && ($record['deleted_at'] ?? null)))
+                <div class="flex gap-1.5">
+                    @foreach ($rowActions as $rowAction)
+                        {{ $rowAction }}
+                    @endforeach
+                </div>
+            @endif
+            @if ($showRestoreButton && $allowSoftDeletes && ($record['deleted_at'] ?? null))
+                <div class="flex gap-1.5">
                     <x-button
                         color="indigo"
-                        wire:click="restore(record.id)"
-                    >
-                        {{ __('Restore') }}
-                    </x-button>
+                        :text="__('Restore')"
+                        wire:click="restore({{ $record[$modelKeyName] ?? 0 }})"
+                    />
                 </div>
             @endif
         </td>

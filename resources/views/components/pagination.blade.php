@@ -4,29 +4,26 @@
             color="secondary"
             light
             :text="__('Previous')"
-            x-bind:disabled="data.current_page === 1"
-            wire:click="gotoPage(data.current_page - 1)"
+            :disabled="($this->data['current_page'] ?? 1) <= 1"
+            wire:click="gotoPage({{ ($this->data['current_page'] ?? 1) - 1 }})"
         />
         <x-button
             color="secondary"
             light
             :text="__('Next')"
-            x-bind:disabled="data.current_page === data.last_page"
-            wire:click="gotoPage(data.current_page + 1)"
+            :disabled="($this->data['current_page'] ?? 1) >= ($this->data['last_page'] ?? 1)"
+            wire:click="gotoPage({{ ($this->data['current_page'] ?? 1) + 1 }})"
         />
     </div>
     <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
         <div>
             <div class="flex items-center gap-1 text-sm text-slate-400">
                 {{ __('Showing') }}
-                <div
-                    x-text="data.from ?? 0"
-                    class="align-middle font-medium"
-                ></div>
+                <div class="align-middle font-medium">{{ $this->data['from'] ?? 0 }}</div>
                 {{ __('to') }}
-                <div x-text="data.to ?? 0" class="font-medium"></div>
+                <div class="font-medium">{{ $this->data['to'] ?? 0 }}</div>
                 {{ __('of') }}
-                <div x-text="data.total" class="font-medium"></div>
+                <div class="font-medium">{{ $this->data['total'] ?? 0 }}</div>
                 {{ __('results') }}
                 @if ($this->perPage ?? false)
                     <x-select.styled
@@ -52,25 +49,25 @@
                 <x-button
                     color="secondary"
                     light
-                    x-bind:disabled="data.current_page === 1"
-                    wire:click="gotoPage(data.current_page - 1)"
+                    :disabled="($this->data['current_page'] ?? 1) <= 1"
+                    wire:click="gotoPage({{ ($this->data['current_page'] ?? 1) - 1 }})"
                     icon="chevron-left"
                 />
-                <template x-for="link in data.links">
+                @foreach ($this->data['links'] ?? [] as $link)
                     <x-button
                         color="secondary"
                         light
-                        x-bind:disabled="link.active || link.url === null"
-                        x-html="link.label"
-                        x-on:click="if (link.url !== null) $wire.gotoPage(link.label)"
-                        x-bind:class="link.active && 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'"
+                        :disabled="$link['active'] || $link['url'] === null"
+                        :text="$link['label']"
+                        wire:click="{{ $link['url'] !== null && !$link['active'] ? 'gotoPage(' . $link['label'] . ')' : '' }}"
+                        :class="$link['active'] ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' : ''"
                     />
-                </template>
+                @endforeach
                 <x-button
                     color="secondary"
                     light
-                    x-bind:disabled="data.current_page === data.last_page"
-                    wire:click="gotoPage(data.current_page + 1)"
+                    :disabled="($this->data['current_page'] ?? 1) >= ($this->data['last_page'] ?? 1)"
+                    wire:click="gotoPage({{ ($this->data['current_page'] ?? 1) + 1 }})"
                     icon="chevron-right"
                 />
             </nav>

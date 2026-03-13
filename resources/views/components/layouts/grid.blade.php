@@ -1,4 +1,23 @@
-<div x-data="{ showButtons: null }">
+@props([
+    'isSelectable' => false,
+    'selectValue' => 'record.id',
+    'selectAttributes' => new \Illuminate\View\ComponentAttributeBag(),
+    'rowAttributes' => new \Illuminate\View\ComponentAttributeBag(),
+    'cellAttributes' => new \Illuminate\View\ComponentAttributeBag(),
+    'isFilterable' => true,
+    'showFilterInputs' => true,
+    'tableHeadColAttributes' => new \Illuminate\View\ComponentAttributeBag(),
+    'selectedActions' => [],
+    'rowActions' => [],
+    'hasInfiniteScroll' => false,
+    'hasStickyCols' => true,
+    'hasSidebar' => true,
+    'useWireNavigate' => true,
+    'hasHead' => true,
+    'allowSoftDeletes' => false,
+    'showRestoreButton' => false,
+])
+<div>
     @if ($isFilterable)
         <div
             class="flex w-full flex-row-reverse items-center justify-between pt-2"
@@ -7,9 +26,9 @@
                 color="secondary"
                 light
                 icon="cog"
-                x-on:click="loadSidebar()"
+                x-on:click="$slideOpen('data-table-sidebar-' + $wire.id.toLowerCase())"
             />
-            <template x-if="sortable">
+            @if ($this->sortable !== ['*'] || count($this->sortable) > 0)
                 <x-dropdown align="left" persistent>
                     <x-slot:action>
                         <x-button
@@ -19,29 +38,26 @@
                             icon="adjustments-vertical"
                         />
                     </x-slot>
-                    <template
-                        x-for="sortableItem in sortable.filter((item) => item !== '*')"
-                    >
+                    @foreach (($this->sortable === ['*'] ? $this->enabledCols : $this->sortable) as $sortableItem)
                         <a
                             class="text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:bg-secondary-700 flex cursor-pointer items-center justify-between rounded-md px-4 py-2 text-sm transition-colors duration-150"
-                            x-on:click="$wire.sortTable(sortableItem)"
+                            wire:click="sortTable('{{ $sortableItem }}')"
                         >
-                            <div x-text="colLabels[sortableItem]"></div>
-                            <x-icon
-                                x-bind:class="Object.keys(sortable).length && orderByCol === sortableItem
-                                ? (orderAsc || 'rotate-180')
-                                : 'opacity-0'"
-                                name="chevron-down"
-                                class="h-4 w-4 transition-all"
-                            />
+                            <div>{{ $this->colLabels[$sortableItem] ?? \Illuminate\Support\Str::headline($sortableItem) }}</div>
+                            @if ($this->userOrderBy === $sortableItem)
+                                <x-icon
+                                    name="chevron-down"
+                                    class="h-4 w-4 transition-all {{ $this->userOrderAsc ? '' : 'rotate-180' }}"
+                                />
+                            @endif
                         </a>
-                    </template>
+                    @endforeach
                 </x-dropdown>
-            </template>
+            @endif
         </div>
     @endif
 
-    <template x-if="! getData().length && initialized">
+    @if ($this->initialized && empty($this->data['data'] ?? []))
         <div class="h-24 w-24 w-full p-8">
             <div class="w-full flex-col items-center dark:text-gray-50">
                 <x-icon name="face-frown" class="m-auto h-24 w-24" />
@@ -50,7 +66,7 @@
                 </div>
             </div>
         </div>
-    </template>
+    @endif
     <div
         class="mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 sm:gap-x-6 md:grid-cols-4 xl:grid-cols-6 xl:gap-x-8 2xl:grid-cols-8"
     >
@@ -62,89 +78,81 @@
         >
             <x-tall-datatables::spinner />
         </div>
-        <template x-for="(record, index) in getData()">
+        @foreach ($this->data['data'] ?? [] as $index => $record)
             <div
-                x-bind:data-id="record.id"
-                x-bind:key="record.id"
-                x-on:click="$dispatch('data-table-row-clicked', record)"
+                wire:key="grid-{{ $record[$this->modelKeyName] ?? $index }}"
+                x-on:click="$dispatch('data-table-row-clicked', {{ json_encode($record) }})"
                 {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900 rounded-md pb-1.5']) }}
             >
                 <a
                     class="relative text-sm font-medium text-gray-500 dark:text-gray-50"
-                    x-bind:href="record?.href ?? false"
+                    @if ($record['href'] ?? null)
+                        href="{{ $record['href'] }}"
+                        @if ($useWireNavigate)
+                            wire:navigate
+                        @endif
+                    @endif
                 >
-                    <template x-for="(col, index) in enabledCols">
-                        <div>
-                            <template x-if="formatters[col] === 'image'">
-                                <div
-                                    class="relative h-72 w-full overflow-hidden rounded-lg"
-                                >
-                                    @if ($rowActions)
-                                        <div class="absolute top-2 right-2">
-                                            <x-dropdown
-                                                icon="ellipsis-vertical"
-                                                static
+                    @foreach ($this->enabledCols as $colIndex => $col)
+                        @php
+                            $formatters = $this->getFormatters();
+                            $isImage = ($formatters[$col] ?? null) === 'image';
+                        @endphp
+                        @if ($isImage)
+                            <div
+                                class="relative h-72 w-full overflow-hidden rounded-lg"
+                            >
+                                @if ($rowActions)
+                                    <div class="absolute top-2 right-2">
+                                        <x-dropdown
+                                            icon="ellipsis-vertical"
+                                            static
+                                        >
+                                            <div
+                                                class="grid grid-cols-1 gap-1.5"
                                             >
-                                                <div
-                                                    class="grid grid-cols-1 gap-1.5"
-                                                >
-                                                    @foreach ($rowActions as $rowAction)
-                                                        {{ $rowAction }}
-                                                    @endforeach
-                                                </div>
-                                            </x-dropdown>
-                                        </div>
-                                    @endif
-
-                                    <img
-                                        x-bind:src="record[col]"
-                                        class="h-full w-full object-cover object-center"
-                                    />
-                                </div>
-                            </template>
-                            <template x-if="formatters[col] !== 'image'">
-                                <div
-                                    class="mt-4 flex px-2"
-                                    x-bind:class="index === 1 && 'font-semibold'"
-                                >
-                                    <div
-                                        class="flex flex-wrap gap-1"
-                                        x-html="formatter(leftAppend[col], record)"
-                                    ></div>
-                                    <div>
-                                        <div
-                                            class="flex flex-wrap gap-1"
-                                            x-html="formatter(topAppend[col], record)"
-                                        ></div>
-                                        <div
-                                            class="flex flex-wrap gap-1"
-                                            x-html="formatter(col, record)"
-                                        ></div>
-                                        <div
-                                            x-html="formatter(bottomAppend[col], record)"
-                                        ></div>
+                                                @foreach ($rowActions as $rowAction)
+                                                    {{ $rowAction }}
+                                                @endforeach
+                                            </div>
+                                        </x-dropdown>
                                     </div>
-                                    <div
-                                        class="flex flex-wrap gap-1"
-                                        x-html="formatter(rightAppend[col], record)"
-                                    ></div>
+                                @endif
+
+                                <img
+                                    src="{{ $record[$col] ?? '' }}"
+                                    class="h-full w-full object-cover object-center"
+                                />
+                            </div>
+                        @else
+                            <div
+                                class="mt-4 flex px-2 {{ $colIndex === 1 ? 'font-semibold' : '' }}"
+                            >
+                                <div class="flex flex-wrap gap-1">
+                                    @if (is_array($record[$col] ?? null) && isset($record[$col]['display']))
+                                        {!! $record[$col]['display'] !!}
+                                    @elseif (is_array($record[$col] ?? null) && isset($record[$col]['raw']))
+                                        {{ $record[$col]['raw'] }}
+                                    @else
+                                        {{ $record[$col] ?? '' }}
+                                    @endif
                                 </div>
-                            </template>
-                        </div>
-                    </template>
+                            </div>
+                        @endif
+                    @endforeach
                 </a>
             </div>
-        </template>
+        @endforeach
     </div>
     @if (! $hasInfiniteScroll)
-        <template x-if="data.hasOwnProperty('current_page')">
+        @if (isset($this->data['current_page']))
             <div class="w-full">
                 <x-tall-datatables::pagination />
             </div>
-        </template>
+        @endif
     @else
         <div
-            x-intersect:enter="$wire.get('initialized') && $wire.loadMore()"
+            x-intersect:enter="$wire.initialized && $wire.loadMore()"
             class="w-full"
         >
             <x-button
@@ -154,9 +162,8 @@
                 delay="longer"
                 loading="loadMore"
                 class="w-full"
-            >
-                {{ __('Loading...') }}
-            </x-button>
+                :text="__('Loading...')"
+            />
         </div>
     @endif
 </div>

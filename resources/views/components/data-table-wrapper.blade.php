@@ -1,11 +1,12 @@
-<div x-init.once="$wire.loadData()">
-    <div
-        class="relative"
-        tall-datatable
-        x-data="data_table($wire)"
-        {{ $attributes }}
-        x-id="['save-filter', 'enabledCols', 'operators', 'filter-select-search', 'table-cols']"
-    >
-        {{ $slot }}
-    </div>
+<div
+    wire:init="loadData"
+    x-data="{
+        stickyCols: $wire.stickyCols,
+        showSelectedActions: false,
+    }"
+    class="relative"
+    tall-datatable
+    {{ $attributes }}
+>
+    {{ $slot }}
 </div>
