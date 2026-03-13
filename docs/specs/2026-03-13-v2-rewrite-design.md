@@ -249,7 +249,8 @@ Grouped rows as Blade partial instead of JS HTML string generation.
 - `HasEloquentListeners` moves to the main DataTable component in PHP
 - Echo channel subscriptions managed via `getListeners()` returning Echo event → method mapping
 - `refreshRow($id)` re-queries a single model, runs it through `RowTransformer`, and replaces that row in `$this->data` — Livewire morphs only the changed row in the DOM
-- `refreshData()` for create/delete events triggers a full `loadData()` — same as v1 behavior but without the Alpine intermediary
+- `refreshData()` for create/delete events triggers a full `loadData()`. This is simpler than v1's `echoCreated` (which manually inserted rows at position 0 and adjusted pagination). The full reload is an intentional simplification — correctness over micro-optimization.
+- For high-frequency broadcast scenarios, debounce rapid updates: batch multiple broadcasts within a short window into a single `loadData()` call.
 - Infinite scroll (`$hasInfiniteScroll`, `loadMore()`) stays as a DataTable feature, loading additional pages into `$this->data`
 
 ---
@@ -328,13 +329,17 @@ src/
 
 ### Key Changes
 
-- **DataTable.php shrinks from 1,186 to ~400-500 lines** — query building, filter parsing, row transformation in own classes
+- **DataTable.php shrinks from 1,186 to ~400-500 lines** — query building, filter parsing, row transformation extracted to own classes
+- **BuildsQueries is a new extraction** — `buildSearch()`, `applyFilters()`, `addFilter()`, `parseFilter()` extracted from DataTable.php into a trait
 - **SupportsCache eliminated** — `_directData` caching no longer needed
 - **Filter logic split** — parser (text → structure) and applier (structure → WHERE) separated
 - **Formatters as own classes** — registrable via `FormatterRegistry`, Casts stay as pure value objects
 - **RowTransformer** — single place for Model → `['raw' => ..., 'display' => ...]`
+- **ColumnResolver handles type detection** — replaces v1's JS `guessType()` and `inputType()` helpers, used by filter UI for input type selection
 - **SupportsSorting preserved** — row reorder stays as trait
 - **HasEloquentListeners moved to PHP** — Echo subscriptions managed server-side
+- **`getConfig()` eliminated** — was used to bootstrap Alpine state, no longer needed since Blade renders from `$this->data` directly
+- **Row click events** — `data-table-row-clicked` moves from Alpine event to `$this->dispatch()`. `$hasNoRedirect` property stays in the public API
 
 ---
 
@@ -380,11 +385,13 @@ class OrderDataTable extends DataTable
 - **Blade view paths changed:** Internal views restructured from flat to grouped (`components/`, `filters/`, `options/`). Custom views referencing old paths must be updated.
 - **Composer constraints tightened:** `"livewire/livewire": "^4.0"` (was `"^3.1 || ^4"`), `"tallstackui/tallstackui": "^3.0"` (was `"^2.0"`).
 - **HasFrontendAttributes:** `typeScriptAttributes()` no longer called by the DataTable. The `FormatterRegistry` discovers formatters through cast metadata, not through the `HasFrontendAttributes` trait. Models using this trait for `detailRoute()` and icon support are unaffected.
+- **`getConfig()` removed:** Was used to bootstrap Alpine state with formatters, operators, and column metadata. No longer needed.
+- **Row click events changed:** `data-table-row-clicked` dispatched via Livewire `$this->dispatch()` instead of Alpine event.
 
 ### What stays
 
 - DataTable class definition: `$model`, `$enabledCols`, `$aggregatable`, `$isSelectable`, etc.
-- Override hooks: `getBuilder()`, `getLayout()`, `getAppends()`, `getCellAttributes()`, `getRowAttributes()`
+- Override hooks: `getBuilder()`, `getLayout()`, `getAppends()`, `getCellAttributes()`, `getRowAttributes()`, `$hasNoRedirect`
 - `InteractsWithDataTables` interface on models
 - `HasDatatableUserSettings` trait on User model
 - `DatatableUserSetting` model + migration
