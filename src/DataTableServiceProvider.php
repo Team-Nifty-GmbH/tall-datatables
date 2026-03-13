@@ -15,6 +15,8 @@ use TeamNiftyGmbH\DataTable\Commands\ModelInfoCache;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCacheReset;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
+use TeamNiftyGmbH\DataTable\Components\DataTableFilters;
+use TeamNiftyGmbH\DataTable\Components\DataTableOptions as DataTableOptionsV2;
 use TeamNiftyGmbH\DataTable\Livewire\Options;
 
 class DataTableServiceProvider extends ServiceProvider
@@ -25,6 +27,8 @@ class DataTableServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Livewire::component('tall-datatables-options', Options::class);
+        Livewire::component('data-table-filters', DataTableFilters::class);
+        Livewire::component('data-table-options-v2', DataTableOptionsV2::class);
         $this->offerPublishing();
 
         $this->commands([
