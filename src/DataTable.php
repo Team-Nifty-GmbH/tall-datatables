@@ -394,16 +394,18 @@ class DataTable extends Component
         if ($this->isGrouped()) {
             $groupedData = $this->loadGroupedData($query);
 
-            $this->setData([
+            $data = [
                 'groups' => $groupedData['groups'],
                 'groups_pagination' => $groupedData['groups_pagination'],
                 'data' => [],
                 'total' => array_sum(array_column($groupedData['groups'], 'count')),
-            ]);
+            ];
 
             if ($aggregates = $this->getAggregate($baseQuery)) {
-                $this->data['aggregates'] = ! $this->search ? $aggregates : [];
+                $data['aggregates'] = ! $this->search ? $aggregates : [];
             }
+
+            $this->setData($data);
 
             return;
         }
@@ -417,11 +419,11 @@ class DataTable extends Component
             return;
         }
 
-        $this->setData(is_array($result) ? $result : $result->toArray());
+        $data = is_array($result) ? $result : $result->toArray();
 
         if (in_array('*', $this->selected)) {
             $this->selected = array_diff(
-                array_column($this->data['data'] ?? $this->data, $this->modelKeyName),
+                array_column($data['data'] ?? $data, $this->modelKeyName),
                 $this->wildcardSelectExcluded
             );
             $this->selected[] = '*';
@@ -429,13 +431,15 @@ class DataTable extends Component
         }
 
         if ($aggregates = $this->getAggregate($baseQuery)) {
-            $this->data['aggregates'] = ! $this->search ? $aggregates : [];
+            $data['aggregates'] = ! $this->search ? $aggregates : [];
         }
 
-        if ($this->data['links'] ?? false) {
-            array_pop($this->data['links']);
-            array_shift($this->data['links']);
+        if ($data['links'] ?? false) {
+            array_pop($data['links']);
+            array_shift($data['links']);
         }
+
+        $this->setData($data);
     }
 
     #[Renderless]

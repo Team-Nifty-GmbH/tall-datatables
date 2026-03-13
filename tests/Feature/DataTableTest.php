@@ -1100,3 +1100,62 @@ describe('Saved Filters', function (): void {
         expect($options[1]['label'])->toBe('Filter C');
     });
 });
+
+describe('Aggregation', function (): void {
+    it('includes aggregates in dispatched data-table-data-loaded event', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'price' => 100.00]);
+        createTestPost(['user_id' => $this->user->getKey(), 'price' => 200.00]);
+        createTestPost(['user_id' => $this->user->getKey(), 'price' => 300.00]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('aggregatableCols', [
+                'sum' => ['price'],
+                'avg' => [],
+                'min' => [],
+                'max' => [],
+            ])
+            ->call('applyAggregations');
+
+        // The dispatched event data must include aggregates so the frontend
+        // (_directData from the event) has them available for rendering.
+        $dispatches = data_get($component->effects, 'dispatches', []);
+        $event = collect($dispatches)->firstWhere('name', 'data-table-data-loaded');
+
+        expect($event)->not->toBeNull('data-table-data-loaded event should be dispatched');
+        expect($event['params']['data']['aggregates']['sum']['price'] ?? null)
+            ->not->toBeNull('aggregates must be included in the dispatched event data')
+            ->and((float) $event['params']['data']['aggregates']['sum']['price'])->toBe(600.0);
+    });
+
+    it('includes aggregates for multiple types in dispatched event', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'price' => 100.00]);
+        createTestPost(['user_id' => $this->user->getKey(), 'price' => 200.00]);
+        createTestPost(['user_id' => $this->user->getKey(), 'price' => 300.00]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('aggregatableCols', [
+                'sum' => ['price'],
+                'avg' => ['price'],
+                'min' => ['price'],
+                'max' => ['price'],
+            ])
+            ->call('applyAggregations');
+
+        $dispatches = data_get($component->effects, 'dispatches', []);
+        $event = collect($dispatches)->firstWhere('name', 'data-table-data-loaded');
+
+        expect($event)->not->toBeNull();
+
+        $aggregates = $event['params']['data']['aggregates'] ?? [];
+
+        expect($aggregates)
+            ->toHaveKey('sum')
+            ->toHaveKey('avg')
+            ->toHaveKey('min')
+            ->toHaveKey('max');
+
+        expect((float) $aggregates['sum']['price'])->toBe(600.0);
+        expect((float) $aggregates['min']['price'])->toBe(100.0);
+        expect((float) $aggregates['max']['price'])->toBe(300.0);
+    });
+});
