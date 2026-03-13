@@ -7,12 +7,16 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use TeamNiftyGmbH\DataTable\Exceptions\MissingTraitException;
 use TeamNiftyGmbH\DataTable\Traits\HasDatatableUserSettings;
 
 trait StoresSettings
 {
+    #[Locked]
+    public ?string $cacheKey = null;
+
     public array $savedFilters = [];
 
     public bool $showSavedFilters = true;
@@ -43,6 +47,12 @@ trait StoresSettings
         $this->savedFilters = $this->getSavedFilters(
             fn (Builder $query) => $query->where('is_layout', false)
         );
+    }
+
+    #[Renderless]
+    public function getCacheKey(): string
+    {
+        return $this->cacheKey ?: get_called_class();
     }
 
     #[Renderless]
@@ -88,6 +98,15 @@ trait StoresSettings
         if (! is_null($layoutFilter) || ! is_null($permanentFilter)) {
             $this->loadFilter(data_get($permanentFilter ?? $layoutFilter, 'settings'));
             $this->loadedFilterId = data_get($permanentFilter, 'id') ?? data_get($layoutFilter, 'id');
+        }
+
+        // Load cached session state
+        if (config('tall-datatables.should_cache')) {
+            $cachedFilters = Session::get(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
+
+            if (! is_null($cachedFilters)) {
+                $this->loadFilter($cachedFilters);
+            }
         }
     }
 
@@ -170,6 +189,60 @@ trait StoresSettings
             ->datatableUserSettings()
             ->whereKey($filterID)
             ->update(Arr::only($data, ['name']));
+    }
+
+    /**
+     * Cache the current state to session and database.
+     */
+    protected function cacheState(): void
+    {
+        $filter = [
+            'userFilters' => $this->userFilters,
+            'enabledCols' => $this->enabledCols,
+            'aggregatableCols' => $this->aggregatableCols,
+            'userOrderBy' => $this->userOrderBy,
+            'userOrderAsc' => $this->userOrderAsc,
+            'perPage' => $this->perPage,
+            'search' => $this->search,
+            'selected' => $this->selected,
+            'groupBy' => $this->groupBy,
+        ];
+
+        if (config('tall-datatables.should_cache')) {
+            Session::put(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey(), $filter);
+        }
+
+        try {
+            $this->ensureAuthHasTrait();
+
+            Auth::user()->datatableUserSettings()->updateOrCreate(
+                [
+                    'cache_key' => $this->getCacheKey(),
+                    'is_layout' => true,
+                ],
+                $this->compileStoredLayout()
+            );
+        } catch (MissingTraitException) {
+        }
+    }
+
+    /**
+     * Compile the layout settings for database storage.
+     */
+    protected function compileStoredLayout(): array
+    {
+        return [
+            'name' => 'layout',
+            'cache_key' => $this->getCacheKey(),
+            'component' => static::class,
+            'settings' => [
+                'userFilters' => [],
+                'enabledCols' => $this->enabledCols,
+                'aggregatableCols' => $this->aggregatableCols,
+                'perPage' => $this->perPage,
+            ],
+            'is_layout' => true,
+        ];
     }
 
     /**
