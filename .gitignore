@@ -5,6 +5,7 @@ package-lock.json
 coverage
 docs/*
 !docs/specs
+!docs/plans
 phpunit.xml
 phpstan.neon
 testbench.yaml
