@@ -112,7 +112,7 @@ class DataTable extends Component
 
     protected ?string $includeBefore = null;
 
-    protected $listeners = ['loadData' => 'reloadData'];
+    protected $listeners = ['dataTableReload' => 'reloadData'];
 
     protected string $model;
 
