@@ -286,11 +286,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    public function reloadData(): void
-    {
-        $this->loadData();
-    }
-
     public function loadData(): void
     {
         $this->initialized = true;
@@ -369,6 +364,11 @@ class DataTable extends Component
     public function placeholder(): View|Factory|Application
     {
         return view('tall-datatables::livewire.placeholder');
+    }
+
+    public function reloadData(): void
+    {
+        $this->loadData();
     }
 
     public function setPerPage(int $perPage): void

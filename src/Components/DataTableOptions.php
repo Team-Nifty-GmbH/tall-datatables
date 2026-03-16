@@ -11,14 +11,14 @@ use TeamNiftyGmbH\DataTable\DataTable;
 class DataTableOptions extends Component
 {
     #[Locked]
-    public array $availableCols = [];
-
-    public array $enabledCols = [];
-
-    #[Locked]
     public array $aggregatable = [];
 
     public array $aggregations = [];
+
+    #[Locked]
+    public array $availableCols = [];
+
+    public array $enabledCols = [];
 
     public ?string $groupBy = null;
 
@@ -30,14 +30,9 @@ class DataTableOptions extends Component
         return view('tall-datatables::livewire.options-v2');
     }
 
-    public function toggleColumn(string $column): void
+    public function reorderColumns(array $columns): void
     {
-        if (in_array($column, $this->enabledCols)) {
-            $this->enabledCols = array_values(array_diff($this->enabledCols, [$column]));
-        } else {
-            $this->enabledCols[] = $column;
-        }
-
+        $this->enabledCols = $columns;
         $this->dispatch('options-changed', options: ['enabledCols' => $this->enabledCols])->to(DataTable::class);
     }
 
@@ -58,9 +53,14 @@ class DataTableOptions extends Component
         $this->dispatch('options-changed', options: ['groupBy' => $this->groupBy])->to(DataTable::class);
     }
 
-    public function reorderColumns(array $columns): void
+    public function toggleColumn(string $column): void
     {
-        $this->enabledCols = $columns;
+        if (in_array($column, $this->enabledCols)) {
+            $this->enabledCols = array_values(array_diff($this->enabledCols, [$column]));
+        } else {
+            $this->enabledCols[] = $column;
+        }
+
         $this->dispatch('options-changed', options: ['enabledCols' => $this->enabledCols])->to(DataTable::class);
     }
 }

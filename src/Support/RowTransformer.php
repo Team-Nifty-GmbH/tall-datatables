@@ -43,6 +43,11 @@ class RowTransformer
         return $row;
     }
 
+    protected function baseColumn(string $col): string
+    {
+        return str_contains($col, '.') ? last(explode('.', $col)) : $col;
+    }
+
     /**
      * For relation columns, resolve casts from the related model.
      *
@@ -68,10 +73,5 @@ class RowTransformer
         } catch (Throwable) {
             return [];
         }
-    }
-
-    protected function baseColumn(string $col): string
-    {
-        return str_contains($col, '.') ? last(explode('.', $col)) : $col;
     }
 }

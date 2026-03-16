@@ -33,6 +33,55 @@ trait BuildsQueries
     }
 
     /**
+     * Apply server-side formatting to enabled columns using the FormatterRegistry.
+     *
+     * Wraps formatted values as ['raw' => mixed, 'display' => string].
+     * Plain values that don't need formatting remain unwrapped for smaller payloads.
+     */
+    protected function applyFormatters(array &$itemArray, Model $item, array $context): void
+    {
+        $registry = app(FormatterRegistry::class);
+        $customFormatters = $this->getFormatters();
+        $modelCasts = $item->getCasts();
+
+        foreach ($this->enabledCols as $col) {
+            if (! array_key_exists($col, $itemArray)) {
+                continue;
+            }
+
+            $raw = $itemArray[$col];
+            $baseCol = str_contains($col, '.') ? last(explode('.', $col)) : $col;
+
+            if (isset($customFormatters[$col]) && is_string($customFormatters[$col])) {
+                $formatter = $registry->resolve($customFormatters[$col]);
+            } else {
+                $casts = str_contains($col, '.')
+                    ? $this->resolveCastsForColumn($item, $col)
+                    : $modelCasts;
+
+                // Filter out non-string cast values (e.g. array-based casts like [CastClass::class, 'param'])
+                $casts = array_filter($casts, 'is_string');
+
+                $formatter = $registry->resolveForColumn($baseCol, $casts);
+            }
+
+            // Use ArrayFormatter for array values when StringFormatter would fail
+            if (is_array($raw) && $formatter instanceof StringFormatter) {
+                $formatter = new ArrayFormatter();
+            }
+
+            $display = $formatter->format($raw, $context);
+            $rawString = is_null($raw)
+                ? ''
+                : (is_array($raw) ? json_encode($raw) : (string) $raw);
+
+            if ($display !== e($rawString)) {
+                $itemArray[$col] = ['raw' => $raw, 'display' => $display];
+            }
+        }
+    }
+
+    /**
      * Build the base query with filters, sorting, relations and session filters applied.
      */
     protected function buildSearch(bool $unpaginated = false): Builder
@@ -206,77 +255,6 @@ trait BuildsQueries
         $this->applyFormatters($itemArray, $item, $rawArray);
 
         return $itemArray;
-    }
-
-    /**
-     * Apply server-side formatting to enabled columns using the FormatterRegistry.
-     *
-     * Wraps formatted values as ['raw' => mixed, 'display' => string].
-     * Plain values that don't need formatting remain unwrapped for smaller payloads.
-     */
-    protected function applyFormatters(array &$itemArray, Model $item, array $context): void
-    {
-        $registry = app(FormatterRegistry::class);
-        $customFormatters = $this->getFormatters();
-        $modelCasts = $item->getCasts();
-
-        foreach ($this->enabledCols as $col) {
-            if (! array_key_exists($col, $itemArray)) {
-                continue;
-            }
-
-            $raw = $itemArray[$col];
-            $baseCol = str_contains($col, '.') ? last(explode('.', $col)) : $col;
-
-            if (isset($customFormatters[$col]) && is_string($customFormatters[$col])) {
-                $formatter = $registry->resolve($customFormatters[$col]);
-            } else {
-                $casts = str_contains($col, '.')
-                    ? $this->resolveCastsForColumn($item, $col)
-                    : $modelCasts;
-
-                // Filter out non-string cast values (e.g. array-based casts like [CastClass::class, 'param'])
-                $casts = array_filter($casts, 'is_string');
-
-                $formatter = $registry->resolveForColumn($baseCol, $casts);
-            }
-
-            // Use ArrayFormatter for array values when StringFormatter would fail
-            if (is_array($raw) && $formatter instanceof StringFormatter) {
-                $formatter = new ArrayFormatter();
-            }
-
-            $display = $formatter->format($raw, $context);
-            $rawString = is_null($raw)
-                ? ''
-                : (is_array($raw) ? json_encode($raw) : (string) $raw);
-
-            if ($display !== e($rawString)) {
-                $itemArray[$col] = ['raw' => $raw, 'display' => $display];
-            }
-        }
-    }
-
-    /**
-     * Resolve the casts array for a dot-notation column by traversing relations.
-     *
-     * @return array<string, string>
-     */
-    private function resolveCastsForColumn(Model $item, string $col): array
-    {
-        $parts = explode('.', $col);
-        array_pop($parts);
-
-        try {
-            $related = $item;
-            foreach ($parts as $segment) {
-                $related = $related->{$segment}()->getRelated();
-            }
-
-            return $related->getCasts();
-        } catch (Throwable) {
-            return [];
-        }
     }
 
     /**
@@ -572,5 +550,27 @@ trait BuildsQueries
             : $filter['value'];
 
         return $filter;
+    }
+
+    /**
+     * Resolve the casts array for a dot-notation column by traversing relations.
+     *
+     * @return array<string, string>
+     */
+    private function resolveCastsForColumn(Model $item, string $col): array
+    {
+        $parts = explode('.', $col);
+        array_pop($parts);
+
+        try {
+            $related = $item;
+            foreach ($parts as $segment) {
+                $related = $related->{$segment}()->getRelated();
+            }
+
+            return $related->getCasts();
+        } catch (Throwable) {
+            return [];
+        }
     }
 }

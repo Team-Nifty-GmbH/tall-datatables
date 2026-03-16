@@ -36,24 +36,6 @@ class ColumnResolver
     }
 
     /**
-     * Return a translated label for a column. Falls back to Str::headline().
-     */
-    public function getLabel(string $column): string
-    {
-        // For dot-notation, use the last segment
-        $base = str_contains($column, '.') ? last(explode('.', $column)) : $column;
-
-        $translated = __($base);
-
-        // If the translation key was not found, the result equals the key
-        if ($translated === $base) {
-            return Str::headline($base);
-        }
-
-        return $translated;
-    }
-
-    /**
      * Determine the filter input type for a column.
      *
      * For dot-notation columns, resolves casts from the related model.
@@ -74,6 +56,24 @@ class ColumnResolver
             : $castValue;
 
         return $this->mapCastToInputType($castType);
+    }
+
+    /**
+     * Return a translated label for a column. Falls back to Str::headline().
+     */
+    public function getLabel(string $column): string
+    {
+        // For dot-notation, use the last segment
+        $base = str_contains($column, '.') ? last(explode('.', $column)) : $column;
+
+        $translated = __($base);
+
+        // If the translation key was not found, the result equals the key
+        if ($translated === $base) {
+            return Str::headline($base);
+        }
+
+        return $translated;
     }
 
     private function inputTypeFromModelInfo(string $column): string

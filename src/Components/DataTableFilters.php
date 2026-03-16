@@ -17,10 +17,10 @@ class DataTableFilters extends Component
     #[Locked]
     public string $cacheKey = '';
 
+    public array $filters = [];
+
     #[Locked]
     public string $model = '';
-
-    public array $filters = [];
 
     public array $savedFilters = [];
 
@@ -35,13 +35,6 @@ class DataTableFilters extends Component
         $this->dispatch('filters-changed', filters: $this->filters)->to(DataTable::class);
     }
 
-    public function removeFilter(int $index): void
-    {
-        unset($this->filters[$index]);
-        $this->filters = array_values($this->filters);
-        $this->dispatch('filters-changed', filters: $this->filters)->to(DataTable::class);
-    }
-
     public function clearFilters(): void
     {
         $this->filters = [];
@@ -51,5 +44,12 @@ class DataTableFilters extends Component
     public function getColumnType(string $column): string
     {
         return (new ColumnResolver($this->model))->getInputType($column);
+    }
+
+    public function removeFilter(int $index): void
+    {
+        unset($this->filters[$index]);
+        $this->filters = array_values($this->filters);
+        $this->dispatch('filters-changed', filters: $this->filters)->to(DataTable::class);
     }
 }
