@@ -120,7 +120,7 @@
                                 <x-icon
                                     name="funnel"
                                     class="h-4 w-4 cursor-pointer"
-                                    x-on:click="$slideOpen('data-table-sidebar-' + $wire.id.toLowerCase())"
+                                    x-on:click="$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase())"
                                 />
                             @endif
                         </div>
@@ -141,7 +141,7 @@
                                 color="secondary"
                                 light
                                 icon="cog"
-                                x-on:click="$slideOpen('data-table-sidebar-' + $wire.id.toLowerCase())"
+                                x-on:click="$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase())"
                             />
                         </div>
                     </x-tall-datatables::table.head-cell>

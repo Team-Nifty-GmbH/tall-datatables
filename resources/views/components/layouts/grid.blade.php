@@ -26,7 +26,7 @@
                 color="secondary"
                 light
                 icon="cog"
-                x-on:click="$slideOpen('data-table-sidebar-' + $wire.id.toLowerCase())"
+                x-on:click="$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase())"
             />
             @if ($this->sortable !== ['*'] || count($this->sortable) > 0)
                 <x-dropdown align="left" persistent>
@@ -120,7 +120,7 @@
                                 @endif
 
                                 <img
-                                    src="{{ $record[$col] ?? '' }}"
+                                    src="{{ is_array($record[$col] ?? null) ? ($record[$col]['raw'] ?? '') : ($record[$col] ?? '') }}"
                                     class="h-full w-full object-cover object-center"
                                 />
                             </div>

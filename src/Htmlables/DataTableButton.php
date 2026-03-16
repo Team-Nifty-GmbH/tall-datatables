@@ -7,8 +7,8 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Arr;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\ComponentAttributeBag;
-use TallStackUi\View\Components\Button\Button;
-use TallStackUi\View\Components\Button\Circle;
+use TallStackUi\Components\Button\Circle\Component as CircleButton;
+use TallStackUi\Components\Button\Normal\Component as NormalButton;
 
 class DataTableButton implements Htmlable
 {
@@ -257,29 +257,43 @@ class DataTableButton implements Htmlable
             return '';
         }
 
+        $style = $this->outline ? 'outline' : (($this->light ?? false) ? 'light' : ($this->flat ? 'flat' : 'solid'));
+
         if ($this->circle) {
-            $buttonClass = Circle::class;
             $this->icon = is_null($this->icon) ? 'pencil' : $this->icon;
+
+            $button = new CircleButton(
+                icon: $this->icon,
+                color: $this->color ?? 'secondary',
+                href: $this->href,
+                loading: $this->loading,
+                delay: $this->delay,
+                outline: $this->outline ?: null,
+                flat: $this->flat,
+                light: $this->light ?? false,
+                size: $this->size ?? 'md',
+                style: $style,
+            );
         } else {
             $this->text = is_null($this->text) ? '' : $this->text;
-            $buttonClass = Button::class;
-        }
 
-        $button = new $buttonClass(
-            text: $this->text ?? null,
-            icon: $this->icon,
-            position: $this->position ?? 'left',
-            color: $this->color ?? 'secondary',
-            square: $this->square,
-            round: $this->round,
-            href: $this->href,
-            loading: $this->loading,
-            delay: $this->delay,
-            outline: $this->outline,
-            flat: $this->flat,
-            size: $this->size ?? 'md',
-            light: $this->light ?? false,
-        );
+            $button = new NormalButton(
+                text: $this->text,
+                icon: $this->icon,
+                position: $this->position ?? 'left',
+                color: $this->color ?? 'secondary',
+                square: $this->square ? '' : null,
+                round: $this->round ? '' : null,
+                href: $this->href,
+                loading: $this->loading,
+                delay: $this->delay,
+                outline: $this->outline,
+                flat: $this->flat,
+                light: $this->light ?? false,
+                size: $this->size ?? 'md',
+                style: $style,
+            );
+        }
         $button->attributes = new ComponentAttributeBag($this->attributes);
 
         return BladeCompiler::renderComponent($button);

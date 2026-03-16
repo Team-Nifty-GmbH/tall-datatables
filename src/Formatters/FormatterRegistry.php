@@ -54,6 +54,8 @@ class FormatterRegistry
             'integer', 'int' => new StringFormatter(),
             'date', 'immutable_date' => new DateFormatter(mode: 'date'),
             'datetime', 'immutable_datetime', 'timestamp' => new DateFormatter(mode: 'datetime'),
+            'image' => new ImageFormatter(),
+            'array', 'json', 'collection' => new ArrayFormatter(),
             default => new StringFormatter(),
         };
     }

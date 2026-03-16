@@ -1,9 +1,11 @@
 <?php
 
+use TeamNiftyGmbH\DataTable\Formatters\ArrayFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\BooleanFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\DateFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\FloatFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry;
+use TeamNiftyGmbH\DataTable\Formatters\ImageFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\StringFormatter;
 
 describe('FormatterRegistry', function (): void {
@@ -117,5 +119,29 @@ describe('FormatterRegistry', function (): void {
 
         expect($formatter)->toBeInstanceOf(DateFormatter::class)
             ->and($formatter->mode)->toBe('datetime');
+    });
+
+    it('auto-detects image cast to ImageFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('image'))->toBeInstanceOf(ImageFormatter::class);
+    });
+
+    it('auto-detects array cast to ArrayFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('array'))->toBeInstanceOf(ArrayFormatter::class);
+    });
+
+    it('auto-detects json cast to ArrayFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('json'))->toBeInstanceOf(ArrayFormatter::class);
+    });
+
+    it('auto-detects collection cast to ArrayFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('collection'))->toBeInstanceOf(ArrayFormatter::class);
     });
 });

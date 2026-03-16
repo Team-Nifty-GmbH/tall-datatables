@@ -32,7 +32,7 @@ trait HasEloquentListeners
 
         $this->broadcastChannels[$model->getKey()] = $model->broadcastChannel();
 
-        $this->skipRender();
+        // v2: removed skipRender - Blade needs re-render to show changes
     }
 
     public function echoDeleted(array $eventData): void
@@ -47,7 +47,7 @@ trait HasEloquentListeners
         $this->data['total']--;
         $this->data['to']--;
 
-        $this->skipRender();
+        // v2: removed skipRender - Blade needs re-render to show changes
     }
 
     public function echoRestored(array $eventData): void
@@ -74,7 +74,7 @@ trait HasEloquentListeners
         $data[$model->getKey()] = $item;
         $this->data['data'] = array_values($data);
 
-        $this->skipRender();
+        // v2: removed skipRender - Blade needs re-render to show changes
     }
 
     public function eloquentEventOccurred(string $event, array $data): void
