@@ -20,7 +20,8 @@ jobs:
         include:
           - laravel: 12.*
             testbench: 10.*
-
+          - laravel: 13.*
+            testbench: 11.*
     name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - Livewire ${{ matrix.livewire }} - ${{ matrix.stability }}
 
     steps:
