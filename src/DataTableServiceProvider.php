@@ -15,6 +15,7 @@ use TeamNiftyGmbH\DataTable\Commands\ModelInfoCache;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCacheReset;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
+use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Livewire\Options;
 
 class DataTableServiceProvider extends ServiceProvider
@@ -36,6 +37,13 @@ class DataTableServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'tall-datatables');
 
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+
+        if (class_exists(\Laravel\Octane\Events\RequestTerminated::class)) {
+            $this->app['events']->listen(
+                \Laravel\Octane\Events\RequestTerminated::class,
+                fn () => ModelInfo::flushState()
+            );
+        }
     }
 
     /**

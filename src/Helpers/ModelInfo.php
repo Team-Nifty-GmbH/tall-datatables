@@ -20,6 +20,11 @@ class ModelInfo extends BaseModelInfo
 
     public ?string $morphClass = null;
 
+    public static function flushState(): void
+    {
+        static::$cachedModelInfos = null;
+    }
+
     /**
      * @return Collection<BaseModelInfo>
      */
