@@ -114,5 +114,25 @@ function visitLivewire(string $component, array $options = []): mixed
 
     Route::get($uri, $component);
 
-    return visit($uri, $options);
+    $page = visit($uri, $options);
+
+    // Wait until Alpine has started and all deferred scripts have executed.
+    // This prevents race conditions where defer scripts (TallStackUI, DataTable)
+    // haven't registered their Alpine components before assertions run.
+    $page->script('() => {
+        return new Promise((resolve) => {
+            const startTime = Date.now();
+            const check = () => {
+                if (Date.now() - startTime > 10000) return resolve("timeout");
+                const el = document.querySelector("[x-data]");
+                const hasAlpine = window.Alpine && window.Alpine.version;
+                const hasDataTable = el && el._x_dataStack && el._x_dataStack.length > 0;
+                if (hasAlpine && hasDataTable) return resolve("ready");
+                setTimeout(check, 50);
+            };
+            check();
+        });
+    }');
+
+    return $page;
 }
