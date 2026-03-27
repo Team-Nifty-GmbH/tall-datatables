@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/forms';
+
+@source '../js/';
+@source '../../src/';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+[x-cloak] {
+    display: none !important;
+}

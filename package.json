@@ -3,16 +3,21 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build",
+        "build": "vite build && NODE_PATH=./node_modules/@tailwindcss/cli/node_modules npx @tailwindcss/cli -i ./resources/css/v4.css -o ./dist/tall-datatables.css --minify",
+        "build:v3": "vite build",
+        "build:v4": "NODE_PATH=./node_modules/@tailwindcss/cli/node_modules npx @tailwindcss/cli -i ./resources/css/v4.css -o ./dist/tall-datatables.css --minify",
         "preview": "vite preview",
         "format": "prettier --write ."
     },
     "devDependencies": {
+        "@tailwindcss/cli": "^4.2.0",
         "@tailwindcss/forms": "^0.5.3",
+        "@tailwindcss/vite": "^4.2.0",
         "alpinejs": "^3.11.1",
-        "autoprefixer": "^10.4.22",
+        "autoprefixer": "^10.4.27",
         "laravel-vite-plugin": "^2.0",
         "playwright": "^1.57.0",
+        "postcss": "^8.5.8",
         "prettier": "3.5.3",
         "prettier-plugin-blade": "^2.1.21",
         "prettier-plugin-tailwindcss": "^0.6.11",

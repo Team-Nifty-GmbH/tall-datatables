@@ -83,8 +83,10 @@ class DataTableServiceProvider extends ServiceProvider
             return (new DataTableBladeDirectives())->scripts(attributes: $attributes);
         });
 
-        Blade::directive('dataTableStyles', static function (): string {
-            return (new DataTableBladeDirectives())->styles();
+        Blade::directive('dataTableStyles', static function (?string $expression = null): string {
+            $version = $expression ? trim($expression, " '\"") : null;
+
+            return (new DataTableBladeDirectives())->styles(version: $version ?: null);
         });
     }
 
