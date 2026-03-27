@@ -3,6 +3,13 @@ import formatters from './components/formatters';
 
 window.formatters = formatters();
 
-document.addEventListener('alpine:init', () => {
+if (window.Alpine?.version) {
     window.Alpine.data('data_table', data_table);
-});
+    document.querySelectorAll('[x-data*="data_table"]').forEach(el => {
+        window.Alpine.initTree(el);
+    });
+} else {
+    document.addEventListener('alpine:init', () => {
+        window.Alpine.data('data_table', data_table);
+    });
+}
