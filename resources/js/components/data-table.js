@@ -5,7 +5,7 @@ export default function data_table($wire) {
         _directData: null,
         async init() {
             this._directData = $wire.data;
-            $wire.on('data-table-data-loaded', ({data}) => {
+            $wire.on('data-table-data-loaded-' + $wire.id, ({data}) => {
                 this._directData = data;
                 this._dataVersion++;
             });
