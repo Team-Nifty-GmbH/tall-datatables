@@ -4,17 +4,17 @@ on:
   release:
     types: [released]
 
+permissions:
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
-    env:
-      PAT: ${{ secrets.PAT }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
           ref: main
-          token: ${{ env.PAT }}
 
       - name: Update Changelog
         uses: stefanzweifel/changelog-updater-action@v1
