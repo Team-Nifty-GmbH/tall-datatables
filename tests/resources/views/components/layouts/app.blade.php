@@ -8,12 +8,12 @@
     @tallStackUiStyle
     @dataTableStyles
     @livewireStyles
+    @tallStackUiScript
+    @dataTablesScripts
 </head>
 <body class="antialiased">
     {{ $slot }}
 
     @livewireScripts
-    @tallStackUiScript
-    @dataTablesScripts
 </body>
 </html>
