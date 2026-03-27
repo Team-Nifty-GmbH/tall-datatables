@@ -37,10 +37,15 @@ class DataTableBladeDirectives
         HTML;
     }
 
-    public function styles(bool $absolute = false): string
+    public function styles(bool $absolute = false, ?string $version = null): string
     {
         $route = route(name: 'tall-datatables.assets.styles', absolute: $absolute);
-        $this->getManifestVersion('resources/css/tall-datatables.css', $route);
+
+        if ($version === 'v4') {
+            $route .= '?v=4';
+        } else {
+            $this->getManifestVersion('resources/css/v3.css', $route);
+        }
 
         return "<link href=\"{$route}\" rel=\"stylesheet\" type=\"text/css\">";
     }

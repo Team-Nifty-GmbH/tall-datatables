@@ -7,12 +7,6 @@ use Livewire\Drawer\Utils;
 
 class AssetController extends Controller
 {
-    /**
-     * @return \Illuminate\Http\Response|mixed|\Symfony\Component\HttpFoundation\BinaryFileResponse
-     *
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
     public function scripts(): mixed
     {
         $assetPath = dirname(__DIR__, 2) . '/dist/build/assets/';
@@ -28,14 +22,16 @@ class AssetController extends Controller
         return Utils::pretendResponseIsFile($path, 'text/javascript');
     }
 
-    /**
-     * @return \Illuminate\Http\Response|mixed|\Symfony\Component\HttpFoundation\BinaryFileResponse
-     *
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
     public function styles(): mixed
     {
+        if (request()->get('v') === '4') {
+            $path = dirname(__DIR__, 2) . '/dist/tall-datatables.css';
+
+            if (file_exists($path)) {
+                return Utils::pretendResponseIsFile($path, 'text/css');
+            }
+        }
+
         $assetPath = dirname(__DIR__, 2) . '/dist/build/assets/';
 
         $path = request()->has('id')

@@ -12,3 +12,4 @@ node_modules
 /tests/database/database.sqlite
 /tests/Browser/.screenshots
 /dist
+!/dist/tall-datatables.css
