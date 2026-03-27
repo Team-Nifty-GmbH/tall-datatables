@@ -1121,7 +1121,7 @@ class DataTable extends Component
     protected function setData(array $data): void
     {
         $this->data = $data;
-        $this->dispatch('data-table-data-loaded', data: $data);
+        $this->dispatch('data-table-data-loaded-' . $this->getId(), data: $data);
     }
 
     protected function showRestoreButton(): bool

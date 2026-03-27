@@ -1119,9 +1119,9 @@ describe('Aggregation', function (): void {
         // The dispatched event data must include aggregates so the frontend
         // (_directData from the event) has them available for rendering.
         $dispatches = data_get($component->effects, 'dispatches', []);
-        $event = collect($dispatches)->firstWhere('name', 'data-table-data-loaded');
+        $event = collect($dispatches)->first(fn ($d) => str_starts_with($d['name'], 'data-table-data-loaded-'));
 
-        expect($event)->not->toBeNull('data-table-data-loaded event should be dispatched');
+        expect($event)->not->toBeNull('data-table-data-loaded-{id} event should be dispatched');
         expect($event['params']['data']['aggregates']['sum']['price'] ?? null)
             ->not->toBeNull('aggregates must be included in the dispatched event data')
             ->and((float) $event['params']['data']['aggregates']['sum']['price'])->toBe(600.0);
@@ -1142,7 +1142,7 @@ describe('Aggregation', function (): void {
             ->call('applyAggregations');
 
         $dispatches = data_get($component->effects, 'dispatches', []);
-        $event = collect($dispatches)->firstWhere('name', 'data-table-data-loaded');
+        $event = collect($dispatches)->first(fn ($d) => str_starts_with($d['name'], 'data-table-data-loaded-'));
 
         expect($event)->not->toBeNull();
 
@@ -1157,5 +1157,38 @@ describe('Aggregation', function (): void {
         expect((float) $aggregates['sum']['price'])->toBe(600.0);
         expect((float) $aggregates['min']['price'])->toBe(100.0);
         expect((float) $aggregates['max']['price'])->toBe(300.0);
+    });
+});
+
+describe('Event Scoping', function (): void {
+    it('does not let one table overwrite another tables data via shared event name', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Post A']);
+
+        $postTable = Livewire::test(PostDataTable::class)
+            ->call('loadData');
+        $userTable = Livewire::test(UserDataTable::class)
+            ->call('loadData');
+
+        $postDispatches = data_get($postTable->effects, 'dispatches', []);
+        $userDispatches = data_get($userTable->effects, 'dispatches', []);
+
+        $postEvent = collect($postDispatches)->first(fn ($d) => str_starts_with($d['name'], 'data-table-data-loaded'));
+        $userEvent = collect($userDispatches)->first(fn ($d) => str_starts_with($d['name'], 'data-table-data-loaded'));
+
+        // Both tables dispatch events with data
+        expect($postEvent)->not->toBeNull()
+            ->and($userEvent)->not->toBeNull();
+
+        // The post table's data should contain posts, the user table's data
+        // should contain users. If the event name is the same, any JS listener
+        // would receive both and the last one wins - overwriting the other.
+        $postData = $postEvent['params']['data']['data'] ?? [];
+        $userData = $userEvent['params']['data']['data'] ?? [];
+
+        // The events MUST have different names, otherwise multiple tables
+        // on the same page will overwrite each other's data
+        expect($postEvent['name'])->not->toBe($userEvent['name'],
+            'Both tables dispatch the same event name - the last reload overwrites all tables'
+        );
     });
 });
