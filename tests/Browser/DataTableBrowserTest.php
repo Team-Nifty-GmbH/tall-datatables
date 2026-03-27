@@ -653,7 +653,9 @@ describe('DataTable Browser Filtering', function (): void {
         // Poll until data is loaded
         $page->script('() => {
             return new Promise((resolve) => {
+                const startTime = Date.now();
                 const check = () => {
+                    if (Date.now() - startTime > 10000) return resolve(0);
                     const comp = document.querySelector("[wire\\\\:id]");
                     const wireId = comp?.getAttribute("wire:id");
                     const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;
@@ -686,7 +688,9 @@ describe('DataTable Browser Filtering', function (): void {
         // Wait for filter + poll until total changes
         $page->script('() => {
             return new Promise((resolve) => {
+                const startTime = Date.now();
                 const check = () => {
+                    if (Date.now() - startTime > 10000) return resolve(0);
                     const comp = document.querySelector("[wire\\\\:id]");
                     const wireId = comp?.getAttribute("wire:id");
                     const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;
@@ -775,7 +779,9 @@ describe('DataTable Browser Filtering', function (): void {
         // Wait for data to load
         $page->script('() => {
             return new Promise((resolve) => {
+                const startTime = Date.now();
                 const check = () => {
+                    if (Date.now() - startTime > 10000) return resolve(0);
                     const comp = document.querySelector("[wire\\\\:id]");
                     const wireId = comp?.getAttribute("wire:id");
                     const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;
@@ -799,7 +805,9 @@ describe('DataTable Browser Filtering', function (): void {
         // Wait until filter takes effect
         $page->script('() => {
             return new Promise((resolve) => {
+                const startTime = Date.now();
                 const check = () => {
+                    if (Date.now() - startTime > 10000) return resolve(0);
                     const comp = document.querySelector("[wire\\\\:id]");
                     const wireId = comp?.getAttribute("wire:id");
                     const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;
