@@ -11,11 +11,11 @@ use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
 
 class SearchController extends Controller
 {
-    public function __invoke(Request $request, $model)
+    public function __invoke(Request $request, string $model): mixed
     {
         $model = str_replace('/', '\\', $model);
 
-        if (! class_exists($model) || ! in_array(Searchable::class, class_uses($model))) {
+        if (! class_exists($model) || ! in_array(Searchable::class, class_uses_recursive($model))) {
             abort(404);
         }
 
@@ -49,11 +49,10 @@ class SearchController extends Controller
         }
 
         if ($request->has('orderBy')) {
-            $query->orderBy($request->get('orderBy'));
-        }
-
-        if ($request->has('orderDirection')) {
-            $query->orderBy($request->get('orderDirection'));
+            $direction = in_array(strtolower($request->get('orderDirection', 'asc')), ['asc', 'desc'])
+                ? $request->get('orderDirection', 'asc')
+                : 'asc';
+            $query->orderBy($request->get('orderBy'), $direction);
         }
 
         if ($request->has('where')) {

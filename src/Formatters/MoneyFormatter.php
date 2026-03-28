@@ -17,7 +17,7 @@ class MoneyFormatter implements Formatter
 
         $currencyCode = e(data_get($context, 'currency.iso') ?? data_get($context, 'currency_code') ?? 'EUR');
 
-        $locale = app()->getLocale() ?? 'de_DE';
+        $locale = app()->getLocale();
         $formatter = new IntlNumberFormatter($locale, IntlNumberFormatter::CURRENCY);
         $formatted = $formatter->formatCurrency((float) $value, $currencyCode);
 
@@ -25,11 +25,11 @@ class MoneyFormatter implements Formatter
             return $formatted;
         }
 
-        if ((float) $value < 0) {
+        if (bccomp((string) $value, '0', 10) === -1) {
             return '<span class="text-red-600">' . $formatted . '</span>';
         }
 
-        if ((float) $value > 0) {
+        if (bccomp((string) $value, '0', 10) === 1) {
             return '<span class="text-green-600">' . $formatted . '</span>';
         }
 

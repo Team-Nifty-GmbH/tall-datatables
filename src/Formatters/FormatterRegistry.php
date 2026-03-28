@@ -7,7 +7,7 @@ use TeamNiftyGmbH\DataTable\Formatters\Contracts\Formatter;
 class FormatterRegistry
 {
     /** @var array<string, Formatter> */
-    private array $registry = [];
+    protected array $registry = [];
 
     public function register(string $castClass, Formatter $formatter): static
     {
@@ -46,7 +46,7 @@ class FormatterRegistry
         return $this->resolve($castType);
     }
 
-    private function autoDetect(string $castClass): Formatter
+    protected function autoDetect(string $castClass): Formatter
     {
         return match (strtolower($castClass)) {
             'boolean', 'bool' => new BooleanFormatter(),

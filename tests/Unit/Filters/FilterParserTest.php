@@ -165,4 +165,18 @@ describe('FilterParser::parse', function (): void {
 
         expect($result['column'])->toBe('my_custom_column');
     });
+
+    test('escapes SQL wildcard percent in like filter', function (): void {
+        $parser = new FilterParser();
+        $result = $parser->parse('100%', 'title');
+
+        expect($result['value'])->toBe('%100\%%');
+    });
+
+    test('escapes SQL wildcard underscore in like filter', function (): void {
+        $parser = new FilterParser();
+        $result = $parser->parse('test_value', 'title');
+
+        expect($result['value'])->toBe('%test\_value%');
+    });
 });

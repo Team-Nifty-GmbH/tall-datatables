@@ -2,7 +2,6 @@
 
 namespace TeamNiftyGmbH\DataTable\Commands;
 
-use Composer\InstalledVersions;
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Facades\File;
 use Livewire\Features\SupportConsoleCommands\Commands\ComponentParser;
@@ -38,23 +37,12 @@ class MakeDataTableCommand extends GeneratorCommand
      */
     public function handle(): bool
     {
-        $version = InstalledVersions::getVersion('livewire/livewire');
-
-        if (version_compare($version, '3.0.0', '<')) {
-            $this->parser = new \Livewire\Commands\ComponentParser(
-                config('tall-datatables.data_table_namespace'),
-                config('tall-datatables.view_path'),
-                $this->argument('name'),
-            );
-            $livewireMakeCommand = new \Livewire\Commands\MakeCommand();
-        } else {
-            $this->parser = new ComponentParser(
-                config('tall-datatables.data_table_namespace'),
-                config('tall-datatables.view_path'),
-                $this->argument('name'),
-            );
-            $livewireMakeCommand = new MakeLivewireCommand();
-        }
+        $this->parser = new ComponentParser(
+            config('tall-datatables.data_table_namespace'),
+            config('tall-datatables.view_path'),
+            $this->argument('name'),
+        );
+        $livewireMakeCommand = new MakeLivewireCommand();
 
         if ($livewireMakeCommand->isReservedClassName($name = $this->parser->className())) {
             $this->line('<fg=red;options=bold>Class is reserved:</>' . $name);
@@ -84,28 +72,16 @@ class MakeDataTableCommand extends GeneratorCommand
         return true;
     }
 
-    /**
-     * Get the stub file for the generator.
-     */
-    protected function getStub(): string
-    {
-        if (File::exists($stubPath = base_path('stubs' . DIRECTORY_SEPARATOR . 'livewire.data-table.stub'))) {
-            return file_get_contents($stubPath);
-        }
-
-        return file_get_contents(__DIR__ . '/../../stubs/livewire.data-table.stub');
-    }
-
-    private function classContents(): string
+    protected function classContents(): string
     {
         return str_replace(
-            ['[namespace]', '[class]', '[model]', '[model_import]', '[columns]'],
+            ['[namespace]', '[class]', '[model]', '[model_import]'],
             [$this->parser->classNamespace(), $this->parser->className(), class_basename($this->model), $this->model],
             $this->getStub()
         );
     }
 
-    private function createClass(bool $force = false): string|bool
+    protected function createClass(bool $force = false): string|bool
     {
         $classPath = $this->parser->classPath();
 
@@ -122,10 +98,22 @@ class MakeDataTableCommand extends GeneratorCommand
         return $classPath;
     }
 
-    private function ensureDirectoryExists(string $path): void
+    protected function ensureDirectoryExists(string $path): void
     {
         if (! File::isDirectory(dirname($path))) {
             File::makeDirectory(dirname($path), 0777, true, true);
         }
+    }
+
+    /**
+     * Get the stub file for the generator.
+     */
+    protected function getStub(): string
+    {
+        if (File::exists($stubPath = base_path('stubs' . DIRECTORY_SEPARATOR . 'livewire.data-table.stub'))) {
+            return file_get_contents($stubPath);
+        }
+
+        return file_get_contents(__DIR__ . '/../../stubs/livewire.data-table.stub');
     }
 }

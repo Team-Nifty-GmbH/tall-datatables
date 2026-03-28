@@ -16,7 +16,7 @@
                         :text="__('Close')"
                         x-on:click="$tsui.close.slide('data-table-sidebar-' + $wire.id.toLowerCase());"
                     />
-                </x-slot>
+                </x-slot:footer>
             </x-slide>
         @endteleport
     @endif

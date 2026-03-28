@@ -22,6 +22,74 @@ use Throwable;
 
 trait BuildsQueries
 {
+    /**
+     * Add a single filter to the query.
+     */
+    protected function addFilter(Builder $query, string|int $type, array|string $filter): void
+    {
+        // Handle simple key-value filters like ['column_name' => 'value']
+        if (is_string($filter)) {
+            $filter = [
+                'column' => (string) $type,
+                'operator' => '=',
+                'value' => $filter,
+            ];
+            $type = 0;
+        }
+
+        if (in_array($filter['column'] ?? false, $this->aggregatableRelationCols)) {
+            $this->aggregatableRelationCols[$filter['column']] = $filter;
+
+            return;
+        }
+
+        $filter = $this->parseFilter($filter);
+
+        if (! is_string($type)) {
+            $filter = array_is_list($filter) ? [$filter] : $filter;
+            $target = explode('.', $filter['column']);
+
+            $column = array_pop($target);
+            $relation = implode('.', $target);
+            if ($relation) {
+                $filter['column'] = $column;
+                $filter['relation'] = Str::camel($relation);
+
+                if ($filter['value'] === '%*%') {
+                    $this->applyFilterWhereHas($query, $filter['relation']);
+                } elseif ($filter['value'] === '%!*%') {
+                    $this->applyFilterWhereDoesntHave($query, $filter['relation']);
+                } else {
+                    $query->whereHas($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
+                        unset($filter['relation']);
+                        $this->addFilter($subQuery, $type, $filter);
+
+                        return $subQuery;
+                    });
+                }
+            } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
+                $this->applyFilterWhereNull($query, $filter);
+            } elseif ($filter['operator'] === 'between') {
+                $query->whereBetween($filter['column'], $filter['value']);
+            } else {
+                $column = $filter['column'] ?? null;
+                $operator = $filter['operator'] ?? null;
+                $value = $filter['value'] ?? null;
+
+                if ($column && $operator && ($value !== null && $value !== '')) {
+                    $query->where($column, $operator, $value);
+                }
+            }
+
+            return;
+        }
+
+        $method = $this->getFilterMethodName($type);
+        if (method_exists($this, $method)) {
+            $this->{$method}($query, $filter);
+        }
+    }
+
     protected function allowSoftDeletes(): bool
     {
         return in_array(
@@ -258,61 +326,94 @@ trait BuildsQueries
     }
 
     /**
-     * Add a single filter to the query.
+     * Parse a filter array, handling date conversion and calculations.
      */
-    private function addFilter(Builder $query, string|int $type, array $filter): void
+    protected function parseFilter(array $filter): array
     {
-        if (in_array($filter['column'] ?? false, $this->aggregatableRelationCols)) {
-            $this->aggregatableRelationCols[$filter['column']] = $filter;
+        $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
 
-            return;
+        if (! array_key_exists('value', $filter)) {
+            return $filter;
         }
 
-        $filter = $this->parseFilter($filter);
+        $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
 
-        if (! is_string($type)) {
-            $filter = array_is_list($filter) ? [$filter] : $filter;
-            $target = explode('.', $filter['column']);
+        $filter['value'] = collect($filter['value'])
+            ->map(function ($value) use (&$filter) {
+                if (is_string($value) && ! is_numeric($value)) {
+                    $dateFormats = ['d.m.Y', 'd/m/Y', 'm/d/Y', 'Y-m-d'];
+                    $dateTimeFormats = ['d.m.Y H:i', 'd/m/Y H:i', 'Y-m-d H:i:s', 'd.m.Y H:i:s', 'd/m/Y H:i:s'];
 
-            $column = array_pop($target);
-            $relation = implode('.', $target);
-            if ($relation) {
-                $filter['column'] = $column;
-                $filter['relation'] = Str::camel($relation);
+                    foreach ($dateFormats as $format) {
+                        try {
+                            $date = Carbon::createFromFormat($format, $value);
 
-                if ($filter['value'] === '%*%') {
-                    $this->applyFilterWhereHas($query, $filter['relation']);
-                } elseif ($filter['value'] === '%!*%') {
-                    $this->applyFilterWhereDoesntHave($query, $filter['relation']);
+                            return $date->startOfDay()->format('Y-m-d H:i:s');
+                        } catch (InvalidFormatException) {
+                            continue;
+                        }
+                    }
+
+                    foreach ($dateTimeFormats as $format) {
+                        try {
+                            $date = Carbon::createFromFormat($format, $value);
+
+                            return $date->format('Y-m-d H:i:s');
+                        } catch (InvalidFormatException) {
+                            continue;
+                        }
+                    }
+
+                    try {
+                        $date = Carbon::parse($value);
+
+                        $hasTime = preg_match('/\d{1,2}:\d{2}/', $value);
+
+                        if (! $hasTime) {
+                            return $date->startOfDay()->format('Y-m-d H:i:s');
+                        }
+
+                        return $date->format('Y-m-d H:i:s');
+                    } catch (InvalidFormatException) {
+                    }
+                }
+
+                return is_numeric($value) ? (float) $value : $value;
+            })
+            ->map(function ($value) {
+                if (! ($value['calculation'] ?? false)) {
+                    return $value;
+                }
+
+                $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
+                $functionSuffix = ucfirst($value['calculation']['unit']);
+
+                if (
+                    array_key_exists('is_start_of', $value['calculation'])
+                    && is_numeric($value['calculation']['is_start_of'])
+                ) {
+                    $functionStartOfPrefix = $value['calculation']['is_start_of'] ? 'startOf' : 'endOf';
+                    $functionStartOfSuffix = ucfirst($value['calculation']['start_of']);
+
+                    return [
+                        now()
+                            ->{$functionPrefix . $functionSuffix}($value['calculation']['value'])
+                            ->{$functionStartOfPrefix . $functionStartOfSuffix}(),
+                    ];
                 } else {
-                    $query->whereHas($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
-                        unset($filter['relation']);
-                        $this->addFilter($subQuery, $type, $filter);
-
-                        return $subQuery;
-                    });
+                    return [
+                        now()
+                            ->{$functionPrefix . $functionSuffix}($value['calculation']['value']),
+                    ];
                 }
-            } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
-                $this->applyFilterWhereNull($query, $filter);
-            } elseif ($filter['operator'] === 'between') {
-                $query->whereBetween($filter['column'], $filter['value']);
-            } else {
-                $column = $filter['column'] ?? null;
-                $operator = $filter['operator'] ?? null;
-                $value = $filter['value'] ?? null;
+            })
+            ->all();
 
-                if ($column && $operator && ($value !== null && $value !== '')) {
-                    $query->where($column, $operator, $value);
-                }
-            }
+        $filter['value'] = count($filter['value']) === 1
+            ? $filter['value'][0]
+            : $filter['value'];
 
-            return;
-        }
-
-        $method = $this->getFilterMethodName($type);
-        if (method_exists($this, $method)) {
-            $this->{$method}($query, $filter);
-        }
+        return $filter;
     }
 
     /**
@@ -464,92 +565,6 @@ trait BuildsQueries
     private function getFilterMethodName(string $type): string
     {
         return 'applyFilter' . ucfirst($type);
-    }
-
-    /**
-     * Parse a filter array, handling date conversion and calculations.
-     */
-    private function parseFilter(array $filter): array
-    {
-        $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
-        $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
-
-        $filter['value'] = collect($filter['value'])
-            ->map(function ($value) use (&$filter) {
-                if (is_string($value) && ! is_numeric($value)) {
-                    $dateFormats = ['d.m.Y', 'd/m/Y', 'm/d/Y', 'Y-m-d'];
-                    $dateTimeFormats = ['d.m.Y H:i', 'd/m/Y H:i', 'Y-m-d H:i:s', 'd.m.Y H:i:s', 'd/m/Y H:i:s'];
-
-                    foreach ($dateFormats as $format) {
-                        try {
-                            $date = Carbon::createFromFormat($format, $value);
-
-                            return $date->startOfDay()->format('Y-m-d H:i:s');
-                        } catch (InvalidFormatException) {
-                            continue;
-                        }
-                    }
-
-                    foreach ($dateTimeFormats as $format) {
-                        try {
-                            $date = Carbon::createFromFormat($format, $value);
-
-                            return $date->format('Y-m-d H:i:s');
-                        } catch (InvalidFormatException) {
-                            continue;
-                        }
-                    }
-
-                    try {
-                        $date = Carbon::parse($value);
-
-                        $hasTime = preg_match('/\d{1,2}:\d{2}/', $value);
-
-                        if (! $hasTime) {
-                            return $date->startOfDay()->format('Y-m-d H:i:s');
-                        }
-
-                        return $date->format('Y-m-d H:i:s');
-                    } catch (InvalidFormatException) {
-                    }
-                }
-
-                return is_numeric($value) ? (float) $value : $value;
-            })
-            ->map(function ($value) {
-                if (! ($value['calculation'] ?? false)) {
-                    return $value;
-                }
-
-                $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
-                $functionSuffix = ucfirst($value['calculation']['unit']);
-
-                if (
-                    array_key_exists('is_start_of', $value['calculation'])
-                    && is_numeric($value['calculation']['is_start_of'])
-                ) {
-                    $functionStartOfPrefix = $value['calculation']['is_start_of'] ? 'startOf' : 'endOf';
-                    $functionStartOfSuffix = ucfirst($value['calculation']['start_of']);
-
-                    return [
-                        now()
-                            ->{$functionPrefix . $functionSuffix}($value['calculation']['value'])
-                            ->{$functionStartOfPrefix . $functionStartOfSuffix}(),
-                    ];
-                } else {
-                    return [
-                        now()
-                            ->{$functionPrefix . $functionSuffix}($value['calculation']['value']),
-                    ];
-                }
-            })
-            ->all();
-
-        $filter['value'] = count($filter['value']) === 1
-            ? $filter['value'][0]
-            : $filter['value'];
-
-        return $filter;
     }
 
     /**

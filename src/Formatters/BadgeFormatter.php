@@ -30,7 +30,7 @@ class BadgeFormatter implements Formatter
         return $this->renderBadge('gray', e($key));
     }
 
-    private function renderBadge(string $color, string $label): string
+    protected function renderBadge(string $color, string $label): string
     {
         $colorClasses = match ($color) {
             'green' => 'bg-green-100 text-green-800',

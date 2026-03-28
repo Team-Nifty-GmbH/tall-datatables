@@ -15,14 +15,14 @@ trait HasFrontendAttributes
      */
     public static function icon(): Icon
     {
-        $iconName = property_exists(self::class, 'iconName') ? self::$iconName : 'no-symbol';
+        $iconName = property_exists(static::class, 'iconName') ? static::$iconName : 'no-symbol';
 
         return Icon::make($iconName);
     }
 
     public static function typeScriptAttributes(): array
     {
-        return ModelInfo::forModel(self::class)
+        return ModelInfo::forModel(static::class)
             ->attributes
             ->pluck('formatter', 'name')
             ->toArray();
@@ -46,14 +46,14 @@ trait HasFrontendAttributes
     /**
      * @return $this
      */
-    public function setDetailRouteParams(array $routeParams): self
+    public function setDetailRouteParams(array $routeParams): static
     {
         $this->detailRouteParams = $routeParams;
 
         return $this;
     }
 
-    private function getDetailRouteName(): ?string
+    protected function getDetailRouteName(): ?string
     {
         return $this->detailRouteName ?? null;
     }

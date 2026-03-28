@@ -86,7 +86,7 @@ class DataTable extends Component
 
     public string $orderBy = '';
 
-    public int|string $page = '1';
+    public int $page = 1;
 
     public int $perPage = 15;
 
@@ -373,7 +373,7 @@ class DataTable extends Component
 
     public function setPerPage(int $perPage): void
     {
-        if ($this->page > $this->data['total'] / $perPage) {
+        if ($perPage > 0 && ($this->data['total'] ?? 0) > 0 && $this->page > $this->data['total'] / $perPage) {
             $this->page = (int) ceil($this->data['total'] / $perPage);
         }
 
@@ -396,7 +396,7 @@ class DataTable extends Component
     public function startSearch(): void
     {
         $this->reset('selected');
-        $this->page = '1';
+        $this->page = 1;
         $this->cacheState();
         $this->loadData();
     }
@@ -515,6 +515,13 @@ class DataTable extends Component
         return new ComponentAttributeBag();
     }
 
+    protected function getSearchRoute(): string
+    {
+        return config('tall-datatables.search_route')
+            ? route(config('tall-datatables.search_route'), '')
+            : '';
+    }
+
     protected function getTableFields(): \Illuminate\Support\Collection
     {
         return ModelInfo::forModel($this->getModel())
@@ -564,7 +571,7 @@ class DataTable extends Component
             'allowSoftDeletes' => $this->allowSoftDeletes(),
             'showRestoreButton' => $this->showRestoreButton(),
             'aggregatable' => $this->getAggregatable(),
-            'isExportable' => $this->isExportable ?? false,
+            'isExportable' => $this->isExportable,
         ];
     }
 
@@ -576,12 +583,5 @@ class DataTable extends Component
     protected function showRestoreButton(): bool
     {
         return method_exists(static::class, 'restore');
-    }
-
-    private function getSearchRoute(): string
-    {
-        return config('tall-datatables.search_route')
-            ? route(config('tall-datatables.search_route'), '')
-            : '';
     }
 }

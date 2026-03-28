@@ -40,6 +40,11 @@ trait StoresSettings
     public function deleteSavedFilterEnabledCols(int $id): void
     {
         $savedFilter = Auth::user()->datatableUserSettings()->whereKey($id)->value('settings');
+
+        if (is_null($savedFilter)) {
+            return;
+        }
+
         data_forget($savedFilter, 'enabledCols');
 
         Auth::user()->datatableUserSettings()->whereKey($id)->update(['settings' => $savedFilter]);
@@ -52,21 +57,23 @@ trait StoresSettings
     #[Renderless]
     public function getCacheKey(): string
     {
-        return $this->cacheKey ?: get_called_class();
+        return $this->cacheKey ?: static::class;
     }
 
     #[Renderless]
     public function getSavedFilters(?Closure $filter = null): array
     {
-        if (Auth::user() && method_exists(Auth::user(), 'getDataTableSettings')) {
-            return Auth::user()
+        $user = Auth::user();
+
+        if ($user && method_exists($user, 'getDataTableSettings')) {
+            return $user
                 ->getDataTableSettings($this, $filter)
                 ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
                 ->values()
-                ?->toArray() ?? [];
-        } else {
-            return [];
+                ->toArray();
         }
+
+        return [];
     }
 
     public function loadSavedFilter(): void
@@ -142,12 +149,14 @@ trait StoresSettings
         $this->ensureAuthHasTrait();
 
         if ($permanent) {
-            Auth::user()->datatableUserSettings()->update(['is_permanent' => false]);
+            Auth::user()->datatableUserSettings()
+                ->where('cache_key', $this->getCacheKey())
+                ->update(['is_permanent' => false]);
         }
 
         Auth::user()->datatableUserSettings()->create([
             'name' => $name,
-            'component' => get_class($this),
+            'component' => static::class,
             'cache_key' => $this->getCacheKey(),
             'settings' => array_merge(
                 [

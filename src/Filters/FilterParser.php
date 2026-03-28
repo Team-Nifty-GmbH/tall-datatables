@@ -53,11 +53,13 @@ class FilterParser
             }
         }
 
-        // Plain text → like
-        return ['column' => $column, 'operator' => 'like', 'value' => '%' . $text . '%'];
+        // Plain text → like (escape SQL wildcards)
+        $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $text);
+
+        return ['column' => $column, 'operator' => 'like', 'value' => '%' . $escaped . '%'];
     }
 
-    private function castValue(string $value): mixed
+    protected function castValue(string $value): mixed
     {
         if (is_numeric($value)) {
             return str_contains($value, '.') ? (float) $value : (int) $value;

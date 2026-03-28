@@ -28,12 +28,12 @@ class LinkFormatter implements Formatter
         }
 
         $stringValue = (string) $value;
+        $cssClasses = 'text-blue-600 hover:text-blue-800 underline';
 
         return match ($this->type) {
-            'email' => '<a href="mailto:' . e($stringValue) . '" class="text-blue-600 hover:text-blue-800 underline">' . e($stringValue) . '</a>',
-            'tel' => '<a href="tel:' . e($stringValue) . '" class="text-blue-600 hover:text-blue-800 underline">' . e($stringValue) . '</a>',
-            'url' => '<a href="' . e($stringValue) . '" class="text-blue-600 hover:text-blue-800 underline">' . e($stringValue) . '</a>',
-            default => '<a href="' . e($stringValue) . '" class="text-blue-600 hover:text-blue-800 underline">' . e($stringValue) . '</a>',
+            'email' => '<a href="mailto:' . e($stringValue) . '" class="' . $cssClasses . '">' . e($stringValue) . '</a>',
+            'tel' => '<a href="tel:' . e($stringValue) . '" class="' . $cssClasses . '">' . e($stringValue) . '</a>',
+            default => '<a href="' . e($stringValue) . '" class="' . $cssClasses . '">' . e($stringValue) . '</a>',
         };
     }
 }

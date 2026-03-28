@@ -52,7 +52,7 @@ describe('DataTable Initialization', function (): void {
         $component = Livewire::test(PostDataTable::class);
 
         expect($component->get('perPage'))->toBe(15);
-        expect($component->get('page'))->toBe('1');
+        expect($component->get('page'))->toBe(1);
         expect($component->get('orderAsc'))->toBeTrue();
         expect($component->get('search'))->toBe('');
         expect($component->get('userFilters'))->toBe([]);
@@ -311,7 +311,7 @@ describe('Filtering', function (): void {
             ])
             ->call('applyUserFilters');
 
-        expect($component->get('page'))->toBe('1');
+        expect($component->get('page'))->toBe(1);
         expect($component->get('loadedFilterId'))->toBeNull();
     });
 
@@ -394,7 +394,7 @@ describe('Filtering', function (): void {
             ->call('startSearch');
 
         expect($component->get('selected'))->toBe([]);
-        expect($component->get('page'))->toBe('1');
+        expect($component->get('page'))->toBe(1);
     });
 
     it('resets page on applyUserFilters', function (): void {
@@ -417,7 +417,7 @@ describe('Filtering', function (): void {
             ])
             ->call('applyUserFilters');
 
-        expect($component->get('page'))->toBe('1');
+        expect($component->get('page'))->toBe(1);
     });
 });
 

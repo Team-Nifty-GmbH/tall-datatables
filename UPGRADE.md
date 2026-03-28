@@ -25,12 +25,30 @@ If you extended `data_table()` with custom JavaScript, move that logic to PHP (L
 
 The `formatters.js` file has been removed. All formatting is now handled server-side via the `FormatterRegistry`.
 
+### Listener Renamed
+
+The Livewire listener has been renamed:
+
+| v1 | v2 |
+|----|-----|
+| `loadData` | `dataTableReload` → `reloadData` |
+
+If you dispatched `loadData` events to the datatable from other components, update to `dataTableReload`.
+
 ### Events
 
 | v1 Event | v2 Status |
 |----------|-----------|
 | `data-table-data-loaded` | Removed (Blade renders directly from `$this->data`) |
 | `syncFromAlpine` | Removed |
+
+### `$page` Property Type
+
+The `$page` property changed from `int|string` to `int`. If you set this property as a string, update to an integer.
+
+### Visibility Changes
+
+All `private` methods in traits have been changed to `protected` to allow extension in package consumers. This is not a breaking change for existing code, but if you relied on the private visibility for some reason, be aware.
 
 ### Published Views
 

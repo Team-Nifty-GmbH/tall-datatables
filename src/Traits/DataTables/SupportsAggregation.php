@@ -30,32 +30,28 @@ trait SupportsAggregation
 
     protected function getAggregatable(): array
     {
-        $foreignKeys = collect(
-            Cache::remember(
+        return once(function () {
+            $foreignKeys = Cache::remember(
                 'column-listing:' . $this->modelTable,
                 86400,
                 fn () => Schema::getColumnListing($this->modelTable),
-            ),
-        )
-            ->pluck('columns')
-            ->flatten()
-            ->unique()
-            ->toArray();
+            );
 
-        return $this->aggregatable === ['*']
-            ? $this->getTableFields()
-                ->filter(function (Attribute $attribute) use ($foreignKeys) {
-                    return (in_array($attribute->phpType, ['int', 'float'])
-                            || Str::contains($attribute->type, ['decimal', 'float', 'double', 'bigint']))
-                        && ! in_array($attribute->name, $foreignKeys)
-                        && ! $attribute->virtual
-                        && ! $attribute->appended
-                        && ! $attribute->hidden
-                        && $attribute->name !== $this->modelKeyName;
-                })
-                ->pluck('name')
-                ->toArray()
-            : $this->aggregatable;
+            return $this->aggregatable === ['*']
+                ? $this->getTableFields()
+                    ->filter(function (Attribute $attribute) use ($foreignKeys) {
+                        return (in_array($attribute->phpType, ['int', 'float'])
+                                || Str::contains($attribute->type, ['decimal', 'float', 'double', 'bigint']))
+                            && ! in_array($attribute->name, $foreignKeys)
+                            && ! $attribute->virtual
+                            && ! $attribute->appended
+                            && ! $attribute->hidden
+                            && $attribute->name !== $this->modelKeyName;
+                    })
+                    ->pluck('name')
+                    ->toArray()
+                : $this->aggregatable;
+        });
     }
 
     protected function getAggregatableRelationCols(): array
