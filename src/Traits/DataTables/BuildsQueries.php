@@ -125,7 +125,8 @@ trait BuildsQueries
             } elseif (isset($customFormatters[$col]) && is_array($customFormatters[$col])) {
                 // Array format: ['formatterName', ['option' => 'value']] (v1 compat)
                 $formatterName = $customFormatters[$col][0] ?? 'string';
-                $formatter = $registry->resolve($formatterName);
+                $formatterOptions = $customFormatters[$col][1] ?? [];
+                $formatter = $registry->resolveWithOptions($formatterName, $formatterOptions);
             } else {
                 $casts = str_contains($col, '.')
                     ? $this->resolveCastsForColumn($item, $col)

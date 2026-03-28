@@ -46,6 +46,28 @@ class FormatterRegistry
         return $this->resolve($castType);
     }
 
+    /**
+     * Resolve a formatter with v1-style options (e.g. color mapping for state/badge).
+     */
+    public function resolveWithOptions(string $castClass, \Illuminate\Contracts\Support\Arrayable|array $options = []): Formatter
+    {
+        $name = strtolower($castClass);
+        $options = $options instanceof \Illuminate\Contracts\Support\Arrayable ? $options->toArray() : $options;
+
+        if ($name === 'state' || $name === 'badge') {
+            // Options can be nested: [['open' => 'red', ...]] or flat: ['open' => 'red', ...]
+            $colorMap = (isset($options[0]) && is_array($options[0])) ? $options[0] : $options;
+
+            $mapping = collect($colorMap)
+                ->mapWithKeys(fn ($color, $key) => [$key => ['color' => $color, 'label' => __($key)]])
+                ->toArray();
+
+            return new BadgeFormatter(mapping: $mapping);
+        }
+
+        return $this->resolve($castClass);
+    }
+
     protected function autoDetect(string $castClass): Formatter
     {
         return match (strtolower($castClass)) {
