@@ -122,6 +122,10 @@ trait BuildsQueries
 
             if (isset($customFormatters[$col]) && is_string($customFormatters[$col])) {
                 $formatter = $registry->resolve($customFormatters[$col]);
+            } elseif (isset($customFormatters[$col]) && is_array($customFormatters[$col])) {
+                // Array format: ['formatterName', ['option' => 'value']] (v1 compat)
+                $formatterName = $customFormatters[$col][0] ?? 'string';
+                $formatter = $registry->resolve($formatterName);
             } else {
                 $casts = str_contains($col, '.')
                     ? $this->resolveCastsForColumn($item, $col)

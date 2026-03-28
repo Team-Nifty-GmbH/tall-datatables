@@ -49,6 +49,7 @@ class FormatterRegistry
     protected function autoDetect(string $castClass): Formatter
     {
         return match (strtolower($castClass)) {
+            // Standard Eloquent casts
             'boolean', 'bool' => new BooleanFormatter(),
             'float', 'double', 'decimal' => new FloatFormatter(),
             'integer', 'int' => new StringFormatter(),
@@ -56,6 +57,18 @@ class FormatterRegistry
             'datetime', 'immutable_datetime', 'timestamp' => new DateFormatter(mode: 'datetime'),
             'image' => new ImageFormatter(),
             'array', 'json', 'collection' => new ArrayFormatter(),
+            // v1 JS formatter names (backwards compatibility via typeScriptAttributes)
+            'money' => new MoneyFormatter(),
+            'coloredmoney' => new MoneyFormatter(colored: true),
+            'percentage' => new PercentageFormatter(),
+            'progresspercentage' => new PercentageFormatter(progressBar: true),
+            'coloredfloat' => new FloatFormatter(colored: true),
+            'state', 'badge' => new BadgeFormatter(),
+            'email' => new LinkFormatter(type: 'email'),
+            'tel' => new LinkFormatter(type: 'tel'),
+            'url', 'link' => new LinkFormatter(),
+            'relativetime' => new DateFormatter(mode: 'relative'),
+            'time' => new DateFormatter(mode: 'time'),
             default => new StringFormatter(),
         };
     }

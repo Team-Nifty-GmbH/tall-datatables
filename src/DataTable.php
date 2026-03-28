@@ -241,7 +241,9 @@ class DataTable extends Component
     {
         $formatters = [];
         foreach ($this->getIncludedRelations() as $loadedRelation) {
-            $relationFormatters = app($loadedRelation['model'])->getCasts();
+            $relationFormatters = method_exists($loadedRelation['model'], 'typeScriptAttributes')
+                ? $loadedRelation['model']::typeScriptAttributes()
+                : app($loadedRelation['model'])->getCasts();
             foreach ($loadedRelation['loaded_columns'] as $loadedColumn) {
                 $formatters[$loadedColumn['loaded_as']] = $relationFormatters[$loadedColumn['column']] ?? null;
             }
