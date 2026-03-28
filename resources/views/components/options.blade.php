@@ -4,7 +4,70 @@
         searchRelations: null,
         searchColumns: null,
         searchAggregatable: null,
+        searchGroupable: null,
         dateCalculation: 0,
+        filterName: '',
+        permanent: false,
+        withEnabledCols: true,
+        tab: 'filters',
+        newFilter: {column: '', operator: '=', value: [''], relation: ''},
+        newFilterCalculation: {operator: '-', value: 1, unit: 'days', is_start_of: null, start_of: null},
+        filters: $wire.$parent.userFilters || [],
+        enabledCols: $wire.$parent.enabledCols || [],
+        filterValueLists: $wire.$parent.filterValueLists || {},
+        groupBy: $wire.$parent.groupBy || null,
+        orderByCol: $wire.$parent.userOrderBy || '',
+        orderAsc: $wire.$parent.userOrderAsc ?? true,
+        aggregatable: [],
+        aggregatableCols: $wire.$parent.aggregatableCols || {sum: [], avg: [], min: [], max: []},
+        groupable: [],
+        exportColumns: [],
+        relationTableFields: {},
+        filterSelectType: {},
+        exportableColumns: [],
+        searchable(items, search) {
+            if (!items || !search) return items || [];
+            if (Array.isArray(items)) {
+                return items.filter(item => {
+                    const label = typeof item === 'object' ? (item.label || item.col || '') : item;
+                    return label.toLowerCase().includes(search.toLowerCase());
+                });
+            }
+            return Object.fromEntries(
+                Object.entries(items).filter(([key, val]) => {
+                    const label = typeof val === 'object' ? (val.label || val.name || key) : key;
+                    return label.toLowerCase().includes(search.toLowerCase());
+                })
+            );
+        },
+        getLabel(col) {
+            if (!col) return '';
+            const labels = $wire.$parent.colLabels || {};
+            return labels[col] || col.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')).join(' \u2192 ');
+        },
+        getFilterInputType(col) {
+            return 'text';
+        },
+        getCalculationLabel(calc) {
+            if (!calc) return '';
+            return (calc.operator || '') + ' ' + (calc.value || '') + ' ' + (calc.unit || '');
+        },
+        async init() {
+            const config = await $wire.$parent.getConfig();
+            if (config) {
+                this.enabledCols = config.enabledCols || [];
+                this.aggregatable = config.aggregatable || [];
+                this.groupable = config.groupable || [];
+                this.exportColumns = config.enabledCols || [];
+                this.exportableColumns = config.enabledCols || [];
+            }
+            this.filters = $wire.$parent.userFilters || [];
+            this.filterValueLists = $wire.$parent.filterValueLists || {};
+            this.groupBy = $wire.$parent.groupBy || null;
+            this.orderByCol = $wire.$parent.userOrderBy || '';
+            this.orderAsc = $wire.$parent.userOrderAsc ?? true;
+            this.aggregatableCols = $wire.$parent.aggregatableCols || {sum: [], avg: [], min: [], max: []};
+        },
     }"
 >
     @if (auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
