@@ -35,6 +35,12 @@ The Livewire listener has been renamed:
 
 If you dispatched `loadData` events to the datatable from other components, update to `dataTableReload`.
 
+### Removed: `#[Renderless]` from data-loading methods
+
+In v1, methods like `loadData()`, `gotoPage()`, `sortTable()`, `startSearch()` were marked `#[Renderless]` because Alpine.js rendered data client-side. In v2, all rendering is server-side via Blade. These methods **must not** have `#[Renderless]` — otherwise the component won't re-render with the loaded data.
+
+**If you override `loadData()` in your Livewire component and add `#[Renderless]`, the table will appear empty.** Remove the attribute.
+
 ### Events
 
 | v1 Event | v2 Status |
