@@ -167,6 +167,18 @@
         },
         relationFormatters: {},
         _ready: false,
+        async loadSidebarData() {
+            if (this._sidebarLoaded) return;
+            this._sidebarLoaded = true;
+
+            const data = await $wire.getSidebarData();
+            const cols = data.selectedCols || [];
+            this.relationTableFields['self'] = cols.map(c => typeof c === 'object' ? c.attribute || c.col : c);
+
+            // Push into $wire so templates referencing $wire.selectedCols/Relations work
+            $wire.selectedCols = cols;
+            $wire.selectedRelations = data.selectedRelations || [];
+        },
         async init() {
             this.enabledCols = $wire.enabledCols || [];
             this.filters = Array.isArray($wire.userFilters) ? $wire.userFilters : [];
@@ -177,10 +189,8 @@
             this.aggregatableCols = $wire.aggregatableCols || {sum: [], avg: [], min: [], max: []};
             this.exportColumns = this.enabledCols;
             this.exportableColumns = this.enabledCols;
-
-            // Populate relationTableFields from selectedCols for the filter column datalist
-            const cols = $wire.selectedCols || [];
-            this.relationTableFields['self'] = cols.map(c => typeof c === 'object' ? c.attribute || c.col : c);
+            this._sidebarLoaded = false;
+            this.loadSidebarData();
 
 
             this.$watch('newFilter.column', () => {
@@ -389,7 +399,7 @@
                 @if ($this->isFilterable)
                     <button
                         wire:loading.attr="disabled"
-                        x-on:click.prevent="tab = 'edit-filters'"
+                        x-on:click.prevent="loadSidebarData(); tab = 'edit-filters'"
                         x-bind:class="{
                             'border-indigo-500! text-indigo-600': tab === 'edit-filters',
                         }"
@@ -401,7 +411,7 @@
 
                 <button
                     wire:loading.attr="disabled"
-                    x-on:click.prevent="sortCols = enabledCols; tab = 'columns';"
+                    x-on:click.prevent="loadSidebarData(); sortCols = enabledCols; tab = 'columns';"
                     x-bind:class="{ 'border-indigo-500! text-indigo-600': tab === 'columns' }"
                     class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
                 >
@@ -431,8 +441,9 @@
                     <button
                         wire:loading.attr="disabled"
                         x-on:click.prevent="
-                            getColumns()
-                            tab = 'export'
+                            loadSidebarData();
+                            getColumns();
+                            tab = 'export';
                         "
                         x-bind:class="{ 'border-indigo-500! text-indigo-600': tab === 'export' }"
                         class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"

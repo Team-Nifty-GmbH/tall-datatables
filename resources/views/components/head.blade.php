@@ -87,7 +87,9 @@
                                             <x-slot:text>
                                                 {{ $this->colLabels[$filter['column']] ?? \Illuminate\Support\Str::headline($filter['column']) }}
                                                 {{ __($filter['operator']) }}
-                                                {{ $filter['operator'] !== 'like' ? $this->formatFilterBadgeValue($filter['column'], $filter['value']) : $filter['value'] }}
+                                                @if (! in_array($filter['operator'], ['is null', 'is not null', 'has', 'has not']))
+                                                    {{ $filter['operator'] !== 'like' ? $this->formatFilterBadgeValue($filter['column'], $filter['value'] ?? '') : $filter['value'] }}
+                                                @endif
                                             </x-slot>
                                         </x-badge>
                                         @if (! $loop->last)

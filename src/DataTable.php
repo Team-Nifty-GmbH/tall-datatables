@@ -121,6 +121,13 @@ class DataTable extends Component
 
     protected string $view = 'tall-datatables::livewire.data-table';
 
+    /** @internal Cached per-request to avoid repeated expensive computation */
+    private ?array $cachedViewData = null;
+
+    private ?array $cachedActions = null;
+
+    private bool $dataLoadedThisRequest = false;
+
     public function mount(): void
     {
         if (! $this->modelKeyName || ! $this->modelTable) {
@@ -135,7 +142,7 @@ class DataTable extends Component
 
     public function render(): View|Factory|Application|null
     {
-        if (empty($this->data)) {
+        if (! $this->initialized) {
             $this->loadData();
         }
 
@@ -143,13 +150,18 @@ class DataTable extends Component
     }
 
     /**
-     * Clear data before sending to client — it's only needed during render, not in the snapshot.
-     * This drastically reduces payload size since data can contain hundreds of formatted rows.
-     * On the next request, loadData() will re-populate it.
+     * Clear data and per-request caches before sending to client.
+     * Data is only needed during render, not in the snapshot.
      */
     public function dehydrate(): void
     {
         $this->data = [];
+        $this->selectedCols = [];
+        $this->selectedRelations = [];
+        $this->displayPath = [];
+        $this->cachedViewData = null;
+        $this->cachedActions = null;
+        $this->dataLoadedThisRequest = false;
     }
 
     protected function getTableActions(): array
@@ -169,6 +181,7 @@ class DataTable extends Component
         return $this->data;
     }
 
+    #[Renderless]
     public function applyUserFilters(): void
     {
         $this->colLabels = $this->getColLabels();
@@ -176,6 +189,7 @@ class DataTable extends Component
         $this->startSearch();
     }
 
+    #[Renderless]
     public function clearFiltersAndSort(): void
     {
         $this->userFilters = [];
@@ -311,6 +325,7 @@ class DataTable extends Component
         ];
     }
 
+    #[Renderless]
     public function gotoPage(int $page): void
     {
         $this->page = $page;
@@ -321,6 +336,15 @@ class DataTable extends Component
     public function loadData(): void
     {
         $this->initialized = true;
+        $this->dataLoadedThisRequest = true;
+        $this->resolvedFormatters = null;
+        $this->cachedViewData = null;
+
+        // Islands handle the DOM update — skip the full component re-render
+        // to avoid sending 600KB+ of unchanged sidebar/modal HTML.
+        if (request()->isMethod('POST')) {
+            $this->skipRender();
+        }
 
         $query = $this->buildSearch();
         $baseQuery = $query->clone();
@@ -380,6 +404,7 @@ class DataTable extends Component
         $this->renderIsland('badges');
     }
 
+    #[Renderless]
     public function loadFilter(array $properties): void
     {
         if (! $properties) {
@@ -395,6 +420,7 @@ class DataTable extends Component
         }
     }
 
+    #[Renderless]
     public function loadMore(): void
     {
         $this->perPage += $this->perPage;
@@ -406,11 +432,13 @@ class DataTable extends Component
         return view('tall-datatables::livewire.placeholder');
     }
 
+    #[Renderless]
     public function reloadData(): void
     {
         $this->loadData();
     }
 
+    #[Renderless]
     public function setPerPage(int $perPage): void
     {
         if ($perPage > 0 && ($this->data['total'] ?? 0) > 0 && $this->page > $this->data['total'] / $perPage) {
@@ -422,6 +450,7 @@ class DataTable extends Component
         $this->loadData();
     }
 
+    #[Renderless]
     public function sortTable(string $col): void
     {
         if ($this->userOrderBy === $col) {
@@ -433,6 +462,7 @@ class DataTable extends Component
         $this->loadData();
     }
 
+    #[Renderless]
     public function startSearch(): void
     {
         $this->reset('selected');
@@ -441,16 +471,19 @@ class DataTable extends Component
         $this->loadData();
     }
 
+    #[Renderless]
     public function updatedSearch(): void
     {
         $this->startSearch();
     }
 
+    #[Renderless]
     public function updatedStickyCols(): void
     {
         $this->renderIsland('body');
     }
 
+    #[Renderless]
     public function updatedUserFilters(): void
     {
         if ($this->loadingFilter) {
@@ -472,7 +505,21 @@ class DataTable extends Component
         $textFilters = collect(Arr::dot($this->userFilters['text'] ?? []))->filter();
 
         return $textFilters->map(function ($value, $col) {
-            if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $value, $matches)) {
+            $trimmed = trim($value);
+
+            if (preg_match('/^(is\s+null|is\s+not\s+null)$/i', $trimmed)) {
+                return ['column' => $col, 'operator' => strtolower(preg_replace('/\s+/', ' ', $trimmed)), 'value' => null];
+            }
+
+            if ($trimmed === '*') {
+                return ['column' => $col, 'operator' => 'has', 'value' => null];
+            }
+
+            if ($trimmed === '!*') {
+                return ['column' => $col, 'operator' => 'has not', 'value' => null];
+            }
+
+            if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $trimmed, $matches)) {
                 return ['column' => $col, 'operator' => $matches[1], 'value' => $matches[2]];
             }
 
@@ -508,6 +555,10 @@ class DataTable extends Component
 
     protected function compileActions(string $type): array
     {
+        if (isset($this->cachedActions[$type])) {
+            return $this->cachedActions[$type];
+        }
+
         $actions = [];
         $methodBaseName = 'get' . ucfirst($type) . 'Actions';
 
@@ -521,6 +572,8 @@ class DataTable extends Component
         if (method_exists($this, $methodBaseName)) {
             $actions = array_merge($this->{$methodBaseName}(), $actions);
         }
+
+        $this->cachedActions[$type] = $actions;
 
         return $actions;
     }
@@ -650,7 +703,11 @@ class DataTable extends Component
 
     protected function getViewData(): array
     {
-        return [
+        if ($this->cachedViewData !== null) {
+            return $this->cachedViewData;
+        }
+
+        $this->cachedViewData = [
             'searchable' => $this->getIsSearchable(),
             'componentAttributes' => $this->getComponentAttributes(),
             'tableHeadColAttributes' => $this->getTableHeadColAttributes(),
@@ -673,6 +730,8 @@ class DataTable extends Component
             'aggregatable' => $this->getAggregatable(),
             'isExportable' => $this->isExportable,
         ];
+
+        return $this->cachedViewData;
     }
 
     protected function formatAggregates(array $aggregates): array

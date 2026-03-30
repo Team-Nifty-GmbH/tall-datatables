@@ -41,6 +41,19 @@ trait SupportsRelations
     public array $with = [];
 
     #[Renderless]
+    public function getSidebarData(): array
+    {
+        if (empty($this->selectedCols)) {
+            $this->loadRelation($this->getModel());
+        }
+
+        return [
+            'selectedCols' => $this->selectedCols,
+            'selectedRelations' => $this->selectedRelations,
+        ];
+    }
+
+    #[Renderless]
     public function getFilterableColumns(?string $name = null): array
     {
         return $this->constructWith()[2];

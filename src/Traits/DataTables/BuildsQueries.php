@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Laravel\Scout\Searchable;
@@ -96,10 +97,11 @@ trait BuildsQueries
 
     protected function allowSoftDeletes(): bool
     {
-        return in_array(
-            SoftDeletes::class,
-            class_uses_recursive(
-                $this->getModel()
+        return Cache::memo()->rememberForever(
+            'dt:soft-deletes:' . $this->getModel(),
+            fn () => in_array(
+                SoftDeletes::class,
+                class_uses_recursive($this->getModel())
             )
         );
     }
@@ -110,27 +112,32 @@ trait BuildsQueries
      * Wraps formatted values as ['raw' => mixed, 'display' => string].
      * Plain values that don't need formatting remain unwrapped for smaller payloads.
      */
-    protected function applyFormatters(array &$itemArray, Model $item, array $context): void
+    /** @internal Resolved formatters cache — built once per loadData(), reused for all rows */
+    private ?array $resolvedFormatters = null;
+
+    /**
+     * Build the formatter map once, then reuse for all rows.
+     */
+    protected function getResolvedFormatters(Model $item): array
     {
+        if ($this->resolvedFormatters !== null) {
+            return $this->resolvedFormatters;
+        }
+
         $registry = app(FormatterRegistry::class);
         $customFormatters = $this->getFormatters();
         $modelCasts = $item->getCasts();
+        $this->resolvedFormatters = [];
 
         foreach ($this->enabledCols as $col) {
-            if (! array_key_exists($col, $itemArray)) {
-                continue;
-            }
-
-            $raw = $itemArray[$col];
             $baseCol = str_contains($col, '.') ? last(explode('.', $col)) : $col;
 
             if (isset($customFormatters[$col]) && is_string($customFormatters[$col])) {
-                $formatter = $registry->resolve($customFormatters[$col]);
+                $this->resolvedFormatters[$col] = $registry->resolve($customFormatters[$col]);
             } elseif (isset($customFormatters[$col]) && is_array($customFormatters[$col])) {
-                // Array format: ['formatterName', ['option' => 'value']] (v1 compat)
                 $formatterName = $customFormatters[$col][0] ?? 'string';
                 $formatterOptions = $customFormatters[$col][1] ?? [];
-                $formatter = $registry->resolveWithOptions($formatterName, $formatterOptions);
+                $this->resolvedFormatters[$col] = $registry->resolveWithOptions($formatterName, $formatterOptions);
             } else {
                 $casts = str_contains($col, '.')
                     ? $this->resolveCastsForColumn($item, $col)
@@ -138,16 +145,32 @@ trait BuildsQueries
 
                 $castValue = $casts[$baseCol] ?? null;
 
-                // Array-based casts like ['state', ['open' => 'green']] use resolveWithOptions
                 if (is_array($castValue) && count($castValue) >= 1) {
-                    $formatterName = $castValue[0] ?? 'string';
-                    $formatterOptions = $castValue[1] ?? [];
-                    $formatter = $registry->resolveWithOptions($formatterName, $formatterOptions);
+                    $this->resolvedFormatters[$col] = $registry->resolveWithOptions($castValue[0] ?? 'string', $castValue[1] ?? []);
                 } else {
-                    // Filter out non-string cast values (e.g. CastClass::class instances)
                     $stringCasts = array_filter($casts, 'is_string');
-                    $formatter = $registry->resolveForColumn($baseCol, $stringCasts);
+                    $this->resolvedFormatters[$col] = $registry->resolveForColumn($baseCol, $stringCasts);
                 }
+            }
+        }
+
+        return $this->resolvedFormatters;
+    }
+
+    protected function applyFormatters(array &$itemArray, Model $item, array $context): void
+    {
+        $formatters = $this->getResolvedFormatters($item);
+
+        foreach ($this->enabledCols as $col) {
+            if (! array_key_exists($col, $itemArray)) {
+                continue;
+            }
+
+            $raw = $itemArray[$col];
+            $formatter = $formatters[$col] ?? null;
+
+            if (! $formatter) {
+                continue;
             }
 
             // Use ArrayFormatter for array values when StringFormatter would fail
@@ -224,9 +247,14 @@ trait BuildsQueries
 
     protected function getIsSearchable(): bool
     {
-        return is_null($this->isSearchable)
-            ? in_array(Searchable::class, class_uses_recursive($this->getModel()))
-            : $this->isSearchable;
+        if (! is_null($this->isSearchable)) {
+            return $this->isSearchable;
+        }
+
+        return Cache::memo()->rememberForever(
+            'dt:searchable:' . $this->getModel(),
+            fn () => in_array(Searchable::class, class_uses_recursive($this->getModel()))
+        );
     }
 
     protected function getPaginator(LengthAwarePaginator $paginator): LengthAwarePaginator
@@ -597,8 +625,36 @@ trait BuildsQueries
 
     private function parseTextFilterValue(string $value, string $column): array
     {
+        $trimmed = trim($value);
+
+        // Support "is null" / "is not null" (case insensitive)
+        if (preg_match('/^(is\s+null|is\s+not\s+null)$/i', $trimmed, $matches)) {
+            return [
+                'column' => $column,
+                'operator' => strtolower(preg_replace('/\s+/', ' ', $matches[1])),
+                'value' => null,
+            ];
+        }
+
+        // Support !* (whereDoesntHave) and * (whereHas) for relation columns
+        if ($trimmed === '!*') {
+            return [
+                'column' => $column,
+                'operator' => 'like',
+                'value' => '%!*%',
+            ];
+        }
+
+        if ($trimmed === '*') {
+            return [
+                'column' => $column,
+                'operator' => 'like',
+                'value' => '%*%',
+            ];
+        }
+
         // Support operator prefixes: >=, <=, !=, >, <, =
-        if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $value, $matches)) {
+        if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $trimmed, $matches)) {
             $filterValue = $this->normalizeNumericValue($matches[2]);
 
             return [
