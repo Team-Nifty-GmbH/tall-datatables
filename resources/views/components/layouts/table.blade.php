@@ -21,16 +21,6 @@
     <div class="relative overflow-x-auto shadow ring-1 ring-black/5 sm:rounded-lg">
         <table class="dark:divide-secondary-700 dark:bg-secondary-800 min-w-full table-auto border-collapse divide-y divide-gray-300 rounded-md bg-white text-gray-500 dark:text-gray-50">
             <thead class="font-semibold" style="z-index: 9">
-                <tr
-                    wire:loading.delay.longer
-                    wire:target.except="storeColLayout"
-                    x-cloak
-                    class="absolute top-0 right-0 bottom-0 w-full"
-                >
-                    <td>
-                        <x-tall-datatables::spinner />
-                    </td>
-                </tr>
                 @if ($hasHead)
                     <tr>
                         @if ($isSelectable)
@@ -185,6 +175,16 @@
                 @endif
             </thead>
             <tbody class="relative">
+                <tr
+                    wire:loading.delay.longer
+                    wire:target.except="storeColLayout"
+                    x-cloak
+                    class="absolute top-0 right-0 bottom-0 left-0 z-10"
+                >
+                    <td>
+                        <x-tall-datatables::spinner />
+                    </td>
+                </tr>
                 @island(name: 'body')
                 @php extract($this->getIslandData()); @endphp
                 @if (! $this->initialized)
