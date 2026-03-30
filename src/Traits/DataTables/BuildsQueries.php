@@ -238,7 +238,17 @@ trait BuildsQueries
         try {
             if (property_exists($query, 'scout_pagination')) {
                 $items = $query->get();
-                $total = max(data_get($query->scout_pagination, 'estimatedTotalHits'), $query->count());
+                $hasAdditionalFilters = ! empty($this->userFilters['text'] ?? [])
+                    || count(array_filter($this->userFilters, fn ($key) => $key !== 'text', ARRAY_FILTER_USE_KEY)) > 0;
+
+                if ($hasAdditionalFilters) {
+                    // When additional filters are applied on top of Scout results,
+                    // the Meilisearch estimatedTotalHits is inaccurate — use actual count
+                    $total = $query->toBase()->getCountForPagination();
+                } else {
+                    $total = max(data_get($query->scout_pagination, 'estimatedTotalHits'), $query->count());
+                }
+
                 $limit = data_get($query->scout_pagination, 'limit');
                 $result = new LengthAwarePaginator(
                     $items,
