@@ -33,17 +33,6 @@ trait SupportsSelecting
     }
 
     #[Renderless]
-    public function toggleSelected(int|string $value): void
-    {
-        if (in_array($value, $this->selected)) {
-            $this->selected = array_values(array_diff($this->selected, [$value]));
-            $this->wildcardSelectExcluded[] = $value;
-        } else {
-            $this->selected[] = $value;
-        }
-    }
-
-    #[Renderless]
     public function getSelectAttributes(): ComponentAttributeBag
     {
         return new ComponentAttributeBag();
@@ -52,6 +41,17 @@ trait SupportsSelecting
     public function getSelectValue(): string
     {
         return $this->selectValue ?? 'record.' . $this->modelKeyName;
+    }
+
+    #[Renderless]
+    public function toggleSelected(int|string $value): void
+    {
+        if (in_array($value, $this->selected)) {
+            $this->selected = array_values(array_diff($this->selected, [$value]));
+            $this->wildcardSelectExcluded[] = $value;
+        } else {
+            $this->selected[] = $value;
+        }
     }
 
     protected function getSelectedModels(): Collection

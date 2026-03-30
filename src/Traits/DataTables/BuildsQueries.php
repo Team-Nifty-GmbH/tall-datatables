@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
+use BadMethodCallException;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -10,8 +11,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Laravel\Scout\Searchable;
 use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
@@ -23,6 +24,15 @@ use Throwable;
 
 trait BuildsQueries
 {
+    /**
+     * Apply server-side formatting to enabled columns using the FormatterRegistry.
+     *
+     * Wraps formatted values as ['raw' => mixed, 'display' => string].
+     * Plain values that don't need formatting remain unwrapped for smaller payloads.
+     */
+    /** @internal Resolved formatters cache — built once per loadData(), reused for all rows */
+    private ?array $resolvedFormatters = null;
+
     /**
      * Add a single filter to the query.
      */
@@ -68,7 +78,7 @@ trait BuildsQueries
 
                             return $subQuery;
                         });
-                    } catch (\BadMethodCallException) {
+                    } catch (BadMethodCallException) {
                         // Relation does not exist on model — skip this filter
                     }
                 }
@@ -104,57 +114,6 @@ trait BuildsQueries
                 class_uses_recursive($this->getModel())
             )
         );
-    }
-
-    /**
-     * Apply server-side formatting to enabled columns using the FormatterRegistry.
-     *
-     * Wraps formatted values as ['raw' => mixed, 'display' => string].
-     * Plain values that don't need formatting remain unwrapped for smaller payloads.
-     */
-    /** @internal Resolved formatters cache — built once per loadData(), reused for all rows */
-    private ?array $resolvedFormatters = null;
-
-    /**
-     * Build the formatter map once, then reuse for all rows.
-     */
-    protected function getResolvedFormatters(Model $item): array
-    {
-        if ($this->resolvedFormatters !== null) {
-            return $this->resolvedFormatters;
-        }
-
-        $registry = app(FormatterRegistry::class);
-        $customFormatters = $this->getFormatters();
-        $modelCasts = $item->getCasts();
-        $this->resolvedFormatters = [];
-
-        foreach ($this->enabledCols as $col) {
-            $baseCol = str_contains($col, '.') ? last(explode('.', $col)) : $col;
-
-            if (isset($customFormatters[$col]) && is_string($customFormatters[$col])) {
-                $this->resolvedFormatters[$col] = $registry->resolve($customFormatters[$col]);
-            } elseif (isset($customFormatters[$col]) && is_array($customFormatters[$col])) {
-                $formatterName = $customFormatters[$col][0] ?? 'string';
-                $formatterOptions = $customFormatters[$col][1] ?? [];
-                $this->resolvedFormatters[$col] = $registry->resolveWithOptions($formatterName, $formatterOptions);
-            } else {
-                $casts = str_contains($col, '.')
-                    ? $this->resolveCastsForColumn($item, $col)
-                    : $modelCasts;
-
-                $castValue = $casts[$baseCol] ?? null;
-
-                if (is_array($castValue) && count($castValue) >= 1) {
-                    $this->resolvedFormatters[$col] = $registry->resolveWithOptions($castValue[0] ?? 'string', $castValue[1] ?? []);
-                } else {
-                    $stringCasts = array_filter($casts, 'is_string');
-                    $this->resolvedFormatters[$col] = $registry->resolveForColumn($baseCol, $stringCasts);
-                }
-            }
-        }
-
-        return $this->resolvedFormatters;
     }
 
     protected function applyFormatters(array &$itemArray, Model $item, array $context): void
@@ -260,6 +219,48 @@ trait BuildsQueries
     protected function getPaginator(LengthAwarePaginator $paginator): LengthAwarePaginator
     {
         return $paginator;
+    }
+
+    /**
+     * Build the formatter map once, then reuse for all rows.
+     */
+    protected function getResolvedFormatters(Model $item): array
+    {
+        if ($this->resolvedFormatters !== null) {
+            return $this->resolvedFormatters;
+        }
+
+        $registry = app(FormatterRegistry::class);
+        $customFormatters = $this->getFormatters();
+        $modelCasts = $item->getCasts();
+        $this->resolvedFormatters = [];
+
+        foreach ($this->enabledCols as $col) {
+            $baseCol = str_contains($col, '.') ? last(explode('.', $col)) : $col;
+
+            if (isset($customFormatters[$col]) && is_string($customFormatters[$col])) {
+                $this->resolvedFormatters[$col] = $registry->resolve($customFormatters[$col]);
+            } elseif (isset($customFormatters[$col]) && is_array($customFormatters[$col])) {
+                $formatterName = $customFormatters[$col][0] ?? 'string';
+                $formatterOptions = $customFormatters[$col][1] ?? [];
+                $this->resolvedFormatters[$col] = $registry->resolveWithOptions($formatterName, $formatterOptions);
+            } else {
+                $casts = str_contains($col, '.')
+                    ? $this->resolveCastsForColumn($item, $col)
+                    : $modelCasts;
+
+                $castValue = $casts[$baseCol] ?? null;
+
+                if (is_array($castValue) && count($castValue) >= 1) {
+                    $this->resolvedFormatters[$col] = $registry->resolveWithOptions($castValue[0] ?? 'string', $castValue[1] ?? []);
+                } else {
+                    $stringCasts = array_filter($casts, 'is_string');
+                    $this->resolvedFormatters[$col] = $registry->resolveForColumn($baseCol, $stringCasts);
+                }
+            }
+        }
+
+        return $this->resolvedFormatters;
     }
 
     /**
@@ -526,6 +527,23 @@ trait BuildsQueries
         return $filter;
     }
 
+    private function applyFallbackSearch(Builder $query, string $search): void
+    {
+        $query->where(function (Builder $q) use ($search): void {
+            foreach ($this->enabledCols as $col) {
+                if (str_contains($col, '.')) {
+                    $parts = explode('.', $col);
+                    $column = array_pop($parts);
+                    $relation = implode('.', array_map(fn ($p) => Str::camel($p), $parts));
+
+                    $q->orWhereHas($relation, fn (Builder $sub) => $sub->where($column, 'like', '%' . $search . '%'));
+                } else {
+                    $q->orWhere($col, 'like', '%' . $search . '%');
+                }
+            }
+        });
+    }
+
     /**
      * Apply fixed and user filters to the query.
      */
@@ -606,111 +624,6 @@ trait BuildsQueries
         return $builder;
     }
 
-    private function applyFallbackSearch(Builder $query, string $search): void
-    {
-        $query->where(function (Builder $q) use ($search): void {
-            foreach ($this->enabledCols as $col) {
-                if (str_contains($col, '.')) {
-                    $parts = explode('.', $col);
-                    $column = array_pop($parts);
-                    $relation = implode('.', array_map(fn ($p) => Str::camel($p), $parts));
-
-                    $q->orWhereHas($relation, fn (Builder $sub) => $sub->where($column, 'like', '%' . $search . '%'));
-                } else {
-                    $q->orWhere($col, 'like', '%' . $search . '%');
-                }
-            }
-        });
-    }
-
-    private function parseTextFilterValue(string $value, string $column): array
-    {
-        $trimmed = trim($value);
-
-        // Support "is null" / "is not null" (case insensitive)
-        if (preg_match('/^(is\s+null|is\s+not\s+null)$/i', $trimmed, $matches)) {
-            return [
-                'column' => $column,
-                'operator' => strtolower(preg_replace('/\s+/', ' ', $matches[1])),
-                'value' => null,
-            ];
-        }
-
-        // Support !* (whereDoesntHave) and * (whereHas) for relation columns
-        if ($trimmed === '!*') {
-            return [
-                'column' => $column,
-                'operator' => 'like',
-                'value' => '%!*%',
-            ];
-        }
-
-        if ($trimmed === '*') {
-            return [
-                'column' => $column,
-                'operator' => 'like',
-                'value' => '%*%',
-            ];
-        }
-
-        // Support operator prefixes: >=, <=, !=, >, <, =
-        if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $trimmed, $matches)) {
-            $filterValue = $this->normalizeNumericValue($matches[2]);
-
-            return [
-                'column' => $column,
-                'operator' => $matches[1],
-                'value' => $filterValue,
-            ];
-        }
-
-        return [
-            'column' => $column,
-            'operator' => 'like',
-            'value' => '%' . $value . '%',
-        ];
-    }
-
-    private function normalizeNumericValue(string $value): string|float
-    {
-        $trimmed = trim($value);
-
-        // Already valid numeric (English format or integer)
-        if (is_numeric($trimmed)) {
-            return (float) $trimmed;
-        }
-
-        // Detect which separator is the decimal: the LAST comma or dot
-        $lastComma = strrpos($trimmed, ',');
-        $lastDot = strrpos($trimmed, '.');
-
-        if ($lastComma !== false && $lastDot !== false) {
-            // Both present — last one is the decimal separator
-            if ($lastComma > $lastDot) {
-                // 1.234,56 → comma is decimal
-                $normalized = str_replace('.', '', $trimmed);
-                $normalized = str_replace(',', '.', $normalized);
-            } else {
-                // 1,234.56 → dot is decimal
-                $normalized = str_replace(',', '', $trimmed);
-            }
-
-            return is_numeric($normalized) ? (float) $normalized : $trimmed;
-        }
-
-        if ($lastComma !== false) {
-            // Only comma: treat as decimal if 1-2 digits follow (39,99 → 39.99)
-            $afterComma = substr($trimmed, $lastComma + 1);
-            if (strlen($afterComma) <= 2) {
-                $normalized = str_replace(',', '.', $trimmed);
-
-                return is_numeric($normalized) ? (float) $normalized : $trimmed;
-            }
-        }
-
-        return $trimmed;
-    }
-
     private function applyFilterWhere(Builder $builder, array $filter): Builder
     {
         return $builder->where($filter);
@@ -720,7 +633,7 @@ trait BuildsQueries
     {
         try {
             return $builder->whereDoesntHave(Str::camel($relation));
-        } catch (\BadMethodCallException) {
+        } catch (BadMethodCallException) {
             return $builder;
         }
     }
@@ -729,7 +642,7 @@ trait BuildsQueries
     {
         try {
             return $builder->whereHas(Str::camel($relation));
-        } catch (\BadMethodCallException) {
+        } catch (BadMethodCallException) {
             return $builder;
         }
     }
@@ -812,6 +725,94 @@ trait BuildsQueries
     private function getFilterMethodName(string $type): string
     {
         return 'applyFilter' . ucfirst($type);
+    }
+
+    private function normalizeNumericValue(string $value): string|float
+    {
+        $trimmed = trim($value);
+
+        // Already valid numeric (English format or integer)
+        if (is_numeric($trimmed)) {
+            return (float) $trimmed;
+        }
+
+        // Detect which separator is the decimal: the LAST comma or dot
+        $lastComma = strrpos($trimmed, ',');
+        $lastDot = strrpos($trimmed, '.');
+
+        if ($lastComma !== false && $lastDot !== false) {
+            // Both present — last one is the decimal separator
+            if ($lastComma > $lastDot) {
+                // 1.234,56 → comma is decimal
+                $normalized = str_replace('.', '', $trimmed);
+                $normalized = str_replace(',', '.', $normalized);
+            } else {
+                // 1,234.56 → dot is decimal
+                $normalized = str_replace(',', '', $trimmed);
+            }
+
+            return is_numeric($normalized) ? (float) $normalized : $trimmed;
+        }
+
+        if ($lastComma !== false) {
+            // Only comma: treat as decimal if 1-2 digits follow (39,99 → 39.99)
+            $afterComma = substr($trimmed, $lastComma + 1);
+            if (strlen($afterComma) <= 2) {
+                $normalized = str_replace(',', '.', $trimmed);
+
+                return is_numeric($normalized) ? (float) $normalized : $trimmed;
+            }
+        }
+
+        return $trimmed;
+    }
+
+    private function parseTextFilterValue(string $value, string $column): array
+    {
+        $trimmed = trim($value);
+
+        // Support "is null" / "is not null" (case insensitive)
+        if (preg_match('/^(is\s+null|is\s+not\s+null)$/i', $trimmed, $matches)) {
+            return [
+                'column' => $column,
+                'operator' => strtolower(preg_replace('/\s+/', ' ', $matches[1])),
+                'value' => null,
+            ];
+        }
+
+        // Support !* (whereDoesntHave) and * (whereHas) for relation columns
+        if ($trimmed === '!*') {
+            return [
+                'column' => $column,
+                'operator' => 'like',
+                'value' => '%!*%',
+            ];
+        }
+
+        if ($trimmed === '*') {
+            return [
+                'column' => $column,
+                'operator' => 'like',
+                'value' => '%*%',
+            ];
+        }
+
+        // Support operator prefixes: >=, <=, !=, >, <, =
+        if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $trimmed, $matches)) {
+            $filterValue = $this->normalizeNumericValue($matches[2]);
+
+            return [
+                'column' => $column,
+                'operator' => $matches[1],
+                'value' => $filterValue,
+            ];
+        }
+
+        return [
+            'column' => $column,
+            'operator' => 'like',
+            'value' => '%' . $value . '%',
+        ];
     }
 
     /**

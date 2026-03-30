@@ -23,6 +23,7 @@ use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsExporting;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsGrouping;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsRelations;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSelecting;
+use Throwable;
 
 class DataTable extends Component
 {
@@ -121,13 +122,12 @@ class DataTable extends Component
 
     protected string $view = 'tall-datatables::livewire.data-table';
 
+    private ?array $cachedActions = null;
+
     /** @internal Cached per-request to avoid repeated expensive computation */
     private ?array $cachedViewData = null;
 
-    private ?array $cachedActions = null;
-
     private bool $dataLoadedThisRequest = false;
-
 
     public function mount(): void
     {
@@ -167,36 +167,12 @@ class DataTable extends Component
         return [];
     }
 
-    /**
-     * Re-populate data for assertions in tests. Only call after loadData().
-     */
-    public function getDataForTesting(): array
-    {
-        if (empty($this->data) && $this->initialized) {
-            $this->loadData();
-        }
-
-        return $this->data;
-    }
-
     #[Renderless]
     public function applyUserFilters(): void
     {
         $this->colLabels = $this->getColLabels();
         $this->loadedFilterId = null;
         $this->startSearch();
-    }
-
-    #[Renderless]
-    public function setTextFilter(string $col, ?string $value): void
-    {
-        if ($value !== null && $value !== '') {
-            $this->userFilters['text'][$col] = $value;
-        } else {
-            unset($this->userFilters['text'][$col]);
-        }
-
-        $this->applyUserFilters();
     }
 
     #[Renderless]
@@ -226,6 +202,32 @@ class DataTable extends Component
 
         if ($loadData) {
             $this->loadData();
+        }
+    }
+
+    public function formatFilterBadgeValue(string $column, string $value): string
+    {
+        $registry = app(Formatters\FormatterRegistry::class);
+        $formatterKey = $this->getFormatters()[$column] ?? null;
+
+        if (! $formatterKey) {
+            $casts = app($this->getModel())->getCasts();
+            $castValue = $casts[$column] ?? null;
+            $formatterKey = is_array($castValue) ? ($castValue[0] ?? null) : $castValue;
+        }
+
+        if (! $formatterKey) {
+            return $value;
+        }
+
+        try {
+            $formatter = $registry->resolve($formatterKey);
+            $numericValue = is_numeric($value) ? (float) $value : $value;
+            $formatted = $formatter->format($numericValue, []);
+
+            return strip_tags(is_array($formatted) ? ($formatted['display'] ?? $formatted['raw'] ?? $value) : $formatted);
+        } catch (Throwable) {
+            return $value;
         }
     }
 
@@ -292,6 +294,18 @@ class DataTable extends Component
         ];
     }
 
+    /**
+     * Re-populate data for assertions in tests. Only call after loadData().
+     */
+    public function getDataForTesting(): array
+    {
+        if (empty($this->data) && $this->initialized) {
+            $this->loadData();
+        }
+
+        return $this->data;
+    }
+
     #[Renderless]
     public function getFormatters(): array
     {
@@ -320,6 +334,11 @@ class DataTable extends Component
         ];
     }
 
+    public function getIslandData(): array
+    {
+        return $this->getViewData();
+    }
+
     #[Renderless]
     public function getOperatorLabels(): array
     {
@@ -335,6 +354,33 @@ class DataTable extends Component
             'sum' => __('Sum'), 'avg' => __('Average'), 'min' => __('Minimum'), 'max' => __('Maximum'),
             'Start of' => __('Start of'), 'End of' => __('End of'),
         ];
+    }
+
+    public function getParsedTextFilters(): \Illuminate\Support\Collection
+    {
+        $textFilters = collect(Arr::dot($this->userFilters['text'] ?? []))->filter();
+
+        return $textFilters->map(function ($value, $col) {
+            $trimmed = trim($value);
+
+            if (preg_match('/^(is\s+null|is\s+not\s+null)$/i', $trimmed)) {
+                return ['column' => $col, 'operator' => strtolower(preg_replace('/\s+/', ' ', $trimmed)), 'value' => null];
+            }
+
+            if ($trimmed === '*') {
+                return ['column' => $col, 'operator' => 'has', 'value' => null];
+            }
+
+            if ($trimmed === '!*') {
+                return ['column' => $col, 'operator' => 'has not', 'value' => null];
+            }
+
+            if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $trimmed, $matches)) {
+                return ['column' => $col, 'operator' => $matches[1], 'value' => $matches[2]];
+            }
+
+            return ['column' => $col, 'operator' => 'like', 'value' => $value];
+        });
     }
 
     #[Renderless]
@@ -468,6 +514,18 @@ class DataTable extends Component
     }
 
     #[Renderless]
+    public function setTextFilter(string $col, ?string $value): void
+    {
+        if ($value !== null && $value !== '') {
+            $this->userFilters['text'][$col] = $value;
+        } else {
+            unset($this->userFilters['text'][$col]);
+        }
+
+        $this->applyUserFilters();
+    }
+
+    #[Renderless]
     public function sortTable(string $col): void
     {
         if ($this->userOrderBy === $col) {
@@ -512,63 +570,11 @@ class DataTable extends Component
         $this->applyUserFilters();
     }
 
-    public function getIslandData(): array
-    {
-        return $this->getViewData();
-    }
-
-    public function getParsedTextFilters(): \Illuminate\Support\Collection
-    {
-        $textFilters = collect(Arr::dot($this->userFilters['text'] ?? []))->filter();
-
-        return $textFilters->map(function ($value, $col) {
-            $trimmed = trim($value);
-
-            if (preg_match('/^(is\s+null|is\s+not\s+null)$/i', $trimmed)) {
-                return ['column' => $col, 'operator' => strtolower(preg_replace('/\s+/', ' ', $trimmed)), 'value' => null];
-            }
-
-            if ($trimmed === '*') {
-                return ['column' => $col, 'operator' => 'has', 'value' => null];
-            }
-
-            if ($trimmed === '!*') {
-                return ['column' => $col, 'operator' => 'has not', 'value' => null];
-            }
-
-            if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $trimmed, $matches)) {
-                return ['column' => $col, 'operator' => $matches[1], 'value' => $matches[2]];
-            }
-
-            return ['column' => $col, 'operator' => 'like', 'value' => $value];
-        });
-    }
-
-    public function formatFilterBadgeValue(string $column, string $value): string
-    {
-        $registry = app(Formatters\FormatterRegistry::class);
-        $formatterKey = $this->getFormatters()[$column] ?? null;
-
-        if (! $formatterKey) {
-            $casts = app($this->getModel())->getCasts();
-            $castValue = $casts[$column] ?? null;
-            $formatterKey = is_array($castValue) ? ($castValue[0] ?? null) : $castValue;
-        }
-
-        if (! $formatterKey) {
-            return $value;
-        }
-
-        try {
-            $formatter = $registry->resolve($formatterKey);
-            $numericValue = is_numeric($value) ? (float) $value : $value;
-            $formatted = $formatter->format($numericValue, []);
-
-            return strip_tags(is_array($formatted) ? ($formatted['display'] ?? $formatted['raw'] ?? $value) : $formatted);
-        } catch (\Throwable) {
-            return $value;
-        }
-    }
+    /**
+     * Hook to add computed columns (e.g. avatar) before formatters are applied.
+     * Override this instead of itemToArray() to ensure formatters work on your custom columns.
+     */
+    protected function augmentItemArray(array &$itemArray, Model $item): void {}
 
     protected function compileActions(string $type): array
     {
@@ -595,11 +601,37 @@ class DataTable extends Component
         return $actions;
     }
 
-    /**
-     * Hook to add computed columns (e.g. avatar) before formatters are applied.
-     * Override this instead of itemToArray() to ensure formatters work on your custom columns.
-     */
-    protected function augmentItemArray(array &$itemArray, Model $item): void {}
+    protected function formatAggregates(array $aggregates): array
+    {
+        $registry = app(Formatters\FormatterRegistry::class);
+        $customFormatters = $this->getFormatters();
+        $model = app($this->getModel());
+        $modelCasts = $model->getCasts();
+
+        foreach ($aggregates as $type => $columns) {
+            foreach ($columns as $col => $value) {
+                $baseCol = str_contains($col, '.') ? last(explode('.', $col)) : $col;
+
+                if (isset($customFormatters[$col]) && is_string($customFormatters[$col])) {
+                    $formatter = $registry->resolve($customFormatters[$col]);
+                } elseif (isset($customFormatters[$col]) && is_array($customFormatters[$col])) {
+                    $formatter = $registry->resolveWithOptions($customFormatters[$col][0] ?? 'string', $customFormatters[$col][1] ?? []);
+                } else {
+                    $stringCasts = array_filter($modelCasts, 'is_string');
+                    $formatter = $registry->resolveForColumn($baseCol, $stringCasts);
+                }
+
+                $display = $formatter->format($value, []);
+                $rawString = is_null($value) ? '' : (string) $value;
+
+                if ($display !== e($rawString)) {
+                    $aggregates[$type][$col] = ['raw' => $value, 'display' => $display];
+                }
+            }
+        }
+
+        return $aggregates;
+    }
 
     protected function getAppends(): array
     {
@@ -749,38 +781,6 @@ class DataTable extends Component
         ];
 
         return $this->cachedViewData;
-    }
-
-    protected function formatAggregates(array $aggregates): array
-    {
-        $registry = app(Formatters\FormatterRegistry::class);
-        $customFormatters = $this->getFormatters();
-        $model = app($this->getModel());
-        $modelCasts = $model->getCasts();
-
-        foreach ($aggregates as $type => $columns) {
-            foreach ($columns as $col => $value) {
-                $baseCol = str_contains($col, '.') ? last(explode('.', $col)) : $col;
-
-                if (isset($customFormatters[$col]) && is_string($customFormatters[$col])) {
-                    $formatter = $registry->resolve($customFormatters[$col]);
-                } elseif (isset($customFormatters[$col]) && is_array($customFormatters[$col])) {
-                    $formatter = $registry->resolveWithOptions($customFormatters[$col][0] ?? 'string', $customFormatters[$col][1] ?? []);
-                } else {
-                    $stringCasts = array_filter($modelCasts, 'is_string');
-                    $formatter = $registry->resolveForColumn($baseCol, $stringCasts);
-                }
-
-                $display = $formatter->format($value, []);
-                $rawString = is_null($value) ? '' : (string) $value;
-
-                if ($display !== e($rawString)) {
-                    $aggregates[$type][$col] = ['raw' => $value, 'display' => $display];
-                }
-            }
-        }
-
-        return $aggregates;
     }
 
     protected function setData(array $data): void
