@@ -8,7 +8,7 @@
     </div>
 @endif
 
-<div class="flex w-full justify-end gap-5">
+<div class="flex w-full justify-end gap-2">
     @if (count($this->savedFilters) > 0 && $this->showSavedFilters)
         <div>
             <x-select.styled
@@ -44,7 +44,7 @@
     @endif
 
     @if ($tableActions)
-        <div class="flex gap-3">
+        <div class="flex gap-1.5">
             @foreach ($tableActions as $tableAction)
                 {{ $tableAction }}
             @endforeach
@@ -59,7 +59,7 @@
         || $this->getParsedTextFilters()->isNotEmpty()
         || collect($this->userFilters)->forget('text')->isNotEmpty()
     )
-        <div class="flex flex-wrap items-center gap-1.5 pt-3">
+        <div class="flex flex-wrap items-center gap-2 pt-3">
             @if ($this->search)
                 <div>
                     <x-badge light flat>
@@ -77,10 +77,10 @@
             @if ($this->getParsedTextFilters()->isNotEmpty())
                 <div class="flex items-center justify-center">
                     <div
-                        class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 ring-1 ring-slate-700/10"
+                        class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-gray-50 ring-1 ring-gray-200 dark:ring-secondary-700"
                     >
                         <div class="flex justify-between">
-                            <div class="flex gap-1 pt-1">
+                            <div class="flex gap-2 pt-1">
                                 @foreach ($this->getParsedTextFilters() as $filter)
                                     <div>
                                         <x-badge flat light>
@@ -118,7 +118,7 @@
             @if (! empty($this->sessionFilter))
                 <div>
                     <div
-                        class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 pr-6.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
+                        class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 pr-6.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-gray-50 ring-1 ring-gray-200 dark:ring-secondary-700"
                     >
                         <x-badge light flat :text="$this->sessionFilter['name'] ?? ''" />
                         <div class="top-0.5 right-0.5">
@@ -135,10 +135,10 @@
             @foreach (collect($this->userFilters)->forget('text')->values()->all() as $orIndex => $orFilters)
                 <div class="flex items-center justify-center">
                     <div
-                        class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 ring-1 ring-slate-700/10"
+                        class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-gray-50 ring-1 ring-gray-200 dark:ring-secondary-700"
                     >
                         <div class="flex justify-between">
-                            <div class="flex gap-1 pt-1">
+                            <div class="flex gap-2 pt-1">
                                 @foreach ($orFilters as $index => $filter)
                                     <div>
                                         <x-badge flat light color="indigo">

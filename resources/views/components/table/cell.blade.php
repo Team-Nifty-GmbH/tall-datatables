@@ -8,7 +8,7 @@
     $dynamicHrefExpr = $hasDynamicHref ? $attributes->get('x-bind:href') : 'false';
 @endphp
 <td
-    {{ $attributes->only(['class', 'x-bind:class', 'x-bind:style'])->merge(['class' => 'border-b border-slate-200 dark:border-slate-600 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis text-sm p-0']) }}
+    {{ $attributes->only(['class', 'x-bind:class', 'x-bind:style'])->merge(['class' => 'border-b border-gray-200 dark:border-secondary-700 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis text-sm p-0']) }}
 >
     @if($hasStaticHref)
         <a

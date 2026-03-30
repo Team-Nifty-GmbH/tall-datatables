@@ -22,7 +22,7 @@
         class="dark:bg-secondary-700 cursor-pointer bg-gray-100 hover:bg-gray-200 dark:hover:bg-secondary-600"
         wire:click="toggleGroup('{{ $group['key'] }}')"
     >
-        <td colspan="100%" class="border-b border-slate-200 px-3 py-3 dark:border-slate-600">
+        <td colspan="100%" class="border-b border-gray-200 px-3 py-3 dark:border-secondary-700">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <x-icon
@@ -35,10 +35,14 @@
                     <x-badge flat color="gray" :text="(string) $group['count']" />
                 </div>
                 @if (! empty($group['aggregates']))
-                    <div class="flex gap-3 text-sm text-gray-500 dark:text-gray-400">
+                    <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
                         @foreach ($group['aggregates'] as $type => $values)
                             @foreach ($values as $col => $value)
-                                <span>{{ __(ucfirst($type)) }}: {!! is_array($value) ? ($value['display'] ?? e($value['raw'] ?? '')) : e($value) !!}</span>
+                                <span>
+                                    <span class="font-medium">{{ __(ucfirst($type)) }}</span>
+                                    {{ $this->colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}:
+                                    {!! is_array($value) ? ($value['display'] ?? e($value['raw'] ?? '')) : e($value) !!}
+                                </span>
                             @endforeach
                         @endforeach
                     </div>
@@ -58,23 +62,22 @@
             >
                 @if ($isSelectable)
                     <td
-                        class="border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
+                        class="border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"
                     >
                         <div
                             {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}
                         >
-                            <input
-                                type="checkbox"
+                            <x-checkbox
                                 x-on:click.stop
                                 value="{{ $record[$modelKeyName] ?? $index }}"
                                 wire:model.number="selected"
-                                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800"
+                                sm
                             />
                         </div>
                     </td>
                 @else
                     <td
-                        class="max-w-0 border-b border-slate-200 text-sm whitespace-nowrap dark:border-slate-600"
+                        class="max-w-0 border-b border-gray-200 text-sm whitespace-nowrap dark:border-secondary-700"
                     ></td>
                 @endif
                 @foreach ($enabledCols as $col)
@@ -96,7 +99,7 @@
                 @if ($rowActions || ($showRestoreButton && $allowSoftDeletes))
                     <td
                         x-on:click.stop
-                        class="border-b border-slate-200 px-3 py-4 whitespace-nowrap dark:border-slate-600"
+                        class="border-b border-gray-200 px-3 py-4 whitespace-nowrap dark:border-secondary-700"
                     >
                         @if (! ($allowSoftDeletes && ($record['deleted_at'] ?? null)))
                             <div class="flex gap-1.5">
@@ -119,7 +122,7 @@
 
                 @if ($hasSidebar)
                     <td
-                        class="table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
+                        class="table-cell border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"
                     ></td>
                 @endif
             </tr>
@@ -128,7 +131,7 @@
         {{-- Group pagination --}}
         @if ($group['pagination'] && $group['pagination']['last_page'] > 1)
             <tr wire:key="group-pagination-{{ $group['key'] }}">
-                <td colspan="100%" class="border-b border-slate-200 px-3 py-2 dark:border-slate-600">
+                <td colspan="100%" class="border-b border-gray-200 px-3 py-2 dark:border-secondary-700">
                     <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                         <span>
                             {{ __('Showing') }} {{ $group['pagination']['from'] ?? 0 }}
@@ -163,7 +166,7 @@
 {{-- Groups-level pagination --}}
 @if (($this->data['groups_pagination']['last_page'] ?? 1) > 1)
     <tr wire:key="groups-pagination">
-        <td colspan="100%" class="border-b border-slate-200 px-3 py-2 dark:border-slate-600">
+        <td colspan="100%" class="border-b border-gray-200 px-3 py-2 dark:border-secondary-700">
             <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                 <span>
                     {{ __('Groups') }}: {{ __('Showing') }}

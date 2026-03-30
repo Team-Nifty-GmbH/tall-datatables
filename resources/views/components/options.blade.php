@@ -1,5 +1,5 @@
 <div
-    class="mt-2"
+    class="mt-2 px-1"
     x-data="datatableOptions($wire)"
     x-init="
         aggregatable = {{ Js::from($this->getAggregatable()) }};
@@ -52,16 +52,14 @@
                         x-bind:class="newFilterCalculation.operator === '-' && 'ring-2 ring-offset-2'"
                         x-on:click="newFilterCalculation.operator = '-'"
                         color="red"
-                    >
-                        -
-                    </x-button>
+                        text="-"
+                    />
                     <x-button
                         x-bind:class="newFilterCalculation.operator === '+' && 'ring-2 ring-offset-2'"
                         x-on:click="newFilterCalculation.operator = '+'"
                         color="emerald"
-                    >
-                        +
-                    </x-button>
+                        text="+"
+                    />
                     <x-number min="0" x-model="newFilterCalculation.value" />
                     <x-select.styled
                         x-model="newFilterCalculation.unit"
@@ -172,7 +170,7 @@
         @if ($this->isFilterable)
             <x-tab.items tab="edit-filters" :title="__('Filters')">
                 <form
-                    class="grid grid-cols-1 gap-3"
+                    class="grid grid-cols-1 gap-2"
                     x-on:submit.prevent="addFilter()"
                 >
                     @if (auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
@@ -181,12 +179,12 @@
                         >
                             <div>
                                 <div
-                                    class="dark:bg-secondary-800 dark:border-secondary-600 dark:text-secondary-400 border-secondary-300 focus:ring-primary-500 focus:border-primary-500 block flex w-full cursor-pointer justify-between rounded-md border bg-white px-3 py-2 text-base shadow-sm focus:ring-1 focus:outline-none sm:text-sm"
+                                    class="dark:bg-secondary-800 dark:border-secondary-700 border-gray-200 block flex w-full cursor-pointer justify-between rounded-md border px-3 py-2 text-sm shadow-sm"
                                     x-on:click="showSavedFilters = ! showSavedFilters"
                                 >
-                                    <x-label class="mr-2">
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">
                                         {{ __('Saved filters') }}
-                                    </x-label>
+                                    </span>
                                     <x-icon
                                         name="chevron-right"
                                         class="h-4 w-4 transform transition-transform"
@@ -226,7 +224,7 @@
                                                         </div>
                                                     </x-slot>
                                                     <div
-                                                        class="flex justify-between"
+                                                        class="flex justify-between text-sm"
                                                     >
                                                         <div class="flex gap-1">
                                                             <x-badge
@@ -462,7 +460,7 @@
                             </option>
                         </x-select.native>
                     </div>
-                    <div x-cloak x-show="filterSelectType === 'valueList'">
+                    <div class="w-full" x-cloak x-show="filterSelectType === 'valueList'">
                         <x-select.native
                             name="new-filter-value-select"
                             x-model="newFilter.value"
@@ -482,9 +480,9 @@
                     <div
                         x-cloak
                         x-show="filterSelectType === 'text'"
-                        class="flex flex-col gap-1.5"
+                        class="flex w-full flex-col gap-1.5"
                     >
-                        <div class="flex items-center gap-1.5">
+                        <div class="w-full">
                             <x-input
                                 name="new-filter-value"
                                 x-show="! newFilter.value[0]?.hasOwnProperty('calculation')"
@@ -494,7 +492,7 @@
                                 x-ref="filterValue"
                             />
                             <div
-                                class="flex"
+                                class="flex shrink-0"
                                 x-cloak
                                 x-show="newFilter.value[0]?.hasOwnProperty('calculation')"
                             >
@@ -524,10 +522,11 @@
                             x-cloak
                             x-show="newFilter.operator === 'between'"
                         >
-                            <x-label class="text-center" :label="__('and')" />
+                            <span class="block text-center text-xs text-gray-400 dark:text-gray-500">{{ __('and') }}</span>
                             <div class="flex items-center gap-1.5">
                                 <x-input
                                     name="new-filter-value-2"
+                                    class="w-full"
                                     x-cloak
                                     x-show="! newFilter.value[1]?.hasOwnProperty('calculation')"
                                     x-bind:type="getFilterInputType(newFilter.relation + '.' + newFilter.column)"
@@ -536,7 +535,7 @@
                                     x-ref="filterValue"
                                 />
                                 <div
-                                    class="flex"
+                                    class="flex shrink-0"
                                     x-show="newFilter.value[1]?.hasOwnProperty('calculation')"
                                 >
                                     <x-badge
@@ -566,36 +565,38 @@
                     <div
                         x-cloak
                         x-show="newFilter.operator === 'like' || newFilter.operator === 'not like'"
-                        class="break-long-words max-w-md text-xs text-slate-400"
+                        class="break-long-words max-w-md text-xs text-gray-400 dark:text-gray-500"
                     >
                         {{ __('When using the like or not like filter, you can use the % sign as a placeholder. Examples: "test%" for values that start with "test", "%test" for values that end with "test", and "%test%" for values that contain "test" anywhere.') }}
                     </div>
-                    <x-checkbox
-                        x-model="$wire.withSoftDeletes"
-                        x-on:change="$wire.startSearch()"
-                        :label="__('Include deleted')"
-                    />
+                    <div class="py-1">
+                        <x-checkbox
+                            x-model="$wire.withSoftDeletes"
+                            x-on:change="$wire.startSearch()"
+                            :label="__('Include deleted')"
+                        />
+                    </div>
                     <x-button
                         wire:target="loadFields"
                         wire:loading.attr="disabled"
                         type="submit"
                         x-ref="filterAddButton"
                         color="indigo"
-                    >
-                        {{ __('Add filter') }}
-                    </x-button>
+                        :text="__('Add filter')"
+                    />
                 </form>
                 <div
-                    class="flex flex-col items-center justify-center space-y-4"
+                    class="border-t border-gray-200 pt-4 dark:border-secondary-700"
                     x-cloak
                     x-show="filters.length > 0 || orderByCol || groupBy"
                 >
+                <div class="flex flex-col items-center justify-center space-y-3">
                     <template x-for="(orFilters, orIndex) in filters">
                         <div class="flex flex-col items-center justify-center">
                             <div
                                 x-on:click="filterIndex = orIndex"
                                 x-bind:class="filterIndex === orIndex ? 'ring-2 ring-indigo-600' : 'ring-1 ring-slate-700/10'"
-                                class="dark:bg-secondary-800 pointer-events-auto relative w-full rounded-lg bg-white p-4 pr-6.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
+                                class="dark:bg-secondary-800 pointer-events-auto relative w-full rounded-lg bg-white p-2.5 pr-6 text-sm leading-5 shadow-md shadow-black/5 hover:bg-gray-100 dark:hover:bg-secondary-900"
                             >
                                 <div class="absolute top-0.5 right-0.5">
                                     <x-button.circle
@@ -621,15 +622,12 @@
                                                         name="right"
                                                         class="relative flex h-2 w-2 items-center"
                                                     >
-                                                        <button
-                                                            type="button"
+                                                        <x-button.circle
+                                                            2xs
+                                                            flat
+                                                            icon="x-mark"
                                                             x-on:click="removeFilter(index, orIndex)"
-                                                        >
-                                                            <x-icon
-                                                                name="x-mark"
-                                                                class="h-4 w-4"
-                                                            />
-                                                        </button>
+                                                        />
                                                     </x-slot>
                                                 </x-badge>
                                                 <template
@@ -672,12 +670,12 @@
                                 name="right"
                                 class="relative flex h-2 w-2 items-center"
                             >
-                                <button
-                                    type="button"
+                                <x-button.circle
+                                    2xs
+                                    flat
+                                    icon="x-mark"
                                     x-on:click="$wire.sortTable('')"
-                                >
-                                    <x-icon name="x-mark" class="h-4 w-4" />
-                                </button>
+                                />
                             </x-slot>
                         </x-badge>
                     </div>
@@ -692,12 +690,12 @@
                                 name="right"
                                 class="relative flex h-2 w-2 items-center"
                             >
-                                <button
-                                    type="button"
+                                <x-button.circle
+                                    2xs
+                                    flat
+                                    icon="x-mark"
                                     x-on:click="groupBy = null; $wire.setGroupBy(null)"
-                                >
-                                    <x-icon name="x-mark" class="h-4 w-4" />
-                                </button>
+                                />
                             </x-slot>
                         </x-badge>
                     </div>
@@ -715,10 +713,10 @@
                             color="indigo"
                             class="w-full"
                             x-on:click="$tsui.open.modal('save-filter')"
-                        >
-                            {{ __('Save') }}
-                        </x-button>
+                            :text="__('Save')"
+                        />
                     @endif
+                </div>
                 </div>
             </x-tab.items>
         @endif
@@ -737,6 +735,7 @@
                     },
                 }"
             >
+                <div class="border-b border-gray-200 pb-2 dark:border-secondary-700">
                 <div
                     class="table-cols"
                     x-sort="columnSortHandle($item, $position)"
@@ -747,7 +746,7 @@
                             x-bind:data-column="col"
                             x-cloak
                             x-show="col !== '__placeholder__'"
-                            class="min-w-0"
+                            class="min-w-0 py-1"
                         >
                             <label
                                 x-bind:for="col"
@@ -764,7 +763,7 @@
                                         >
                                             <x-slot:label>
                                                 <span
-                                                    class="block truncate"
+                                                    class="block truncate text-sm text-gray-700 dark:text-gray-300"
                                                     x-text="getLabel(col)"
                                                 />
                                             </x-slot>
@@ -775,7 +774,7 @@
                         </div>
                     </template>
                 </div>
-                <div class="flex justify-end pt-2">
+                <div class="flex justify-start pt-2">
                     <x-button
                         color="secondary"
                         light
@@ -784,8 +783,9 @@
                         :text="__('Reset Layout')"
                     />
                 </div>
+                </div>
                 <div
-                    class="text-sm font-medium text-gray-700 dark:text-gray-50"
+                    class="pt-3 text-sm font-medium text-gray-700 dark:text-gray-50"
                 >
                     <nav class="flex items-center overflow-x-auto" aria-label="Breadcrumb">
                         <ol class="flex items-center gap-1 text-sm">
@@ -827,9 +827,10 @@
                             </template>
                         </ol>
                     </nav>
-                    <hr class="pb-2.5" />
+                    <hr class="mt-2 border-gray-200 pb-2.5 dark:border-secondary-700" />
                     <div class="grid grid-cols-2 gap-1.5 overflow-hidden">
                         <div class="min-w-0 overflow-hidden">
+                            <span class="mb-1 block text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">{{ __('Columns') }}</span>
                             <div class="pb-2">
                                 <x-input
                                     type="search"
@@ -841,7 +842,7 @@
                             <template
                                 x-for="col in searchable(selectedCols, searchColumns)"
                             >
-                                <label class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden">
+                                <label class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden py-1">
                                     <x-checkbox
                                         sm
                                         x-bind:checked="$wire.enabledCols.includes(col.attribute)"
@@ -859,6 +860,7 @@
                             </template>
                         </div>
                         <div class="min-w-0 overflow-hidden">
+                            <span class="mb-1 block text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">{{ __('Relations') }}</span>
                             <div class="pb-2">
                                 <x-input
                                     type="search"
@@ -871,7 +873,7 @@
                                 x-for="relation in searchable(selectedRelations, searchRelations)"
                             >
                                 <div
-                                    class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden"
+                                    class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden py-1"
                                     x-on:click="
                                         searchRelations = null;
                                         searchColumns = null;
@@ -907,38 +909,44 @@
                         class="w-full"
                     />
                 </div>
-                <div class="grid grid-cols-1 gap-3">
+                <div class="grid grid-cols-1 gap-2">
                     <template
                         x-for="col in searchable(aggregatable, searchAggregatable)"
                     >
-                        <div>
-                            <x-label>
-                                <span x-text="getLabel(col)"></span>
-                            </x-label>
-                            <x-checkbox
-                                sm
-                                :label="__('Sum')"
-                                x-bind:value="col"
-                                x-model="aggregatableCols.sum"
-                            />
-                            <x-checkbox
-                                sm
-                                :label="__('Average')"
-                                x-bind:value="col"
-                                x-model="aggregatableCols.avg"
-                            />
-                            <x-checkbox
-                                sm
-                                :label="__('Minimum')"
-                                x-bind:value="col"
-                                x-model="aggregatableCols.min"
-                            />
-                            <x-checkbox
-                                sm
-                                :label="__('Maximum')"
-                                x-bind:value="col"
-                                x-model="aggregatableCols.max"
-                            />
+                        <div class="pt-3 border-t border-gray-200 dark:border-secondary-700">
+                            <span class="mb-1 block text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400" x-text="getLabel(col)"></span>
+                            <div class="py-1">
+                                <x-checkbox
+                                    sm
+                                    :label="__('Sum')"
+                                    x-bind:value="col"
+                                    x-model="aggregatableCols.sum"
+                                />
+                            </div>
+                            <div class="py-1">
+                                <x-checkbox
+                                    sm
+                                    :label="__('Average')"
+                                    x-bind:value="col"
+                                    x-model="aggregatableCols.avg"
+                                />
+                            </div>
+                            <div class="py-1">
+                                <x-checkbox
+                                    sm
+                                    :label="__('Minimum')"
+                                    x-bind:value="col"
+                                    x-model="aggregatableCols.min"
+                                />
+                            </div>
+                            <div class="py-1">
+                                <x-checkbox
+                                    sm
+                                    :label="__('Maximum')"
+                                    x-bind:value="col"
+                                    x-model="aggregatableCols.max"
+                                />
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -947,7 +955,7 @@
 
         <x-tab.items tab="grouping" :title="__('Group')">
             <div class="mb-3 pb-3 border-b border-gray-200 dark:border-secondary-700" x-show="groupBy" x-cloak>
-                <x-label class="mb-2">{{ __('Rows per group') }}</x-label>
+                <span class="mb-2 block text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">{{ __('Rows per group') }}</span>
                 <x-select.native
                     x-model="$wire.groupPerPage"
                     x-on:change="$wire.loadData()"
@@ -969,7 +977,7 @@
             </div>
             <div class="space-y-2">
                 <div
-                    class="flex items-center justify-between rounded-lg border p-3"
+                    class="flex items-center justify-between rounded-lg border p-2.5 text-sm"
                     x-bind:class="! groupBy ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-secondary-700'"
                 >
                     <x-radio
@@ -1003,35 +1011,23 @@
         @if ($this->isExportable)
             <x-tab.items tab="export" :title="__('Export')">
                 @foreach ($this->enabledCols as $col)
-                    <div>
-                        <label class="flex items-center">
-                            <div class="relative flex items-start">
-                                <div class="flex h-5 items-center">
-                                    <input
-                                        type="checkbox"
-                                        class="border-secondary-300 text-primary-600 focus:ring-primary-600 focus:border-primary-400 dark:border-secondary-500 dark:checked:border-secondary-600 dark:focus:ring-secondary-600 dark:focus:border-secondary-500 dark:bg-secondary-600 dark:text-secondary-600 dark:focus:ring-offset-secondary-800 form-checkbox rounded transition duration-100 ease-in-out"
-                                        value="{{ $col }}"
-                                        x-model="exportColumns"
-                                    />
-                                </div>
-                                <div class="ml-2 text-sm">
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                        {{ $this->colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}
-                                    </label>
-                                </div>
-                            </div>
-                        </label>
+                    <div class="py-1">
+                        <x-checkbox
+                            sm
+                            value="{{ $col }}"
+                            x-model="exportColumns"
+                            :label="$this->colLabels[$col] ?? \Illuminate\Support\Str::headline($col)"
+                        />
                     </div>
                 @endforeach
-                <div class="pt-3">
+                <div class="pt-3 border-t border-gray-200 dark:border-secondary-700">
                     <x-button
                         loading
                         x-on:click="$wire.export(exportColumns); $tsui.close.slide('data-table-sidebar-' + $wire.id.toLowerCase());"
                         color="indigo"
                         class="w-full"
-                    >
-                        {{ __('Export') }}
-                    </x-button>
+                        :text="__('Export')"
+                    />
                 </div>
             </x-tab.items>
         @endif

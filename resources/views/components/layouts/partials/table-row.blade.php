@@ -24,7 +24,7 @@
 >
     @if ($isSelectable)
         <td
-            class="border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
+            class="border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"
         >
             <div
                 {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}
@@ -39,7 +39,7 @@
         </td>
     @else
         <td
-            class="max-w-0 border-b border-slate-200 text-sm whitespace-nowrap dark:border-slate-600"
+            class="max-w-0 border-b border-gray-200 text-sm whitespace-nowrap dark:border-secondary-700"
         ></td>
     @endif
     @foreach ($enabledCols as $col)
@@ -61,7 +61,7 @@
     @if ($rowActions || ($showRestoreButton && $allowSoftDeletes))
         <td
             x-on:click.stop
-            class="border-b border-slate-200 px-3 py-4 whitespace-nowrap dark:border-slate-600"
+            class="border-b border-gray-200 px-3 py-4 whitespace-nowrap dark:border-secondary-700"
         >
             @if (! ($allowSoftDeletes && ($record['deleted_at'] ?? null)))
                 <div class="flex gap-1.5">
@@ -84,7 +84,7 @@
 
     @if ($hasSidebar)
         <td
-            class="table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
+            class="table-cell border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"
         ></td>
     @endif
 </tr>

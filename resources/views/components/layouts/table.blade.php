@@ -289,7 +289,7 @@
                 @if (! empty($this->data['aggregates'] ?? []))
                     @foreach ($this->data['aggregates'] as $name => $aggregate)
                         <tr class="dark:hover:bg-secondary-800 dark:bg-secondary-900 bg-gray-50 hover:bg-gray-100">
-                            <td class="border-b border-slate-200 px-3 py-4 text-sm font-bold whitespace-nowrap dark:border-slate-600">
+                            <td class="border-b border-gray-200 px-3 py-4 text-sm font-bold whitespace-nowrap dark:border-secondary-700">
                                 {{ $this->getGroupLabels()[$name] ?? \Illuminate\Support\Str::headline($name) }}
                             </td>
                             @foreach ($this->enabledCols as $col)
@@ -303,9 +303,9 @@
                                     </div>
                                 </x-tall-datatables::table.cell>
                             @endforeach
-                            <td class="table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"></td>
+                            <td class="table-cell border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"></td>
                             @if ($rowActions)
-                                <td class="table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"></td>
+                                <td class="table-cell border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"></td>
                             @endif
                         </tr>
                     @endforeach
