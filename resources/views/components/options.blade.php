@@ -670,13 +670,13 @@
                         required
                         x-model.lazy="newFilter.column"
                         placeholder="{{ __('Column') }}"
-                        x-bind:list="$id('enabledCols')"
+                        :list="'filter-cols-' . strtolower($this->getId())"
                     />
-                    <datalist x-bind:id="$id('enabledCols')">
+                    <datalist id="filter-cols-{{ strtolower($this->getId()) }}">
                         <template
                             x-for="
                                 col in
-                                    relationTableFields[newFilter.relation === '' ? 'self' : newFilter.relation]
+                                    relationTableFields[!newFilter.relation || newFilter.relation === '0' ? 'self' : newFilter.relation]
                             "
                         >
                             <option
@@ -694,9 +694,9 @@
                             x-ref="filterOperator"
                             x-model="newFilter.operator"
                             placeholder="{{ __('Operator') }}"
-                            x-bind:list="$id('operators')"
+                            list="filter-operators-{{ strtolower($this->getId()) }}"
                         />
-                        <datalist x-bind:id="$id('operators')">
+                        <datalist id="filter-operators-{{ strtolower($this->getId()) }}">
                             <option value="=">{{ __('=') }}</option>
                             <option value="!=">{{ __('!=') }}</option>
                             <option value=">">{{ __('>') }}</option>

@@ -176,14 +176,14 @@
             </thead>
             <tbody class="relative">
                 <tr
-                    wire:loading.delay.long
+                    wire:loading.delay.shorter
                     wire:target.except="storeColLayout"
                     x-cloak
                     class="absolute top-0 right-0 bottom-0 left-0 z-10"
                 >
                     <td>
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <x-loading loading="loadData,sortTable,gotoPage,setPerPage,startSearch,applyUserFilters,loadMore" delay="long" />
+                            <x-loading loading="loadData,sortTable,gotoPage,setPerPage,startSearch,applyUserFilters,loadMore" delay="shorter" />
                         </div>
                     </td>
                 </tr>
