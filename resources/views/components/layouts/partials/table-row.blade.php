@@ -34,6 +34,7 @@
                     x-on:click.stop
                     value="{{ $record[$modelKeyName] ?? $index }}"
                     wire:model.number="selected"
+                    @checked(in_array($record[$modelKeyName] ?? $index, $this->selected))
                     class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800"
                 />
             </div>
