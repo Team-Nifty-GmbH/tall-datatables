@@ -60,12 +60,16 @@ trait BuildsQueries
                 } elseif ($filter['value'] === '%!*%') {
                     $this->applyFilterWhereDoesntHave($query, $filter['relation']);
                 } else {
-                    $query->whereHas($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
-                        unset($filter['relation']);
-                        $this->addFilter($subQuery, $type, $filter);
+                    try {
+                        $query->whereHas($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
+                            unset($filter['relation']);
+                            $this->addFilter($subQuery, $type, $filter);
 
-                        return $subQuery;
-                    });
+                            return $subQuery;
+                        });
+                    } catch (\BadMethodCallException) {
+                        // Relation does not exist on model — skip this filter
+                    }
                 }
             } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
                 $this->applyFilterWhereNull($query, $filter);
@@ -658,12 +662,20 @@ trait BuildsQueries
 
     private function applyFilterWhereDoesntHave(Builder $builder, string $relation): Builder
     {
-        return $builder->whereDoesntHave(Str::camel($relation));
+        try {
+            return $builder->whereDoesntHave(Str::camel($relation));
+        } catch (\BadMethodCallException) {
+            return $builder;
+        }
     }
 
     private function applyFilterWhereHas(Builder $builder, string $relation): Builder
     {
-        return $builder->whereHas(Str::camel($relation));
+        try {
+            return $builder->whereHas(Str::camel($relation));
+        } catch (\BadMethodCallException) {
+            return $builder;
+        }
     }
 
     private function applyFilterWhereIn(Builder $builder, array $filter): Builder
