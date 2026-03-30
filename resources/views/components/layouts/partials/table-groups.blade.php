@@ -19,10 +19,10 @@
     {{-- Group header row --}}
     <tr
         wire:key="group-header-{{ $group['key'] }}"
-        class="dark:bg-secondary-700 cursor-pointer bg-gray-100 hover:bg-gray-200 dark:hover:bg-secondary-600"
+        class="dark:bg-secondary-800 cursor-pointer bg-gray-50 hover:bg-gray-100 dark:hover:bg-secondary-700/50 transition-colors"
         wire:click="toggleGroup('{{ $group['key'] }}')"
     >
-        <td colspan="100%" class="border-b border-gray-200 px-3 py-3 dark:border-secondary-700">
+        <td colspan="100%" class="border-b border-gray-100 px-3 py-2.5 dark:border-secondary-700/50">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <x-icon
@@ -58,11 +58,11 @@
                 wire:key="group-row-{{ $group['key'] }}-{{ $record[$modelKeyName] ?? $index }}"
                 x-on:click="$dispatch('data-table-row-clicked', {record: {{ json_encode($record) }}})"
                 @if($allowSoftDeletes && ($record['deleted_at'] ?? null)) class="opacity-50" @endif
-                {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
+                {{ $rowAttributes->merge(['class' => 'hover:bg-gray-50 dark:hover:bg-secondary-900/50 transition-colors']) }}
             >
                 @if ($isSelectable)
                     <td
-                        class="border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"
+                        class="border-b border-gray-100 px-3 py-2.5 text-sm whitespace-nowrap dark:border-secondary-700"
                     >
                         <div
                             {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}
@@ -77,7 +77,7 @@
                     </td>
                 @else
                     <td
-                        class="max-w-0 border-b border-gray-200 text-sm whitespace-nowrap dark:border-secondary-700"
+                        class="max-w-0 border-b border-gray-100 text-sm whitespace-nowrap dark:border-secondary-700"
                     ></td>
                 @endif
                 @foreach ($enabledCols as $col)
@@ -99,7 +99,7 @@
                 @if ($rowActions || ($showRestoreButton && $allowSoftDeletes))
                     <td
                         x-on:click.stop
-                        class="border-b border-gray-200 px-3 py-4 whitespace-nowrap dark:border-secondary-700"
+                        class="border-b border-gray-100 px-3 py-2.5 whitespace-nowrap dark:border-secondary-700"
                     >
                         @if (! ($allowSoftDeletes && ($record['deleted_at'] ?? null)))
                             <div class="flex gap-1.5">
@@ -122,7 +122,7 @@
 
                 @if ($hasSidebar)
                     <td
-                        class="table-cell border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"
+                        class="table-cell border-b border-gray-100 px-3 py-2.5 text-sm whitespace-nowrap dark:border-secondary-700"
                     ></td>
                 @endif
             </tr>
@@ -131,7 +131,7 @@
         {{-- Group pagination --}}
         @if ($group['pagination'] && $group['pagination']['last_page'] > 1)
             <tr wire:key="group-pagination-{{ $group['key'] }}">
-                <td colspan="100%" class="border-b border-gray-200 px-3 py-2 dark:border-secondary-700">
+                <td colspan="100%" class="border-b border-gray-100 px-3 py-2 dark:border-secondary-700">
                     <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                         <span>
                             {{ __('Showing') }} {{ $group['pagination']['from'] ?? 0 }}
@@ -166,7 +166,7 @@
 {{-- Groups-level pagination --}}
 @if (($this->data['groups_pagination']['last_page'] ?? 1) > 1)
     <tr wire:key="groups-pagination">
-        <td colspan="100%" class="border-b border-gray-200 px-3 py-2 dark:border-secondary-700">
+        <td colspan="100%" class="border-b border-gray-100 px-3 py-2 dark:border-secondary-700">
             <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                 <span>
                     {{ __('Groups') }}: {{ __('Showing') }}

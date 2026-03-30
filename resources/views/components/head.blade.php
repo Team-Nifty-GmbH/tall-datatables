@@ -77,10 +77,10 @@
             @if ($this->getParsedTextFilters()->isNotEmpty())
                 <div class="flex items-center justify-center">
                     <div
-                        class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-gray-50 ring-1 ring-gray-200 dark:ring-secondary-700"
+                        class="dark:bg-secondary-800 pointer-events-auto flex w-full items-center rounded-md bg-gray-50 px-2 py-1 text-xs leading-5 dark:bg-secondary-700/50"
                     >
                         <div class="flex justify-between">
-                            <div class="flex gap-2 pt-1">
+                            <div class="flex flex-wrap gap-1 items-center">
                                 @foreach ($this->getParsedTextFilters() as $filter)
                                     <div>
                                         <x-badge flat light>
@@ -135,10 +135,10 @@
             @foreach (collect($this->userFilters)->forget('text')->values()->all() as $orIndex => $orFilters)
                 <div class="flex items-center justify-center">
                     <div
-                        class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-gray-50 ring-1 ring-gray-200 dark:ring-secondary-700"
+                        class="dark:bg-secondary-800 pointer-events-auto flex w-full items-center rounded-md bg-gray-50 px-2 py-1 text-xs leading-5 dark:bg-secondary-700/50"
                     >
                         <div class="flex justify-between">
-                            <div class="flex gap-2 pt-1">
+                            <div class="flex flex-wrap gap-1 items-center">
                                 @foreach ($orFilters as $index => $filter)
                                     <div>
                                         <x-badge flat light color="indigo">

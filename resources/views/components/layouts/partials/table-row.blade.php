@@ -20,11 +20,11 @@
     wire:key="row-{{ $record[$modelKeyName] ?? $index }}"
     x-on:click="$dispatch('data-table-row-clicked', {record: {{ json_encode($record) }}})"
     @if($allowSoftDeletes && ($record['deleted_at'] ?? null)) class="opacity-50" @endif
-    {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
+    {{ $rowAttributes->merge(['class' => 'group hover:bg-gray-50 dark:hover:bg-secondary-900/50 transition-colors']) }}
 >
     @if ($isSelectable)
         <td
-            class="border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"
+            class="border-b border-gray-100 px-3 py-2.5 text-sm whitespace-nowrap dark:border-secondary-700/50/50"
         >
             <div
                 {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}
@@ -39,7 +39,7 @@
         </td>
     @else
         <td
-            class="max-w-0 border-b border-gray-200 text-sm whitespace-nowrap dark:border-secondary-700"
+            class="max-w-0 border-b border-gray-100 text-sm whitespace-nowrap dark:border-secondary-700/50"
         ></td>
     @endif
     @foreach ($enabledCols as $col)
@@ -61,10 +61,10 @@
     @if ($rowActions || ($showRestoreButton && $allowSoftDeletes))
         <td
             x-on:click.stop
-            class="border-b border-gray-200 px-3 py-4 whitespace-nowrap dark:border-secondary-700"
+            class="border-b border-gray-100 px-3 py-2.5 whitespace-nowrap dark:border-secondary-700/50"
         >
             @if (! ($allowSoftDeletes && ($record['deleted_at'] ?? null)))
-                <div class="flex gap-1.5">
+                <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     @foreach ($rowActions as $rowAction)
                         {{ $rowAction }}
                     @endforeach
@@ -84,7 +84,7 @@
 
     @if ($hasSidebar)
         <td
-            class="table-cell border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"
+            class="table-cell border-b border-gray-100 px-3 py-2.5 text-sm whitespace-nowrap dark:border-secondary-700/50"
         ></td>
     @endif
 </tr>

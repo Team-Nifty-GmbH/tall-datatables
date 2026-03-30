@@ -22,13 +22,13 @@
     x-data="{ showSelectedActions: false, hasSelected: false }"
     x-on:change="hasSelected = $el.querySelectorAll('tbody input[type=checkbox]:checked, tbody input[type=hidden][value=true]').length > 0"
 >
-    <div class="relative overflow-x-auto shadow ring-1 ring-black/5 sm:rounded-lg">
-        <table class="dark:divide-secondary-700 dark:bg-secondary-800 min-w-full table-auto border-collapse divide-y divide-gray-300 rounded-md bg-white text-gray-500 dark:text-gray-50">
-            <thead class="font-semibold" style="z-index: 9">
+    <div class="relative overflow-x-auto shadow-sm sm:rounded-lg">
+        <table class="dark:bg-secondary-800 min-w-full table-auto border-collapse bg-white text-sm text-gray-500 dark:text-gray-50">
+            <thead style="z-index: 9">
                 @if ($hasHead)
                     <tr>
                         @if ($isSelectable)
-                            <x-tall-datatables::table.head-cell class="min-w-24 px-0! py-0!">
+                            <x-tall-datatables::table.head-cell class="w-10 px-0! py-0!">
                                 <div class="flex items-center justify-center gap-1.5">
                                     <x-checkbox
                                         value="*"
@@ -90,25 +90,28 @@
                                 x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : 'z-index: 1'"
                                 :attributes="$tableHeadColAttributes"
                             >
-                                <div class="flex">
+                                <div class="group flex items-center gap-1">
                                     <div
-                                        class="group flex flex-row items-center space-x-1.5"
+                                        class="flex flex-row items-center space-x-1.5"
                                         x-bind:class="($wire.sortable || []).includes(col) || ($wire.sortable || []).includes('*') ? 'cursor-pointer' : ''"
                                         x-on:click="(($wire.sortable || []).includes(col) || ($wire.sortable || []).includes('*')) && $wire.sortTable(col)"
                                     >
                                         <span x-text="($wire.colLabels || {})[col] || col.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')).join(' → ')"></span>
                                         <x-icon
                                             name="chevron-up"
-                                            class="h-4 w-4 transition-all"
+                                            class="h-3 w-3 transition-all"
                                             x-cloak
                                             x-show="$wire.userOrderBy === col"
                                             x-bind:class="$wire.userOrderAsc ? '' : 'rotate-180'"
                                         />
                                     </div>
                                     @if ($hasStickyCols)
-                                        <div class="h-4 w-4">
+                                        <div class="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                             x-bind:class="($wire.stickyCols || []).includes(col) && 'opacity-100!'"
+                                        >
                                             <svg
-                                                x-bind:class="($wire.stickyCols || []).includes(col) ? 'fill-indigo-600' : ''"
+                                                class="text-gray-300 hover:text-gray-500 cursor-pointer transition-colors"
+                                                x-bind:class="($wire.stickyCols || []).includes(col) ? 'text-primary-500! hover:text-primary-600!' : ''"
                                                 x-on:click="
                                                     let cols = [...($wire.stickyCols || [])];
                                                     if (cols.includes(col)) {
@@ -162,10 +165,10 @@
                     </tr>
                     @if ($isFilterable && $showFilterInputs)
                         <tr>
-                            <td class="dark:bg-secondary-600 max-w-0 bg-gray-50"></td>
+                            <td class="dark:bg-secondary-700/30 max-w-0 border-b border-gray-100 bg-gray-50/50 dark:border-secondary-700/50"></td>
                             <template x-for="col in $wire.enabledCols" x-bind:key="'filter-' + col">
                                 <td
-                                    class="dark:bg-secondary-600 bg-gray-50 px-2 py-1"
+                                    class="dark:bg-secondary-700/30 border-b border-l border-gray-100 bg-gray-50/50 px-0 py-0 dark:border-secondary-700/50"
                                     x-bind:class="($wire.stickyCols || []).includes(col) ? 'sticky left-0 border-r' : ''"
                                     x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : ''"
                                 >
@@ -173,9 +176,10 @@
                                         <div
                                             x-effect="if (!($wire.userFilters?.text || {})[col]) $el.querySelector('input').value = ''"
                                         >
-                                            <x-input
+                                            <input
                                                 type="search"
-                                                class="p-1"
+                                                class="w-full border-0 bg-transparent px-2 py-1 text-sm text-gray-600 placeholder-gray-300 outline-none focus:ring-0 dark:text-gray-300 dark:placeholder-gray-600"
+                                                placeholder="&#8230;"
                                                 x-init="$el.value = ($wire.userFilters?.text || {})[col] || ''"
                                                 x-on:input.debounce.500ms="$wire.setTextFilter(col, $event.target.value)"
                                             />
@@ -185,7 +189,8 @@
                                         <div
                                             x-effect="if (!($wire.userFilters?.text || {})[col]) $el.querySelector('select').value = ''"
                                         >
-                                            <x-select.native
+                                            <select
+                                                class="w-full border-0 bg-transparent px-2 py-1 text-sm text-gray-600 outline-none focus:ring-0 dark:text-gray-300"
                                                 x-init="$el.value = ($wire.userFilters?.text || {})[col] || ''"
                                                 x-on:change="$wire.setTextFilter(col, $event.target.value)"
                                             >
@@ -193,16 +198,16 @@
                                                 <template x-for="item in ($wire.filterValueLists || {})[col]" x-bind:key="item.value">
                                                     <option x-bind:value="item.value" x-text="item.label"></option>
                                                 </template>
-                                            </x-select.native>
+                                            </select>
                                         </div>
                                     </template>
                                 </td>
                             </template>
                             @if ($rowActions)
-                                <td class="dark:bg-secondary-800 bg-gray-50"></td>
+                                <td class="dark:bg-secondary-700/30 border-b border-gray-100 bg-gray-50/50 dark:border-secondary-700/50"></td>
                             @endif
                             @if ($hasSidebar)
-                                <td class="dark:bg-secondary-800 bg-gray-50"></td>
+                                <td class="dark:bg-secondary-700/30 border-b border-gray-100 bg-gray-50/50 dark:border-secondary-700/50"></td>
                             @endif
                         </tr>
                     @endif
@@ -288,24 +293,24 @@
                 @php extract($this->getIslandData()); @endphp
                 @if (! empty($this->data['aggregates'] ?? []))
                     @foreach ($this->data['aggregates'] as $name => $aggregate)
-                        <tr class="dark:hover:bg-secondary-800 dark:bg-secondary-900 bg-gray-50 hover:bg-gray-100">
-                            <td class="border-b border-gray-200 px-3 py-4 text-sm font-bold whitespace-nowrap dark:border-secondary-700">
+                        <tr class="dark:bg-secondary-800 bg-gray-50/50 text-xs text-gray-500 dark:text-gray-400">
+                            <td class="border-t border-gray-200 px-3 py-2 font-medium whitespace-nowrap dark:border-secondary-700/50">
                                 {{ $this->getGroupLabels()[$name] ?? \Illuminate\Support\Str::headline($name) }}
                             </td>
                             @foreach ($this->enabledCols as $col)
-                                <x-tall-datatables::table.cell>
-                                    <div class="flex font-semibold">
+                                <td class="border-t border-gray-200 px-3 py-2 whitespace-nowrap dark:border-secondary-700/50">
+                                    <span class="font-medium">
                                         @if (is_array($aggregate[$col] ?? null) && isset($aggregate[$col]['display']))
                                             {!! $aggregate[$col]['display'] !!}
                                         @else
                                             {{ $aggregate[$col] ?? '' }}
                                         @endif
-                                    </div>
-                                </x-tall-datatables::table.cell>
+                                    </span>
+                                </td>
                             @endforeach
-                            <td class="table-cell border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"></td>
+                            <td class="border-t border-gray-200 px-3 py-2 whitespace-nowrap dark:border-secondary-700/50"></td>
                             @if ($rowActions)
-                                <td class="table-cell border-b border-gray-200 px-3 py-4 text-sm whitespace-nowrap dark:border-secondary-700"></td>
+                                <td class="border-t border-gray-200 px-3 py-2 whitespace-nowrap dark:border-secondary-700/50"></td>
                             @endif
                         </tr>
                     @endforeach
