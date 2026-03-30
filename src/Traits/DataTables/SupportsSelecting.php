@@ -38,6 +38,11 @@ trait SupportsSelecting
         return new ComponentAttributeBag();
     }
 
+    public function getSelectValue(): string
+    {
+        return $this->selectValue ?? 'record.' . $this->modelKeyName;
+    }
+
     protected function getSelectedModels(): Collection
     {
         return $this->getSelectedModelsQuery()->get();
@@ -56,10 +61,5 @@ trait SupportsSelecting
                 ->pluck($this->modelKeyName)
                 ->toArray()
             : $this->selected;
-    }
-
-    protected function getSelectValue(): string
-    {
-        return $this->selectValue ?? 'record.' . $this->modelKeyName;
     }
 }

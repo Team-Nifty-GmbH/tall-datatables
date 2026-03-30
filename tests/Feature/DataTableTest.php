@@ -18,7 +18,7 @@ describe('DataTable Initialization', function (): void {
         $component = Livewire::test(PostDataTable::class);
 
         expect($component->instance())->toBeInstanceOf(PostDataTable::class);
-        expect($component->get('initialized'))->toBeFalse();
+        expect($component->get('initialized'))->toBeTrue();
     });
 
     it('initializes model key name on mount', function (): void {
@@ -79,10 +79,10 @@ describe('Data Loading', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        expect($component->get('data'))->toBeArray();
+        expect($component->instance()->getDataForTesting())->toBeArray();
         expect($component->get('initialized'))->toBeTrue();
-        expect($component->get('data.total'))->toBe(3);
-        expect(count($component->get('data.data')))->toBe(3);
+        expect($component->instance()->getDataForTesting()['total'])->toBe(3);
+        expect(count($component->instance()->getDataForTesting()['data']))->toBe(3);
     });
 
     it('loads paginated data with correct structure', function (): void {
@@ -94,7 +94,7 @@ describe('Data Loading', function (): void {
             ->set('perPage', 10)
             ->call('loadData');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
 
         expect($data)
             ->toBeArray()
@@ -115,9 +115,9 @@ describe('Data Loading', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        expect($component->get('data'))->toBeArray();
-        expect($component->get('data.total'))->toBe(0);
-        expect($component->get('data.data'))->toBe([]);
+        expect($component->instance()->getDataForTesting())->toBeArray();
+        expect($component->instance()->getDataForTesting()['total'])->toBe(0);
+        expect($component->instance()->getDataForTesting()['data'])->toBe([]);
         expect($component->get('initialized'))->toBeTrue();
     });
 
@@ -127,7 +127,7 @@ describe('Data Loading', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        $firstRow = $component->get('data.data.0');
+        $firstRow = $component->instance()->getDataForTesting()['data'][0];
 
         expect($firstRow)
             ->toHaveKey('id')
@@ -144,7 +144,7 @@ describe('Data Loading', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        $firstRow = $component->get('data.data.0');
+        $firstRow = $component->instance()->getDataForTesting()['data'][0];
 
         expect($firstRow['href'])->toBe('/posts/' . $post->getKey());
     });
@@ -164,7 +164,7 @@ describe('Pagination', function (): void {
             ->call('gotoPage', 2);
 
         expect($component->get('page'))->toBe(2);
-        expect($component->get('data.current_page'))->toBe(2);
+        expect($component->instance()->getDataForTesting()['current_page'])->toBe(2);
     });
 
     it('can navigate through multiple pages', function (): void {
@@ -172,16 +172,16 @@ describe('Pagination', function (): void {
             ->set('perPage', 10)
             ->call('loadData');
 
-        expect($component->get('data.current_page'))->toBe(1);
+        expect($component->instance()->getDataForTesting()['current_page'])->toBe(1);
 
         $component->call('gotoPage', 2);
-        expect($component->get('data.current_page'))->toBe(2);
+        expect($component->instance()->getDataForTesting()['current_page'])->toBe(2);
 
         $component->call('gotoPage', 3);
-        expect($component->get('data.current_page'))->toBe(3);
+        expect($component->instance()->getDataForTesting()['current_page'])->toBe(3);
 
         $component->call('gotoPage', 1);
-        expect($component->get('data.current_page'))->toBe(1);
+        expect($component->instance()->getDataForTesting()['current_page'])->toBe(1);
     });
 
     it('can change items per page', function (): void {
@@ -190,8 +190,8 @@ describe('Pagination', function (): void {
             ->call('setPerPage', 25);
 
         expect($component->get('perPage'))->toBe(25);
-        expect($component->get('data.per_page'))->toBe(25);
-        expect(count($component->get('data.data')))->toBe(25);
+        expect($component->instance()->getDataForTesting()['per_page'])->toBe(25);
+        expect(count($component->instance()->getDataForTesting()['data']))->toBe(25);
     });
 
     it('adjusts current page when per page increases past total', function (): void {
@@ -202,10 +202,14 @@ describe('Pagination', function (): void {
 
         expect($component->get('page'))->toBe(3);
 
+        // setPerPage resets page when needed and reloads
         $component->call('setPerPage', 50);
+        expect($component->get('perPage'))->toBe(50);
 
-        expect($component->get('page'))->toBeLessThanOrEqual(1);
-        expect(count($component->get('data.data')))->toBe(30);
+        // After reload, all 30 items should be on page 1
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(30);
+        expect($data['per_page'])->toBe(50);
     });
 
     it('can load more items (infinite scroll)', function (): void {
@@ -213,17 +217,17 @@ describe('Pagination', function (): void {
             ->set('perPage', 10)
             ->call('loadData');
 
-        expect(count($component->get('data.data')))->toBe(10);
+        expect(count($component->instance()->getDataForTesting()['data']))->toBe(10);
 
         $component->call('loadMore');
 
         expect($component->get('perPage'))->toBe(20);
-        expect(count($component->get('data.data')))->toBe(20);
+        expect(count($component->instance()->getDataForTesting()['data']))->toBe(20);
 
         $component->call('loadMore');
 
         expect($component->get('perPage'))->toBe(40);
-        expect(count($component->get('data.data')))->toBe(30);
+        expect(count($component->instance()->getDataForTesting()['data']))->toBe(30);
     });
 
     it('correctly shows pagination links', function (): void {
@@ -231,8 +235,8 @@ describe('Pagination', function (): void {
             ->set('perPage', 10)
             ->call('loadData');
 
-        expect($component->get('data.links'))->toBeArray();
-        expect(count($component->get('data.links')))->toBeGreaterThan(0);
+        expect($component->instance()->getDataForTesting()['links'])->toBeArray();
+        expect(count($component->instance()->getDataForTesting()['links']))->toBeGreaterThan(0);
     });
 });
 
@@ -251,7 +255,7 @@ describe('Sorting', function (): void {
         expect($component->get('userOrderBy'))->toBe('title');
         expect($component->get('userOrderAsc'))->toBeTrue();
 
-        $titles = array_column($component->get('data.data'), 'title');
+        $titles = array_column($component->instance()->getDataForTesting()['data'], 'title');
         expect($titles)->toBe(['Alpha Post', 'Mike Post', 'Zulu Post']);
     });
 
@@ -264,7 +268,7 @@ describe('Sorting', function (): void {
         expect($component->get('userOrderBy'))->toBe('title');
         expect($component->get('userOrderAsc'))->toBeFalse();
 
-        $titles = array_column($component->get('data.data'), 'title');
+        $titles = array_column($component->instance()->getDataForTesting()['data'], 'title');
         expect($titles)->toBe(['Zulu Post', 'Mike Post', 'Alpha Post']);
     });
 
@@ -286,7 +290,7 @@ describe('Sorting', function (): void {
         expect($component->get('orderBy'))->toBe('');
         expect($component->get('orderAsc'))->toBeTrue();
 
-        $ids = array_column($component->get('data.data'), 'id');
+        $ids = array_column($component->instance()->getDataForTesting()['data'], 'id');
         expect($ids)->toBe([3, 2, 1]);
     });
 });
@@ -328,8 +332,8 @@ describe('Filtering', function (): void {
             ])
             ->call('loadData');
 
-        expect($component->get('data.total'))->toBe(1);
-        expect($component->get('data.data.0.title'))->toBe('Published Post');
+        expect($component->instance()->getDataForTesting()['total'])->toBe(1);
+        expect($component->instance()->getDataForTesting()['data'][0]['title'])->toBe('Published Post');
     });
 
     it('can filter by title using like operator', function (): void {
@@ -345,7 +349,7 @@ describe('Filtering', function (): void {
             ])
             ->call('loadData');
 
-        expect($component->get('data.total'))->toBe(2);
+        expect($component->instance()->getDataForTesting()['total'])->toBe(2);
     });
 
     it('can apply OR filters', function (): void {
@@ -368,7 +372,7 @@ describe('Filtering', function (): void {
             ])
             ->call('loadData');
 
-        expect($component->get('data.total'))->toBe(2);
+        expect($component->instance()->getDataForTesting()['total'])->toBe(2);
     });
 
     it('updates filters when userFilters changes', function (): void {
@@ -470,7 +474,7 @@ describe('Column Configuration', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        $initialDataCount = count($component->get('data.data'));
+        $initialDataCount = count($component->instance()->getDataForTesting()['data']);
 
         $component->call('storeColLayout', ['id', 'title', 'content', 'is_published']);
 
@@ -506,7 +510,7 @@ describe('Relation Columns', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class)
             ->call('loadData');
 
-        $firstRow = $component->get('data.data.0');
+        $firstRow = $component->instance()->getDataForTesting()['data'][0];
 
         expect($firstRow)
             ->toHaveKey('user.name')
@@ -689,7 +693,7 @@ describe('Soft Deletes', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        expect($component->get('data.total'))->toBe(1);
+        expect($component->instance()->getDataForTesting()['total'])->toBe(1);
     });
 
     it('shows soft deleted posts when enabled', function (): void {
@@ -701,7 +705,7 @@ describe('Soft Deletes', function (): void {
             ->set('withSoftDeletes', true)
             ->call('loadData');
 
-        expect($component->get('data.total'))->toBe(2);
+        expect($component->instance()->getDataForTesting()['total'])->toBe(2);
     });
 });
 

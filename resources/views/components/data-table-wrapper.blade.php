@@ -1,5 +1,4 @@
 <div
-    wire:init="loadData"
     x-data="{
         stickyCols: $wire.stickyCols,
         showSelectedActions: false,

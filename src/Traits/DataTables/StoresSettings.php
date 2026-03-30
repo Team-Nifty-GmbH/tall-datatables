@@ -114,6 +114,9 @@ trait StoresSettings
                 $this->loadFilter($cachedFilters);
             }
         }
+
+        // Regenerate labels after enabledCols may have changed from cache/saved filters
+        $this->colLabels = $this->getColLabels();
     }
 
     public function resetLayout(): void
@@ -135,6 +138,7 @@ trait StoresSettings
             Session::remove(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
 
             $this->reset(array_keys(array_merge($layout?->settings ?? [], $cached ?? [])));
+            $this->colLabels = $this->getColLabels();
             $this->loadData();
         } catch (MissingTraitException) {
         }
@@ -178,14 +182,11 @@ trait StoresSettings
 
     public function storeColLayout(array $cols): void
     {
-        $reload = count($cols) > count($this->enabledCols);
-
         $this->enabledCols = $cols;
+        $this->colLabels = $this->getColLabels();
 
         $this->cacheState();
-        if ($reload) {
-            $this->loadData();
-        }
+        $this->loadData();
     }
 
     #[Renderless]

@@ -1,7 +1,7 @@
 <?php
 
 use Livewire\Livewire;
-use Tests\Fixtures\Livewire\PostDataTable;
+use Tests\Fixtures\Livewire\NonExportablePostDataTable;
 
 beforeEach(function (): void {
     $this->user = createTestUser();
@@ -10,8 +10,9 @@ beforeEach(function (): void {
 
 describe('Export Functionality', function (): void {
     test('datatable renders without export button when not exportable', function (): void {
-        $component = Livewire::test(PostDataTable::class);
+        $component = Livewire::test(NonExportablePostDataTable::class);
 
-        $component->assertDontSee('export');
+        $component->assertDontSeeHtml('>Export<')
+            ->assertDontSeeHtml('>Exportieren<');
     });
 });

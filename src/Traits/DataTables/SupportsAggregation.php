@@ -32,9 +32,12 @@ trait SupportsAggregation
     {
         return once(function () {
             $foreignKeys = Cache::remember(
-                'column-listing:' . $this->modelTable,
+                'foreign-keys:' . $this->modelTable,
                 86400,
-                fn () => Schema::getColumnListing($this->modelTable),
+                fn () => array_filter(
+                    Schema::getColumnListing($this->modelTable),
+                    fn (string $col) => str_ends_with($col, '_id') || str_ends_with($col, '_by')
+                ),
             );
 
             return $this->aggregatable === ['*']

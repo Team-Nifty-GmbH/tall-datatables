@@ -1,6 +1,7 @@
 <?php
 
 use TeamNiftyGmbH\DataTable\Formatters\ArrayFormatter;
+use TeamNiftyGmbH\DataTable\Formatters\BadgeFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\BooleanFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\DateFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\FloatFormatter;
@@ -143,5 +144,36 @@ describe('FormatterRegistry', function (): void {
         $registry = new FormatterRegistry();
 
         expect($registry->resolve('collection'))->toBeInstanceOf(ArrayFormatter::class);
+    });
+
+    it('auto-detects state cast to BadgeFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('state'))->toBeInstanceOf(BadgeFormatter::class);
+    });
+
+    it('auto-detects badge cast to BadgeFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('badge'))->toBeInstanceOf(BadgeFormatter::class);
+    });
+
+    it('resolves state with options to BadgeFormatter with mapping', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolveWithOptions('state', ['open' => 'green', 'closed' => 'red']);
+
+        expect($formatter)->toBeInstanceOf(BadgeFormatter::class)
+            ->and($formatter->mapping)->toHaveKey('open')
+            ->and($formatter->mapping['open']['color'])->toBe('green')
+            ->and($formatter->mapping['closed']['color'])->toBe('red');
+    });
+
+    it('resolves badge with nested options array', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolveWithOptions('badge', [['active' => 'blue', 'inactive' => 'gray']]);
+
+        expect($formatter)->toBeInstanceOf(BadgeFormatter::class)
+            ->and($formatter->mapping)->toHaveKey('active')
+            ->and($formatter->mapping['active']['color'])->toBe('blue');
     });
 });

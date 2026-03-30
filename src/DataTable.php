@@ -6,6 +6,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
@@ -122,26 +123,33 @@ class DataTable extends Component
 
     public function mount(): void
     {
-        $this->colLabels = $this->getColLabels();
-
         if (! $this->modelKeyName || ! $this->modelTable) {
             $model = app($this->getModel());
             $this->modelKeyName = $this->modelKeyName ?: $model->getKeyName();
             $this->modelTable = $this->modelTable ?: $model->getTable();
         }
+
+        $this->colLabels = $this->getColLabels();
+        $this->loadData();
     }
 
     public function render(): View|Factory|Application|null
     {
+        if (empty($this->data)) {
+            $this->loadData();
+        }
+
         return view($this->getView(), $this->getViewData());
     }
 
     /**
-     * @deprecated No longer skips render - v2 always re-renders via Blade
+     * Clear data before sending to client — it's only needed during render, not in the snapshot.
+     * This drastically reduces payload size since data can contain hundreds of formatted rows.
+     * On the next request, loadData() will re-populate it.
      */
-    public function hydrate(): void
+    public function dehydrate(): void
     {
-        // v2: Livewire always re-renders, no skipRender needed
+        $this->data = [];
     }
 
     protected function getTableActions(): array
@@ -149,9 +157,31 @@ class DataTable extends Component
         return [];
     }
 
+    /**
+     * Re-populate data for assertions in tests. Only call after loadData().
+     */
+    public function getDataForTesting(): array
+    {
+        if (empty($this->data) && $this->initialized) {
+            $this->loadData();
+        }
+
+        return $this->data;
+    }
+
     public function applyUserFilters(): void
     {
         $this->colLabels = $this->getColLabels();
+        $this->loadedFilterId = null;
+        $this->startSearch();
+    }
+
+    public function clearFiltersAndSort(): void
+    {
+        $this->userFilters = [];
+        $this->userOrderBy = '';
+        $this->userOrderAsc = true;
+        $this->search = '';
         $this->loadedFilterId = null;
         $this->startSearch();
     }
@@ -306,7 +336,9 @@ class DataTable extends Component
             ]);
 
             if ($aggregates = $this->getAggregate($baseQuery)) {
-                $this->data['aggregates'] = ! $this->search ? $aggregates : [];
+                $this->data['aggregates'] = ! $this->search
+                    ? $this->formatAggregates($aggregates)
+                    : [];
             }
 
             return;
@@ -333,13 +365,18 @@ class DataTable extends Component
         }
 
         if ($aggregates = $this->getAggregate($baseQuery)) {
-            $this->data['aggregates'] = ! $this->search ? $aggregates : [];
+            $this->data['aggregates'] = ! $this->search
+                ? $this->formatAggregates($aggregates)
+                : [];
         }
 
         if ($this->data['links'] ?? false) {
             array_pop($this->data['links']);
             array_shift($this->data['links']);
         }
+
+        $this->renderIsland('body');
+        $this->renderIsland('footer');
     }
 
     public function loadFilter(array $properties): void
@@ -403,6 +440,16 @@ class DataTable extends Component
         $this->loadData();
     }
 
+    public function updatedSearch(): void
+    {
+        $this->startSearch();
+    }
+
+    public function updatedStickyCols(): void
+    {
+        $this->renderIsland('body');
+    }
+
     public function updatedUserFilters(): void
     {
         if ($this->loadingFilter) {
@@ -412,6 +459,11 @@ class DataTable extends Component
         }
 
         $this->applyUserFilters();
+    }
+
+    public function getIslandData(): array
+    {
+        return $this->getViewData();
     }
 
     protected function compileActions(string $type): array
@@ -432,6 +484,12 @@ class DataTable extends Component
 
         return $actions;
     }
+
+    /**
+     * Hook to add computed columns (e.g. avatar) before formatters are applied.
+     * Override this instead of itemToArray() to ensure formatters work on your custom columns.
+     */
+    protected function augmentItemArray(array &$itemArray, Model $item): void {}
 
     protected function getAppends(): array
     {
@@ -575,6 +633,38 @@ class DataTable extends Component
             'aggregatable' => $this->getAggregatable(),
             'isExportable' => $this->isExportable,
         ];
+    }
+
+    protected function formatAggregates(array $aggregates): array
+    {
+        $registry = app(Formatters\FormatterRegistry::class);
+        $customFormatters = $this->getFormatters();
+        $model = app($this->getModel());
+        $modelCasts = $model->getCasts();
+
+        foreach ($aggregates as $type => $columns) {
+            foreach ($columns as $col => $value) {
+                $baseCol = str_contains($col, '.') ? last(explode('.', $col)) : $col;
+
+                if (isset($customFormatters[$col]) && is_string($customFormatters[$col])) {
+                    $formatter = $registry->resolve($customFormatters[$col]);
+                } elseif (isset($customFormatters[$col]) && is_array($customFormatters[$col])) {
+                    $formatter = $registry->resolveWithOptions($customFormatters[$col][0] ?? 'string', $customFormatters[$col][1] ?? []);
+                } else {
+                    $stringCasts = array_filter($modelCasts, 'is_string');
+                    $formatter = $registry->resolveForColumn($baseCol, $stringCasts);
+                }
+
+                $display = $formatter->format($value, []);
+                $rawString = is_null($value) ? '' : (string) $value;
+
+                if ($display !== e($rawString)) {
+                    $aggregates[$type][$col] = ['raw' => $value, 'display' => $display];
+                }
+            }
+        }
+
+        return $aggregates;
     }
 
     protected function setData(array $data): void

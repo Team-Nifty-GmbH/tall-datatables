@@ -55,12 +55,27 @@
     class="flex flex-wrap items-center gap-1.5 pt-3"
     x-cloak
     x-show="
-        {{ count($this->userFilters) > 0 ? 'true' : 'false' }} ||
-            '{{ $this->userOrderBy }}' !== '' ||
-            {{ $this->groupBy ? 'true' : 'false' }} ||
-            Object.keys($wire.sessionFilter).length !== 0
+        Object.keys($wire.userFilters).filter(k => k !== 'text').length > 0 ||
+            $wire.userOrderBy !== '' ||
+            $wire.groupBy ||
+            Object.keys($wire.sessionFilter).length !== 0 ||
+            $wire.search !== ''
     "
 >
+    <div x-show="$wire.search !== ''" x-cloak>
+        <x-badge light flat color="purple">
+            <x-slot:text>
+                <span>{{ __('Search') }}</span>
+                &nbsp;
+                <span x-text="$wire.search"></span>
+            </x-slot>
+            <x-slot name="right" class="relative flex h-2 w-2 items-center">
+                <button type="button" wire:click="$set('search', '')">
+                    <x-icon name="x-mark" class="h-4 w-4" />
+                </button>
+            </x-slot>
+        </x-badge>
+    </div>
     <div x-show="Object.keys($wire.sessionFilter).length !== 0" x-cloak>
         <div
             class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 pr-6.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
@@ -80,7 +95,7 @@
             </div>
         </div>
     </div>
-    @foreach ($this->userFilters as $orIndex => $orFilters)
+    @foreach (collect($this->userFilters)->forget('text')->values()->all() as $orIndex => $orFilters)
         <div class="flex items-center justify-center">
             <div
                 class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 ring-1 ring-slate-700/10"
@@ -157,5 +172,5 @@
             </x-badge>
         </div>
     @endif
-    <x-button rounded color="red" :text="__('Clear')" wire:click="$set('userFilters', [])" class="h-8" />
+    <x-button rounded color="red" :text="__('Clear')" wire:click="clearFiltersAndSort" class="h-8" />
 </div>

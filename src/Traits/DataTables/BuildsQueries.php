@@ -132,10 +132,18 @@ trait BuildsQueries
                     ? $this->resolveCastsForColumn($item, $col)
                     : $modelCasts;
 
-                // Filter out non-string cast values (e.g. array-based casts like [CastClass::class, 'param'])
-                $casts = array_filter($casts, 'is_string');
+                $castValue = $casts[$baseCol] ?? null;
 
-                $formatter = $registry->resolveForColumn($baseCol, $casts);
+                // Array-based casts like ['state', ['open' => 'green']] use resolveWithOptions
+                if (is_array($castValue) && count($castValue) >= 1) {
+                    $formatterName = $castValue[0] ?? 'string';
+                    $formatterOptions = $castValue[1] ?? [];
+                    $formatter = $registry->resolveWithOptions($formatterName, $formatterOptions);
+                } else {
+                    // Filter out non-string cast values (e.g. CastClass::class instances)
+                    $stringCasts = array_filter($casts, 'is_string');
+                    $formatter = $registry->resolveForColumn($baseCol, $stringCasts);
+                }
             }
 
             // Use ArrayFormatter for array values when StringFormatter would fail
@@ -167,7 +175,15 @@ trait BuildsQueries
         }
 
         if ($this->search && method_exists($model, 'search') && ! $unpaginated) {
-            $query = $this->getScoutSearch()->toEloquentBuilder($this->enabledCols, $this->perPage, $this->page);
+            try {
+                $query = $this->getScoutSearch()->toEloquentBuilder($this->enabledCols, $this->perPage, $this->page);
+            } catch (Throwable) {
+                $query = $model::query();
+                $this->applyFallbackSearch($query, $this->search);
+            }
+        } elseif ($this->search && ! $unpaginated) {
+            $query = $model::query();
+            $this->applyFallbackSearch($query, $this->search);
         } else {
             $query = $model::query();
         }
@@ -249,17 +265,63 @@ trait BuildsQueries
                 function (Model $item) use ($query) {
                     $itemArray = $this->itemToArray($item);
 
-                    foreach ($itemArray as $key => $value) {
-                        $itemArray[$key] = data_get($query->hits, $item->getKey() . '._formatted.' . $key, $value);
+                    // Apply Scout highlights without destroying formatters
+                    foreach ($this->enabledCols as $key) {
+                        $highlighted = data_get($query->hits, $item->getKey() . '._formatted.' . $key);
+                        if ($highlighted === null) {
+                            continue;
+                        }
+
+                        // If already formatted (has display key), replace the display with highlighted version
+                        if (is_array($itemArray[$key] ?? null) && isset($itemArray[$key]['display'])) {
+                            continue;
+                        }
+
+                        // Wrap highlighted value as display so {!! !!} renders the <mark> tags
+                        $raw = $itemArray[$key] ?? $highlighted;
+                        $itemArray[$key] = ['raw' => $raw, 'display' => $highlighted];
                     }
 
                     return $itemArray;
                 }
             );
         } else {
+            $registry = app(FormatterRegistry::class);
+            $customFormatters = $this->getFormatters();
+
             $mapped = $resultCollection->map(
-                function (Model $item) {
-                    return $this->itemToArray($item);
+                function (Model $item) use ($registry, $customFormatters) {
+                    $itemArray = $this->itemToArray($item);
+
+                    // Re-apply formatters to columns that were added after parent::itemToArray()
+                    // (e.g. avatar set in child class override) and not yet formatted
+                    foreach ($this->enabledCols as $col) {
+                        if (! array_key_exists($col, $itemArray)) {
+                            continue;
+                        }
+
+                        // Skip already formatted values
+                        if (is_array($itemArray[$col]) && isset($itemArray[$col]['display'])) {
+                            continue;
+                        }
+
+                        $raw = $itemArray[$col];
+
+                        if (isset($customFormatters[$col])) {
+                            $formatter = is_string($customFormatters[$col])
+                                ? $registry->resolve($customFormatters[$col])
+                                : $registry->resolveWithOptions($customFormatters[$col][0] ?? 'string', $customFormatters[$col][1] ?? []);
+
+                            $display = $formatter->format($raw, $itemArray);
+                            $rawString = is_null($raw) ? '' : (is_array($raw) ? json_encode($raw) : (string) $raw);
+
+                            if ($display !== e($rawString)) {
+                                $itemArray[$col] = ['raw' => $raw, 'display' => $display];
+                            }
+                        }
+                    }
+
+                    return $itemArray;
                 }
             );
         }
@@ -325,6 +387,7 @@ trait BuildsQueries
             ? $item->getUrl()
             : null;
 
+        $this->augmentItemArray($itemArray, $item);
         $this->applyFormatters($itemArray, $item, $rawArray);
 
         return $itemArray;
@@ -444,16 +507,42 @@ trait BuildsQueries
             }
         }
 
-        // add user filters
-        $builder->where(function ($query): void {
-            foreach ($this->userFilters as $index => $orFilter) {
-                $query->where(function (Builder $query) use ($orFilter): void {
-                    foreach ($orFilter as $type => $filter) {
-                        $this->addFilter($query, $type, $filter);
+        // add inline text filters (from filter input row)
+        $textFilters = $this->userFilters['text'] ?? [];
+        if ($textFilters) {
+            $builder->where(function (Builder $query) use ($textFilters): void {
+                foreach (Arr::dot($textFilters) as $column => $value) {
+                    if ($value === '' || $value === null) {
+                        continue;
                     }
-                }, boolean: $index > 0 ? 'or' : 'and');
-            }
-        });
+
+                    $this->addFilter($query, 0, [
+                        'column' => $column,
+                        'operator' => 'like',
+                        'value' => '%' . $value . '%',
+                    ]);
+                }
+            });
+        }
+
+        // add user filters (structured OR groups from sidebar)
+        $structuredFilters = array_filter(
+            $this->userFilters,
+            fn ($key) => $key !== 'text',
+            ARRAY_FILTER_USE_KEY
+        );
+
+        if ($structuredFilters) {
+            $builder->where(function ($query) use ($structuredFilters): void {
+                foreach (array_values($structuredFilters) as $index => $orFilter) {
+                    $query->where(function (Builder $query) use ($orFilter): void {
+                        foreach ($orFilter as $type => $filter) {
+                            $this->addFilter($query, $type, $filter);
+                        }
+                    }, boolean: $index > 0 ? 'or' : 'and');
+                }
+            });
+        }
 
         // add aggregatable relations
         foreach ($this->getAggregatableRelationCols() as $aggregatableRelationCol) {
@@ -475,6 +564,23 @@ trait BuildsQueries
         }
 
         return $builder;
+    }
+
+    private function applyFallbackSearch(Builder $query, string $search): void
+    {
+        $query->where(function (Builder $q) use ($search): void {
+            foreach ($this->enabledCols as $col) {
+                if (str_contains($col, '.')) {
+                    $parts = explode('.', $col);
+                    $column = array_pop($parts);
+                    $relation = implode('.', array_map(fn ($p) => Str::camel($p), $parts));
+
+                    $q->orWhereHas($relation, fn (Builder $sub) => $sub->where($column, 'like', '%' . $search . '%'));
+                } else {
+                    $q->orWhere($col, 'like', '%' . $search . '%');
+                }
+            }
+        });
     }
 
     private function applyFilterWhere(Builder $builder, array $filter): Builder

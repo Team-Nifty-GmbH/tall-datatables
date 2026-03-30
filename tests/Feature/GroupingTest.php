@@ -109,7 +109,7 @@ describe('Grouped Data Loading', function (): void {
 
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
 
         expect($data)->toHaveKey('groups')
             ->and($data['groups'])->toBeArray();
@@ -120,7 +120,7 @@ describe('Grouped Data Loading', function (): void {
 
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $group = $data['groups'][0];
 
         expect($group)->toHaveKey('key')
@@ -139,7 +139,7 @@ describe('Grouped Data Loading', function (): void {
         // Expand the first group to get pagination data
         $component->call('toggleGroup', '__false__');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $expandedGroup = collect($data['groups'])->firstWhere('key', '__false__');
         $pagination = $expandedGroup['pagination'];
 
@@ -156,7 +156,7 @@ describe('Grouped Data Loading', function (): void {
 
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $collapsedGroup = $data['groups'][0];
 
         expect($collapsedGroup['pagination'])->toBeNull();
@@ -167,7 +167,7 @@ describe('Grouped Data Loading', function (): void {
 
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $groups = $data['groups'];
 
         expect($groups)->toHaveCount(2);
@@ -186,7 +186,7 @@ describe('Grouped Data Loading', function (): void {
         $component->call('toggleGroup', '__true__');
         $component->call('toggleGroup', '__false__');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $groups = $data['groups'];
 
         foreach ($groups as $group) {
@@ -203,7 +203,7 @@ describe('Grouped Data Loading', function (): void {
         $component->call('setGroupBy', 'is_published');
         $component->call('toggleGroup', '__true__');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $trueGroup = collect($data['groups'])->firstWhere('key', '__true__');
 
         expect(count($trueGroup['data']))->toBeLessThanOrEqual(3);
@@ -214,7 +214,7 @@ describe('Grouped Data Loading', function (): void {
 
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
 
         foreach ($data['groups'] as $group) {
             expect($group['data'])->toBeEmpty();
@@ -226,7 +226,7 @@ describe('Grouped Data Loading', function (): void {
 
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
 
         expect($data['total'])->toBe(25);
     });
@@ -289,14 +289,14 @@ describe('Group Pagination', function (): void {
         $component->call('setGroupBy', 'is_published');
 
         // Get first page data
-        $data1 = $component->get('data');
+        $data1 = $component->instance()->getDataForTesting();
         $trueGroup1 = collect($data1['groups'])->firstWhere('key', '__true__');
         $firstPageIds = collect($trueGroup1['data'])->pluck('id')->toArray();
 
         // Go to second page
         $component->call('setGroupPage', '__true__', 2);
 
-        $data2 = $component->get('data');
+        $data2 = $component->instance()->getDataForTesting();
         $trueGroup2 = collect($data2['groups'])->firstWhere('key', '__true__');
         $secondPageIds = collect($trueGroup2['data'])->pluck('id')->toArray();
 
@@ -314,7 +314,7 @@ describe('Group Pagination', function (): void {
         // Then change page
         $component->call('setGroupPage', '__true__', 2);
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $trueGroup = collect($data['groups'])->firstWhere('key', '__true__');
 
         expect($trueGroup['pagination']['current_page'])->toBe(2);
@@ -331,7 +331,7 @@ describe('Group Pagination', function (): void {
         // Change page only for true group
         $component->call('setGroupPage', '__true__', 2);
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $trueGroup = collect($data['groups'])->firstWhere('key', '__true__');
         $falseGroup = collect($data['groups'])->firstWhere('key', '__false__');
 
@@ -346,7 +346,7 @@ describe('Group Labels', function (): void {
 
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $trueGroup = collect($data['groups'])->firstWhere('key', '__true__');
 
         expect($trueGroup['label'])->toContain('Yes');
@@ -357,7 +357,7 @@ describe('Group Labels', function (): void {
 
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $falseGroup = collect($data['groups'])->firstWhere('key', '__false__');
 
         expect($falseGroup['label'])->toContain('No');
@@ -375,7 +375,7 @@ describe('Group Aggregates', function (): void {
         $component->call('toggleGroup', '__true__');
         $component->call('toggleGroup', '__false__');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $groups = $data['groups'];
 
         foreach ($groups as $group) {
@@ -392,7 +392,7 @@ describe('Group Aggregates', function (): void {
         $component->set('aggregatableCols', ['sum' => ['price']]);
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
 
         // Aggregates should be calculated for all groups (shown in header)
         foreach ($data['groups'] as $group) {
@@ -416,7 +416,7 @@ describe('Group Aggregates', function (): void {
         $component->call('setGroupBy', 'is_published');
         // Aggregates are now calculated for all groups (shown in header), no need to expand
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
         $trueGroup = collect($data['groups'])->firstWhere('key', '__true__');
         $falseGroup = collect($data['groups'])->firstWhere('key', '__false__');
 
@@ -440,10 +440,12 @@ describe('Group Aggregates', function (): void {
         $component->set('aggregatableCols', ['sum' => ['price']]);
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
 
         // Total should be 300 + 100 = 400
-        expect((float) $data['aggregates']['sum']['price'])->toBe(400.0);
+        $priceAggregate = $data['aggregates']['sum']['price'];
+        $rawValue = is_array($priceAggregate) ? $priceAggregate['raw'] : $priceAggregate;
+        expect((float) $rawValue)->toBe(400.0);
     });
 });
 
@@ -476,7 +478,7 @@ describe('Ungrouped Mode', function (): void {
         // Trigger data load
         $component->call('loadData');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
 
         expect($data)->toHaveKey('data')
             ->and($data)->toHaveKey('current_page')
@@ -489,7 +491,7 @@ describe('Ungrouped Mode', function (): void {
         $component->call('setGroupBy', 'is_published');
         $component->call('setGroupBy', null);
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
 
         expect($data)->toHaveKey('data')
             ->and($data)->toHaveKey('current_page');
@@ -507,7 +509,7 @@ describe('Grouping with Sorted Query', function (): void {
         // This should not throw SQL error about DISTINCT with ORDER BY
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
 
         expect($data)->toHaveKey('groups')
             ->and($data['groups'])->toBeArray()
@@ -524,7 +526,7 @@ describe('Grouping with Sorted Query', function (): void {
         // This should not throw SQL error
         $component->call('setGroupBy', 'is_published');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
 
         expect($data)->toHaveKey('groups');
     });

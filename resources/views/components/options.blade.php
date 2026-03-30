@@ -13,19 +13,22 @@
         sortCols: [],
         newFilter: {column: '', operator: '=', value: [''], relation: ''},
         newFilterCalculation: {operator: '-', value: 1, unit: 'days', is_start_of: null, start_of: null},
-        filters: $wire.$parent.userFilters || [],
-        enabledCols: $wire.$parent.enabledCols || [],
-        filterValueLists: $wire.$parent.filterValueLists || {},
-        groupBy: $wire.$parent.groupBy || null,
-        orderByCol: $wire.$parent.userOrderBy || '',
-        orderAsc: $wire.$parent.userOrderAsc ?? true,
-        aggregatable: [],
-        aggregatableCols: $wire.$parent.aggregatableCols || {sum: [], avg: [], min: [], max: []},
-        groupable: [],
+        filters: $wire.userFilters || [],
+        enabledCols: $wire.enabledCols || [],
+        filterValueLists: $wire.filterValueLists || {},
+        groupBy: $wire.groupBy || null,
+        orderByCol: $wire.userOrderBy || '',
+        orderAsc: $wire.userOrderAsc ?? true,
+        aggregatable: {{ Js::from($this->getAggregatable()) }},
+        aggregatableCols: $wire.aggregatableCols || {sum: [], avg: [], min: [], max: []},
+        groupable: {{ Js::from($this->getGroupableCols()) }},
         exportColumns: [],
         relationTableFields: {},
-        filterSelectType: {},
+        filterSelectType: 'text',
+        filterIndex: 0,
+        showSavedFilters: false,
         exportableColumns: [],
+        operatorLabels: {{ Js::from($this->getOperatorLabels()) }},
         searchable(items, search) {
             if (!items || !search) return items || [];
             if (Array.isArray(items)) {
@@ -43,31 +46,170 @@
         },
         getLabel(col) {
             if (!col) return '';
-            const labels = $wire.$parent.colLabels || {};
+            const labels = $wire.colLabels || {};
             return labels[col] || col.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')).join(' \u2192 ');
         },
         getFilterInputType(col) {
+            if (!col || col === '.') return 'text';
+            const parts = col.split('.');
+            const table = parts.length > 1 ? (parts[0] || 'self') : 'self';
+            const column = parts.length > 1 ? parts[1] : parts[0];
+            const formatter = this.relationFormatters?.[table]?.[column] ?? null;
+            if (!formatter) return 'text';
+            if (formatter === 'date' || formatter === 'datetime' || formatter === 'immutable_date' || formatter === 'immutable_datetime') return 'date';
+            if (formatter === 'integer' || formatter === 'int' || formatter === 'float' || formatter === 'double' || formatter === 'decimal') return 'number';
             return 'text';
         },
         getCalculationLabel(calc) {
             if (!calc) return '';
             return (calc.operator || '') + ' ' + (calc.value || '') + ' ' + (calc.unit || '');
         },
-        async init() {
-            const config = await $wire.$parent.getConfig();
-            if (config) {
-                this.enabledCols = config.enabledCols || [];
-                this.aggregatable = config.aggregatable || [];
-                this.groupable = config.groupable || [];
-                this.exportColumns = config.enabledCols || [];
-                this.exportableColumns = config.enabledCols || [];
+        filterBadge(filter) {
+            if (!filter) return '';
+            const label = this.getLabel(filter.column) ?? filter.column;
+            let value = filter.value;
+            const listItem = (this.filterValueLists[filter.column] || []).find(item => item.value == value);
+            if (listItem) value = listItem.label;
+            if (Array.isArray(value)) {
+                value = value.map(item => {
+                    if (item && typeof item === 'object' && item.hasOwnProperty('calculation')) {
+                        return this.getCalculationLabel(item.calculation);
+                    }
+                    return item;
+                }).join(' ' + (this.operatorLabels.and || '&') + ' ');
             }
-            this.filters = $wire.$parent.userFilters || [];
-            this.filterValueLists = $wire.$parent.filterValueLists || {};
-            this.groupBy = $wire.$parent.groupBy || null;
-            this.orderByCol = $wire.$parent.userOrderBy || '';
-            this.orderAsc = $wire.$parent.userOrderAsc ?? true;
-            this.aggregatableCols = $wire.$parent.aggregatableCols || {sum: [], avg: [], min: [], max: []};
+            return label + ' ' + (this.operatorLabels[filter.operator] || filter.operator) + ' ' + value;
+        },
+        addFilter() {
+            let newFilter = {...this.newFilter};
+            let filters = Array.isArray(this.filters) ? [...this.filters] : [];
+            if (filters.length === 0) {
+                filters.push([]);
+                this.filterIndex = 0;
+            }
+            newFilter.operator = newFilter.operator || '=';
+            if (newFilter.relation && newFilter.relation !== '0') {
+                newFilter.column = newFilter.relation + '.' + newFilter.column;
+                newFilter.relation = '';
+            }
+            filters[this.filterIndex] = [...(filters[this.filterIndex] || []), newFilter];
+            this.filters = filters;
+            this.syncFilters();
+            this.resetFilter();
+            this.$nextTick(() => this.$refs.filterColumn?.focus());
+        },
+        addOrFilter() {
+            if (this.filters.length > 0 && this.filters[this.filters.length - 1].length === 0) {
+                this.filterIndex = this.filters.length - 1;
+                return;
+            }
+            this.filterIndex = this.filters.length;
+            this.filters = [...this.filters, []];
+        },
+        removeFilter(index, groupIndex) {
+            const filters = this.filters.map(group => [...group]);
+            if (filters[groupIndex] && index >= 0 && index < filters[groupIndex].length) {
+                filters[groupIndex].splice(index, 1);
+                if (filters[groupIndex].length === 0) {
+                    filters.splice(groupIndex, 1);
+                }
+                this.filters = filters;
+                this.syncFilters();
+            }
+        },
+        removeFilterGroup(index) {
+            if (index >= 0 && index < this.filters.length) {
+                this.filters = this.filters.filter((_, i) => i !== index);
+                this.syncFilters();
+            }
+        },
+        resetFilter() {
+            this.filterSelectType = 'text';
+            this.newFilter = {column: '', operator: '=', value: [''], relation: ''};
+        },
+        syncFilters() {
+            $wire.userFilters = this.filters;
+            $wire.applyUserFilters();
+        },
+        addCalculation(index) {
+            if (!this.newFilter.value[index]) {
+                this.newFilter.value[index] = {};
+            }
+            this.newFilter.value[index] = {calculation: {...this.newFilterCalculation}};
+            this.newFilterCalculation = {operator: '-', value: 1, unit: 'days', is_start_of: null, start_of: null};
+        },
+        columnSortHandle(item, position) {
+            const oldIndex = this.enabledCols.indexOf(item);
+            if (oldIndex === -1) return;
+            const cols = [...this.enabledCols];
+            const [movedItem] = cols.splice(oldIndex, 1);
+            cols.splice(position, 0, movedItem);
+            this.enabledCols = cols;
+            $wire.enabledCols = cols;
+            $wire.storeColLayout(cols);
+        },
+        resetLayout() {
+            this._ready = false;
+            $wire.resetLayout().then(() => {
+                this.enabledCols = $wire.enabledCols || [];
+                this.$nextTick(() => { this._ready = true; });
+            });
+        },
+        loadFilterable() {
+            // v2: filter columns are loaded from parent's filterValueLists
+            this.filterValueLists = $wire.filterValueLists || {};
+        },
+        getColumns() {
+            $wire.getExportableColumns().then(result => {
+                this.exportableColumns = result;
+                this.exportColumns = this.enabledCols;
+            });
+        },
+        relationFormatters: {},
+        _ready: false,
+        async init() {
+            this.enabledCols = $wire.enabledCols || [];
+            this.filters = Array.isArray($wire.userFilters) ? $wire.userFilters : [];
+            this.filterValueLists = $wire.filterValueLists || {};
+            this.groupBy = $wire.groupBy || null;
+            this.orderByCol = $wire.userOrderBy || '';
+            this.orderAsc = $wire.userOrderAsc ?? true;
+            this.aggregatableCols = $wire.aggregatableCols || {sum: [], avg: [], min: [], max: []};
+            this.exportColumns = this.enabledCols;
+            this.exportableColumns = this.enabledCols;
+
+
+            this.$watch('newFilter.column', () => {
+                if (!this.newFilter.column) return;
+                if (this.filterValueLists.hasOwnProperty(this.newFilter.column)) {
+                    this.filterSelectType = 'valueList';
+                    this.newFilter.operator = '=';
+                } else {
+                    this.filterSelectType = 'text';
+                }
+            });
+
+            this.$watch('newFilter.operator', () => {
+                if (this.newFilter.operator === 'is null' || this.newFilter.operator === 'is not null') {
+                    this.filterSelectType = 'none';
+                } else if (this.filterValueLists.hasOwnProperty(this.newFilter.column)) {
+                    this.filterSelectType = 'valueList';
+                }
+            });
+
+            this.$watch('enabledCols', () => {
+                if (!this._ready) return;
+                $wire.storeColLayout(this.enabledCols);
+            });
+
+            this.$watch('aggregatableCols', () => {
+                if (!this._ready) return;
+                $wire.aggregatableCols = this.aggregatableCols;
+                $wire.applyAggregations();
+            });
+
+            await this.$nextTick();
+            this._ready = true;
         },
     }"
 >
@@ -102,7 +244,7 @@
                 />
                 <x-button
                     :text="__('Save')"
-                    x-on:click="$wire.$parent.saveFilter(filterName, permanent, withEnabledCols).then(() => $tsui.close.modal('save-filter'));"
+                    x-on:click="$wire.saveFilter(filterName, permanent, withEnabledCols).then(() => $tsui.close.modal('save-filter'));"
                 />
             </x-slot>
         </x-modal>
@@ -297,7 +439,7 @@
                 >
                     @if (auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
                         <template
-                            x-if="$wire.$parent.savedFilters?.length > 0"
+                            x-if="$wire.savedFilters?.length > 0"
                         >
                             <div>
                                 <div
@@ -324,7 +466,7 @@
                                         x-data="{ detail: null }"
                                     >
                                         <template
-                                            x-for="(filter, index) in $wire.$parent.savedFilters"
+                                            x-for="(filter, index) in $wire.savedFilters"
                                         >
                                             <div>
                                                 <x-card>
@@ -332,7 +474,7 @@
                                                         <div class="flex gap-2 w-full">
                                                             <x-input
                                                                 x-model="filter.name"
-                                                                x-on:input.debounce="$wire.$parent.updateSavedFilter(filter.id, filter)"
+                                                                x-on:input.debounce="$wire.updateSavedFilter(filter.id, filter)"
                                                             />
                                                             <x-button.circle
                                                                 color="red"
@@ -340,7 +482,7 @@
                                                                 icon="x-mark"
                                                                 x-on:click="
                                                                     savedFilters.splice(savedFilters.indexOf(index), 1);
-                                                                    $wire.$parent.deleteSavedFilter(filter.id)
+                                                                    $wire.deleteSavedFilter(filter.id)
                                                                 "
                                                             />
                                                         </div>
@@ -374,7 +516,7 @@
                                                             <x-button
                                                                 :text="__('Apply')"
                                                                 color="indigo"
-                                                                x-on:click="$wire.$parent.loadFilter(filter.settings), detail = null, showSavedFilters = false"
+                                                                x-on:click="$wire.loadFilter(filter.settings), detail = null, showSavedFilters = false"
                                                             />
                                                             <x-icon
                                                                 name="chevron-left"
@@ -499,7 +641,7 @@
                     >
                         <option value="0">{{ __('This table') }}</option>
                         <template
-                            x-for="relation in $wire.$parent.selectedRelations"
+                            x-for="relation in $wire.selectedRelations"
                         >
                             <option
                                 x-bind:value="relation.name"
@@ -691,8 +833,8 @@
                         {{ __('When using the like or not like filter, you can use the % sign as a placeholder. Examples: "test%" for values that start with "test", "%test" for values that end with "test", and "%test%" for values that contain "test" anywhere.') }}
                     </div>
                     <x-checkbox
-                        x-model="$wire.$parent.withSoftDeletes"
-                        x-on:change="$wire.$parent.$call('startSearch')"
+                        x-model="$wire.withSoftDeletes"
+                        x-on:change="$wire.startSearch()"
                         :label="__('Include deleted')"
                     />
                     <x-button
@@ -794,7 +936,7 @@
                             >
                                 <button
                                     type="button"
-                                    x-on:click="$wire.$parent.sortTable('')"
+                                    x-on:click="$wire.sortTable('')"
                                 >
                                     <x-icon name="x-mark" class="h-4 w-4" />
                                 </button>
@@ -814,7 +956,7 @@
                             >
                                 <button
                                     type="button"
-                                    x-on:click="$wire.$parent.setGroupBy(null)"
+                                    x-on:click="$wire.setGroupBy(null)"
                                 >
                                     <x-icon name="x-mark" class="h-4 w-4" />
                                 </button>
@@ -847,7 +989,7 @@
             <div
                 x-data="{
                     attributes: [],
-                    availableCols: [...$wire.$parent.enabledCols, ...['__placeholder__']],
+                    availableCols: [...$wire.enabledCols, ...['__placeholder__']],
                     addCol(colName) {
                         if (this.availableCols.includes(colName))
                             this.availableCols.splice(this.availableCols.indexOf(colName), 1)
@@ -911,7 +1053,7 @@
                             <x-button
                                 flat
                                 color="indigo"
-                                x-on:click="searchRelations = null; searchColumns = null; $wire.$parent.loadSlug()"
+                                x-on:click="searchRelations = null; searchColumns = null; $wire.loadSlug()"
                             >
                                 <span class="whitespace-nowrap">
                                     {{ __('This table') }}
@@ -920,13 +1062,13 @@
                             <x-icon name="chevron-right" class="h-4 w-4" />
                         </div>
                         <template
-                            x-for="segment in $wire.$parent.displayPath"
+                            x-for="segment in $wire.displayPath"
                         >
                             <div class="flex items-center gap-1.5">
                                 <x-button
                                     flat
                                     color="indigo"
-                                    x-on:click="searchRelations = null; searchColumns = null; $wire.$parent.loadSlug(segment.value)"
+                                    x-on:click="searchRelations = null; searchColumns = null; $wire.loadSlug(segment.value)"
                                 >
                                     <span
                                         class="whitespace-nowrap"
@@ -949,12 +1091,12 @@
                                 />
                             </div>
                             <template
-                                x-for="col in searchable($wire.$parent.selectedCols, searchColumns)"
+                                x-for="col in searchable($wire.selectedCols, searchColumns)"
                             >
                                 <label class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden">
                                     <x-checkbox
                                         sm
-                                        x-bind:checked="$wire.$parent.enabledCols.includes(col.attribute)"
+                                        x-bind:checked="$wire.enabledCols.includes(col.attribute)"
                                         wire:loading.attr="disabled"
                                         x-bind:id="col.attribute"
                                         x-bind:value="col.attribute"
@@ -978,14 +1120,14 @@
                                 />
                             </div>
                             <template
-                                x-for="relation in searchable($wire.$parent.selectedRelations, searchRelations)"
+                                x-for="relation in searchable($wire.selectedRelations, searchRelations)"
                             >
                                 <div
                                     class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden"
                                     x-on:click="
                                         searchRelations = null
                                         searchColumns = null
-                                        $wire.$parent.loadRelation(relation.model, relation.name)
+                                        $wire.loadRelation(relation.model, relation.name)
                                     "
                                 >
                                     <span
@@ -1056,8 +1198,8 @@
             <div class="mb-3 pb-3 border-b border-gray-200 dark:border-secondary-700" x-show="groupBy" x-cloak>
                 <x-label class="mb-2">{{ __('Rows per group') }}</x-label>
                 <x-select.native
-                    x-model="$wire.$parent.groupPerPage"
-                    x-on:change="$wire.$parent.loadData()"
+                    x-model="$wire.groupPerPage"
+                    x-on:change="$wire.loadData()"
                 >
                     <option value="5">5</option>
                     <option value="10">10</option>
@@ -1083,7 +1225,7 @@
                         :label="__('No grouping')"
                         value=""
                         x-bind:checked="! groupBy"
-                        x-on:change="$wire.$parent.setGroupBy(null)"
+                        x-on:change="$wire.setGroupBy(null)"
                     />
                     <x-icon
                         name="view-columns"
@@ -1095,7 +1237,7 @@
                     <x-radio
                         x-bind:value="col"
                         x-bind:checked="groupBy === col"
-                        x-on:change="$wire.$parent.setGroupBy(col)"
+                        x-on:change="$wire.setGroupBy(col)"
                     >
                         <x-slot:label>
                             <span x-text="getLabel(col)"></span>
@@ -1107,34 +1249,31 @@
 
         @if ($this->isExportable)
             <div x-cloak x-show="tab === 'export'">
-                <template x-for="columnName in exportableColumns">
+                @foreach ($this->enabledCols as $col)
                     <div>
-                        <label for="" class="flex items-center">
+                        <label class="flex items-center">
                             <div class="relative flex items-start">
                                 <div class="flex h-5 items-center">
                                     <input
                                         type="checkbox"
                                         class="border-secondary-300 text-primary-600 focus:ring-primary-600 focus:border-primary-400 dark:border-secondary-500 dark:checked:border-secondary-600 dark:focus:ring-secondary-600 dark:focus:border-secondary-500 dark:bg-secondary-600 dark:text-secondary-600 dark:focus:ring-offset-secondary-800 form-checkbox rounded transition duration-100 ease-in-out"
-                                        x-bind:value="columnName"
+                                        value="{{ $col }}"
                                         x-model="exportColumns"
-                                        value="uuid"
                                     />
                                 </div>
                                 <div class="ml-2 text-sm">
-                                    <label
-                                        class="block text-sm font-medium text-gray-700 dark:text-gray-400"
-                                    >
-                                        <span x-text="getLabel(columnName)"></span>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-400">
+                                        {{ $this->colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}
                                     </label>
                                 </div>
                             </div>
                         </label>
                     </div>
-                </template>
+                @endforeach
                 <div class="pt-3">
                     <x-button
                         loading
-                        x-on:click="$wire.$parent.export(exportColumns); $tsui.close.slide('data-table-sidebar-' + $wire.$parent.id.toLowerCase());"
+                        x-on:click="$wire.export(exportColumns); $tsui.close.slide('data-table-sidebar-' + $wire.id.toLowerCase());"
                         color="indigo"
                         class="w-full"
                     >

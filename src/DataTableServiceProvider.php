@@ -27,7 +27,7 @@ class DataTableServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Livewire::component('tall-datatables-options', Options::class);
+        // Options is now a Blade component rendered directly inside DataTable, not a separate Livewire component
         Livewire::component('data-table-filters', DataTableFilters::class);
         Livewire::component('data-table-options-v2', DataTableOptionsV2::class);
         $this->offerPublishing();
