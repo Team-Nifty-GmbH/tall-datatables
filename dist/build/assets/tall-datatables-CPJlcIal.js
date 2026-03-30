@@ -1,1 +1,0 @@
-function e(){return{stickyCols:[],showSelectedActions:!1,init(){this.stickyCols=this.$wire.stickyCols||[]},toggleStickyCol(i){let t=[...this.stickyCols],s=t.indexOf(i);s>-1?t.splice(s,1):t.push(i),this.stickyCols=t,this.$wire.stickyCols=t}}}document.addEventListener("alpine:init",()=>{window.Alpine.data("data_table",e)});

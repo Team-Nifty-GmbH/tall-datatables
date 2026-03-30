@@ -40,6 +40,8 @@ export default function datatable_options(wire) {
         filterIndex: 0,
         showSavedFilters: false,
         exportableColumns: [],
+        selectedCols: [],
+        selectedRelations: [],
         aggregatable: [],
         groupable: [],
         operatorLabels: {},
@@ -308,9 +310,11 @@ export default function datatable_options(wire) {
                 typeof c === 'object' ? c.attribute || c.col : c,
             );
 
+            // Store in both Alpine state and wire proxy
+            this.selectedCols = cols;
+            this.selectedRelations = data.selectedRelations || [];
             wire.selectedCols = cols;
-            wire.selectedRelations =
-                data.selectedRelations || [];
+            wire.selectedRelations = this.selectedRelations;
         },
 
         handleTabNavigate(tab) {

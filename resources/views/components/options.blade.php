@@ -379,7 +379,7 @@
                     >
                         <option value="0">{{ __('This table') }}</option>
                         <template
-                            x-for="relation in $wire.selectedRelations"
+                            x-for="relation in selectedRelations"
                         >
                             <option
                                 x-bind:value="relation.name"
@@ -829,7 +829,7 @@
                                 />
                             </div>
                             <template
-                                x-for="col in searchable($wire.selectedCols, searchColumns)"
+                                x-for="col in searchable(selectedCols, searchColumns)"
                             >
                                 <label class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden">
                                     <x-checkbox
@@ -858,7 +858,7 @@
                                 />
                             </div>
                             <template
-                                x-for="relation in searchable($wire.selectedRelations, searchRelations)"
+                                x-for="relation in searchable(selectedRelations, searchRelations)"
                             >
                                 <div
                                     class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden"
