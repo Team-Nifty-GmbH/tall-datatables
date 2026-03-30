@@ -32,9 +32,16 @@
                 <input
                     type="checkbox"
                     x-on:click.stop
-                    value="{{ $record[$modelKeyName] ?? $index }}"
-                    wire:model.number="selected"
-                    @checked(in_array($record[$modelKeyName] ?? $index, $this->selected))
+                    x-on:change="
+                        let val = {{ $record[$modelKeyName] ?? $index }};
+                        if ($event.target.checked) {
+                            $wire.selected = [...$wire.selected, val];
+                        } else {
+                            $wire.selected = $wire.selected.filter(s => s !== val);
+                            $wire.wildcardSelectExcluded = [...($wire.wildcardSelectExcluded || []), val];
+                        }
+                    "
+                    x-bind:checked="$wire.selected.includes({{ $record[$modelKeyName] ?? $index }})"
                     class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800"
                 />
             </div>
