@@ -44,15 +44,37 @@
                                         :checked="in_array('*', $this->selected)"
                                         sm
                                     />
-                                    <x-button
-                                        color="secondary"
-                                        light
-                                        class="px-1.5 py-1.5"
-                                        x-ref="selectedActions"
-                                        flat
-                                        icon="chevron-down"
-                                        x-on:click="showSelectedActions = !showSelectedActions"
-                                    />
+                                    <div class="relative">
+                                        <x-button
+                                            color="secondary"
+                                            light
+                                            class="px-1.5 py-1.5"
+                                            x-ref="selectedActions"
+                                            flat
+                                            icon="chevron-down"
+                                            x-on:click="showSelectedActions = !showSelectedActions"
+                                        />
+                                        <div
+                                            x-on:click.outside="showSelectedActions = false"
+                                            x-transition:enter="transition duration-200 ease-out"
+                                            x-transition:enter-start="scale-95 opacity-0"
+                                            x-transition:enter-end="scale-100 opacity-100"
+                                            x-transition:leave="transition duration-75 ease-in"
+                                            x-transition:leave-start="scale-100 opacity-100"
+                                            x-transition:leave-end="scale-95 opacity-0"
+                                            class="absolute left-0 top-full z-50 mt-1 min-w-48"
+                                            x-cloak
+                                            x-show="showSelectedActions"
+                                        >
+                                            <x-card x-on:click="showSelectedActions = false;">
+                                                <div class="flex flex-col gap-1.5">
+                                                    @foreach ($selectedActions as $action)
+                                                        {{ $action }}
+                                                    @endforeach
+                                                </div>
+                                            </x-card>
+                                        </div>
+                                    </div>
                                 </div>
                             </x-tall-datatables::table.head-cell>
                         @else
@@ -292,26 +314,4 @@
             </tfoot>
         </table>
     </div>
-    @if ($isSelectable)
-        <div
-            x-on:click.outside="showSelectedActions = false"
-            x-transition:enter="transition duration-200 ease-out"
-            x-transition:enter-start="scale-95 opacity-0"
-            x-transition:enter-end="scale-100 opacity-100"
-            x-transition:leave="transition duration-75 ease-in"
-            x-transition:leave-start="scale-100 opacity-100"
-            x-transition:leave-end="scale-95 opacity-0"
-            class="z-30"
-            x-cloak
-            x-show="showSelectedActions"
-        >
-            <x-card x-on:click="showSelectedActions = false;">
-                <div class="flex flex-col gap-1.5">
-                    @foreach ($selectedActions as $action)
-                        {{ $action }}
-                    @endforeach
-                </div>
-            </x-card>
-        </div>
-    @endif
 </div>
