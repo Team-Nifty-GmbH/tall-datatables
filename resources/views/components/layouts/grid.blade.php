@@ -71,12 +71,12 @@
         class="mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 sm:gap-x-6 md:grid-cols-4 xl:grid-cols-6 xl:gap-x-8 2xl:grid-cols-8"
     >
         <div
-            wire:loading.delay.longer
+            wire:loading.delay.long
             wire:target.except="storeColLayout"
             x-cloak
             class="absolute inset-0 z-10 flex items-center justify-center"
         >
-            <x-loading loading="loadData,sortTable,gotoPage,setPerPage,startSearch,applyUserFilters,loadMore" delay="longest" />
+            <x-loading loading="loadData,sortTable,gotoPage,setPerPage,startSearch,applyUserFilters,loadMore" delay="long" />
         </div>
         @foreach ($this->data['data'] ?? [] as $index => $record)
             <div

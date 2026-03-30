@@ -377,6 +377,7 @@ class DataTable extends Component
 
         $this->renderIsland('body');
         $this->renderIsland('footer');
+        $this->renderIsland('badges');
     }
 
     public function loadFilter(array $properties): void
@@ -464,6 +465,45 @@ class DataTable extends Component
     public function getIslandData(): array
     {
         return $this->getViewData();
+    }
+
+    public function getParsedTextFilters(): \Illuminate\Support\Collection
+    {
+        $textFilters = collect(Arr::dot($this->userFilters['text'] ?? []))->filter();
+
+        return $textFilters->map(function ($value, $col) {
+            if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $value, $matches)) {
+                return ['column' => $col, 'operator' => $matches[1], 'value' => $matches[2]];
+            }
+
+            return ['column' => $col, 'operator' => 'like', 'value' => $value];
+        });
+    }
+
+    public function formatFilterBadgeValue(string $column, string $value): string
+    {
+        $registry = app(Formatters\FormatterRegistry::class);
+        $formatterKey = $this->getFormatters()[$column] ?? null;
+
+        if (! $formatterKey) {
+            $casts = app($this->getModel())->getCasts();
+            $castValue = $casts[$column] ?? null;
+            $formatterKey = is_array($castValue) ? ($castValue[0] ?? null) : $castValue;
+        }
+
+        if (! $formatterKey) {
+            return $value;
+        }
+
+        try {
+            $formatter = $registry->resolve($formatterKey);
+            $numericValue = is_numeric($value) ? (float) $value : $value;
+            $formatted = $formatter->format($numericValue, []);
+
+            return strip_tags(is_array($formatted) ? ($formatted['display'] ?? $formatted['raw'] ?? $value) : $formatted);
+        } catch (\Throwable) {
+            return $value;
+        }
     }
 
     protected function compileActions(string $type): array
