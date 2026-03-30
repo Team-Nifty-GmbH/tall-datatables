@@ -1,240 +1,11 @@
 <div
     class="mt-2"
-    x-data="{
-        searchRelations: null,
-        searchColumns: null,
-        searchAggregatable: null,
-        searchGroupable: null,
-        dateCalculation: 0,
-        filterName: '',
-        permanent: false,
-        withEnabledCols: true,
-        tab: 'edit-filters',
-        sortCols: [],
-        newFilter: {column: '', operator: '', value: [''], relation: ''},
-        newFilterCalculation: {operator: '-', value: 1, unit: 'days', is_start_of: null, start_of: null},
-        filters: $wire.userFilters || [],
-        enabledCols: $wire.enabledCols || [],
-        filterValueLists: $wire.filterValueLists || {},
-        groupBy: $wire.groupBy || null,
-        orderByCol: $wire.userOrderBy || '',
-        orderAsc: $wire.userOrderAsc ?? true,
-        aggregatable: {{ Js::from($this->getAggregatable()) }},
-        aggregatableCols: $wire.aggregatableCols || {sum: [], avg: [], min: [], max: []},
-        groupable: {{ Js::from($this->getGroupableCols()) }},
-        exportColumns: [],
-        relationTableFields: {},
-        filterSelectType: 'text',
-        filterIndex: 0,
-        showSavedFilters: false,
-        exportableColumns: [],
-        operatorLabels: {{ Js::from($this->getOperatorLabels()) }},
-        searchable(items, search) {
-            if (!items || !search) return items || [];
-            if (Array.isArray(items)) {
-                return items.filter(item => {
-                    const label = typeof item === 'object' ? (item.label || item.col || '') : item;
-                    return label.toLowerCase().includes(search.toLowerCase());
-                });
-            }
-            return Object.fromEntries(
-                Object.entries(items).filter(([key, val]) => {
-                    const label = typeof val === 'object' ? (val.label || val.name || key) : key;
-                    return label.toLowerCase().includes(search.toLowerCase());
-                })
-            );
-        },
-        getLabel(col) {
-            if (!col) return '';
-            const labels = $wire.colLabels || {};
-            return labels[col] || col.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')).join(' \u2192 ');
-        },
-        getFilterInputType(col) {
-            if (!col || col === '.') return 'text';
-            const parts = col.split('.');
-            const table = parts.length > 1 ? (parts[0] || 'self') : 'self';
-            const column = parts.length > 1 ? parts[1] : parts[0];
-            const formatter = this.relationFormatters?.[table]?.[column] ?? null;
-            if (!formatter) return 'text';
-            if (formatter === 'date' || formatter === 'datetime' || formatter === 'immutable_date' || formatter === 'immutable_datetime') return 'date';
-            if (formatter === 'integer' || formatter === 'int' || formatter === 'float' || formatter === 'double' || formatter === 'decimal') return 'number';
-            return 'text';
-        },
-        getCalculationLabel(calc) {
-            if (!calc) return '';
-            return (calc.operator || '') + ' ' + (calc.value || '') + ' ' + (calc.unit || '');
-        },
-        filterBadge(filter) {
-            if (!filter) return '';
-            const label = this.getLabel(filter.column) ?? filter.column;
-            let value = filter.value;
-            const listItem = (this.filterValueLists[filter.column] || []).find(item => item.value == value);
-            if (listItem) value = listItem.label;
-            if (Array.isArray(value)) {
-                value = value.map(item => {
-                    if (item && typeof item === 'object' && item.hasOwnProperty('calculation')) {
-                        return this.getCalculationLabel(item.calculation);
-                    }
-                    return item;
-                }).join(' ' + (this.operatorLabels.and || '&') + ' ');
-            }
-            return label + ' ' + (this.operatorLabels[filter.operator] || filter.operator) + ' ' + value;
-        },
-        addFilter() {
-            let newFilter = {...this.newFilter};
-            let filters = Array.isArray(this.filters) ? [...this.filters] : [];
-            if (filters.length === 0) {
-                filters.push([]);
-                this.filterIndex = 0;
-            }
-            newFilter.operator = newFilter.operator || '=';
-            if (newFilter.relation && newFilter.relation !== '0') {
-                newFilter.column = newFilter.relation + '.' + newFilter.column;
-                newFilter.relation = '';
-            }
-            filters[this.filterIndex] = [...(filters[this.filterIndex] || []), newFilter];
-            this.filters = filters;
-            this.syncFilters();
-            this.resetFilter();
-            this.$nextTick(() => this.$refs.filterColumn?.focus());
-        },
-        addOrFilter() {
-            if (this.filters.length > 0 && this.filters[this.filters.length - 1].length === 0) {
-                this.filterIndex = this.filters.length - 1;
-                return;
-            }
-            this.filterIndex = this.filters.length;
-            this.filters = [...this.filters, []];
-        },
-        removeFilter(index, groupIndex) {
-            const filters = this.filters.map(group => [...group]);
-            if (filters[groupIndex] && index >= 0 && index < filters[groupIndex].length) {
-                filters[groupIndex].splice(index, 1);
-                if (filters[groupIndex].length === 0) {
-                    filters.splice(groupIndex, 1);
-                }
-                this.filters = filters;
-                this.syncFilters();
-            }
-        },
-        removeFilterGroup(index) {
-            if (index >= 0 && index < this.filters.length) {
-                this.filters = this.filters.filter((_, i) => i !== index);
-                this.syncFilters();
-            }
-        },
-        resetFilter() {
-            this.filterSelectType = 'text';
-            this.newFilter = {column: '', operator: '=', value: [''], relation: ''};
-        },
-        syncFilters() {
-            $wire.userFilters = this.filters;
-            $wire.applyUserFilters();
-        },
-        addCalculation(index) {
-            if (!this.newFilter.value[index]) {
-                this.newFilter.value[index] = {};
-            }
-            this.newFilter.value[index] = {calculation: {...this.newFilterCalculation}};
-            this.newFilterCalculation = {operator: '-', value: 1, unit: 'days', is_start_of: null, start_of: null};
-        },
-        columnSortHandle(item, position) {
-            const oldIndex = this.enabledCols.indexOf(item);
-            if (oldIndex === -1) return;
-            const cols = [...this.enabledCols];
-            const [movedItem] = cols.splice(oldIndex, 1);
-            cols.splice(position, 0, movedItem);
-            this.enabledCols = cols;
-            $wire.enabledCols = cols;
-            $wire.storeColLayout(cols);
-        },
-        resetLayout() {
-            this._ready = false;
-            $wire.resetLayout().then(() => {
-                this.enabledCols = $wire.enabledCols || [];
-                this.$nextTick(() => { this._ready = true; });
-            });
-        },
-        loadFilterable() {
-            // v2: filter columns are loaded from parent's filterValueLists
-            this.filterValueLists = $wire.filterValueLists || {};
-        },
-        getColumns() {
-            $wire.getExportableColumns().then(result => {
-                this.exportableColumns = result;
-                this.exportColumns = this.enabledCols;
-            });
-        },
-        relationFormatters: {},
-        _ready: false,
-        async loadSidebarData() {
-            if (this._sidebarLoaded) return;
-            this._sidebarLoaded = true;
-
-            const data = await $wire.getSidebarData();
-            const cols = data.selectedCols || [];
-            this.relationTableFields['self'] = cols.map(c => typeof c === 'object' ? c.attribute || c.col : c);
-
-            // Push into $wire so templates referencing $wire.selectedCols/Relations work
-            $wire.selectedCols = cols;
-            $wire.selectedRelations = data.selectedRelations || [];
-        },
-        async init() {
-            this.enabledCols = $wire.enabledCols || [];
-            this.filters = Array.isArray($wire.userFilters) ? $wire.userFilters : [];
-            this.filterValueLists = $wire.filterValueLists || {};
-            this.groupBy = $wire.groupBy || null;
-            this.orderByCol = $wire.userOrderBy || '';
-            this.orderAsc = $wire.userOrderAsc ?? true;
-            this.aggregatableCols = $wire.aggregatableCols || {sum: [], avg: [], min: [], max: []};
-            this.exportColumns = this.enabledCols;
-            this.exportableColumns = this.enabledCols;
-            this._sidebarLoaded = false;
-            this.loadSidebarData();
-
-
-            this.$watch('newFilter.column', () => {
-                if (!this.newFilter.column) return;
-                if (this.filterValueLists.hasOwnProperty(this.newFilter.column)) {
-                    this.filterSelectType = 'valueList';
-                    this.newFilter.operator = '=';
-                } else {
-                    this.filterSelectType = 'text';
-                }
-            });
-
-            this.$watch('newFilter.operator', () => {
-                if (this.newFilter.operator === 'is null' || this.newFilter.operator === 'is not null') {
-                    this.filterSelectType = 'none';
-                } else if (this.filterValueLists.hasOwnProperty(this.newFilter.column)) {
-                    this.filterSelectType = 'valueList';
-                }
-            });
-
-            this.$watch('newFilter.relation', async (value) => {
-                const key = value === '' || value === '0' ? 'self' : value;
-                if (!this.relationTableFields[key]) {
-                    await $wire.loadSlug(value === '0' ? null : value);
-                    const cols = $wire.selectedCols || [];
-                    this.relationTableFields[key] = cols.map(c => typeof c === 'object' ? c.attribute || c.col : c);
-                }
-            });
-
-            this.$watch('enabledCols', () => {
-                if (!this._ready) return;
-                $wire.storeColLayout(this.enabledCols);
-            });
-
-            this.$watch('aggregatableCols', () => {
-                if (!this._ready) return;
-                $wire.aggregatableCols = this.aggregatableCols;
-                $wire.applyAggregations();
-            });
-
-            await this.$nextTick();
-            this._ready = true;
-        },
-    }"
+    x-data="datatableOptions($wire)"
+    x-init="
+        aggregatable = {{ Js::from($this->getAggregatable()) }};
+        groupable = {{ Js::from($this->getGroupableCols()) }};
+        operatorLabels = {{ Js::from($this->getOperatorLabels()) }};
+    "
 >
     @if (auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
         <x-modal
@@ -393,70 +164,13 @@
         </x-modal>
     @endif
 
-    <div class="pb-2.5">
-        <div class="dark:border-secondary-700 border-b border-gray-200">
-            <nav class="soft-scrollbar flex gap-x-8 overflow-x-auto">
-                @if ($this->isFilterable)
-                    <button
-                        wire:loading.attr="disabled"
-                        x-on:click.prevent="loadSidebarData(); tab = 'edit-filters'"
-                        x-bind:class="{
-                            'border-indigo-500! text-indigo-600': tab === 'edit-filters',
-                        }"
-                        class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
-                    >
-                        {{ __('Filters') }}
-                    </button>
-                @endif
-
-                <button
-                    wire:loading.attr="disabled"
-                    x-on:click.prevent="loadSidebarData(); sortCols = enabledCols; tab = 'columns';"
-                    x-bind:class="{ 'border-indigo-500! text-indigo-600': tab === 'columns' }"
-                    class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
-                >
-                    {{ __('Columns') }}
-                </button>
-
-                @if ($this->aggregatable)
-                    <button
-                        wire:loading.attr="disabled"
-                        x-on:click.prevent="sortCols = enabledCols; tab = 'summarize';"
-                        x-bind:class="{ 'border-indigo-500! text-indigo-600': tab === 'summarize' }"
-                        class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
-                    >
-                        {{ __('Summarize') }}
-                    </button>
-                @endif
-
-                <button
-                    wire:loading.attr="disabled"
-                    x-on:click.prevent="tab = 'grouping';"
-                    x-bind:class="{ 'border-indigo-500! text-indigo-600': tab === 'grouping' }"
-                    class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
-                >
-                    {{ __('Group') }}
-                </button>
-                @if ($this->isExportable)
-                    <button
-                        wire:loading.attr="disabled"
-                        x-on:click.prevent="
-                            loadSidebarData();
-                            getColumns();
-                            tab = 'export';
-                        "
-                        x-bind:class="{ 'border-indigo-500! text-indigo-600': tab === 'export' }"
-                        class="cursor-pointer border-b-2 border-transparent px-1 py-4 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-50"
-                    >
-                        {{ __('Export') }}
-                    </button>
-                @endif
-            </nav>
-        </div>
-    </div>
-    <div class="relative">
+    <x-tab
+        :selected="$this->isFilterable ? 'edit-filters' : 'columns'"
+        scroll-on-mobile
+        x-on:navigate="handleTabNavigate($event.detail.select)"
+    >
         @if ($this->isFilterable)
-            <div x-cloak x-show="tab === 'edit-filters'">
+            <x-tab.items tab="edit-filters" :title="__('Filters')">
                 <form
                     class="grid grid-cols-1 gap-3"
                     x-on:submit.prevent="addFilter()"
@@ -1006,10 +720,10 @@
                         </x-button>
                     @endif
                 </div>
-            </div>
+            </x-tab.items>
         @endif
 
-        <div x-cloak x-show="tab === 'columns'">
+        <x-tab.items tab="columns" :title="__('Columns')">
             <div
                 x-data="{
                     attributes: [],
@@ -1168,10 +882,10 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </x-tab.items>
 
         @if ($this->aggregatable)
-            <div x-cloak x-show="tab === 'summarize'">
+            <x-tab.items tab="summarize" :title="__('Summarize')">
                 <div class="pb-2">
                     <x-input
                         type="search"
@@ -1215,10 +929,10 @@
                         </div>
                     </template>
                 </div>
-            </div>
+            </x-tab.items>
         @endif
 
-        <div x-cloak x-show="tab === 'grouping'" x-data="{ searchGroupable: null }">
+        <x-tab.items tab="grouping" :title="__('Group')">
             <div class="mb-3 pb-3 border-b border-gray-200 dark:border-secondary-700" x-show="groupBy" x-cloak>
                 <x-label class="mb-2">{{ __('Rows per group') }}</x-label>
                 <x-select.native
@@ -1269,10 +983,10 @@
                     </x-radio>
                 </template>
             </div>
-        </div>
+        </x-tab.items>
 
         @if ($this->isExportable)
-            <div x-cloak x-show="tab === 'export'">
+            <x-tab.items tab="export" :title="__('Export')">
                 @foreach ($this->enabledCols as $col)
                     <div>
                         <label class="flex items-center">
@@ -1304,7 +1018,7 @@
                         {{ __('Export') }}
                     </x-button>
                 </div>
-            </div>
+            </x-tab.items>
         @endif
-    </div>
+    </x-tab>
 </div>
