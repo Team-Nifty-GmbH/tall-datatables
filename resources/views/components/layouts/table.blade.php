@@ -17,7 +17,7 @@
     'allowSoftDeletes' => false,
     'showRestoreButton' => false,
 ])
-<div class="mt-3 flex flex-col">
+<div class="mt-3 flex flex-col" x-data="{ showSelectedActions: false }">
     <div class="relative overflow-x-auto shadow ring-1 ring-black/5 sm:rounded-lg">
         <table class="dark:divide-secondary-700 dark:bg-secondary-800 min-w-full table-auto border-collapse divide-y divide-gray-300 rounded-md bg-white text-gray-500 dark:text-gray-50">
             <thead class="font-semibold" style="z-index: 9">
@@ -51,7 +51,7 @@
                                         x-ref="selectedActions"
                                         flat
                                         icon="chevron-down"
-                                        x-on:click="$wire.selected.length > 0 ? showSelectedActions = true : null"
+                                        x-on:click="showSelectedActions = !showSelectedActions"
                                     />
                                 </div>
                             </x-tall-datatables::table.head-cell>
