@@ -56,6 +56,7 @@
     x-cloak
     x-show="
         Object.keys($wire.userFilters).filter(k => k !== 'text').length > 0 ||
+            JSON.stringify($wire.userFilters?.text || {}).length > 2 ||
             $wire.userOrderBy !== '' ||
             $wire.groupBy ||
             Object.keys($wire.sessionFilter).length !== 0 ||
@@ -76,6 +77,22 @@
             </x-slot>
         </x-badge>
     </div>
+    @foreach (collect(\Illuminate\Support\Arr::dot($this->userFilters['text'] ?? []))->filter() as $col => $value)
+        <div>
+            <x-badge light flat color="sky">
+                <x-slot:text>
+                    <span>{{ $this->colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}</span>
+                    &nbsp;=&nbsp;
+                    <span>{{ $value }}</span>
+                </x-slot>
+                <x-slot name="right" class="relative flex h-2 w-2 items-center">
+                    <button type="button" wire:click="$set('userFilters.text.{{ $col }}', '')">
+                        <x-icon name="x-mark" class="h-4 w-4" />
+                    </button>
+                </x-slot>
+            </x-badge>
+        </div>
+    @endforeach
     <div x-show="Object.keys($wire.sessionFilter).length !== 0" x-cloak>
         <div
             class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 pr-6.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
