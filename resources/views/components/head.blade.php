@@ -104,10 +104,11 @@
                                             $registry = app(\TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry::class);
                                             $customFormatters = $this->getFormatters();
                                             $formatterKey = $customFormatters[$filter['column']] ?? null;
-                                            if ($formatterKey) {
+                                            if ($formatterKey && $filter['operator'] !== 'like') {
                                                 try {
                                                     $formatter = $registry->resolve($formatterKey);
-                                                    $formatted = $formatter->format($displayValue, []);
+                                                    $numericValue = is_numeric($displayValue) ? (float) $displayValue : $displayValue;
+                                                    $formatted = $formatter->format($numericValue, []);
                                                     $displayValue = is_array($formatted) ? ($formatted['display'] ?? $formatted['raw'] ?? $displayValue) : $formatted;
                                                 } catch (\Throwable) {}
                                             }

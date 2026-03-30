@@ -74,9 +74,9 @@
             wire:loading.delay.longer
             wire:target.except="storeColLayout"
             x-cloak
-            class="absolute top-0 right-0 bottom-0 w-full"
+            class="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm bg-white/30 dark:bg-secondary-800/30"
         >
-            <x-tall-datatables::spinner />
+            <x-loading loading="loadData,sortTable,gotoPage,setPerPage,startSearch,applyUserFilters,loadMore" delay="longest" />
         </div>
         @foreach ($this->data['data'] ?? [] as $index => $record)
             <div
