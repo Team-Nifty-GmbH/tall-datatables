@@ -26,8 +26,7 @@
                         @if ($isSelectable)
                             <x-tall-datatables::table.head-cell class="min-w-24 px-0! py-0!">
                                 <div class="flex items-center justify-center gap-1.5">
-                                    <input
-                                        type="checkbox"
+                                    <x-checkbox
                                         value="*"
                                         x-on:change="
                                             if ($event.target.checked) {
@@ -42,8 +41,8 @@
                                                 $wire.wildcardSelectExcluded = [];
                                             }
                                         "
-                                        @checked(in_array('*', $this->selected))
-                                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800"
+                                        :checked="in_array('*', $this->selected)"
+                                        sm
                                     />
                                     <x-button
                                         color="secondary"

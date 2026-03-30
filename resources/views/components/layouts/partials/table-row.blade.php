@@ -29,20 +29,11 @@
             <div
                 {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}
             >
-                <input
-                    type="checkbox"
+                <x-checkbox
                     x-on:click.stop
-                    x-on:change="
-                        let val = {{ $record[$modelKeyName] ?? $index }};
-                        if ($event.target.checked) {
-                            $wire.selected = [...$wire.selected, val];
-                        } else {
-                            $wire.selected = $wire.selected.filter(s => s !== val);
-                            $wire.wildcardSelectExcluded = [...($wire.wildcardSelectExcluded || []), val];
-                        }
-                    "
-                    x-bind:checked="$wire.selected.includes({{ $record[$modelKeyName] ?? $index }})"
-                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800"
+                    value="{{ $record[$modelKeyName] ?? $index }}"
+                    wire:model.number="selected"
+                    sm
                 />
             </div>
         </td>
