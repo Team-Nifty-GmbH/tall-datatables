@@ -178,6 +178,10 @@
             this.exportColumns = this.enabledCols;
             this.exportableColumns = this.enabledCols;
 
+            // Populate relationTableFields from selectedCols for the filter column datalist
+            const cols = $wire.selectedCols || [];
+            this.relationTableFields['self'] = cols.map(c => typeof c === 'object' ? c.attribute || c.col : c);
+
 
             this.$watch('newFilter.column', () => {
                 if (!this.newFilter.column) return;
@@ -194,6 +198,15 @@
                     this.filterSelectType = 'none';
                 } else if (this.filterValueLists.hasOwnProperty(this.newFilter.column)) {
                     this.filterSelectType = 'valueList';
+                }
+            });
+
+            this.$watch('newFilter.relation', async (value) => {
+                const key = value === '' || value === '0' ? 'self' : value;
+                if (!this.relationTableFields[key]) {
+                    await $wire.loadSlug(value === '0' ? null : value);
+                    const cols = $wire.selectedCols || [];
+                    this.relationTableFields[key] = cols.map(c => typeof c === 'object' ? c.attribute || c.col : c);
                 }
             });
 
