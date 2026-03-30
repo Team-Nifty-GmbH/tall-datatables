@@ -74,7 +74,7 @@
             wire:loading.delay.longer
             wire:target.except="storeColLayout"
             x-cloak
-            class="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm bg-white/30 dark:bg-secondary-800/30"
+            class="absolute inset-0 z-10 flex items-center justify-center"
         >
             <x-loading loading="loadData,sortTable,gotoPage,setPerPage,startSearch,applyUserFilters,loadMore" delay="longest" />
         </div>

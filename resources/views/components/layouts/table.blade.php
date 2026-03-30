@@ -182,7 +182,7 @@
                     class="absolute top-0 right-0 bottom-0 left-0 z-10"
                 >
                     <td>
-                        <div class="absolute inset-0 flex items-center justify-center backdrop-blur-sm bg-white/30 dark:bg-secondary-800/30">
+                        <div class="absolute inset-0 flex items-center justify-center">
                             <x-loading loading="loadData,sortTable,gotoPage,setPerPage,startSearch,applyUserFilters,loadMore" delay="longest" />
                         </div>
                     </td>

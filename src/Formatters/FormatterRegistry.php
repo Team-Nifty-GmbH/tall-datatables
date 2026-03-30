@@ -22,6 +22,16 @@ class FormatterRegistry
             return $this->registry[$castClass];
         }
 
+        // Try class basename for FQCN casts like FluxErp\Casts\Money → Money
+        if (str_contains($castClass, '\\')) {
+            $baseName = class_basename($castClass);
+            if (isset($this->registry[$baseName])) {
+                return $this->registry[$baseName];
+            }
+
+            return $this->autoDetect($baseName);
+        }
+
         return $this->autoDetect($castClass);
     }
 

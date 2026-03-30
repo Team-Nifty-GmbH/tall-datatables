@@ -56,7 +56,7 @@
     x-cloak
     x-show="
         Object.keys($wire.userFilters).filter(k => k !== 'text').length > 0 ||
-            JSON.stringify($wire.userFilters?.text || {}).length > 2 ||
+            (function hasValues(obj) { if (!obj) return false; for (const v of Object.values(obj)) { if (typeof v === 'object' && v !== null ? hasValues(v) : v !== '' && v !== null) return true; } return false; })($wire.userFilters?.text) ||
             $wire.userOrderBy !== '' ||
             $wire.groupBy ||
             Object.keys($wire.sessionFilter).length !== 0 ||
@@ -101,15 +101,26 @@
                                         {{ __($filter['operator']) }}
                                         @php
                                             $displayValue = $filter['value'];
-                                            $registry = app(\TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry::class);
-                                            $customFormatters = $this->getFormatters();
-                                            $formatterKey = $customFormatters[$filter['column']] ?? null;
-                                            if ($formatterKey && $filter['operator'] !== 'like') {
+                                            if ($filter['operator'] !== 'like') {
                                                 try {
-                                                    $formatter = $registry->resolve($formatterKey);
-                                                    $numericValue = is_numeric($displayValue) ? (float) $displayValue : $displayValue;
-                                                    $formatted = $formatter->format($numericValue, []);
-                                                    $displayValue = is_array($formatted) ? ($formatted['display'] ?? $formatted['raw'] ?? $displayValue) : $formatted;
+                                                    $registry = app(\TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry::class);
+                                                    $customFormatters = $this->getFormatters();
+                                                    $formatterKey = $customFormatters[$filter['column']] ?? null;
+
+                                                    // Fallback: check model casts if formatters don't have it
+                                                    if (! $formatterKey) {
+                                                        $model = app($this->getModel());
+                                                        $casts = $model->getCasts();
+                                                        $castValue = $casts[$filter['column']] ?? null;
+                                                        $formatterKey = is_array($castValue) ? ($castValue[0] ?? null) : $castValue;
+                                                    }
+
+                                                    if ($formatterKey) {
+                                                        $formatter = $registry->resolve($formatterKey);
+                                                        $numericValue = is_numeric($displayValue) ? (float) $displayValue : $displayValue;
+                                                        $formatted = $formatter->format($numericValue, []);
+                                                        $displayValue = is_array($formatted) ? ($formatted['display'] ?? $formatted['raw'] ?? $displayValue) : $formatted;
+                                                    }
                                                 } catch (\Throwable) {}
                                             }
                                         @endphp
