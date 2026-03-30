@@ -77,22 +77,45 @@
             </x-slot>
         </x-badge>
     </div>
-    @foreach (collect(\Illuminate\Support\Arr::dot($this->userFilters['text'] ?? []))->filter() as $col => $value)
-        <div>
-            <x-badge light flat color="sky">
-                <x-slot:text>
-                    <span>{{ $this->colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}</span>
-                    &nbsp;=&nbsp;
-                    <span>{{ $value }}</span>
-                </x-slot>
-                <x-slot name="right" class="relative flex h-2 w-2 items-center">
-                    <button type="button" wire:click="$set('userFilters.text.{{ $col }}', '')">
-                        <x-icon name="x-mark" class="h-4 w-4" />
-                    </button>
-                </x-slot>
-            </x-badge>
+    @php $textFilters = collect(\Illuminate\Support\Arr::dot($this->userFilters['text'] ?? []))->filter(); @endphp
+    @if ($textFilters->isNotEmpty())
+        <div class="flex items-center justify-center">
+            <div
+                class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 ring-1 ring-slate-700/10"
+            >
+                <div class="flex justify-between">
+                    <div class="flex gap-1 pt-1">
+                        @foreach ($textFilters as $col => $value)
+                            <div>
+                                <x-badge flat light color="sky">
+                                    <x-slot:text>
+                                        {{ $this->colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}
+                                        =
+                                        {{ $value }}
+                                    </x-slot>
+                                </x-badge>
+                                @if (! $loop->last)
+                                    <x-badge
+                                        flat
+                                        color="red"
+                                        :text="__('and')"
+                                    />
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="top-0.5 right-0.5">
+                    <x-button.circle
+                        color="red"
+                        sm
+                        icon="x-mark"
+                        wire:click="$set('userFilters.text', [])"
+                    />
+                </div>
+            </div>
         </div>
-    @endforeach
+    @endif
     <div x-show="Object.keys($wire.sessionFilter).length !== 0" x-cloak>
         <div
             class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 pr-6.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
