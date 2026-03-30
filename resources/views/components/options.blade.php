@@ -11,7 +11,7 @@
         withEnabledCols: true,
         tab: 'edit-filters',
         sortCols: [],
-        newFilter: {column: '', operator: '=', value: [''], relation: ''},
+        newFilter: {column: '', operator: '', value: [''], relation: ''},
         newFilterCalculation: {operator: '-', value: 1, unit: 'days', is_start_of: null, start_of: null},
         filters: $wire.userFilters || [],
         enabledCols: $wire.enabledCols || [],
