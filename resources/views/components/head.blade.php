@@ -77,21 +77,42 @@
             </x-slot>
         </x-badge>
     </div>
-    @php $textFilters = collect(\Illuminate\Support\Arr::dot($this->userFilters['text'] ?? []))->filter(); @endphp
-    @if ($textFilters->isNotEmpty())
+    @php
+        $textFilters = collect(\Illuminate\Support\Arr::dot($this->userFilters['text'] ?? []))->filter();
+        $parsedTextFilters = $textFilters->map(function ($value, $col) {
+            if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $value, $matches)) {
+                return ['column' => $col, 'operator' => $matches[1], 'value' => $matches[2], 'raw' => $value];
+            }
+            return ['column' => $col, 'operator' => 'like', 'value' => $value, 'raw' => $value];
+        });
+    @endphp
+    @if ($parsedTextFilters->isNotEmpty())
         <div class="flex items-center justify-center">
             <div
                 class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50 ring-1 ring-slate-700/10"
             >
                 <div class="flex justify-between">
                     <div class="flex gap-1 pt-1">
-                        @foreach ($textFilters as $col => $value)
+                        @foreach ($parsedTextFilters as $filter)
                             <div>
                                 <x-badge flat light color="sky">
                                     <x-slot:text>
-                                        {{ $this->colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}
-                                        =
-                                        {{ $value }}
+                                        {{ $this->colLabels[$filter['column']] ?? \Illuminate\Support\Str::headline($filter['column']) }}
+                                        {{ $filter['operator'] }}
+                                        @php
+                                            $displayValue = $filter['value'];
+                                            $registry = app(\TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry::class);
+                                            $customFormatters = $this->getFormatters();
+                                            $formatterKey = $customFormatters[$filter['column']] ?? null;
+                                            if ($formatterKey) {
+                                                try {
+                                                    $formatter = $registry->resolve($formatterKey);
+                                                    $formatted = $formatter->format($displayValue, []);
+                                                    $displayValue = is_array($formatted) ? ($formatted['display'] ?? $formatted['raw'] ?? $displayValue) : $formatted;
+                                                } catch (\Throwable) {}
+                                            }
+                                        @endphp
+                                        {{ strip_tags($displayValue) }}
                                     </x-slot>
                                 </x-badge>
                                 @if (! $loop->last)

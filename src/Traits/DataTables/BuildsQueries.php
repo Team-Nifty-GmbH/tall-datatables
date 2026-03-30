@@ -516,11 +516,9 @@ trait BuildsQueries
                         continue;
                     }
 
-                    $this->addFilter($query, 0, [
-                        'column' => $column,
-                        'operator' => 'like',
-                        'value' => '%' . $value . '%',
-                    ]);
+                    $filter = $this->parseTextFilterValue($value, $column);
+
+                    $this->addFilter($query, 0, $filter);
                 }
             });
         }
@@ -581,6 +579,66 @@ trait BuildsQueries
                 }
             }
         });
+    }
+
+    private function parseTextFilterValue(string $value, string $column): array
+    {
+        // Support operator prefixes: >=, <=, !=, >, <, =
+        if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $value, $matches)) {
+            $filterValue = $this->normalizeNumericValue($matches[2]);
+
+            return [
+                'column' => $column,
+                'operator' => $matches[1],
+                'value' => $filterValue,
+            ];
+        }
+
+        return [
+            'column' => $column,
+            'operator' => 'like',
+            'value' => '%' . $value . '%',
+        ];
+    }
+
+    private function normalizeNumericValue(string $value): string|float
+    {
+        $trimmed = trim($value);
+
+        // Already valid numeric (English format or integer)
+        if (is_numeric($trimmed)) {
+            return (float) $trimmed;
+        }
+
+        // Detect which separator is the decimal: the LAST comma or dot
+        $lastComma = strrpos($trimmed, ',');
+        $lastDot = strrpos($trimmed, '.');
+
+        if ($lastComma !== false && $lastDot !== false) {
+            // Both present — last one is the decimal separator
+            if ($lastComma > $lastDot) {
+                // 1.234,56 → comma is decimal
+                $normalized = str_replace('.', '', $trimmed);
+                $normalized = str_replace(',', '.', $normalized);
+            } else {
+                // 1,234.56 → dot is decimal
+                $normalized = str_replace(',', '', $trimmed);
+            }
+
+            return is_numeric($normalized) ? (float) $normalized : $trimmed;
+        }
+
+        if ($lastComma !== false) {
+            // Only comma: treat as decimal if 1-2 digits follow (39,99 → 39.99)
+            $afterComma = substr($trimmed, $lastComma + 1);
+            if (strlen($afterComma) <= 2) {
+                $normalized = str_replace(',', '.', $trimmed);
+
+                return is_numeric($normalized) ? (float) $normalized : $trimmed;
+            }
+        }
+
+        return $trimmed;
     }
 
     private function applyFilterWhere(Builder $builder, array $filter): Builder
