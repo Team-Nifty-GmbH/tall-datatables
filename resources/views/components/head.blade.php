@@ -115,6 +115,11 @@
                 </div>
             </div>
         </div>
+        @if ($textFilters->isNotEmpty() && collect($this->userFilters)->forget('text')->isNotEmpty())
+            <div class="pl-1">
+                <x-badge flat color="red" :text="__('and')" />
+            </div>
+        @endif
     @endif
     <div x-show="Object.keys($wire.sessionFilter).length !== 0" x-cloak>
         <div
