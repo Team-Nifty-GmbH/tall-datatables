@@ -24,6 +24,14 @@ trait SupportsAggregation
 
     public function applyAggregations(): void
     {
+        $allAggregatedCols = collect($this->aggregatableCols)->flatten()->unique()->values()->toArray();
+        $missing = array_diff($allAggregatedCols, $this->enabledCols);
+
+        if (! empty($missing)) {
+            $this->enabledCols = array_values(array_unique(array_merge($this->enabledCols, $missing)));
+            $this->colLabels = $this->getColLabels();
+        }
+
         $this->cacheState();
         $this->loadData();
     }

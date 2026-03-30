@@ -180,6 +180,7 @@ trait StoresSettings
         );
     }
 
+    #[Renderless]
     public function storeColLayout(array $cols): void
     {
         $this->enabledCols = $cols;

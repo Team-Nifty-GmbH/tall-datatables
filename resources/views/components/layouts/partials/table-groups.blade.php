@@ -38,7 +38,7 @@
                     <div class="flex gap-3 text-sm text-gray-500 dark:text-gray-400">
                         @foreach ($group['aggregates'] as $type => $values)
                             @foreach ($values as $col => $value)
-                                <span>{{ \Illuminate\Support\Str::headline($type) }}: {{ $value }}</span>
+                                <span>{{ __(ucfirst($type)) }}: {!! is_array($value) ? ($value['display'] ?? e($value['raw'] ?? '')) : e($value) !!}</span>
                             @endforeach
                         @endforeach
                     </div>

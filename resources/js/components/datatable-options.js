@@ -42,6 +42,7 @@ export default function datatable_options(wire) {
         exportableColumns: [],
         selectedCols: [],
         selectedRelations: [],
+        displayPath: [],
         aggregatable: [],
         groupable: [],
         operatorLabels: {},
@@ -56,7 +57,7 @@ export default function datatable_options(wire) {
                     const label =
                         typeof item === 'object'
                             ? item.label || item.col || ''
-                            : item;
+                            : this.getLabel(item);
                     return label
                         .toLowerCase()
                         .includes(search.toLowerCase());
@@ -67,7 +68,7 @@ export default function datatable_options(wire) {
                     const label =
                         typeof val === 'object'
                             ? val.label || val.name || key
-                            : key;
+                            : this.getLabel(key);
                     return label
                         .toLowerCase()
                         .includes(search.toLowerCase());
@@ -241,7 +242,7 @@ export default function datatable_options(wire) {
             this.filterSelectType = 'text';
             this.newFilter = {
                 column: '',
-                operator: '=',
+                operator: '',
                 value: [''],
                 relation: '',
             };
@@ -283,6 +284,8 @@ export default function datatable_options(wire) {
             this._ready = false;
             wire.resetLayout().then(() => {
                 this.enabledCols = wire.enabledCols || [];
+                this._sidebarLoaded = false;
+                this.loadSidebarData();
                 this.$nextTick(() => {
                     this._ready = true;
                 });
@@ -354,8 +357,31 @@ export default function datatable_options(wire) {
                 };
             this.exportColumns = this.enabledCols;
             this.exportableColumns = this.enabledCols;
-            this._sidebarLoaded = false;
-            this.loadSidebarData();
+            this.selectedCols =
+                wire.selectedCols?.length
+                    ? wire.selectedCols
+                    : this.selectedCols;
+            this.selectedRelations =
+                Object.keys(wire.selectedRelations || {})
+                    .length
+                    ? wire.selectedRelations
+                    : this.selectedRelations;
+            this.displayPath =
+                wire.displayPath?.length
+                    ? wire.displayPath
+                    : this.displayPath;
+            this._sidebarLoaded =
+                this.selectedCols.length > 0;
+            if (this._sidebarLoaded) {
+                this.relationTableFields['self'] =
+                    this.selectedCols.map((c) =>
+                        typeof c === 'object'
+                            ? c.attribute || c.col
+                            : c,
+                    );
+            } else {
+                this.loadSidebarData();
+            }
 
             this.$watch('newFilter.column', () => {
                 if (!this.newFilter.column) return;
@@ -394,10 +420,10 @@ export default function datatable_options(wire) {
                             ? 'self'
                             : value;
                     if (!this.relationTableFields[key]) {
-                        await wire.loadSlug(
+                        const data = await wire.loadSlug(
                             value === '0' ? null : value,
                         );
-                        const cols = wire.selectedCols || [];
+                        const cols = data?.cols || [];
                         this.relationTableFields[key] =
                             cols.map((c) =>
                                 typeof c === 'object'
@@ -418,6 +444,19 @@ export default function datatable_options(wire) {
                 wire.aggregatableCols = this.aggregatableCols;
                 wire.applyAggregations();
             });
+
+            this.$watch(
+                () => wire.groupBy,
+                (val) => (this.groupBy = val ?? null),
+            );
+
+            this.$watch(
+                () => wire.userOrderBy,
+                (val) => {
+                    this.orderByCol = val || '';
+                    this.orderAsc = wire.userOrderAsc ?? true;
+                },
+            );
 
             await this.$nextTick();
             this._ready = true;

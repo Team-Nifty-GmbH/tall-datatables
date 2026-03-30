@@ -80,13 +80,13 @@ trait SupportsRelations
     }
 
     #[Renderless]
-    public function loadRelation(?string $model = null, ?string $relationName = null): void
+    public function loadRelation(?string $model = null, ?string $relationName = null): array
     {
         if ($this->availableRelations !== ['*'] &&
             ! in_array($relationName, $this->availableRelations) &&
             ! is_null($relationName)
         ) {
-            return;
+            return ['cols' => [], 'relations' => [], 'displayPath' => []];
         }
 
         $model = $model ?: $this->getModel();
@@ -142,25 +142,34 @@ trait SupportsRelations
                 'displayPath' => $path,
             ]
         );
+
+        return [
+            'cols' => $this->selectedCols,
+            'relations' => $this->selectedRelations,
+            'displayPath' => $path,
+        ];
     }
 
     #[Renderless]
-    public function loadSlug(?string $path = null): void
+    public function loadSlug(?string $path = null): array
     {
         if ($this->availableRelations !== ['*'] && ! in_array($path, $this->availableRelations)) {
-            return;
+            return ['cols' => [], 'relations' => []];
         }
 
         $this->loadedPath = $path;
         $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
 
         if (is_null($data)) {
-            return;
+            $this->loadRelation($path ?? $this->getModel());
+            $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
         }
 
-        $this->selectedCols = data_get($data, 'cols', []);
-        $this->selectedRelations = data_get($data, 'relations', []);
-        $this->displayPath = data_get($data, 'displayPath', []);
+        return [
+            'cols' => data_get($data, 'cols', []),
+            'relations' => data_get($data, 'relations', []),
+            'displayPath' => data_get($data, 'displayPath', []),
+        ];
     }
 
     public function mountSupportsRelations(): void

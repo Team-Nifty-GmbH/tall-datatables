@@ -694,7 +694,7 @@
                             >
                                 <button
                                     type="button"
-                                    x-on:click="$wire.setGroupBy(null)"
+                                    x-on:click="groupBy = null; $wire.setGroupBy(null)"
                                 >
                                     <x-icon name="x-mark" class="h-4 w-4" />
                                 </button>
@@ -779,6 +779,7 @@
                     <x-button
                         color="secondary"
                         light
+                        loading="resetLayout"
                         x-on:click="resetLayout"
                         :text="__('Reset Layout')"
                     />
@@ -786,37 +787,46 @@
                 <div
                     class="text-sm font-medium text-gray-700 dark:text-gray-50"
                 >
-                    <div class="flex overflow-x-auto">
-                        <div class="flex items-center gap-1.5">
-                            <x-button
-                                flat
-                                color="indigo"
-                                x-on:click="searchRelations = null; searchColumns = null; $wire.loadSlug()"
-                            >
-                                <span class="whitespace-nowrap">
-                                    {{ __('This table') }}
-                                </span>
-                            </x-button>
-                            <x-icon name="chevron-right" class="h-4 w-4" />
-                        </div>
-                        <template
-                            x-for="segment in $wire.displayPath"
-                        >
-                            <div class="flex items-center gap-1.5">
+                    <nav class="flex items-center overflow-x-auto" aria-label="Breadcrumb">
+                        <ol class="flex items-center gap-1 text-sm">
+                            <li>
                                 <x-button
+                                    xs
                                     flat
-                                    color="indigo"
-                                    x-on:click="searchRelations = null; searchColumns = null; $wire.loadSlug(segment.value)"
-                                >
-                                    <span
-                                        class="whitespace-nowrap"
-                                        x-text="segment.label"
-                                    ></span>
-                                </x-button>
-                                <x-icon name="chevron-right" class="h-4 w-4" />
-                            </div>
-                        </template>
-                    </div>
+                                    color="primary"
+                                    :text="__('This table')"
+                                    x-on:click="
+                                        searchRelations = null;
+                                        searchColumns = null;
+                                        const d = await $wire.loadSlug();
+                                        selectedCols = d?.cols || [];
+                                        selectedRelations = d?.relations || [];
+                                        displayPath = d?.displayPath || [];
+                                    "
+                                />
+                            </li>
+                            <template x-for="segment in displayPath">
+                                <li class="flex items-center gap-1">
+                                    <x-icon name="chevron-right" class="h-3 w-3 text-gray-400" />
+                                    <x-button
+                                        xs
+                                        flat
+                                        color="primary"
+                                        x-on:click="
+                                            searchRelations = null;
+                                            searchColumns = null;
+                                            const d = await $wire.loadSlug(segment.value);
+                                            selectedCols = d?.cols || [];
+                                            selectedRelations = d?.relations || [];
+                                            displayPath = d?.displayPath || [];
+                                        "
+                                    >
+                                        <span x-text="segment.label"></span>
+                                    </x-button>
+                                </li>
+                            </template>
+                        </ol>
+                    </nav>
                     <hr class="pb-2.5" />
                     <div class="grid grid-cols-2 gap-1.5 overflow-hidden">
                         <div class="min-w-0 overflow-hidden">
@@ -863,9 +873,12 @@
                                 <div
                                     class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden"
                                     x-on:click="
-                                        searchRelations = null
-                                        searchColumns = null
-                                        $wire.loadRelation(relation.model, relation.name)
+                                        searchRelations = null;
+                                        searchColumns = null;
+                                        const data = await $wire.loadRelation(relation.model, relation.name);
+                                        selectedCols = data?.cols || [];
+                                        selectedRelations = data?.relations || [];
+                                        displayPath = data?.displayPath || [];
                                     "
                                 >
                                     <span
@@ -960,10 +973,11 @@
                     x-bind:class="! groupBy ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-secondary-700'"
                 >
                     <x-radio
+                        name="groupBy"
                         :label="__('No grouping')"
                         value=""
                         x-bind:checked="! groupBy"
-                        x-on:change="$wire.setGroupBy(null)"
+                        x-on:change="groupBy = null; $wire.setGroupBy(null)"
                     />
                     <x-icon
                         name="view-columns"
@@ -973,9 +987,10 @@
                 </div>
                 <template x-for="col in searchable(groupable, searchGroupable)">
                     <x-radio
+                        name="groupBy"
                         x-bind:value="col"
                         x-bind:checked="groupBy === col"
-                        x-on:change="$wire.setGroupBy(col)"
+                        x-on:change="groupBy = col; $wire.setGroupBy(col)"
                     >
                         <x-slot:label>
                             <span x-text="getLabel(col)"></span>

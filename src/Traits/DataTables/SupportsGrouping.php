@@ -145,7 +145,8 @@ trait SupportsGrouping
             ];
 
             if (! empty($this->aggregatableCols)) {
-                $groupInfo['aggregates'] = $this->getAggregate($query->clone()->where($groupColumn, $value));
+                $aggregates = $this->getAggregate($query->clone()->where($groupColumn, $value));
+                $groupInfo['aggregates'] = $aggregates ? $this->formatAggregates($aggregates) : [];
             }
 
             if ($isExpanded) {

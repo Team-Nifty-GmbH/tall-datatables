@@ -128,6 +128,7 @@ class DataTable extends Component
 
     private bool $dataLoadedThisRequest = false;
 
+
     public function mount(): void
     {
         if (! $this->modelKeyName || ! $this->modelTable) {
@@ -156,9 +157,6 @@ class DataTable extends Component
     public function dehydrate(): void
     {
         $this->data = [];
-        $this->selectedCols = [];
-        $this->selectedRelations = [];
-        $this->displayPath = [];
         $this->cachedViewData = null;
         $this->cachedActions = null;
         $this->dataLoadedThisRequest = false;
@@ -190,12 +188,25 @@ class DataTable extends Component
     }
 
     #[Renderless]
+    public function setTextFilter(string $col, ?string $value): void
+    {
+        if ($value !== null && $value !== '') {
+            $this->userFilters['text'][$col] = $value;
+        } else {
+            unset($this->userFilters['text'][$col]);
+        }
+
+        $this->applyUserFilters();
+    }
+
+    #[Renderless]
     public function clearFiltersAndSort(): void
     {
         $this->userFilters = [];
         $this->userOrderBy = '';
         $this->userOrderAsc = true;
         $this->search = '';
+        $this->groupBy = null;
         $this->loadedFilterId = null;
         $this->startSearch();
     }
@@ -237,6 +248,7 @@ class DataTable extends Component
             $cols ?: array_merge(
                 $this->enabledCols,
                 $this->getAggregatable(),
+                $this->getGroupableCols(),
                 array_filter(
                     Arr::dot($this->userFilters),
                     fn ($key) => str_ends_with($key, '.column'),
@@ -342,6 +354,7 @@ class DataTable extends Component
 
         // Islands handle the DOM update — skip the full component re-render
         // to avoid sending 600KB+ of unchanged sidebar/modal HTML.
+        // Full render is needed when non-island parts (like thead) must update.
         if (request()->isMethod('POST')) {
             $this->skipRender();
         }
@@ -364,6 +377,10 @@ class DataTable extends Component
                     ? $this->formatAggregates($aggregates)
                     : [];
             }
+
+            $this->renderIsland('body');
+            $this->renderIsland('footer');
+            $this->renderIsland('badges');
 
             return;
         }

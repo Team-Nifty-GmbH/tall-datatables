@@ -84,40 +84,39 @@
                         @else
                             <th class="max-w-0"></th>
                         @endif
-                        @foreach ($this->enabledCols as $col)
+                        <template x-for="col in $wire.enabledCols" x-bind:key="col">
                             <x-tall-datatables::table.head-cell
-                                :class="in_array($col, $this->stickyCols) ? 'left-0 z-10 border-r' : ''"
-                                :style="in_array($col, $this->stickyCols) ? 'z-index: 2' : ''"
+                                x-bind:class="($wire.stickyCols || []).includes(col) ? 'left-0 z-10 border-r' : ''"
+                                x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : 'z-index: 1'"
                                 :attributes="$tableHeadColAttributes"
                             >
                                 <div class="flex">
                                     <div
-                                        type="button"
-                                        wire:loading.attr="disabled"
-                                        class="group flex flex-row items-center space-x-1.5 {{ in_array($col, $this->sortable) || $this->sortable === ['*'] ? 'cursor-pointer' : '' }}"
-                                        wire:click="{{ in_array($col, $this->sortable) || $this->sortable === ['*'] ? "sortTable('{$col}')" : '' }}"
+                                        class="group flex flex-row items-center space-x-1.5"
+                                        x-bind:class="($wire.sortable || []).includes(col) || ($wire.sortable || []).includes('*') ? 'cursor-pointer' : ''"
+                                        x-on:click="(($wire.sortable || []).includes(col) || ($wire.sortable || []).includes('*')) && $wire.sortTable(col)"
                                     >
-                                        <span>{{ $this->colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}</span>
-                                        @if ($this->userOrderBy === $col)
-                                            <x-icon
-                                                name="chevron-up"
-                                                class="h-4 w-4 transition-all {{ $this->userOrderAsc ? '' : 'rotate-180' }}"
-                                            />
-                                        @endif
+                                        <span x-text="($wire.colLabels || {})[col] || col.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')).join(' → ')"></span>
+                                        <x-icon
+                                            name="chevron-up"
+                                            class="h-4 w-4 transition-all"
+                                            x-cloak
+                                            x-show="$wire.userOrderBy === col"
+                                            x-bind:class="$wire.userOrderAsc ? '' : 'rotate-180'"
+                                        />
                                     </div>
                                     @if ($hasStickyCols)
                                         <div class="h-4 w-4">
                                             <svg
-                                                class="{{ in_array($col, $this->stickyCols) ? 'fill-indigo-600' : '' }}"
+                                                x-bind:class="($wire.stickyCols || []).includes(col) ? 'fill-indigo-600' : ''"
                                                 x-on:click="
-                                                    let cols = [...$wire.stickyCols];
-                                                    if (cols.includes('{{ $col }}')) {
-                                                        cols = cols.filter(c => c !== '{{ $col }}');
+                                                    let cols = [...($wire.stickyCols || [])];
+                                                    if (cols.includes(col)) {
+                                                        cols = cols.filter(c => c !== col);
                                                     } else {
-                                                        cols.push('{{ $col }}');
+                                                        cols.push(col);
                                                     }
                                                     $wire.stickyCols = cols;
-                                                    stickyCols = cols;
                                                 "
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 width="100%"
@@ -140,7 +139,7 @@
                                     @endif
                                 </div>
                             </x-tall-datatables::table.head-cell>
-                        @endforeach
+                        </template>
                         @if ($rowActions)
                             <x-tall-datatables::table.head-cell class="w-[1%]">
                                 {{ __('Actions') }}
@@ -164,32 +163,41 @@
                     @if ($isFilterable && $showFilterInputs)
                         <tr>
                             <td class="dark:bg-secondary-600 max-w-0 bg-gray-50"></td>
-                            @foreach ($this->enabledCols as $col)
+                            <template x-for="col in $wire.enabledCols" x-bind:key="'filter-' + col">
                                 <td
-                                    class="dark:bg-secondary-600 bg-gray-50 px-2 py-1 {{ in_array($col, $this->stickyCols) ? 'sticky left-0 border-r' : '' }}"
-                                    style="{{ in_array($col, $this->stickyCols) ? 'z-index: 2' : '' }}"
+                                    class="dark:bg-secondary-600 bg-gray-50 px-2 py-1"
+                                    x-bind:class="($wire.stickyCols || []).includes(col) ? 'sticky left-0 border-r' : ''"
+                                    x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : ''"
                                 >
-                                    @if (! isset($this->filterValueLists[$col]))
-                                        <div>
+                                    <template x-if="!($wire.filterValueLists || {})[col]">
+                                        <div
+                                            x-effect="if (!($wire.userFilters?.text || {})[col]) $el.querySelector('input').value = ''"
+                                        >
                                             <x-input
                                                 type="search"
                                                 class="p-1"
-                                                wire:model.live.debounce.500ms="userFilters.text.{{ $col }}"
+                                                x-init="$el.value = ($wire.userFilters?.text || {})[col] || ''"
+                                                x-on:input.debounce.500ms="$wire.setTextFilter(col, $event.target.value)"
                                             />
                                         </div>
-                                    @else
-                                        <x-select.native
-                                            wire:model.live="userFilters.text.{{ $col }}"
-                                            placeholder="{{ __('Value') }}"
+                                    </template>
+                                    <template x-if="($wire.filterValueLists || {})[col]">
+                                        <div
+                                            x-effect="if (!($wire.userFilters?.text || {})[col]) $el.querySelector('select').value = ''"
                                         >
-                                            <option value=""></option>
-                                            @foreach ($this->filterValueLists[$col] as $item)
-                                                <option value="{{ $item['value'] }}">{{ $item['label'] }}</option>
-                                            @endforeach
-                                        </x-select.native>
-                                    @endif
+                                            <x-select.native
+                                                x-init="$el.value = ($wire.userFilters?.text || {})[col] || ''"
+                                                x-on:change="$wire.setTextFilter(col, $event.target.value)"
+                                            >
+                                                <option value=""></option>
+                                                <template x-for="item in ($wire.filterValueLists || {})[col]" x-bind:key="item.value">
+                                                    <option x-bind:value="item.value" x-text="item.label"></option>
+                                                </template>
+                                            </x-select.native>
+                                        </div>
+                                    </template>
                                 </td>
-                            @endforeach
+                            </template>
                             @if ($rowActions)
                                 <td class="dark:bg-secondary-800 bg-gray-50"></td>
                             @endif
@@ -208,8 +216,11 @@
                     class="absolute top-0 right-0 bottom-0 left-0 z-10"
                 >
                     <td>
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <x-loading loading="loadData,sortTable,gotoPage,setPerPage,startSearch,applyUserFilters,loadMore" delay="shorter" />
+                        <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-secondary-800/50">
+                            <svg class="h-8 w-8 animate-spin text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
                         </div>
                     </td>
                 </tr>

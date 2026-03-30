@@ -62,7 +62,7 @@
         <div class="flex flex-wrap items-center gap-1.5 pt-3">
             @if ($this->search)
                 <div>
-                    <x-badge light flat color="purple">
+                    <x-badge light flat>
                         <x-slot:text>
                             {{ __('Search') }}&nbsp;{{ $this->search }}
                         </x-slot>
@@ -83,7 +83,7 @@
                             <div class="flex gap-1 pt-1">
                                 @foreach ($this->getParsedTextFilters() as $filter)
                                     <div>
-                                        <x-badge flat light color="sky">
+                                        <x-badge flat light>
                                             <x-slot:text>
                                                 {{ $this->colLabels[$filter['column']] ?? \Illuminate\Support\Str::headline($filter['column']) }}
                                                 {{ __($filter['operator']) }}
