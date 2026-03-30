@@ -249,7 +249,10 @@ export default function datatable_options(wire) {
         },
 
         syncFilters() {
-            wire.userFilters = this.filters;
+            const text = wire.userFilters?.text || {};
+            wire.userFilters = Object.keys(text).length
+                ? { ...this.filters, text }
+                : this.filters;
             wire.applyUserFilters();
         },
 
@@ -342,7 +345,12 @@ export default function datatable_options(wire) {
             this.enabledCols = wire.enabledCols || [];
             this.filters = Array.isArray(wire.userFilters)
                 ? wire.userFilters
-                : [];
+                : Object.entries(wire.userFilters || {})
+                      .filter(
+                          ([k]) => k !== 'text' && !isNaN(k),
+                      )
+                      .sort(([a], [b]) => a - b)
+                      .map(([, v]) => v);
             this.filterValueLists =
                 wire.filterValueLists || {};
             this.groupBy = wire.groupBy || null;
