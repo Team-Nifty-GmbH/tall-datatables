@@ -98,7 +98,7 @@
                                 <x-badge flat light color="sky">
                                     <x-slot:text>
                                         {{ $this->colLabels[$filter['column']] ?? \Illuminate\Support\Str::headline($filter['column']) }}
-                                        {{ $filter['operator'] }}
+                                        {{ __($filter['operator']) }}
                                         @php
                                             $displayValue = $filter['value'];
                                             $registry = app(\TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry::class);
