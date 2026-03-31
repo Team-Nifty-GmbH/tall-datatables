@@ -134,82 +134,113 @@
                         @endif
                     </tr>
                     @if ($isFilterable && $showFilterInputs)
-                        <tr>
-                            <td class="dark:bg-secondary-700/30 border-b border-gray-100 bg-gray-50/50 px-1 py-0 dark:border-secondary-700/50">
-                                <div class="relative flex items-center justify-center" x-show="hasSelected" x-cloak>
-                                    <x-button
-                                        color="secondary"
-                                        flat
-                                        sm
-                                        icon="chevron-down"
-                                        x-on:click="showSelectedActions = !showSelectedActions"
-                                    />
-                                    <div
-                                        x-on:click.outside="showSelectedActions = false"
-                                        x-transition:enter="transition duration-200 ease-out"
-                                        x-transition:enter-start="scale-95 opacity-0"
-                                        x-transition:enter-end="scale-100 opacity-100"
-                                        x-transition:leave="transition duration-75 ease-in"
-                                        x-transition:leave-start="scale-100 opacity-100"
-                                        x-transition:leave-end="scale-95 opacity-0"
-                                        class="absolute left-0 top-full z-50 mt-1 min-w-48"
-                                        x-cloak
-                                        x-show="showSelectedActions"
-                                    >
-                                        <x-card x-on:click="showSelectedActions = false;">
-                                            <div class="flex flex-col gap-1.5">
-                                                @foreach ($selectedActions as $action)
-                                                    {{ $action }}
-                                                @endforeach
-                                            </div>
-                                        </x-card>
-                                    </div>
-                                </div>
-                            </td>
-                            <template x-for="col in $wire.enabledCols" x-bind:key="'filter-' + col">
-                                <td
-                                    class="dark:bg-secondary-700/30 border-b border-l border-gray-100 bg-gray-50/50 px-0 py-0 dark:border-secondary-700/50"
-                                    x-bind:class="($wire.stickyCols || []).includes(col) ? 'sticky left-0 border-r' : ''"
-                                    x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : ''"
-                                >
-                                    <template x-if="!($wire.filterValueLists || {})[col]">
-                                        <div
-                                            x-effect="if (!($wire.textFilters || {})[col]) $el.querySelector('input').value = ''"
-                                        >
-                                            <input
-                                                type="search"
-                                                class="w-full border-0 bg-transparent px-3 py-1 text-sm text-gray-600 placeholder-gray-300 outline-none focus:ring-0 dark:text-gray-300 dark:placeholder-gray-600"
-                                                placeholder="&#8230;"
-                                                x-init="$el.value = ($wire.textFilters || {})[col] || ''"
-                                                x-on:input.debounce.500ms="$wire.setTextFilter(col, $event.target.value)"
+                        <template x-for="(rowIndex, i) in textFilterRows" x-bind:key="'filter-row-' + rowIndex">
+                            <tr>
+                                <td class="dark:bg-secondary-700/30 border-b border-gray-100 bg-gray-50/50 px-1 py-0 dark:border-secondary-700/50">
+                                    <template x-if="i === 0">
+                                        <div class="relative flex items-center justify-center" x-show="hasSelected" x-cloak>
+                                            <x-button
+                                                color="secondary"
+                                                flat
+                                                sm
+                                                icon="chevron-down"
+                                                x-on:click="showSelectedActions = !showSelectedActions"
                                             />
+                                            <div
+                                                x-on:click.outside="showSelectedActions = false"
+                                                x-transition:enter="transition duration-200 ease-out"
+                                                x-transition:enter-start="scale-95 opacity-0"
+                                                x-transition:enter-end="scale-100 opacity-100"
+                                                x-transition:leave="transition duration-75 ease-in"
+                                                x-transition:leave-start="scale-100 opacity-100"
+                                                x-transition:leave-end="scale-95 opacity-0"
+                                                class="absolute left-0 top-full z-50 mt-1 min-w-48"
+                                                x-cloak
+                                                x-show="showSelectedActions"
+                                            >
+                                                <x-card x-on:click="showSelectedActions = false;">
+                                                    <div class="flex flex-col gap-1.5">
+                                                        @foreach ($selectedActions as $action)
+                                                            {{ $action }}
+                                                        @endforeach
+                                                    </div>
+                                                </x-card>
+                                            </div>
                                         </div>
                                     </template>
-                                    <template x-if="($wire.filterValueLists || {})[col]">
-                                        <div
-                                            x-effect="if (!($wire.textFilters || {})[col]) $el.querySelector('select').value = ''"
-                                        >
-                                            <select
-                                                class="w-full border-0 bg-transparent px-3 py-1 text-sm text-gray-600 outline-none focus:ring-0 dark:text-gray-300"
-                                                x-init="$nextTick(() => $el.value = ($wire.textFilters || {})[col] || '')"
-                                                x-on:change="$wire.setTextFilter(col, $event.target.value)"
-                                            >
-                                                <option value=""></option>
-                                                <template x-for="item in ($wire.filterValueLists || {})[col]" x-bind:key="item.value">
-                                                    <option x-bind:value="item.value" x-text="item.label"></option>
-                                                </template>
-                                            </select>
+                                    <template x-if="i > 0">
+                                        <div class="flex items-center justify-center">
+                                            <span class="text-xs font-medium text-emerald-600 dark:text-emerald-400">{{ __('or') }}</span>
                                         </div>
                                     </template>
                                 </td>
-                            </template>
-                            @if ($rowActions)
-                                <td class="dark:bg-secondary-700/30 border-b border-gray-100 bg-gray-50/50 dark:border-secondary-700/50"></td>
-                            @endif
-                            @if ($hasSidebar)
-                                <td class="dark:bg-secondary-700/30 border-b border-gray-100 bg-gray-50/50 dark:border-secondary-700/50"></td>
-                            @endif
-                        </tr>
+                                <template x-for="col in $wire.enabledCols" x-bind:key="'filter-' + rowIndex + '-' + col">
+                                    <td
+                                        class="dark:bg-secondary-700/30 border-b border-l border-gray-100 bg-gray-50/50 px-0 py-0 dark:border-secondary-700/50"
+                                        x-bind:class="($wire.stickyCols || []).includes(col) ? 'sticky left-0 border-r' : ''"
+                                        x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : ''"
+                                    >
+                                        <template x-if="!($wire.filterValueLists || {})[col]">
+                                            <div
+                                                x-effect="if (!(($wire.textFilters || {})[rowIndex] || {})[col]) { const inp = $el.querySelector('input'); if (inp) inp.value = ''; }"
+                                            >
+                                                <input
+                                                    type="search"
+                                                    class="w-full border-0 bg-transparent px-3 py-1 text-sm text-gray-600 placeholder-gray-300 outline-none focus:ring-0 dark:text-gray-300 dark:placeholder-gray-600"
+                                                    placeholder="&#8230;"
+                                                    x-init="$el.value = (($wire.textFilters || {})[rowIndex] || {})[col] || ''"
+                                                    x-on:input.debounce.500ms="$wire.setTextFilter(col, $event.target.value, rowIndex)"
+                                                />
+                                            </div>
+                                        </template>
+                                        <template x-if="($wire.filterValueLists || {})[col]">
+                                            <div
+                                                x-effect="if (!(($wire.textFilters || {})[rowIndex] || {})[col]) { const sel = $el.querySelector('select'); if (sel) sel.value = ''; }"
+                                            >
+                                                <select
+                                                    class="w-full border-0 bg-transparent px-3 py-1 text-sm text-gray-600 outline-none focus:ring-0 dark:text-gray-300"
+                                                    x-init="$nextTick(() => $el.value = (($wire.textFilters || {})[rowIndex] || {})[col] || '')"
+                                                    x-on:change="$wire.setTextFilter(col, $event.target.value, rowIndex)"
+                                                >
+                                                    <option value=""></option>
+                                                    <template x-for="item in ($wire.filterValueLists || {})[col]" x-bind:key="item.value">
+                                                        <option x-bind:value="item.value" x-text="item.label"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </template>
+                                    </td>
+                                </template>
+                                @if ($rowActions)
+                                    <td class="dark:bg-secondary-700/30 border-b border-gray-100 bg-gray-50/50 dark:border-secondary-700/50"></td>
+                                @endif
+                                @if ($hasSidebar)
+                                    <td class="dark:bg-secondary-700/30 sticky right-0 border-b border-gray-100 bg-gray-50/50 dark:border-secondary-700/50">
+                                        <div class="flex items-center justify-end gap-0.5 px-1">
+                                            <template x-if="i === 0">
+                                                <button
+                                                    type="button"
+                                                    x-on:click="addTextFilterRow()"
+                                                    class="cursor-pointer rounded p-0.5 text-gray-400 transition-colors hover:text-emerald-500"
+                                                    title="{{ __('Add OR filter row') }}"
+                                                >
+                                                    <x-icon name="plus" class="h-4 w-4" />
+                                                </button>
+                                            </template>
+                                            <template x-if="i > 0">
+                                                <button
+                                                    type="button"
+                                                    x-on:click="removeTextFilterRow(rowIndex)"
+                                                    class="cursor-pointer rounded p-0.5 text-gray-400 transition-colors hover:text-red-500"
+                                                >
+                                                    <x-icon name="x-mark" class="h-4 w-4" />
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </td>
+                                @endif
+                            </tr>
+                        </template>
                     @endif
                 @endif
             </thead>

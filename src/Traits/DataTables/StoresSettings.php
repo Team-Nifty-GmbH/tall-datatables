@@ -115,6 +115,9 @@ trait StoresSettings
             }
         }
 
+        // Migrate old flat textFilters format to grouped format
+        $this->migrateTextFiltersIfNeeded();
+
         // Regenerate labels after enabledCols may have changed from cache/saved filters
         $this->colLabels = $this->getColLabels();
     }
