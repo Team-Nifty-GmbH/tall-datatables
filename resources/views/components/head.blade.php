@@ -89,46 +89,54 @@
                 @if (! is_array($orFilters))
                     @continue
                 @endif
-                @foreach ($orFilters as $filterIndex => $filter)
-                    @if (! is_array($filter) || empty($filter['column'] ?? ''))
-                        @continue
+                @php $hasMultipleGroups = count(array_filter($this->userFilters, 'is_array')) > 1; @endphp
+                <div class="flex flex-wrap items-center gap-2 {{ $hasMultipleGroups ? 'rounded-md border border-gray-200 dark:border-secondary-700/50 px-2 py-1' : '' }}">
+                    @foreach ($orFilters as $filterIndex => $filter)
+                        @if (! is_array($filter) || empty($filter['column'] ?? ''))
+                            @continue
+                        @endif
+                        @php
+                            $displayValue = $filter['value'] ?? '';
+                            $operator = $filter['operator'] ?? '=';
+                            // Translate enum/state values
+                            if ($operator === '=' && isset($this->filterValueLists[$filter['column']])) {
+                                $label = collect($this->filterValueLists[$filter['column']])->firstWhere('value', $displayValue);
+                                $displayValue = $label['label'] ?? $displayValue;
+                            }
+                            // Strip LIKE wildcards
+                            if ($operator === 'like' && is_string($displayValue)) {
+                                $displayValue = trim($displayValue, '%');
+                            }
+                            if (is_array($displayValue)) {
+                                $displayValue = implode(', ', array_map(fn ($v) => is_array($v) ? json_encode($v) : $v, $displayValue));
+                            }
+                        @endphp
+                        <div>
+                            <x-badge flat light>
+                                <x-slot:text>
+                                    {{ $this->colLabels[$filter['column']] ?? \Illuminate\Support\Str::headline($filter['column']) }}
+                                    {{ __($operator) }}
+                                    @if (! in_array($operator, ['is null', 'is not null', 'has', 'has not']))
+                                        {{ $displayValue }}
+                                    @endif
+                                </x-slot>
+                                <x-slot name="right" class="relative flex h-2 w-2 items-center">
+                                    <button type="button" class="cursor-pointer" wire:click="removeFilter({{ $orIndex }}, {{ $filterIndex }})">
+                                        <x-icon name="x-mark" class="h-4 w-4" />
+                                    </button>
+                                </x-slot>
+                            </x-badge>
+                        </div>
+                        @if (! $loop->last)
+                            <x-badge flat color="red" :text="__('and')" />
+                        @endif
+                    @endforeach
+                    @if ($hasMultipleGroups)
+                        <button type="button" class="cursor-pointer text-gray-400 hover:text-red-500 transition-colors" wire:click="removeFilterGroup({{ $orIndex }})">
+                            <x-icon name="x-mark" class="h-4 w-4" />
+                        </button>
                     @endif
-                    @php
-                        $displayValue = $filter['value'] ?? '';
-                        $operator = $filter['operator'] ?? '=';
-                        // Translate enum/state values
-                        if ($operator === '=' && isset($this->filterValueLists[$filter['column']])) {
-                            $label = collect($this->filterValueLists[$filter['column']])->firstWhere('value', $displayValue);
-                            $displayValue = $label['label'] ?? $displayValue;
-                        }
-                        // Strip LIKE wildcards
-                        if ($operator === 'like' && is_string($displayValue)) {
-                            $displayValue = trim($displayValue, '%');
-                        }
-                        if (is_array($displayValue)) {
-                            $displayValue = implode(', ', array_map(fn ($v) => is_array($v) ? json_encode($v) : $v, $displayValue));
-                        }
-                    @endphp
-                    <div>
-                        <x-badge flat light>
-                            <x-slot:text>
-                                {{ $this->colLabels[$filter['column']] ?? \Illuminate\Support\Str::headline($filter['column']) }}
-                                {{ __($operator) }}
-                                @if (! in_array($operator, ['is null', 'is not null', 'has', 'has not']))
-                                    {{ $displayValue }}
-                                @endif
-                            </x-slot>
-                            <x-slot name="right" class="relative flex h-2 w-2 items-center">
-                                <button type="button" class="cursor-pointer" wire:click="removeFilter({{ $orIndex }}, {{ $filterIndex }})">
-                                    <x-icon name="x-mark" class="h-4 w-4" />
-                                </button>
-                            </x-slot>
-                        </x-badge>
-                    </div>
-                    @if (! $loop->last)
-                        <x-badge flat color="red" :text="__('and')" />
-                    @endif
-                @endforeach
+                </div>
                 @if (! $loop->last)
                     <x-badge flat color="emerald" :text="__('or')" />
                 @endif

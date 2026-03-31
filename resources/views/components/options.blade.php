@@ -170,6 +170,13 @@
     >
         @if ($this->isFilterable)
             <x-tab.items tab="edit-filters" :title="__('Filters')">
+                <div
+                    x-cloak
+                    x-show="filterIndex > 0 && filterIndex >= ($wire.userFilters || []).length"
+                    class="mb-2 rounded-md border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400"
+                >
+                    {{ __('Adding to new OR group') }}
+                </div>
                 <form
                     class="grid grid-cols-1 gap-2"
                     x-on:submit.prevent="addFilter()"
@@ -599,62 +606,56 @@
                     x-cloak
                     x-show="($wire.userFilters || []).length > 0 || orderByCol || groupBy"
                 >
-                <div class="flex flex-col items-center justify-center space-y-2">
-                    <template x-for="(orFilters, orIndex) in filters">
-                        <div class="flex flex-col items-center justify-center">
+                <div class="flex flex-col gap-1.5">
+                    <template x-for="(orFilters, orIndex) in ($wire.userFilters || [])">
+                        <div>
                             <div
+                                class="group/fg flex flex-wrap items-center gap-1.5 rounded px-2 py-1.5 transition-colors"
+                                x-bind:class="filterIndex === orIndex
+                                    ? 'bg-gray-100 dark:bg-secondary-700/30'
+                                    : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-secondary-800'"
                                 x-on:click="filterIndex = orIndex"
-                                x-bind:class="filterIndex === orIndex ? 'ring-1 ring-primary-500' : 'ring-1 ring-gray-200 dark:ring-secondary-700/50'"
-                                class="dark:bg-secondary-800 pointer-events-auto relative w-full rounded-md bg-white p-2 pr-6 text-sm leading-5 hover:bg-gray-50 dark:hover:bg-secondary-900/50"
                             >
-                                <div class="absolute top-0.5 right-0.5">
-                                    <x-button.circle
-                                        color="red"
-                                        sm
-                                        icon="x-mark"
-                                        x-on:click="removeFilterGroup(orIndex)"
-                                    />
-                                </div>
-                                <div class="flex justify-between">
-                                    <div class="flex gap-1 pt-1">
+                                <template
+                                    x-for="(filter, index) in orFilters"
+                                >
+                                    <div class="flex items-center gap-1.5">
+                                        <x-badge flat light>
+                                            <x-slot:text>
+                                                <span
+                                                    x-text="filterBadge(filter)"
+                                                ></span>
+                                            </x-slot>
+                                            <x-slot
+                                                name="right"
+                                                class="relative flex h-2 w-2 items-center"
+                                            >
+                                                <button type="button" class="cursor-pointer" x-on:click.stop="removeFilter(index, orIndex)">
+                                                    <x-icon name="x-mark" class="h-4 w-4" />
+                                                </button>
+                                            </x-slot>
+                                        </x-badge>
                                         <template
-                                            x-for="(filter, index) in orFilters"
+                                            x-if="orFilters.length - 1 !== index"
                                         >
-                                            <div>
-                                                <x-badge flat color="indigo">
-                                                    <x-slot:text>
-                                                        <span
-                                                            x-text="filterBadge(filter)"
-                                                        ></span>
-                                                    </x-slot>
-                                                    <x-slot
-                                                        name="right"
-                                                        class="relative flex h-2 w-2 items-center"
-                                                    >
-                                                        <x-button.circle
-                                                            2xs
-                                                            flat
-                                                            icon="x-mark"
-                                                            x-on:click="removeFilter(index, orIndex)"
-                                                        />
-                                                    </x-slot>
-                                                </x-badge>
-                                                <template
-                                                    x-if="orFilters.length - 1 !== index"
-                                                >
-                                                    <x-badge
-                                                        flat
-                                                        color="red"
-                                                        :text="__('and')"
-                                                    />
-                                                </template>
-                                            </div>
+                                            <x-badge
+                                                flat
+                                                color="red"
+                                                :text="__('and')"
+                                            />
                                         </template>
                                     </div>
-                                </div>
+                                </template>
+                                <button
+                                    type="button"
+                                    class="ml-auto shrink-0 cursor-pointer rounded p-0.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                                    x-on:click.stop="removeFilterGroup(orIndex)"
+                                >
+                                    <x-icon name="x-mark" class="h-5 w-5" />
+                                </button>
                             </div>
-                            <template x-if="filters.length - 1 !== orIndex">
-                                <div class="pt-3">
+                            <template x-if="($wire.userFilters || []).length - 1 !== orIndex">
+                                <div class="flex justify-center py-1">
                                     <x-badge
                                         flat
                                         color="emerald"
@@ -708,15 +709,15 @@
                             </x-slot>
                         </x-badge>
                     </div>
-                    <x-button
-                        color="emerald"
-                        flat
-                        sm
+                    <button
+                        type="button"
                         x-cloak
-                        x-show="filters.length > 0"
-                        :text="__('Add or')"
+                        x-show="($wire.userFilters || []).length > 0"
                         x-on:click="addOrFilter()"
-                    />
+                        class="cursor-pointer text-sm text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                    >
+                        {{ __('Add or') }}
+                    </button>
                     @if (auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
                         <x-button
                             color="primary"

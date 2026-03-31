@@ -172,6 +172,27 @@ class DataTable extends Component
     #[Renderless]
     public function applyUserFilters(): void
     {
+        // Sync textFilters with userFilters (sidebar may have added/removed text-source filters)
+        $activeTextCols = [];
+        foreach ($this->userFilters as $group) {
+            if (! is_array($group)) {
+                continue;
+            }
+
+            foreach ($group as $filter) {
+                if (($filter['source'] ?? '') === 'text') {
+                    $activeTextCols[$filter['column']] = true;
+                }
+            }
+        }
+
+        // Remove textFilters entries that are no longer in userFilters
+        foreach (array_keys($this->textFilters) as $col) {
+            if (! isset($activeTextCols[$col])) {
+                unset($this->textFilters[$col]);
+            }
+        }
+
         $this->colLabels = $this->getColLabels();
         $this->loadedFilterId = null;
         $this->startSearch();
@@ -561,9 +582,45 @@ class DataTable extends Component
         $this->loadData();
     }
 
+    #[Renderless]
+    public function removeFilterGroup(int $groupIndex): void
+    {
+        if (! isset($this->userFilters[$groupIndex])) {
+            return;
+        }
+
+        // Clean up textFilters for any text-source filters in this group
+        foreach ($this->userFilters[$groupIndex] as $filter) {
+            if (($filter['source'] ?? '') === 'text') {
+                unset($this->textFilters[$filter['column']]);
+            }
+        }
+
+        array_splice($this->userFilters, $groupIndex, 1);
+        $this->userFilters = array_values($this->userFilters);
+        $this->cacheState();
+        $this->loadData();
+    }
+
     private function rebuildTextFilterGroup(): void
     {
-        $group = [];
+        // Ensure at least one group exists
+        if (empty($this->userFilters) || ! is_array($this->userFilters)) {
+            $this->userFilters = [[]];
+        }
+
+        // Remove all existing text-source filters from all groups
+        foreach ($this->userFilters as $groupIndex => $group) {
+            if (! is_array($group)) {
+                continue;
+            }
+
+            $this->userFilters[$groupIndex] = array_values(
+                array_filter($group, fn ($f) => ($f['source'] ?? '') !== 'text')
+            );
+        }
+
+        // Add current text filters into group 0 (AND with everything else)
         foreach ($this->textFilters as $col => $rawValue) {
             if ($rawValue === null || $rawValue === '') {
                 continue;
@@ -571,24 +628,13 @@ class DataTable extends Component
 
             $parsed = $this->parseTextFilterValue($rawValue, $col);
             $parsed['source'] = 'text';
-            $group[] = $parsed;
+            $this->userFilters[0][] = $parsed;
         }
 
-        // Separate text group (always index 0 if exists) from sidebar groups
-        $sidebarGroups = [];
-        foreach ($this->userFilters as $filterGroup) {
-            if (! is_array($filterGroup)) {
-                continue;
-            }
-
-            // Skip the old text group
-            $isTextGroup = ! empty($filterGroup) && collect($filterGroup)->every(fn ($f) => ($f['source'] ?? '') === 'text');
-            if (! $isTextGroup) {
-                $sidebarGroups[] = $filterGroup;
-            }
-        }
-
-        $this->userFilters = $group ? array_merge([$group], $sidebarGroups) : $sidebarGroups;
+        // Clean up empty groups
+        $this->userFilters = array_values(
+            array_filter($this->userFilters, fn ($g) => is_array($g) && ! empty($g))
+        );
     }
 
     #[Renderless]

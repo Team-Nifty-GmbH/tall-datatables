@@ -22,7 +22,6 @@ export default function datatable_options(wire) {
             is_start_of: null,
             start_of: null,
         },
-        filters: wire.userFilters || [],
         enabledCols: wire.enabledCols || [],
         filterValueLists: wire.filterValueLists || {},
         groupBy: wire.groupBy || null,
@@ -49,6 +48,12 @@ export default function datatable_options(wire) {
         relationFormatters: {},
         _ready: false,
         _sidebarLoaded: false,
+
+        getFilters() {
+            const uf = wire.userFilters;
+            if (!uf || !Array.isArray(uf)) return [];
+            return uf.filter((group) => Array.isArray(group));
+        },
 
         searchable(items, search) {
             if (!items || !search) return items || [];
@@ -171,9 +176,7 @@ export default function datatable_options(wire) {
 
         addFilter() {
             let newFilter = { ...this.newFilter };
-            let filters = Array.isArray(this.filters)
-                ? [...this.filters]
-                : [];
+            let filters = this.getFilters().map((g) => [...g]);
             if (filters.length === 0) {
                 filters.push([]);
                 this.filterIndex = 0;
@@ -191,8 +194,8 @@ export default function datatable_options(wire) {
                 ...(filters[this.filterIndex] || []),
                 newFilter,
             ];
-            this.filters = filters;
-            this.syncFilters();
+            wire.userFilters = filters;
+            wire.applyUserFilters();
             this.resetFilter();
             this.$nextTick(() =>
                 this.$refs.filterColumn?.focus(),
@@ -200,42 +203,16 @@ export default function datatable_options(wire) {
         },
 
         addOrFilter() {
-            if (
-                this.filters.length > 0 &&
-                this.filters[this.filters.length - 1].length === 0
-            ) {
-                this.filterIndex = this.filters.length - 1;
-                return;
-            }
-            this.filterIndex = this.filters.length;
-            this.filters = [...this.filters, []];
+            const uf = wire.userFilters;
+            this.filterIndex = Array.isArray(uf) ? uf.length : 0;
         },
 
         removeFilter(index, groupIndex) {
-            const filters = this.filters.map((group) => [
-                ...group,
-            ]);
-            if (
-                filters[groupIndex] &&
-                index >= 0 &&
-                index < filters[groupIndex].length
-            ) {
-                filters[groupIndex].splice(index, 1);
-                if (filters[groupIndex].length === 0) {
-                    filters.splice(groupIndex, 1);
-                }
-                this.filters = filters;
-                this.syncFilters();
-            }
+            wire.removeFilter(groupIndex, index);
         },
 
         removeFilterGroup(index) {
-            if (index >= 0 && index < this.filters.length) {
-                this.filters = this.filters.filter(
-                    (_, i) => i !== index,
-                );
-                this.syncFilters();
-            }
+            wire.removeFilterGroup(index);
         },
 
         resetFilter() {
@@ -246,22 +223,6 @@ export default function datatable_options(wire) {
                 value: [''],
                 relation: '',
             };
-        },
-
-        syncFilters() {
-            const text = wire.userFilters?.text || {};
-            // Keep text filter group (source=text) from server, add sidebar groups
-            const textGroup = (wire.userFilters || []).find(
-                (g) =>
-                    Array.isArray(g) &&
-                    g.length > 0 &&
-                    g.every((f) => (f?.source || '') === 'text'),
-            );
-            wire.userFilters = [
-                ...(textGroup ? [textGroup] : []),
-                ...this.filters,
-            ];
-            wire.applyUserFilters();
         },
 
         addCalculation(index) {
@@ -324,7 +285,6 @@ export default function datatable_options(wire) {
                 typeof c === 'object' ? c.attribute || c.col : c,
             );
 
-            // Store in both Alpine state and wire proxy
             this.selectedCols = cols;
             this.selectedRelations = data.selectedRelations || [];
             wire.selectedCols = cols;
@@ -351,16 +311,6 @@ export default function datatable_options(wire) {
 
         async init() {
             this.enabledCols = wire.enabledCols || [];
-            this.filters = (Array.isArray(wire.userFilters)
-                ? wire.userFilters
-                : []
-            ).filter(
-                (group) =>
-                    Array.isArray(group) &&
-                    !group.every(
-                        (f) => (f?.source || '') === 'text',
-                    ),
-            );
             this.filterValueLists =
                 wire.filterValueLists || {};
             this.groupBy = wire.groupBy || null;

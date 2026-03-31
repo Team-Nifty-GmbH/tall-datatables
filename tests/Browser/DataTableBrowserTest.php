@@ -650,10 +650,12 @@ describe('DataTable Browser Filtering', function (): void {
         // Wait for data to load
         $page->wait(3);
 
-        // Poll until data is loaded
+        // Poll until data is loaded (timeout after 10s)
         $page->script('() => {
             return new Promise((resolve) => {
+                const startTime = Date.now();
                 const check = () => {
+                    if (Date.now() - startTime > 10000) return resolve(0);
                     const comp = document.querySelector("[wire\\\\:id]");
                     const wireId = comp?.getAttribute("wire:id");
                     const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;
@@ -683,10 +685,12 @@ describe('DataTable Browser Filtering', function (): void {
             }
         }');
 
-        // Wait for filter + poll until total changes
+        // Wait for filter + poll until total changes (timeout after 10s)
         $page->script('() => {
             return new Promise((resolve) => {
+                const startTime = Date.now();
                 const check = () => {
+                    if (Date.now() - startTime > 10000) return resolve(0);
                     const comp = document.querySelector("[wire\\\\:id]");
                     const wireId = comp?.getAttribute("wire:id");
                     const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;
@@ -772,10 +776,12 @@ describe('DataTable Browser Filtering', function (): void {
 
         $page = visitLivewire(PostDataTable::class);
 
-        // Wait for data to load
+        // Wait for data to load (timeout after 10s)
         $page->script('() => {
             return new Promise((resolve) => {
+                const startTime = Date.now();
                 const check = () => {
+                    if (Date.now() - startTime > 10000) return resolve(0);
                     const comp = document.querySelector("[wire\\\\:id]");
                     const wireId = comp?.getAttribute("wire:id");
                     const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;
@@ -796,10 +802,12 @@ describe('DataTable Browser Filtering', function (): void {
             }
         }');
 
-        // Wait until filter takes effect
+        // Wait until filter takes effect (timeout after 10s)
         $page->script('() => {
             return new Promise((resolve) => {
+                const startTime = Date.now();
                 const check = () => {
+                    if (Date.now() - startTime > 10000) return resolve(0);
                     const comp = document.querySelector("[wire\\\\:id]");
                     const wireId = comp?.getAttribute("wire:id");
                     const total = window.Livewire?.find(wireId)?.$get("data")?.total ?? 0;

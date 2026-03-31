@@ -178,7 +178,7 @@
                                         >
                                             <input
                                                 type="search"
-                                                class="w-full border-0 bg-transparent px-2 py-1 text-sm text-gray-600 placeholder-gray-300 outline-none focus:ring-0 dark:text-gray-300 dark:placeholder-gray-600"
+                                                class="w-full border-0 bg-transparent px-3 py-1 text-sm text-gray-600 placeholder-gray-300 outline-none focus:ring-0 dark:text-gray-300 dark:placeholder-gray-600"
                                                 placeholder="&#8230;"
                                                 x-init="$el.value = ($wire.textFilters || {})[col] || ''"
                                                 x-on:input.debounce.500ms="$wire.setTextFilter(col, $event.target.value)"
@@ -190,7 +190,7 @@
                                             x-effect="if (!($wire.textFilters || {})[col]) $el.querySelector('select').value = ''"
                                         >
                                             <select
-                                                class="w-full border-0 bg-transparent px-2 py-1 text-sm text-gray-600 outline-none focus:ring-0 dark:text-gray-300"
+                                                class="w-full border-0 bg-transparent px-3 py-1 text-sm text-gray-600 outline-none focus:ring-0 dark:text-gray-300"
                                                 x-init="$nextTick(() => $el.value = ($wire.textFilters || {})[col] || '')"
                                                 x-on:change="$wire.setTextFilter(col, $event.target.value)"
                                             >

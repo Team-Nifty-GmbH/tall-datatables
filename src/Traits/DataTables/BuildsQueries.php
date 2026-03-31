@@ -575,6 +575,7 @@ trait BuildsQueries
         }
 
         // Unified filter application — all groups in one format
+        // Filters within a group are AND, groups are OR with each other
         if (! empty($this->userFilters)) {
             // Migrate old format if needed
             $filters = $this->migrateFilterFormat($this->userFilters);
@@ -759,6 +760,64 @@ trait BuildsQueries
         return $trimmed;
     }
 
+    private function normalizeFilterValue(string $value, string $column): string|float
+    {
+        if ($this->isDateColumn($column)) {
+            $date = $this->parseDateValue(trim($value));
+            if ($date) {
+                return $date;
+            }
+        }
+
+        return $this->normalizeNumericValue($value);
+    }
+
+    private function isDateColumn(string $column): bool
+    {
+        $formatters = $this->getFormatters();
+        $cast = $formatters[$column] ?? null;
+
+        if (is_string($cast) && in_array($cast, ['date', 'datetime', 'immutable_date', 'immutable_datetime'])) {
+            return true;
+        }
+
+        // Check raw column name in model casts
+        $parts = explode('.', $column);
+        $col = end($parts);
+
+        return str_contains($col, 'date') || str_ends_with($col, '_at');
+    }
+
+    private function parseDateValue(string $value): ?string
+    {
+        // Full date: dd.mm.yyyy or dd/mm/yyyy
+        if (preg_match('#^(\d{1,2})[./](\d{1,2})[./](\d{4})$#', $value, $m)) {
+            return sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+        }
+
+        // Partial: dd.mm or mm.yyyy
+        if (preg_match('#^(\d{1,2})[./](\d{1,2})$#', $value, $m)) {
+            // If second part > 12, treat as dd.mm with implicit current year
+            if ((int) $m[2] > 12) {
+                return null;
+            }
+
+            return sprintf('%04d-%02d-%02d', (int) date('Y'), (int) $m[2], (int) $m[1]);
+        }
+
+        // Already in Y-m-d format
+        if (preg_match('#^(\d{4})-(\d{1,2})-(\d{1,2})$#', $value)) {
+            return $value;
+        }
+
+        // Partial Y-m
+        if (preg_match('#^(\d{4})-(\d{1,2})$#', $value)) {
+            return $value;
+        }
+
+        return null;
+    }
+
     private function parseTextFilterValue(string $value, string $column): array
     {
         $trimmed = trim($value);
@@ -791,7 +850,7 @@ trait BuildsQueries
 
         // Support operator prefixes: >=, <=, !=, >, <, =
         if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $trimmed, $matches)) {
-            $filterValue = $this->normalizeNumericValue($matches[2]);
+            $filterValue = $this->normalizeFilterValue($matches[2], $column);
 
             return [
                 'column' => $column,
@@ -807,6 +866,18 @@ trait BuildsQueries
                 'operator' => '=',
                 'value' => $value,
             ];
+        }
+
+        // Date columns: parse localized date format to Y-m-d
+        if ($this->isDateColumn($column)) {
+            $date = $this->parseDateValue($trimmed);
+            if ($date) {
+                return [
+                    'column' => $column,
+                    'operator' => 'like',
+                    'value' => $date . '%',
+                ];
+            }
         }
 
         return [
