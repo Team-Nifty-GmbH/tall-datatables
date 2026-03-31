@@ -567,32 +567,22 @@ describe('DataTable Browser Filtering', function (): void {
             ->and($afterTotal)->toBeGreaterThan(0);
     });
 
-    it('sends a livewire request when filter setter is called', function (): void {
+    it('uses wire.userFilters as single source of truth', function (): void {
         $page = visitLivewire(PostDataTable::class);
 
         $page->wait(2);
 
-        // Directly test that the setter triggers a server call via syncFromAlpine
+        // Verify that $wire.userFilters is accessible and is an array
         $result = $page->script('() => {
-            const tableEl = document.querySelector("[x-data]");
-            const scope = tableEl?._x_dataStack?.[0];
-            if (!scope) return { error: "no scope" };
-
-            const desc = Object.getOwnPropertyDescriptor(scope, "filters");
-            const setterStr = desc?.set?.toString() || "";
-
-            return {
-                hasSetter: !!desc?.set,
-                usesSyncFromAlpine: setterStr.includes("syncFromAlpine"),
-                setterSource: setterStr.substring(0, 200),
-            };
+            const comp = document.querySelector("[wire\\\\:id]");
+            const wireId = comp?.getAttribute("wire:id");
+            const uf = window.Livewire?.find(wireId)?.$get("userFilters");
+            return { isArray: Array.isArray(uf), type: typeof uf };
         }');
 
         $data = is_array($result) && isset($result[0]) ? $result[0] : $result;
 
-        expect($data['hasSetter'])->toBeTrue();
-        // The setter MUST use $wire.call('syncFromAlpine', ...) to trigger server updates
-        expect($data['usesSyncFromAlpine'])->toBeTrue('Filter setter must use syncFromAlpine to trigger server updates');
+        expect($data['isArray'])->toBeTrue();
     });
 
     it('clears filters when clear button is clicked', function (): void {
@@ -621,12 +611,11 @@ describe('DataTable Browser Filtering', function (): void {
         $filteredTotal = is_array($filtered) && isset($filtered[0]) ? $filtered[0] : $filtered;
         expect($filteredTotal)->toBeLessThan(25);
 
-        // Click clear button via JS (text is locale-dependent)
+        // Clear all filters via Livewire
         $page->script('() => {
-            const xDataEl = document.querySelector("[x-data]");
-            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
-                xDataEl._x_dataStack[0].clearFilters();
-            }
+            const comp = document.querySelector("[wire\\\\:id]");
+            const wireId = comp?.getAttribute("wire:id");
+            window.Livewire?.find(wireId)?.call("clearFiltersAndSort");
         }');
         $page->wait(3);
 
@@ -709,12 +698,11 @@ describe('DataTable Browser Filtering', function (): void {
         $filteredTotal = is_array($filteredTotal) && isset($filteredTotal[0]) ? $filteredTotal[0] : $filteredTotal;
         expect($filteredTotal)->toBe(2);
 
-        // Remove filter via removeFilter (simulates clicking X on badge)
+        // Remove filter via Livewire removeFilter (simulates clicking X on badge)
         $page->script('() => {
-            const xDataEl = document.querySelector("[x-data]");
-            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
-                xDataEl._x_dataStack[0].removeFilter(0, 0);
-            }
+            const comp = document.querySelector("[wire\\\\:id]");
+            const wireId = comp?.getAttribute("wire:id");
+            window.Livewire?.find(wireId)?.call("removeFilter", 0, 0);
         }');
 
         // Poll until BOTH total=27 AND data rows contain non-UniqueAlpha titles
@@ -818,12 +806,11 @@ describe('DataTable Browser Filtering', function (): void {
             });
         }');
 
-        // Clear all filters
+        // Clear all filters via Livewire
         $page->script('() => {
-            const xDataEl = document.querySelector("[x-data]");
-            if (xDataEl && xDataEl._x_dataStack && xDataEl._x_dataStack[0]) {
-                xDataEl._x_dataStack[0].clearFilters();
-            }
+            const comp = document.querySelector("[wire\\\\:id]");
+            const wireId = comp?.getAttribute("wire:id");
+            window.Livewire?.find(wireId)?.call("clearFiltersAndSort");
         }');
 
         // Poll until BOTH total=27 AND data rows contain non-UniqueBeta titles

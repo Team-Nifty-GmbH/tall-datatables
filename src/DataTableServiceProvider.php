@@ -43,11 +43,13 @@ class DataTableServiceProvider extends ServiceProvider
 
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
 
-        TallStackUi::customize()
-            ->tab('datatable')
-            ->block('item.wrapper', 'inline-flex items-center gap-2 whitespace-nowrap px-3 py-2 text-sm transition-all')
-            ->block('base.content', 'text-secondary-700 dark:text-dark-300 px-0 py-3')
-            ->block('base.wrapper', 'w-full');
+        if (method_exists(TallStackUi::class, 'customize')) {
+            TallStackUi::customize()
+                ->tab('datatable')
+                ->block('item.wrapper', 'inline-flex items-center gap-2 whitespace-nowrap px-3 py-2 text-sm transition-all')
+                ->block('base.content', 'text-secondary-700 dark:text-dark-300 px-0 py-3')
+                ->block('base.wrapper', 'w-full');
+        }
     }
 
     /**
