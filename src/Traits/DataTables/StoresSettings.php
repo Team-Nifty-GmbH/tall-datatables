@@ -165,6 +165,7 @@ trait StoresSettings
             'settings' => array_merge(
                 [
                     'aggregatableCols' => $this->aggregatableCols,
+                    'textFilters' => $this->textFilters,
                     'userFilters' => $this->userFilters,
                     'userOrderBy' => $this->userOrderBy,
                     'userOrderAsc' => $this->userOrderAsc,
@@ -205,6 +206,7 @@ trait StoresSettings
     protected function cacheState(): void
     {
         $filter = [
+            'textFilters' => $this->textFilters,
             'userFilters' => $this->userFilters,
             'enabledCols' => $this->enabledCols,
             'aggregatableCols' => $this->aggregatableCols,

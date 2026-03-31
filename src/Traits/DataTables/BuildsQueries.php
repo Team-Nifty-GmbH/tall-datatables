@@ -279,8 +279,7 @@ trait BuildsQueries
         try {
             if (property_exists($query, 'scout_pagination')) {
                 $items = $query->get();
-                $hasAdditionalFilters = ! empty($this->userFilters['text'] ?? [])
-                    || count(array_filter($this->userFilters, fn ($key) => $key !== 'text', ARRAY_FILTER_USE_KEY)) > 0;
+                $hasAdditionalFilters = ! empty($this->userFilters);
 
                 if ($hasAdditionalFilters) {
                     // When additional filters are applied on top of Scout results,
@@ -575,32 +574,17 @@ trait BuildsQueries
             }
         }
 
-        // add inline text filters (from filter input row)
-        $textFilters = $this->userFilters['text'] ?? [];
-        if ($textFilters) {
-            $builder->where(function (Builder $query) use ($textFilters): void {
-                foreach (Arr::dot($textFilters) as $column => $value) {
-                    if ($value === '' || $value === null) {
+        // Unified filter application — all groups in one format
+        if (! empty($this->userFilters)) {
+            // Migrate old format if needed
+            $filters = $this->migrateFilterFormat($this->userFilters);
+
+            $builder->where(function ($query) use ($filters): void {
+                foreach (array_values($filters) as $index => $orFilter) {
+                    if (! is_array($orFilter)) {
                         continue;
                     }
 
-                    $filter = $this->parseTextFilterValue($value, $column);
-
-                    $this->addFilter($query, 0, $filter);
-                }
-            });
-        }
-
-        // add user filters (structured OR groups from sidebar)
-        $structuredFilters = array_filter(
-            $this->userFilters,
-            fn ($key) => $key !== 'text',
-            ARRAY_FILTER_USE_KEY
-        );
-
-        if ($structuredFilters) {
-            $builder->where(function ($query) use ($structuredFilters): void {
-                foreach (array_values($structuredFilters) as $index => $orFilter) {
                     $query->where(function (Builder $query) use ($orFilter): void {
                         foreach ($orFilter as $type => $filter) {
                             $this->addFilter($query, $type, $filter);
@@ -830,6 +814,44 @@ trait BuildsQueries
             'operator' => 'like',
             'value' => '%' . $value . '%',
         ];
+    }
+
+    /**
+     * Migrate old userFilters format (with 'text' key) to unified format.
+     */
+    private function migrateFilterFormat(array $filters): array
+    {
+        if (! isset($filters['text'])) {
+            return $filters;
+        }
+
+        // Old format — convert text filters to group 0
+        $textGroup = [];
+        foreach ($filters['text'] as $col => $value) {
+            if ($value === '' || $value === null) {
+                continue;
+            }
+
+            $parsed = $this->parseTextFilterValue($value, $col);
+            $parsed['source'] = 'text';
+            $textGroup[] = $parsed;
+
+            // Also populate textFilters for input restoration
+            $this->textFilters[$col] = $value;
+        }
+
+        unset($filters['text']);
+
+        $sidebarGroups = array_values(
+            array_filter($filters, fn ($v, $k) => is_numeric($k) && is_array($v), ARRAY_FILTER_USE_BOTH)
+        );
+
+        $result = $textGroup ? array_merge([$textGroup], $sidebarGroups) : $sidebarGroups;
+
+        // Persist migrated format
+        $this->userFilters = $result;
+
+        return $result;
     }
 
     /**

@@ -174,24 +174,24 @@
                                 >
                                     <template x-if="!($wire.filterValueLists || {})[col]">
                                         <div
-                                            x-effect="if (!($wire.userFilters?.text || {})[col]) $el.querySelector('input').value = ''"
+                                            x-effect="if (!($wire.textFilters || {})[col]) $el.querySelector('input').value = ''"
                                         >
                                             <input
                                                 type="search"
                                                 class="w-full border-0 bg-transparent px-2 py-1 text-sm text-gray-600 placeholder-gray-300 outline-none focus:ring-0 dark:text-gray-300 dark:placeholder-gray-600"
                                                 placeholder="&#8230;"
-                                                x-init="$el.value = ($wire.userFilters?.text || {})[col] || ''"
+                                                x-init="$el.value = ($wire.textFilters || {})[col] || ''"
                                                 x-on:input.debounce.500ms="$wire.setTextFilter(col, $event.target.value)"
                                             />
                                         </div>
                                     </template>
                                     <template x-if="($wire.filterValueLists || {})[col]">
                                         <div
-                                            x-effect="if (!($wire.userFilters?.text || {})[col]) $el.querySelector('select').value = ''"
+                                            x-effect="if (!($wire.textFilters || {})[col]) $el.querySelector('select').value = ''"
                                         >
                                             <select
                                                 class="w-full border-0 bg-transparent px-2 py-1 text-sm text-gray-600 outline-none focus:ring-0 dark:text-gray-300"
-                                                x-init="$nextTick(() => $el.value = ($wire.userFilters?.text || {})[col] || '')"
+                                                x-init="$nextTick(() => $el.value = ($wire.textFilters || {})[col] || '')"
                                                 x-on:change="$wire.setTextFilter(col, $event.target.value)"
                                             >
                                                 <option value=""></option>

@@ -102,6 +102,8 @@ class DataTable extends Component
 
     public array $stickyCols = [];
 
+    public array $textFilters = [];
+
     public array $userFilters = [];
 
     public bool $userOrderAsc = true;
@@ -179,6 +181,7 @@ class DataTable extends Component
     public function clearFiltersAndSort(): void
     {
         $this->userFilters = [];
+        $this->textFilters = [];
         $this->userOrderBy = '';
         $this->userOrderAsc = true;
         $this->search = '';
@@ -356,39 +359,36 @@ class DataTable extends Component
         ];
     }
 
+    /**
+     * @deprecated Use getActiveFilters() instead
+     */
     public function getParsedTextFilters(): \Illuminate\Support\Collection
     {
-        $textFilters = collect(Arr::dot($this->userFilters['text'] ?? []))->filter();
+        return collect($this->userFilters)
+            ->flatten(1)
+            ->filter(fn ($f) => is_array($f) && ($f['source'] ?? '') === 'text')
+            ->map(function ($filter) {
+                $displayValue = $filter['value'] ?? '';
 
-        return $textFilters->map(function ($value, $col) {
-            $trimmed = trim($value);
+                // Translate enum/state values for display
+                if ($filter['operator'] === '=' && isset($this->filterValueLists[$filter['column']])) {
+                    $label = collect($this->filterValueLists[$filter['column']])
+                        ->firstWhere('value', $displayValue);
+                    $displayValue = $label['label'] ?? $displayValue;
+                }
 
-            if (preg_match('/^(is\s+null|is\s+not\s+null)$/i', $trimmed)) {
-                return ['column' => $col, 'operator' => strtolower(preg_replace('/\s+/', ' ', $trimmed)), 'value' => null];
-            }
+                // Strip LIKE wildcards for display
+                if ($filter['operator'] === 'like' && is_string($displayValue)) {
+                    $displayValue = trim($displayValue, '%');
+                }
 
-            if ($trimmed === '*') {
-                return ['column' => $col, 'operator' => 'has', 'value' => null];
-            }
-
-            if ($trimmed === '!*') {
-                return ['column' => $col, 'operator' => 'has not', 'value' => null];
-            }
-
-            if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $trimmed, $matches)) {
-                return ['column' => $col, 'operator' => $matches[1], 'value' => $matches[2]];
-            }
-
-            // Columns with value lists (enums, states, booleans) use exact match
-            if (isset($this->filterValueLists[$col])) {
-                $label = collect($this->filterValueLists[$col])
-                    ->firstWhere('value', $value);
-
-                return ['column' => $col, 'operator' => '=', 'value' => $label['label'] ?? $value];
-            }
-
-            return ['column' => $col, 'operator' => 'like', 'value' => $value];
-        });
+                return [
+                    'column' => $filter['column'],
+                    'operator' => $filter['operator'],
+                    'value' => $displayValue,
+                ];
+            })
+            ->values();
     }
 
     #[Renderless]
@@ -525,12 +525,70 @@ class DataTable extends Component
     public function setTextFilter(string $col, ?string $value): void
     {
         if ($value !== null && $value !== '') {
-            $this->userFilters['text'][$col] = $value;
+            $this->textFilters[$col] = $value;
         } else {
-            unset($this->userFilters['text'][$col]);
+            unset($this->textFilters[$col]);
         }
 
-        $this->applyUserFilters();
+        $this->rebuildTextFilterGroup();
+        $this->cacheState();
+        $this->loadData();
+    }
+
+    #[Renderless]
+    public function removeFilter(int $groupIndex, int $filterIndex): void
+    {
+        if (! isset($this->userFilters[$groupIndex][$filterIndex])) {
+            return;
+        }
+
+        $filter = $this->userFilters[$groupIndex][$filterIndex];
+
+        // If it's a text filter, also remove from textFilters
+        if (($filter['source'] ?? '') === 'text') {
+            unset($this->textFilters[$filter['column']]);
+        }
+
+        array_splice($this->userFilters[$groupIndex], $filterIndex, 1);
+
+        // Remove empty groups
+        if (empty($this->userFilters[$groupIndex])) {
+            array_splice($this->userFilters, $groupIndex, 1);
+        }
+
+        $this->userFilters = array_values($this->userFilters);
+        $this->cacheState();
+        $this->loadData();
+    }
+
+    private function rebuildTextFilterGroup(): void
+    {
+        $group = [];
+        foreach ($this->textFilters as $col => $rawValue) {
+            if ($rawValue === null || $rawValue === '') {
+                continue;
+            }
+
+            $parsed = $this->parseTextFilterValue($rawValue, $col);
+            $parsed['source'] = 'text';
+            $group[] = $parsed;
+        }
+
+        // Separate text group (always index 0 if exists) from sidebar groups
+        $sidebarGroups = [];
+        foreach ($this->userFilters as $filterGroup) {
+            if (! is_array($filterGroup)) {
+                continue;
+            }
+
+            // Skip the old text group
+            $isTextGroup = ! empty($filterGroup) && collect($filterGroup)->every(fn ($f) => ($f['source'] ?? '') === 'text');
+            if (! $isTextGroup) {
+                $sidebarGroups[] = $filterGroup;
+            }
+        }
+
+        $this->userFilters = $group ? array_merge([$group], $sidebarGroups) : $sidebarGroups;
     }
 
     #[Renderless]

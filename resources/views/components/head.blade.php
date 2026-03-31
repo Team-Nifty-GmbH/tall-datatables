@@ -56,8 +56,7 @@
         || $this->userOrderBy
         || $this->groupBy
         || ! empty($this->sessionFilter)
-        || $this->getParsedTextFilters()->isNotEmpty()
-        || collect($this->userFilters)->forget('text')->isNotEmpty()
+        || ! empty($this->userFilters)
     )
         <div class="flex flex-wrap items-center gap-2 pt-3">
             @if ($this->search)
@@ -74,19 +73,53 @@
                     </x-badge>
                 </div>
             @endif
-            @if ($this->getParsedTextFilters()->isNotEmpty())
-                @foreach ($this->getParsedTextFilters() as $filter)
+            @if (! empty($this->sessionFilter))
+                <div>
+                    <x-badge light flat>
+                        <x-slot:text>{{ $this->sessionFilter['name'] ?? '' }}</x-slot>
+                        <x-slot name="right" class="relative flex h-2 w-2 items-center">
+                            <button type="button" class="cursor-pointer" wire:click="forgetSessionFilter(true)">
+                                <x-icon name="x-mark" class="h-4 w-4" />
+                            </button>
+                        </x-slot>
+                    </x-badge>
+                </div>
+            @endif
+            @foreach ($this->userFilters as $orIndex => $orFilters)
+                @if (! is_array($orFilters))
+                    @continue
+                @endif
+                @foreach ($orFilters as $filterIndex => $filter)
+                    @if (! is_array($filter) || empty($filter['column'] ?? ''))
+                        @continue
+                    @endif
+                    @php
+                        $displayValue = $filter['value'] ?? '';
+                        $operator = $filter['operator'] ?? '=';
+                        // Translate enum/state values
+                        if ($operator === '=' && isset($this->filterValueLists[$filter['column']])) {
+                            $label = collect($this->filterValueLists[$filter['column']])->firstWhere('value', $displayValue);
+                            $displayValue = $label['label'] ?? $displayValue;
+                        }
+                        // Strip LIKE wildcards
+                        if ($operator === 'like' && is_string($displayValue)) {
+                            $displayValue = trim($displayValue, '%');
+                        }
+                        if (is_array($displayValue)) {
+                            $displayValue = implode(', ', array_map(fn ($v) => is_array($v) ? json_encode($v) : $v, $displayValue));
+                        }
+                    @endphp
                     <div>
                         <x-badge flat light>
                             <x-slot:text>
                                 {{ $this->colLabels[$filter['column']] ?? \Illuminate\Support\Str::headline($filter['column']) }}
-                                {{ __($filter['operator']) }}
-                                @if (! in_array($filter['operator'], ['is null', 'is not null', 'has', 'has not']))
-                                    {{ $filter['operator'] !== 'like' ? $this->formatFilterBadgeValue($filter['column'], $filter['value'] ?? '') : $filter['value'] }}
+                                {{ __($operator) }}
+                                @if (! in_array($operator, ['is null', 'is not null', 'has', 'has not']))
+                                    {{ $displayValue }}
                                 @endif
                             </x-slot>
                             <x-slot name="right" class="relative flex h-2 w-2 items-center">
-                                <button type="button" class="cursor-pointer" wire:click="setTextFilter('{{ $filter['column'] }}', null)">
+                                <button type="button" class="cursor-pointer" wire:click="removeFilter({{ $orIndex }}, {{ $filterIndex }})">
                                     <x-icon name="x-mark" class="h-4 w-4" />
                                 </button>
                             </x-slot>
@@ -96,65 +129,9 @@
                         <x-badge flat color="red" :text="__('and')" />
                     @endif
                 @endforeach
-                @if (collect($this->userFilters)->forget('text')->isNotEmpty())
-                    <x-badge flat color="red" :text="__('and')" />
+                @if (! $loop->last)
+                    <x-badge flat color="emerald" :text="__('or')" />
                 @endif
-            @endif
-            @if (! empty($this->sessionFilter))
-                <div>
-                    <div
-                        class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 pr-6.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-gray-50 ring-1 ring-gray-200 dark:ring-secondary-700"
-                    >
-                        <x-badge light flat :text="$this->sessionFilter['name'] ?? ''" />
-                        <div class="top-0.5 right-0.5">
-                            <x-button.circle
-                                color="red"
-                                sm
-                                icon="x-mark"
-                                wire:click="forgetSessionFilter(true)"
-                            />
-                        </div>
-                    </div>
-                </div>
-            @endif
-            @foreach (collect($this->userFilters)->forget('text')->values()->all() as $orIndex => $orFilters)
-                <div class="flex items-center justify-center">
-                    <div
-                        class="dark:bg-secondary-800 pointer-events-auto flex w-full items-center rounded-md bg-gray-50 px-2 py-1 text-xs leading-5 dark:bg-secondary-700/50"
-                    >
-                        <div class="flex justify-between">
-                            <div class="flex flex-wrap gap-1 items-center">
-                                @foreach ($orFilters as $index => $filter)
-                                    <div>
-                                        <x-badge flat light color="indigo">
-                                            <x-slot:text>
-                                                {{ $this->colLabels[$filter['column'] ?? ''] ?? ($filter['column'] ?? '') }}
-                                                {{ $filter['operator'] ?? '=' }}
-                                                {{ is_array($filter['value'] ?? '') ? implode(', ', $filter['value']) : ($filter['value'] ?? '') }}
-                                            </x-slot>
-                                        </x-badge>
-                                        @if (! $loop->last)
-                                            <x-badge flat color="red" :text="__('and')" />
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                        <div class="top-0.5 right-0.5">
-                            <x-button.circle
-                                color="red"
-                                sm
-                                icon="x-mark"
-                                wire:click="$set('userFilters', {{ json_encode(array_values(collect($this->userFilters)->forget($orIndex)->toArray())) }})"
-                            />
-                        </div>
-                    </div>
-                    @if (! $loop->last)
-                        <div class="pl-1">
-                            <x-badge flat color="emerald" :text="__('or')" />
-                        </div>
-                    @endif
-                </div>
             @endforeach
             @if ($this->userOrderBy)
                 <div>

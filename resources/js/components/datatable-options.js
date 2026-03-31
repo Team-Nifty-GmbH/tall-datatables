@@ -250,9 +250,17 @@ export default function datatable_options(wire) {
 
         syncFilters() {
             const text = wire.userFilters?.text || {};
-            wire.userFilters = Object.keys(text).length
-                ? { ...this.filters, text }
-                : this.filters;
+            // Keep text filter group (source=text) from server, add sidebar groups
+            const textGroup = (wire.userFilters || []).find(
+                (g) =>
+                    Array.isArray(g) &&
+                    g.length > 0 &&
+                    g.every((f) => (f?.source || '') === 'text'),
+            );
+            wire.userFilters = [
+                ...(textGroup ? [textGroup] : []),
+                ...this.filters,
+            ];
             wire.applyUserFilters();
         },
 
@@ -343,14 +351,16 @@ export default function datatable_options(wire) {
 
         async init() {
             this.enabledCols = wire.enabledCols || [];
-            this.filters = Array.isArray(wire.userFilters)
+            this.filters = (Array.isArray(wire.userFilters)
                 ? wire.userFilters
-                : Object.entries(wire.userFilters || {})
-                      .filter(
-                          ([k]) => k !== 'text' && !isNaN(k),
-                      )
-                      .sort(([a], [b]) => a - b)
-                      .map(([, v]) => v);
+                : []
+            ).filter(
+                (group) =>
+                    Array.isArray(group) &&
+                    !group.every(
+                        (f) => (f?.source || '') === 'text',
+                    ),
+            );
             this.filterValueLists =
                 wire.filterValueLists || {};
             this.groupBy = wire.groupBy || null;

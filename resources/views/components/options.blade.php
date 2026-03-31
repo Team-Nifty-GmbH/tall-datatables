@@ -593,37 +593,11 @@
                         :text="__('Add filter')"
                     />
                 </form>
-                {{-- Active text filters --}}
+                {{-- All active filters (unified) --}}
                 <div
                     class="border-t border-gray-100 pt-3 dark:border-secondary-700/50"
                     x-cloak
-                    x-show="Object.keys($wire.userFilters?.text || {}).some(k => ($wire.userFilters.text[k] || '').length > 0)"
-                >
-                    <div class="flex flex-wrap gap-1.5">
-                        <template x-for="(value, col) in ($wire.userFilters?.text || {})" x-bind:key="col">
-                            <template x-if="value">
-                                <x-badge flat light>
-                                    <x-slot:text>
-                                        <span x-text="getLabel(col)"></span>
-                                        <span x-text="($wire.filterValueLists || {})[col] ? '=' : '~'"></span>
-                                        <span x-text="(() => { const list = ($wire.filterValueLists || {})[col]; if (list) { const item = list.find(i => i.value == value); return item ? item.label : value; } return value; })()"></span>
-                                    </x-slot>
-                                    <x-slot name="right" class="relative flex h-2 w-2 items-center">
-                                        <button type="button" class="cursor-pointer" x-on:click="$wire.setTextFilter(col, null)">
-                                            <x-icon name="x-mark" class="h-3.5 w-3.5" />
-                                        </button>
-                                    </x-slot>
-                                </x-badge>
-                            </template>
-                        </template>
-                    </div>
-                </div>
-
-                {{-- Active sidebar filters --}}
-                <div
-                    class="border-t border-gray-100 pt-3 dark:border-secondary-700/50"
-                    x-cloak
-                    x-show="filters.length > 0 || orderByCol || groupBy"
+                    x-show="($wire.userFilters || []).length > 0 || orderByCol || groupBy"
                 >
                 <div class="flex flex-col items-center justify-center space-y-2">
                     <template x-for="(orFilters, orIndex) in filters">
