@@ -18,6 +18,16 @@
             if (this.textFilterRows.length === 0) this.textFilterRows = [0];
             $wire.removeTextFilterRow(index);
         },
+        init() {
+            this.$watch(() => JSON.stringify($wire.textFilters), () => {
+                const tf = $wire.textFilters || {};
+                const keys = Object.keys(tf).filter(k => !isNaN(k));
+                const serverRows = keys.length > 0 ? keys.map(Number).sort((a, b) => a - b) : [0];
+                if (serverRows.length < this.textFilterRows.length) {
+                    this.textFilterRows = serverRows;
+                }
+            });
+        },
     }"
     class="relative"
     tall-datatable
