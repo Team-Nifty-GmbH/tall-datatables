@@ -56,7 +56,8 @@
         @foreach ($group['data'] as $index => $record)
             <tr
                 wire:key="group-row-{{ $group['key'] }}-{{ $record[$modelKeyName] ?? $index }}"
-                x-on:click="$dispatch('data-table-row-clicked', {record: {{ json_encode($record) }}})"
+                x-data="{ record: {{ json_encode($record) }} }"
+                x-on:click="$dispatch('data-table-row-clicked', {record})"
                 @if($allowSoftDeletes && ($record['deleted_at'] ?? null)) class="opacity-50" @endif
                 {{ $rowAttributes->merge(['class' => 'hover:bg-gray-50 dark:hover:bg-secondary-900/50 transition-colors']) }}
             >

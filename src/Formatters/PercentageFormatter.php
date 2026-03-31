@@ -14,7 +14,7 @@ class PercentageFormatter implements Formatter
             return '';
         }
 
-        $floatValue = (float) $value;
+        $floatValue = (float) $value * 100;
 
         if (! $this->progressBar) {
             $decimals = fmod($floatValue, 1) === 0.0 ? 0 : 2;

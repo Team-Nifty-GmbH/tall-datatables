@@ -1,8 +1,8 @@
-<div class="flex items-center justify-between px-3 py-2.5">
+<div class="flex items-center justify-between border-t border-gray-100 px-3 py-2.5 dark:border-secondary-700/50">
     <div class="flex flex-1 justify-between sm:hidden">
         <x-button
             color="secondary"
-            light
+            flat
             sm
             :text="__('Previous')"
             :disabled="($this->data['current_page'] ?? 1) <= 1"
@@ -10,7 +10,7 @@
         />
         <x-button
             color="secondary"
-            light
+            flat
             sm
             :text="__('Next')"
             :disabled="($this->data['current_page'] ?? 1) >= ($this->data['last_page'] ?? 1)"
@@ -19,13 +19,13 @@
     </div>
     <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
         <div>
-            <div class="flex items-center gap-1 text-sm text-gray-400 dark:text-gray-500">
+            <div class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
                 {{ __('Showing') }}
-                <span class="text-gray-600 dark:text-gray-300">{{ $this->data['from'] ?? 0 }}</span>
+                <span class="font-medium">{{ $this->data['from'] ?? 0 }}</span>
                 {{ __('to') }}
-                <span class="text-gray-600 dark:text-gray-300">{{ $this->data['to'] ?? 0 }}</span>
+                <span class="font-medium">{{ $this->data['to'] ?? 0 }}</span>
                 {{ __('of') }}
-                <span class="text-gray-600 dark:text-gray-300">{{ $this->data['total'] ?? 0 }}</span>
+                <span class="font-medium">{{ $this->data['total'] ?? 0 }}</span>
                 {{ __('results') }}
                 @if ($this->perPage ?? false)
                     <x-select.native
@@ -48,7 +48,7 @@
             >
                 <x-button
                     color="secondary"
-                    light
+                    flat
                     sm
                     :disabled="($this->data['current_page'] ?? 1) <= 1"
                     wire:click="gotoPage({{ ($this->data['current_page'] ?? 1) - 1 }})"
@@ -57,7 +57,7 @@
                 @foreach ($this->data['links'] ?? [] as $link)
                     <x-button
                         color="secondary"
-                        light
+                        flat
                         sm
                         :disabled="$link['active'] || $link['url'] === null"
                         :text="$link['label']"
@@ -67,7 +67,7 @@
                 @endforeach
                 <x-button
                     color="secondary"
-                    light
+                    flat
                     sm
                     :disabled="($this->data['current_page'] ?? 1) >= ($this->data['last_page'] ?? 1)"
                     wire:click="gotoPage({{ ($this->data['current_page'] ?? 1) + 1 }})"

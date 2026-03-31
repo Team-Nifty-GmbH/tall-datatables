@@ -18,7 +18,8 @@
 @endphp
 <tr
     wire:key="row-{{ $record[$modelKeyName] ?? $index }}"
-    x-on:click="$dispatch('data-table-row-clicked', {record: {{ json_encode($record) }}})"
+    x-data="{ record: {{ json_encode($record) }} }"
+    x-on:click="$dispatch('data-table-row-clicked', {record})"
     @if($allowSoftDeletes && ($record['deleted_at'] ?? null)) class="opacity-50" @endif
     {{ $rowAttributes->merge(['class' => 'group hover:bg-gray-50 dark:hover:bg-secondary-900/50 transition-colors']) }}
 >
@@ -64,7 +65,7 @@
             class="border-b border-gray-100 px-3 py-2.5 whitespace-nowrap dark:border-secondary-700/50"
         >
             @if (! ($allowSoftDeletes && ($record['deleted_at'] ?? null)))
-                <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="flex gap-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
                     @foreach ($rowActions as $rowAction)
                         {{ $rowAction }}
                     @endforeach

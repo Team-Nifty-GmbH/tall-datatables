@@ -29,7 +29,7 @@
                     <tr>
                         @if ($isSelectable)
                             <x-tall-datatables::table.head-cell class="w-10 px-0! py-0!">
-                                <div class="flex items-center justify-center gap-1.5">
+                                <div class="flex items-center justify-center">
                                     <x-checkbox
                                         value="*"
                                         x-on:change="
@@ -48,37 +48,6 @@
                                         :checked="in_array('*', $this->selected)"
                                         sm
                                     />
-                                    <div class="relative" x-show="hasSelected" x-cloak>
-                                        <x-button
-                                            color="secondary"
-                                            light
-                                            class="px-1.5 py-1.5"
-                                            x-ref="selectedActions"
-                                            flat
-                                            icon="chevron-down"
-                                            x-on:click="showSelectedActions = !showSelectedActions"
-                                        />
-                                        <div
-                                            x-on:click.outside="showSelectedActions = false"
-                                            x-transition:enter="transition duration-200 ease-out"
-                                            x-transition:enter-start="scale-95 opacity-0"
-                                            x-transition:enter-end="scale-100 opacity-100"
-                                            x-transition:leave="transition duration-75 ease-in"
-                                            x-transition:leave-start="scale-100 opacity-100"
-                                            x-transition:leave-end="scale-95 opacity-0"
-                                            class="absolute left-0 top-full z-50 mt-1 min-w-48"
-                                            x-cloak
-                                            x-show="showSelectedActions"
-                                        >
-                                            <x-card x-on:click="showSelectedActions = false;">
-                                                <div class="flex flex-col gap-1.5">
-                                                    @foreach ($selectedActions as $action)
-                                                        {{ $action }}
-                                                    @endforeach
-                                                </div>
-                                            </x-card>
-                                        </div>
-                                    </div>
                                 </div>
                             </x-tall-datatables::table.head-cell>
                         @else
@@ -155,8 +124,9 @@
                                 <div class="flex w-full flex-row-reverse items-center">
                                     <x-button
                                         color="secondary"
-                                        light
-                                        icon="cog"
+                                        flat
+                                        sm
+                                        icon="cog-6-tooth"
                                         x-on:click="$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase())"
                                     />
                                 </div>
@@ -165,7 +135,37 @@
                     </tr>
                     @if ($isFilterable && $showFilterInputs)
                         <tr>
-                            <td class="dark:bg-secondary-700/30 max-w-0 border-b border-gray-100 bg-gray-50/50 dark:border-secondary-700/50"></td>
+                            <td class="dark:bg-secondary-700/30 border-b border-gray-100 bg-gray-50/50 px-1 py-0 dark:border-secondary-700/50">
+                                <div class="relative flex items-center justify-center" x-show="hasSelected" x-cloak>
+                                    <x-button
+                                        color="secondary"
+                                        flat
+                                        sm
+                                        icon="chevron-down"
+                                        x-on:click="showSelectedActions = !showSelectedActions"
+                                    />
+                                    <div
+                                        x-on:click.outside="showSelectedActions = false"
+                                        x-transition:enter="transition duration-200 ease-out"
+                                        x-transition:enter-start="scale-95 opacity-0"
+                                        x-transition:enter-end="scale-100 opacity-100"
+                                        x-transition:leave="transition duration-75 ease-in"
+                                        x-transition:leave-start="scale-100 opacity-100"
+                                        x-transition:leave-end="scale-95 opacity-0"
+                                        class="absolute left-0 top-full z-50 mt-1 min-w-48"
+                                        x-cloak
+                                        x-show="showSelectedActions"
+                                    >
+                                        <x-card x-on:click="showSelectedActions = false;">
+                                            <div class="flex flex-col gap-1.5">
+                                                @foreach ($selectedActions as $action)
+                                                    {{ $action }}
+                                                @endforeach
+                                            </div>
+                                        </x-card>
+                                    </div>
+                                </div>
+                            </td>
                             <template x-for="col in $wire.enabledCols" x-bind:key="'filter-' + col">
                                 <td
                                     class="dark:bg-secondary-700/30 border-b border-l border-gray-100 bg-gray-50/50 px-0 py-0 dark:border-secondary-700/50"
@@ -191,7 +191,7 @@
                                         >
                                             <select
                                                 class="w-full border-0 bg-transparent px-2 py-1 text-sm text-gray-600 outline-none focus:ring-0 dark:text-gray-300"
-                                                x-init="$el.value = ($wire.userFilters?.text || {})[col] || ''"
+                                                x-init="$nextTick(() => $el.value = ($wire.userFilters?.text || {})[col] || '')"
                                                 x-on:change="$wire.setTextFilter(col, $event.target.value)"
                                             >
                                                 <option value=""></option>
@@ -293,12 +293,12 @@
                 @php extract($this->getIslandData()); @endphp
                 @if (! empty($this->data['aggregates'] ?? []))
                     @foreach ($this->data['aggregates'] as $name => $aggregate)
-                        <tr class="dark:bg-secondary-800 bg-gray-50/50 text-xs text-gray-500 dark:text-gray-400">
-                            <td class="border-t border-gray-200 px-3 py-2 font-medium whitespace-nowrap dark:border-secondary-700/50">
+                        <tr class="dark:bg-secondary-800 bg-gray-50/50 text-sm text-gray-500 dark:text-gray-400">
+                            <td class="border-t border-gray-100 px-3 py-2.5 font-medium whitespace-nowrap dark:border-secondary-700/50">
                                 {{ $this->getGroupLabels()[$name] ?? \Illuminate\Support\Str::headline($name) }}
                             </td>
                             @foreach ($this->enabledCols as $col)
-                                <td class="border-t border-gray-200 px-3 py-2 whitespace-nowrap dark:border-secondary-700/50">
+                                <td class="border-t border-gray-100 px-3 py-2.5 whitespace-nowrap dark:border-secondary-700/50">
                                     <span class="font-medium">
                                         @if (is_array($aggregate[$col] ?? null) && isset($aggregate[$col]['display']))
                                             {!! $aggregate[$col]['display'] !!}
@@ -308,9 +308,9 @@
                                     </span>
                                 </td>
                             @endforeach
-                            <td class="border-t border-gray-200 px-3 py-2 whitespace-nowrap dark:border-secondary-700/50"></td>
+                            <td class="border-t border-gray-100 px-3 py-2.5 whitespace-nowrap dark:border-secondary-700/50"></td>
                             @if ($rowActions)
-                                <td class="border-t border-gray-200 px-3 py-2 whitespace-nowrap dark:border-secondary-700/50"></td>
+                                <td class="border-t border-gray-100 px-3 py-2.5 whitespace-nowrap dark:border-secondary-700/50"></td>
                             @endif
                         </tr>
                     @endforeach

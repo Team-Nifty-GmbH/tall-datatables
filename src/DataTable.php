@@ -379,6 +379,14 @@ class DataTable extends Component
                 return ['column' => $col, 'operator' => $matches[1], 'value' => $matches[2]];
             }
 
+            // Columns with value lists (enums, states, booleans) use exact match
+            if (isset($this->filterValueLists[$col])) {
+                $label = collect($this->filterValueLists[$col])
+                    ->firstWhere('value', $value);
+
+                return ['column' => $col, 'operator' => '=', 'value' => $label['label'] ?? $value];
+            }
+
             return ['column' => $col, 'operator' => 'like', 'value' => $value];
         });
     }

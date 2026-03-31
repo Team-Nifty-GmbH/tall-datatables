@@ -19,6 +19,7 @@ use TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
 use TeamNiftyGmbH\DataTable\Livewire\Options;
+use TallStackUi\Facades\TallStackUi;
 
 class DataTableServiceProvider extends ServiceProvider
 {
@@ -41,6 +42,12 @@ class DataTableServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'tall-datatables');
 
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+
+        TallStackUi::customize()
+            ->tab('datatable')
+            ->block('item.wrapper', 'inline-flex items-center gap-2 whitespace-nowrap px-3 py-2 text-sm transition-all')
+            ->block('base.content', 'text-secondary-700 dark:text-dark-300 px-0 py-3')
+            ->block('base.wrapper', 'w-full');
     }
 
     /**

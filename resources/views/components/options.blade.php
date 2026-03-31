@@ -15,7 +15,7 @@
             x-on:close="filterName = ''; permanent = false;"
             x-on:open="$focusOn('filter-name')"
         >
-            <x-input
+            <x-input sm
                 required
                 id="filter-name"
                 :label="__('Filter name')"
@@ -165,6 +165,7 @@
     <x-tab
         :selected="$this->isFilterable ? 'edit-filters' : 'columns'"
         scroll-on-mobile
+        scope="datatable"
         x-on:navigate="handleTabNavigate($event.detail.select)"
     >
         @if ($this->isFilterable)
@@ -208,7 +209,7 @@
                                                 <x-card>
                                                     <x-slot:header>
                                                         <div class="flex gap-2 w-full">
-                                                            <x-input
+                                                            <x-input sm
                                                                 x-model="filter.name"
                                                                 x-on:input.debounce="$wire.updateSavedFilter(filter.id, filter)"
                                                             />
@@ -370,6 +371,7 @@
                     @endif
 
                     <x-select.native
+                        sm
                         name="new-filter-relation"
                         wire:target="loadFields"
                         wire:loading.attr="disabled"
@@ -385,7 +387,8 @@
                             ></option>
                         </template>
                     </x-select.native>
-                    <x-input
+                    <x-input sm
+                        sm
                         name="new-filter-column"
                         wire:target="loadFields"
                         wire:loading.attr="disabled"
@@ -412,7 +415,8 @@
                         x-cloak
                         x-show="filterSelectType !== 'valueList' && filterSelectType !== 'search' && filterSelectType !== 'none'"
                     >
-                        <x-input
+                        <x-input sm
+                            sm
                             name="new-filter-operator"
                             x-ref="filterOperator"
                             x-model="newFilter.operator"
@@ -446,6 +450,7 @@
                         x-show="filterSelectType === 'valueList' || filterSelectType === 'none'"
                     >
                         <x-select.native
+                            sm
                             name="new-filter-operator-valuelist"
                             x-model="newFilter.operator"
                             placeholder="{{ __('Operator') }}"
@@ -462,6 +467,7 @@
                     </div>
                     <div class="w-full" x-cloak x-show="filterSelectType === 'valueList'">
                         <x-select.native
+                            sm
                             name="new-filter-value-select"
                             x-model="newFilter.value"
                             placeholder="{{ __('Value') }}"
@@ -483,7 +489,8 @@
                         class="flex w-full flex-col gap-1.5"
                     >
                         <div class="w-full">
-                            <x-input
+                            <x-input sm
+                                sm
                                 name="new-filter-value"
                                 x-show="! newFilter.value[0]?.hasOwnProperty('calculation')"
                                 x-bind:type="getFilterInputType(newFilter.relation + '.' + newFilter.column)"
@@ -524,7 +531,7 @@
                         >
                             <span class="block text-center text-xs text-gray-400 dark:text-gray-500">{{ __('and') }}</span>
                             <div class="flex items-center gap-1.5">
-                                <x-input
+                                <x-input sm
                                     name="new-filter-value-2"
                                     class="w-full"
                                     x-cloak
@@ -581,22 +588,50 @@
                         wire:loading.attr="disabled"
                         type="submit"
                         x-ref="filterAddButton"
-                        color="indigo"
+                        color="primary"
+                        sm
                         :text="__('Add filter')"
                     />
                 </form>
+                {{-- Active text filters --}}
                 <div
-                    class="border-t border-gray-200 pt-4 dark:border-secondary-700"
+                    class="border-t border-gray-100 pt-3 dark:border-secondary-700/50"
+                    x-cloak
+                    x-show="Object.keys($wire.userFilters?.text || {}).some(k => ($wire.userFilters.text[k] || '').length > 0)"
+                >
+                    <div class="flex flex-wrap gap-1.5">
+                        <template x-for="(value, col) in ($wire.userFilters?.text || {})" x-bind:key="col">
+                            <template x-if="value">
+                                <x-badge flat light>
+                                    <x-slot:text>
+                                        <span x-text="getLabel(col)"></span>
+                                        <span x-text="($wire.filterValueLists || {})[col] ? '=' : '~'"></span>
+                                        <span x-text="(() => { const list = ($wire.filterValueLists || {})[col]; if (list) { const item = list.find(i => i.value == value); return item ? item.label : value; } return value; })()"></span>
+                                    </x-slot>
+                                    <x-slot name="right" class="relative flex h-2 w-2 items-center">
+                                        <button type="button" class="cursor-pointer" x-on:click="$wire.setTextFilter(col, null)">
+                                            <x-icon name="x-mark" class="h-3.5 w-3.5" />
+                                        </button>
+                                    </x-slot>
+                                </x-badge>
+                            </template>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Active sidebar filters --}}
+                <div
+                    class="border-t border-gray-100 pt-3 dark:border-secondary-700/50"
                     x-cloak
                     x-show="filters.length > 0 || orderByCol || groupBy"
                 >
-                <div class="flex flex-col items-center justify-center space-y-3">
+                <div class="flex flex-col items-center justify-center space-y-2">
                     <template x-for="(orFilters, orIndex) in filters">
                         <div class="flex flex-col items-center justify-center">
                             <div
                                 x-on:click="filterIndex = orIndex"
-                                x-bind:class="filterIndex === orIndex ? 'ring-2 ring-indigo-600' : 'ring-1 ring-slate-700/10'"
-                                class="dark:bg-secondary-800 pointer-events-auto relative w-full rounded-lg bg-white p-2.5 pr-6 text-sm leading-5 shadow-md shadow-black/5 hover:bg-gray-100 dark:hover:bg-secondary-900"
+                                x-bind:class="filterIndex === orIndex ? 'ring-1 ring-primary-500' : 'ring-1 ring-gray-200 dark:ring-secondary-700/50'"
+                                class="dark:bg-secondary-800 pointer-events-auto relative w-full rounded-md bg-white p-2 pr-6 text-sm leading-5 hover:bg-gray-50 dark:hover:bg-secondary-900/50"
                             >
                                 <div class="absolute top-0.5 right-0.5">
                                     <x-button.circle
@@ -700,18 +735,19 @@
                         </x-badge>
                     </div>
                     <x-button
-                        color="secondary"
-                        light
+                        color="emerald"
+                        flat
+                        sm
                         x-cloak
                         x-show="filters.length > 0"
-                        color="emerald"
                         :text="__('Add or')"
                         x-on:click="addOrFilter()"
                     />
                     @if (auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
                         <x-button
-                            color="indigo"
-                            class="w-full"
+                            color="primary"
+                            flat
+                            sm
                             x-on:click="$tsui.open.modal('save-filter')"
                             :text="__('Save')"
                         />
@@ -832,7 +868,7 @@
                         <div class="min-w-0 overflow-hidden">
                             <span class="mb-1 block text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">{{ __('Columns') }}</span>
                             <div class="pb-2">
-                                <x-input
+                                <x-input sm
                                     type="search"
                                     x-model.debounce.300ms="searchColumns"
                                     placeholder="{{ __('Search') }}"
@@ -862,7 +898,7 @@
                         <div class="min-w-0 overflow-hidden">
                             <span class="mb-1 block text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">{{ __('Relations') }}</span>
                             <div class="pb-2">
-                                <x-input
+                                <x-input sm
                                     type="search"
                                     x-model.debounce.300ms="searchRelations"
                                     placeholder="{{ __('Search') }}"
@@ -902,7 +938,7 @@
         @if ($this->aggregatable)
             <x-tab.items tab="summarize" :title="__('Summarize')">
                 <div class="pb-2">
-                    <x-input
+                    <x-input sm
                         type="search"
                         x-model.debounce.300ms="searchAggregatable"
                         placeholder="{{ __('Search') }}"
@@ -957,6 +993,7 @@
             <div class="mb-3 pb-3 border-b border-gray-200 dark:border-secondary-700" x-show="groupBy" x-cloak>
                 <span class="mb-2 block text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">{{ __('Rows per group') }}</span>
                 <x-select.native
+                    sm
                     x-model="$wire.groupPerPage"
                     x-on:change="$wire.loadData()"
                 >
@@ -968,7 +1005,7 @@
                 </x-select.native>
             </div>
             <div class="pb-2">
-                <x-input
+                <x-input sm
                     type="search"
                     x-model.debounce.300ms="searchGroupable"
                     placeholder="{{ __('Search') }}"

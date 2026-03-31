@@ -84,15 +84,23 @@ trait BuildsQueries
                 }
             } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
                 $this->applyFilterWhereNull($query, $filter);
-            } elseif ($filter['operator'] === 'between') {
-                $query->whereBetween($filter['column'], $filter['value']);
             } else {
-                $column = $filter['column'] ?? null;
-                $operator = $filter['operator'] ?? null;
-                $value = $filter['value'] ?? null;
+                try {
+                    if ($filter['operator'] === 'between') {
+                        if (is_array($filter['value']) && count($filter['value']) === 2) {
+                            $query->whereBetween($filter['column'], $filter['value']);
+                        }
+                    } else {
+                        $column = $filter['column'] ?? null;
+                        $operator = $filter['operator'] ?? null;
+                        $value = $filter['value'] ?? null;
 
-                if ($column && $operator && ($value !== null && $value !== '')) {
-                    $query->where($column, $operator, $value);
+                        if ($column && $operator && ($value !== null && $value !== '')) {
+                            $query->where($column, $operator, $value);
+                        }
+                    }
+                } catch (\Throwable) {
+                    // Invalid filter value — skip silently
                 }
             }
 
@@ -805,6 +813,15 @@ trait BuildsQueries
                 'column' => $column,
                 'operator' => $matches[1],
                 'value' => $filterValue,
+            ];
+        }
+
+        // Columns with value lists (enums, states, booleans) use exact match
+        if (isset($this->filterValueLists[$column])) {
+            return [
+                'column' => $column,
+                'operator' => '=',
+                'value' => $value,
             ];
         }
 
