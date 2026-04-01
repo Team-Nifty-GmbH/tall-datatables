@@ -7,6 +7,8 @@ use Tests\Fixtures\Models\Post;
 
 class FilteredPostDataTable extends DataTable
 {
+    public static array $testFilters = [];
+
     public array $enabledCols = [
         'title',
         'content',
@@ -18,8 +20,6 @@ class FilteredPostDataTable extends DataTable
     public bool $isFilterable = true;
 
     protected string $model = Post::class;
-
-    public static array $testFilters = [];
 
     public function mount(): void
     {

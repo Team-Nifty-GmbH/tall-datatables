@@ -18,72 +18,72 @@ describe('applyFilters with fixed filters', function (): void {
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Fixed Match', 'is_published' => true]);
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'No Fixed Match', 'is_published' => false]);
 
-        $component = Livewire::test(\Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $component = Livewire::test(Tests\Fixtures\Livewire\FilteredPostDataTable::class);
 
         // Set fixed filters before mount
-        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
             ['is_published', '=', true],
         ];
 
-        $component = Livewire::test(\Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $component = Livewire::test(Tests\Fixtures\Livewire\FilteredPostDataTable::class);
         $data = $component->instance()->getDataForTesting();
 
         expect($data['total'])->toBe(1);
         expect($data['data'][0]['title'])->toBe('Fixed Match');
 
         // Reset
-        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
     });
 
     it('applies a fixed is null filter', function (): void {
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Has Price', 'price' => 100]);
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'No Price', 'price' => null]);
 
-        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
             ['column' => 'price', 'operator' => 'is null', 'value' => null],
         ];
 
-        $component = Livewire::test(\Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $component = Livewire::test(Tests\Fixtures\Livewire\FilteredPostDataTable::class);
         $data = $component->instance()->getDataForTesting();
 
         expect($data['total'])->toBe(1);
         expect($data['data'][0]['title'])->toBe('No Price');
 
-        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
     });
 
     it('applies a fixed is not null filter', function (): void {
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Has Price', 'price' => 100]);
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'No Price', 'price' => null]);
 
-        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
             ['column' => 'price', 'operator' => 'is not null', 'value' => null],
         ];
 
-        $component = Livewire::test(\Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $component = Livewire::test(Tests\Fixtures\Livewire\FilteredPostDataTable::class);
         $data = $component->instance()->getDataForTesting();
 
         expect($data['total'])->toBe(1);
         expect($data['data'][0]['title'])->toBe('Has Price');
 
-        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
     });
 
     it('applies a named Where filter method', function (): void {
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Named Filter', 'price' => 50]);
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Other', 'price' => 100]);
 
-        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
             'Where' => [['title', '=', 'Named Filter']],
         ];
 
-        $component = Livewire::test(\Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $component = Livewire::test(Tests\Fixtures\Livewire\FilteredPostDataTable::class);
         $data = $component->instance()->getDataForTesting();
 
         expect($data['total'])->toBe(1);
         expect($data['data'][0]['title'])->toBe('Named Filter');
 
-        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
     });
 });
 
@@ -1420,7 +1420,7 @@ describe('applySessionFilter', function (): void {
 
         // Set session filter BEFORE mounting the component
         $cacheKey = PostDataTable::class . '_query';
-        $sessionFilter = new \TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
+        $sessionFilter = new TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
             'test-filter',
             function ($query): void {
                 $query->where('title', 'Session Match');
@@ -1451,7 +1451,7 @@ describe('applySessionFilter', function (): void {
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Session Post']);
 
         $cacheKey = PostDataTable::class . '_query';
-        $sessionFilter = new \TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
+        $sessionFilter = new TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
             'clearing-filter',
             function ($query): void {
                 $query->where('title', 'like', '%Session%');

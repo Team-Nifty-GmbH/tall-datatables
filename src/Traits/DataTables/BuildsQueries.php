@@ -99,7 +99,7 @@ trait BuildsQueries
                             $query->where($column, $operator, $value);
                         }
                     }
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     // Invalid filter value — skip silently
                 }
             }
@@ -720,6 +720,72 @@ trait BuildsQueries
         return 'applyFilter' . ucfirst($type);
     }
 
+    private function isDateColumn(string $column): bool
+    {
+        $formatters = $this->getFormatters();
+        $cast = $formatters[$column] ?? null;
+
+        if (is_string($cast) && in_array($cast, ['date', 'datetime', 'immutable_date', 'immutable_datetime'])) {
+            return true;
+        }
+
+        // Check raw column name in model casts
+        $parts = explode('.', $column);
+        $col = end($parts);
+
+        return str_contains($col, 'date') || str_ends_with($col, '_at');
+    }
+
+    /**
+     * Migrate old userFilters format (with 'text' key) to unified format.
+     */
+    private function migrateFilterFormat(array $filters): array
+    {
+        if (! isset($filters['text'])) {
+            return $filters;
+        }
+
+        // Old format — convert text filters to group 0
+        $textGroup = [];
+        foreach ($filters['text'] as $col => $value) {
+            if ($value === '' || $value === null) {
+                continue;
+            }
+
+            $parsed = $this->parseTextFilterValue($value, $col);
+            $parsed['source'] = 'text';
+            $textGroup[] = $parsed;
+
+            // Also populate textFilters for input restoration
+            $this->textFilters[$col] = $value;
+        }
+
+        unset($filters['text']);
+
+        $sidebarGroups = array_values(
+            array_filter($filters, fn ($v, $k) => is_numeric($k) && is_array($v), ARRAY_FILTER_USE_BOTH)
+        );
+
+        $result = $textGroup ? array_merge([$textGroup], $sidebarGroups) : $sidebarGroups;
+
+        // Persist migrated format
+        $this->userFilters = $result;
+
+        return $result;
+    }
+
+    private function normalizeFilterValue(string $value, string $column): string|float
+    {
+        if ($this->isDateColumn($column)) {
+            $date = $this->parseDateValue(trim($value));
+            if ($date) {
+                return $date;
+            }
+        }
+
+        return $this->normalizeNumericValue($value);
+    }
+
     private function normalizeNumericValue(string $value): string|float
     {
         $trimmed = trim($value);
@@ -758,34 +824,6 @@ trait BuildsQueries
         }
 
         return $trimmed;
-    }
-
-    private function normalizeFilterValue(string $value, string $column): string|float
-    {
-        if ($this->isDateColumn($column)) {
-            $date = $this->parseDateValue(trim($value));
-            if ($date) {
-                return $date;
-            }
-        }
-
-        return $this->normalizeNumericValue($value);
-    }
-
-    private function isDateColumn(string $column): bool
-    {
-        $formatters = $this->getFormatters();
-        $cast = $formatters[$column] ?? null;
-
-        if (is_string($cast) && in_array($cast, ['date', 'datetime', 'immutable_date', 'immutable_datetime'])) {
-            return true;
-        }
-
-        // Check raw column name in model casts
-        $parts = explode('.', $column);
-        $col = end($parts);
-
-        return str_contains($col, 'date') || str_ends_with($col, '_at');
     }
 
     private function parseDateValue(string $value): ?string
@@ -885,44 +923,6 @@ trait BuildsQueries
             'operator' => 'like',
             'value' => '%' . $value . '%',
         ];
-    }
-
-    /**
-     * Migrate old userFilters format (with 'text' key) to unified format.
-     */
-    private function migrateFilterFormat(array $filters): array
-    {
-        if (! isset($filters['text'])) {
-            return $filters;
-        }
-
-        // Old format — convert text filters to group 0
-        $textGroup = [];
-        foreach ($filters['text'] as $col => $value) {
-            if ($value === '' || $value === null) {
-                continue;
-            }
-
-            $parsed = $this->parseTextFilterValue($value, $col);
-            $parsed['source'] = 'text';
-            $textGroup[] = $parsed;
-
-            // Also populate textFilters for input restoration
-            $this->textFilters[$col] = $value;
-        }
-
-        unset($filters['text']);
-
-        $sidebarGroups = array_values(
-            array_filter($filters, fn ($v, $k) => is_numeric($k) && is_array($v), ARRAY_FILTER_USE_BOTH)
-        );
-
-        $result = $textGroup ? array_merge([$textGroup], $sidebarGroups) : $sidebarGroups;
-
-        // Persist migrated format
-        $this->userFilters = $result;
-
-        return $result;
     }
 
     /**

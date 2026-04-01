@@ -105,7 +105,7 @@ describe('SupportsExporting', function (): void {
 
             $response = $component->instance()->export(['title', 'content']);
 
-            expect($response)->toBeInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
         });
 
         it('generates filename with model name and timestamp', function (): void {
@@ -131,7 +131,7 @@ describe('SupportsExporting', function (): void {
             // Passing columns with some falsy values - array_filter removes empties
             $response = $component->instance()->export(['title', '', 'content']);
 
-            expect($response)->toBeInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
         });
 
         it('exports with no data returns valid response', function (): void {
@@ -140,7 +140,7 @@ describe('SupportsExporting', function (): void {
 
             $response = $component->instance()->export(['title', 'content']);
 
-            expect($response)->toBeInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
         });
 
         it('can be called as a Livewire action', function (): void {

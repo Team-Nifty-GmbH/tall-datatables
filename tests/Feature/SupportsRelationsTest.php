@@ -80,7 +80,7 @@ describe('SupportsRelations', function (): void {
             // First load root
             $component->instance()->loadRelation(Post::class);
             // Then navigate into user relation
-            $result = $component->instance()->loadRelation(\Tests\Fixtures\Models\User::class, 'user');
+            $result = $component->instance()->loadRelation(Tests\Fixtures\Models\User::class, 'user');
 
             expect($result['displayPath'])->toHaveCount(1);
             expect($result['displayPath'][0])->toHaveKey('value')
@@ -93,7 +93,7 @@ describe('SupportsRelations', function (): void {
 
             // Navigate root -> user -> posts
             $component->instance()->loadRelation(Post::class);
-            $component->instance()->loadRelation(\Tests\Fixtures\Models\User::class, 'user');
+            $component->instance()->loadRelation(Tests\Fixtures\Models\User::class, 'user');
             $result = $component->instance()->loadRelation(Post::class, 'posts');
 
             expect($result['displayPath'])->toHaveCount(2);
@@ -128,7 +128,7 @@ describe('SupportsRelations', function (): void {
 
             // Navigate into user first
             $component->instance()->loadRelation(Post::class);
-            $component->instance()->loadRelation(\Tests\Fixtures\Models\User::class, 'user');
+            $component->instance()->loadRelation(Tests\Fixtures\Models\User::class, 'user');
 
             // Reset by loading without relation name
             $component->instance()->loadRelation(Post::class);
@@ -404,7 +404,7 @@ describe('SupportsRelations', function (): void {
 
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $query = \Tests\Fixtures\Models\Comment::query();
+            $query = Tests\Fixtures\Models\Comment::query();
             $reflection = new ReflectionMethod($component->instance(), 'addDynamicJoin');
             $relatedTable = $reflection->invoke($component->instance(), $query, 'post.user');
 
@@ -430,7 +430,7 @@ describe('SupportsRelations', function (): void {
         it('returns relations with model, label, name, and type', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $modelInfo = \TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
             $relations = $reflection->invoke($component->instance(), $modelInfo);
 
@@ -447,7 +447,7 @@ describe('SupportsRelations', function (): void {
         it('includes relation key information', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $modelInfo = \TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
             $relations = $reflection->invoke($component->instance(), $modelInfo);
 

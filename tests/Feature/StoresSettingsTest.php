@@ -22,11 +22,11 @@ describe('ensureAuthHasTrait', function (): void {
     })->throws(MissingTraitException::class);
 
     it('throws MissingTraitException when user lacks HasDatatableUserSettings trait', function (): void {
-        $plainUser = new class() extends \Illuminate\Foundation\Auth\User
+        $plainUser = new class() extends Illuminate\Foundation\Auth\User
         {
-            protected $table = 'users';
-
             protected $guarded = [];
+
+            protected $table = 'users';
         };
 
         $plainUser->forceFill([
@@ -443,11 +443,11 @@ describe('getSavedFilters', function (): void {
     });
 
     it('returns empty array when user model lacks getDataTableSettings method', function (): void {
-        $plainUser = new class() extends \Illuminate\Foundation\Auth\User
+        $plainUser = new class() extends Illuminate\Foundation\Auth\User
         {
-            protected $table = 'users';
-
             protected $guarded = [];
+
+            protected $table = 'users';
         };
 
         $plainUser->forceFill([

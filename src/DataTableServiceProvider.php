@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Scout\Builder;
 use Livewire\Livewire;
+use TallStackUi\Facades\TallStackUi;
 use TeamNiftyGmbH\DataTable\Commands\MakeDataTableCommand;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCache;
 use TeamNiftyGmbH\DataTable\Commands\ModelInfoCacheReset;
@@ -19,7 +20,6 @@ use TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
 use TeamNiftyGmbH\DataTable\Livewire\Options;
-use TallStackUi\Facades\TallStackUi;
 
 class DataTableServiceProvider extends ServiceProvider
 {

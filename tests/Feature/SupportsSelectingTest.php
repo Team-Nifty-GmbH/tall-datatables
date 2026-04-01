@@ -5,7 +5,6 @@ use Livewire\Livewire;
 use Tests\Fixtures\Livewire\NonExportablePostDataTable;
 use Tests\Fixtures\Livewire\PostDataTable;
 use Tests\Fixtures\Livewire\SelectablePostDataTable;
-use Tests\Fixtures\Models\Post;
 
 beforeEach(function (): void {
     $this->user = createTestUser();
@@ -200,7 +199,7 @@ describe('SupportsSelecting', function (): void {
             $reflection = new ReflectionMethod($component->instance(), 'getSelectedModelsQuery');
             $query = $reflection->invoke($component->instance());
 
-            expect($query)->toBeInstanceOf(\Illuminate\Database\Eloquent\Builder::class);
+            expect($query)->toBeInstanceOf(Illuminate\Database\Eloquent\Builder::class);
         });
 
         it('scopes query to selected values', function (): void {

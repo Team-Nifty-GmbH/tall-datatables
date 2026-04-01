@@ -66,7 +66,7 @@ describe('RelationFinder', function (): void {
 
             expect($relations)->toBeInstanceOf(Collection::class);
             $relations->each(function ($relation): void {
-                expect($relation)->toBeInstanceOf(\Spatie\ModelInfo\Relations\Relation::class);
+                expect($relation)->toBeInstanceOf(Spatie\ModelInfo\Relations\Relation::class);
             });
         });
 
@@ -80,7 +80,7 @@ describe('RelationFinder', function (): void {
         });
 
         it('includes relations on Comment model', function (): void {
-            $relations = RelationFinder::forModel(new \Tests\Fixtures\Models\Comment());
+            $relations = RelationFinder::forModel(new Tests\Fixtures\Models\Comment());
 
             expect($relations)->toBeInstanceOf(Collection::class);
             $names = $relations->pluck('name')->toArray();

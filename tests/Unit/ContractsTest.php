@@ -2,7 +2,6 @@
 
 use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
 use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
-use Tests\Fixtures\Models\Comment;
 use Tests\Fixtures\Models\Post;
 use Tests\Fixtures\Models\Product;
 use Tests\Fixtures\Models\User;

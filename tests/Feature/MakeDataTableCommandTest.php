@@ -5,7 +5,7 @@ use TeamNiftyGmbH\DataTable\Commands\MakeDataTableCommand;
 
 describe('MakeDataTableCommand', function (): void {
     it('is registered as an artisan command', function (): void {
-        $commands = array_keys(\Artisan::all());
+        $commands = array_keys(Artisan::all());
 
         expect($commands)->toContain('make:data-table');
     });

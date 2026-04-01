@@ -1,7 +1,6 @@
 <?php
 
 use Livewire\Attributes\Locked;
-use Livewire\Livewire;
 use TeamNiftyGmbH\DataTable\Livewire\Options;
 
 describe('Livewire Options Component', function (): void {
@@ -18,7 +17,7 @@ describe('Livewire Options Component', function (): void {
             expect($reflection->hasMethod('render'))->toBeTrue();
 
             $returnType = $reflection->getMethod('render')->getReturnType();
-            expect($returnType->getName())->toBe(\Illuminate\View\View::class);
+            expect($returnType->getName())->toBe(Illuminate\View\View::class);
         });
     });
 
@@ -116,7 +115,7 @@ describe('Livewire Options Component', function (): void {
             // render() should return a View instance
             $result = app()->call([$instance, 'render']);
 
-            expect($result)->toBeInstanceOf(\Illuminate\View\View::class);
+            expect($result)->toBeInstanceOf(Illuminate\View\View::class);
         });
 
         it('renders the options view template', function (): void {

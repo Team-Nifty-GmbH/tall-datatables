@@ -1,7 +1,6 @@
 <?php
 
 use Livewire\Livewire;
-use Tests\Fixtures\Livewire\PostDataTable;
 use Tests\Fixtures\Livewire\SortablePostDataTable;
 
 beforeEach(function (): void {
@@ -117,7 +116,7 @@ describe('SupportsSorting', function (): void {
             // Test the trait directly via an anonymous class
             $instance = new class()
             {
-                use \TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSorting;
+                use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSorting;
             };
 
             $reflection = new ReflectionMethod($instance, 'isSortable');
@@ -128,7 +127,7 @@ describe('SupportsSorting', function (): void {
         it('sortRows is a no-op by default on the trait', function (): void {
             $instance = new class()
             {
-                use \TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSorting;
+                use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSorting;
             };
 
             // Should not throw - just a no-op
@@ -141,7 +140,7 @@ describe('SupportsSorting', function (): void {
         it('sortRows accepts string id by default on the trait', function (): void {
             $instance = new class()
             {
-                use \TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSorting;
+                use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSorting;
             };
 
             $instance->sortRows('uuid-test', 3);

@@ -541,77 +541,6 @@ class DataTable extends Component
     }
 
     #[Renderless]
-    public function setPerPage(int $perPage): void
-    {
-        if ($perPage > 0 && ($this->data['total'] ?? 0) > 0 && $this->page > $this->data['total'] / $perPage) {
-            $this->page = (int) ceil($this->data['total'] / $perPage);
-        }
-
-        $this->perPage = $perPage;
-        $this->cacheState();
-        $this->loadData();
-    }
-
-    #[Renderless]
-    public function setTextFilter(string $col, ?string $value, int $groupIndex = 0, int $valueIndex = 0): void
-    {
-        $this->migrateTextFiltersIfNeeded();
-
-        if (! isset($this->textFilters[$groupIndex])) {
-            $this->textFilters[$groupIndex] = [];
-        }
-
-        if ($valueIndex === 0 && ! is_array($this->textFilters[$groupIndex][$col] ?? null)) {
-            // Single value (backwards compatible)
-            if ($value !== null && $value !== '') {
-                $this->textFilters[$groupIndex][$col] = $value;
-            } else {
-                unset($this->textFilters[$groupIndex][$col]);
-            }
-        } else {
-            // Multi-value: ensure array
-            $current = $this->textFilters[$groupIndex][$col] ?? [];
-            if (! is_array($current)) {
-                $current = [$current];
-            }
-
-            if ($value !== null && $value !== '') {
-                $current[$valueIndex] = $value;
-            } else {
-                unset($current[$valueIndex]);
-                $current = array_values($current);
-            }
-
-            if (empty($current)) {
-                unset($this->textFilters[$groupIndex][$col]);
-            } else {
-                $this->textFilters[$groupIndex][$col] = count($current) === 1 ? $current[0] : $current;
-            }
-        }
-
-        if (empty($this->textFilters[$groupIndex])) {
-            unset($this->textFilters[$groupIndex]);
-        }
-
-        $this->rebuildTextFilterGroup();
-        $this->cacheState();
-        $this->loadData();
-    }
-
-    #[Renderless]
-    public function removeTextFilterRow(int $groupIndex): void
-    {
-        $this->migrateTextFiltersIfNeeded();
-
-        unset($this->textFilters[$groupIndex]);
-        $this->textFilters = array_values($this->textFilters);
-
-        $this->rebuildTextFilterGroup();
-        $this->cacheState();
-        $this->loadData();
-    }
-
-    #[Renderless]
     public function removeFilter(int $groupIndex, int $filterIndex): void
     {
         if (! isset($this->userFilters[$groupIndex][$filterIndex])) {
@@ -674,74 +603,75 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    private function migrateTextFiltersIfNeeded(): void
-    {
-        if (empty($this->textFilters)) {
-            return;
-        }
-
-        // Detect old flat format: { 'column_name': 'value' } vs new: { 0: { 'column_name': 'value' } }
-        $firstValue = reset($this->textFilters);
-        if (is_string($firstValue) || is_null($firstValue)) {
-            $this->textFilters = [array_filter($this->textFilters, fn ($v) => is_string($v) && $v !== '')];
-            if (empty($this->textFilters[0])) {
-                $this->textFilters = [];
-            }
-        }
-    }
-
-    private function rebuildTextFilterGroup(): void
+    #[Renderless]
+    public function removeTextFilterRow(int $groupIndex): void
     {
         $this->migrateTextFiltersIfNeeded();
 
-        // Ensure at least one group exists
-        if (empty($this->userFilters) || ! is_array($this->userFilters)) {
-            $this->userFilters = [[]];
+        unset($this->textFilters[$groupIndex]);
+        $this->textFilters = array_values($this->textFilters);
+
+        $this->rebuildTextFilterGroup();
+        $this->cacheState();
+        $this->loadData();
+    }
+
+    #[Renderless]
+    public function setPerPage(int $perPage): void
+    {
+        if ($perPage > 0 && ($this->data['total'] ?? 0) > 0 && $this->page > $this->data['total'] / $perPage) {
+            $this->page = (int) ceil($this->data['total'] / $perPage);
         }
 
-        // Remove all existing text-source filters from all groups
-        foreach ($this->userFilters as $groupIndex => $group) {
-            if (! is_array($group)) {
-                continue;
-            }
+        $this->perPage = $perPage;
+        $this->cacheState();
+        $this->loadData();
+    }
 
-            $this->userFilters[$groupIndex] = array_values(
-                array_filter($group, fn ($f) => ($f['source'] ?? '') !== 'text')
-            );
+    #[Renderless]
+    public function setTextFilter(string $col, ?string $value, int $groupIndex = 0, int $valueIndex = 0): void
+    {
+        $this->migrateTextFiltersIfNeeded();
+
+        if (! isset($this->textFilters[$groupIndex])) {
+            $this->textFilters[$groupIndex] = [];
         }
 
-        // Add text filters into their respective groups
-        foreach ($this->textFilters as $groupIndex => $filtersInGroup) {
-            if (! is_array($filtersInGroup)) {
-                continue;
+        if ($valueIndex === 0 && ! is_array($this->textFilters[$groupIndex][$col] ?? null)) {
+            // Single value (backwards compatible)
+            if ($value !== null && $value !== '') {
+                $this->textFilters[$groupIndex][$col] = $value;
+            } else {
+                unset($this->textFilters[$groupIndex][$col]);
+            }
+        } else {
+            // Multi-value: ensure array
+            $current = $this->textFilters[$groupIndex][$col] ?? [];
+            if (! is_array($current)) {
+                $current = [$current];
             }
 
-            if (! isset($this->userFilters[$groupIndex])) {
-                $this->userFilters[$groupIndex] = [];
+            if ($value !== null && $value !== '') {
+                $current[$valueIndex] = $value;
+            } else {
+                unset($current[$valueIndex]);
+                $current = array_values($current);
             }
 
-            foreach ($filtersInGroup as $col => $rawValue) {
-                if ($rawValue === null || $rawValue === '') {
-                    continue;
-                }
-
-                $values = is_array($rawValue) ? $rawValue : [$rawValue];
-                foreach ($values as $singleValue) {
-                    if ($singleValue === null || $singleValue === '') {
-                        continue;
-                    }
-
-                    $parsed = $this->parseTextFilterValue($singleValue, $col);
-                    $parsed['source'] = 'text';
-                    $this->userFilters[$groupIndex][] = $parsed;
-                }
+            if (empty($current)) {
+                unset($this->textFilters[$groupIndex][$col]);
+            } else {
+                $this->textFilters[$groupIndex][$col] = count($current) === 1 ? $current[0] : $current;
             }
         }
 
-        // Clean up empty groups
-        $this->userFilters = array_values(
-            array_filter($this->userFilters, fn ($g) => is_array($g) && ! empty($g))
-        );
+        if (empty($this->textFilters[$groupIndex])) {
+            unset($this->textFilters[$groupIndex]);
+        }
+
+        $this->rebuildTextFilterGroup();
+        $this->cacheState();
+        $this->loadData();
     }
 
     #[Renderless]
@@ -1010,5 +940,75 @@ class DataTable extends Component
     protected function showRestoreButton(): bool
     {
         return method_exists(static::class, 'restore');
+    }
+
+    private function migrateTextFiltersIfNeeded(): void
+    {
+        if (empty($this->textFilters)) {
+            return;
+        }
+
+        // Detect old flat format: { 'column_name': 'value' } vs new: { 0: { 'column_name': 'value' } }
+        $firstValue = reset($this->textFilters);
+        if (is_string($firstValue) || is_null($firstValue)) {
+            $this->textFilters = [array_filter($this->textFilters, fn ($v) => is_string($v) && $v !== '')];
+            if (empty($this->textFilters[0])) {
+                $this->textFilters = [];
+            }
+        }
+    }
+
+    private function rebuildTextFilterGroup(): void
+    {
+        $this->migrateTextFiltersIfNeeded();
+
+        // Ensure at least one group exists
+        if (empty($this->userFilters) || ! is_array($this->userFilters)) {
+            $this->userFilters = [[]];
+        }
+
+        // Remove all existing text-source filters from all groups
+        foreach ($this->userFilters as $groupIndex => $group) {
+            if (! is_array($group)) {
+                continue;
+            }
+
+            $this->userFilters[$groupIndex] = array_values(
+                array_filter($group, fn ($f) => ($f['source'] ?? '') !== 'text')
+            );
+        }
+
+        // Add text filters into their respective groups
+        foreach ($this->textFilters as $groupIndex => $filtersInGroup) {
+            if (! is_array($filtersInGroup)) {
+                continue;
+            }
+
+            if (! isset($this->userFilters[$groupIndex])) {
+                $this->userFilters[$groupIndex] = [];
+            }
+
+            foreach ($filtersInGroup as $col => $rawValue) {
+                if ($rawValue === null || $rawValue === '') {
+                    continue;
+                }
+
+                $values = is_array($rawValue) ? $rawValue : [$rawValue];
+                foreach ($values as $singleValue) {
+                    if ($singleValue === null || $singleValue === '') {
+                        continue;
+                    }
+
+                    $parsed = $this->parseTextFilterValue($singleValue, $col);
+                    $parsed['source'] = 'text';
+                    $this->userFilters[$groupIndex][] = $parsed;
+                }
+            }
+        }
+
+        // Clean up empty groups
+        $this->userFilters = array_values(
+            array_filter($this->userFilters, fn ($g) => is_array($g) && ! empty($g))
+        );
     }
 }

@@ -7,13 +7,13 @@ describe('DataTableServiceProvider', function (): void {
     describe('Livewire component registration', function (): void {
         it('registers data-table-filters component', function (): void {
             expect(app('livewire')->isDiscoverable('data-table-filters')
-                || class_exists(\TeamNiftyGmbH\DataTable\Components\DataTableFilters::class)
+                || class_exists(TeamNiftyGmbH\DataTable\Components\DataTableFilters::class)
             )->toBeTrue();
         });
 
         it('registers data-table-options-v2 component', function (): void {
             expect(app('livewire')->isDiscoverable('data-table-options-v2')
-                || class_exists(\TeamNiftyGmbH\DataTable\Components\DataTableOptions::class)
+                || class_exists(TeamNiftyGmbH\DataTable\Components\DataTableOptions::class)
             )->toBeTrue();
         });
     });
@@ -105,19 +105,19 @@ describe('DataTableServiceProvider', function (): void {
 
     describe('Commands registration', function (): void {
         it('registers make data-table command', function (): void {
-            $commands = array_keys(\Artisan::all());
+            $commands = array_keys(Artisan::all());
 
             expect($commands)->toContain('make:data-table');
         });
 
         it('registers model-info cache command', function (): void {
-            $commands = array_keys(\Artisan::all());
+            $commands = array_keys(Artisan::all());
 
             expect($commands)->toContain('model-info:cache');
         });
 
         it('registers model-info cache-reset command', function (): void {
-            $commands = array_keys(\Artisan::all());
+            $commands = array_keys(Artisan::all());
 
             expect($commands)->toContain('model-info:cache-reset');
         });
@@ -135,7 +135,7 @@ describe('DataTableServiceProvider', function (): void {
         it('skips macro registration when Scout is not installed', function (): void {
             // When Scout is not installed, registerMacros should not crash
             // and should complete silently
-            $provider = new \Tests\TestDataTableServiceProvider(app());
+            $provider = new Tests\TestDataTableServiceProvider(app());
             $provider->register();
 
             expect(true)->toBeTrue();
@@ -144,7 +144,7 @@ describe('DataTableServiceProvider', function (): void {
 
     describe('Tag compiler registration', function (): void {
         it('compiles datatable scripts tag via precompiler', function (): void {
-            $compiled = \Illuminate\Support\Facades\Blade::compileString('<datatable:scripts />');
+            $compiled = Blade::compileString('<datatable:scripts />');
 
             expect($compiled)
                 ->toContain('script')
@@ -152,7 +152,7 @@ describe('DataTableServiceProvider', function (): void {
         });
 
         it('compiles datatable styles tag via precompiler', function (): void {
-            $compiled = \Illuminate\Support\Facades\Blade::compileString('<datatable:styles />');
+            $compiled = Blade::compileString('<datatable:styles />');
 
             expect($compiled)
                 ->toContain('link')
@@ -179,7 +179,7 @@ describe('DataTableServiceProvider', function (): void {
 
     describe('Publishing configuration', function (): void {
         it('has publishable config under tall-datatables-config tag', function (): void {
-            $publishGroups = \Illuminate\Support\ServiceProvider::$publishGroups ?? [];
+            $publishGroups = Illuminate\Support\ServiceProvider::$publishGroups ?? [];
 
             // Check if the config publish group is registered
             expect(config('tall-datatables'))->toBeArray();

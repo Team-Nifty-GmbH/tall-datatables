@@ -127,18 +127,18 @@ describe('Icon', function (): void {
     describe('toResponse', function (): void {
         it('returns an HTTP response with SVG content type', function (): void {
             $icon = Icon::make('check');
-            $request = new \Illuminate\Http\Request();
+            $request = new Illuminate\Http\Request();
             $response = $icon->toResponse($request);
 
             expect($response)
-                ->toBeInstanceOf(\Illuminate\Http\Response::class)
+                ->toBeInstanceOf(Illuminate\Http\Response::class)
                 ->and($response->headers->get('Content-Type'))->toBe('image/svg+xml; charset=utf-8')
                 ->and($response->headers->get('Cache-Control'))->toContain('public');
         });
 
         it('includes max-age cache header', function (): void {
             $icon = Icon::make('check');
-            $request = new \Illuminate\Http\Request();
+            $request = new Illuminate\Http\Request();
             $response = $icon->toResponse($request);
 
             expect($response->headers->get('Cache-Control'))->toContain('max-age=31536000');
@@ -146,7 +146,7 @@ describe('Icon', function (): void {
 
         it('response content matches getView output', function (): void {
             $icon = Icon::make('check');
-            $request = new \Illuminate\Http\Request();
+            $request = new Illuminate\Http\Request();
             $response = $icon->toResponse($request);
 
             expect($response->getContent())->toBe($icon->getView());
