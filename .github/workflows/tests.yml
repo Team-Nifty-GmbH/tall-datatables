@@ -2,12 +2,12 @@ name: Tests
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, master, develop, 2.x]
   pull_request:
-    branches: [main, master, develop]
+    branches: [main, master, develop, 2.x]
 
 jobs:
-  tests:
+  unit-feature:
     runs-on: ubuntu-latest
 
     strategy:
@@ -21,7 +21,7 @@ jobs:
           - laravel: 12.*
             testbench: 10.*
 
-    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - Livewire ${{ matrix.livewire }} - ${{ matrix.stability }}
+    name: Unit & Feature - PHP ${{ matrix.php }} - Livewire ${{ matrix.livewire }}
 
     steps:
       - name: Checkout code
@@ -44,6 +44,42 @@ jobs:
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "livewire/livewire:${{ matrix.livewire }}" --no-interaction --no-update
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
+      - name: Execute unit and feature tests
+        run: ./vendor/bin/testbench package:test --ci --testsuite=Unit,Feature
+
+  browser:
+    runs-on: ubuntu-latest
+    needs: unit-feature
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [8.5]
+        laravel: [12.*]
+        livewire: [4.*]
+        stability: [prefer-stable]
+        include:
+          - laravel: 12.*
+            testbench: 10.*
+
+    name: Browser Tests - Livewire ${{ matrix.livewire }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "livewire/livewire:${{ matrix.livewire }}" --no-interaction --no-update
+          composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -57,14 +93,14 @@ jobs:
       - name: Install Playwright
         run: npx playwright install --with-deps
 
-      - name: Execute tests
-        run: ./vendor/bin/testbench package:test --ci --parallel
+      - name: Execute browser tests
+        run: ./vendor/bin/testbench package:test --ci --testsuite=Browser
 
       - name: Upload browser test artifacts
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: browser-test-artifacts-php-${{ matrix.php }}-livewire-${{ matrix.livewire }}
+          name: browser-test-artifacts-livewire-${{ matrix.livewire }}
           path: |
             tests/Browser/.screenshots
             storage/logs
