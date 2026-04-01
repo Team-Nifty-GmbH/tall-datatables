@@ -465,4 +465,117 @@ describe('SupportsRelations', function (): void {
             expect($component->get('with'))->toBe([]);
         });
     });
+
+    describe('loadSlug with cached data', function (): void {
+        it('returns cached data for root model via PostDataTable', function (): void {
+            // PostDataTable has availableRelations = ['*'] so null path is allowed
+            $component = Livewire::test(PostDataTable::class);
+
+            // First load populates cache
+            $component->instance()->loadRelation(Post::class);
+
+            // loadSlug for root should return cached data
+            $result = $component->instance()->loadSlug(null);
+
+            expect($result)->toHaveKey('cols')
+                ->toHaveKey('relations')
+                ->toHaveKey('displayPath');
+            expect($result['cols'])->toBeArray();
+        });
+
+        it('sets loadedPath correctly when loading slug', function (): void {
+            $component = Livewire::test(PostWithRelationsDataTable::class);
+
+            // First load the user relation to cache it
+            $component->instance()->loadRelation(Post::class);
+            $component->instance()->loadRelation(Tests\Fixtures\Models\User::class, 'user');
+
+            // Reset and load via slug
+            $component->instance()->loadSlug('user');
+
+            expect($component->get('loadedPath'))->toBe('user');
+        });
+    });
+
+    describe('constructWith with virtual attributes', function (): void {
+        it('uses wildcard select for virtual attributes', function (): void {
+            // When a virtual attribute is in enabledCols, select should use *
+            $component = Livewire::test(PostDataTable::class);
+
+            $reflection = new ReflectionMethod($component->instance(), 'constructWith');
+            Cache::flush();
+
+            $result = $reflection->invoke($component->instance());
+
+            // Result has 7 elements: with, select, filterable, filterValueLists, sortable, formatters, enabledCols
+            expect($result)->toHaveCount(7);
+        });
+    });
+
+    describe('getFilterValueList edge cases', function (): void {
+        it('skips columns with no cast and no class', function (): void {
+            $component = Livewire::test(PostDataTable::class);
+
+            // title has no special cast, so getFilterValueList should not set a value list for it
+            $filterValueLists = $component->get('filterValueLists');
+
+            expect($filterValueLists)->not->toHaveKey('title');
+        });
+    });
+
+    describe('getModelRelations', function (): void {
+        it('excludes MorphTo relations', function (): void {
+            $component = Livewire::test(PostWithRelationsDataTable::class);
+
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
+            $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
+            $relations = $reflection->invoke($component->instance(), $modelInfo);
+
+            // MorphTo relations should be excluded
+            foreach ($relations as $relation) {
+                expect($relation['type'])->not->toContain('MorphTo');
+            }
+        });
+
+        it('includes key information for HasMany relations', function (): void {
+            $component = Livewire::test(PostWithRelationsDataTable::class);
+
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
+            $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
+            $relations = $reflection->invoke($component->instance(), $modelInfo);
+
+            if (isset($relations['comments'])) {
+                expect($relations['comments'])->toHaveKey('model')
+                    ->toHaveKey('name')
+                    ->toHaveKey('type');
+            }
+        });
+    });
+
+    describe('loadRelation with available relations wildcard', function (): void {
+        it('allows all relations when availableRelations is wildcard', function (): void {
+            $component = Livewire::test(PostDataTable::class);
+
+            $result = $component->instance()->loadRelation(Post::class, 'user');
+
+            // PostDataTable has availableRelations as default ['*']
+            expect($result['cols'])->toBeArray();
+        });
+    });
+
+    describe('constructWith relation type detection', function (): void {
+        it('identifies HasMany as many relation for array formatter', function (): void {
+            // Use PostWithRelationsDataTable which has comments (HasMany) relation access
+            $component = Livewire::test(PostWithRelationsDataTable::class);
+
+            $reflection = new ReflectionMethod($component->instance(), 'constructWith');
+            Cache::flush();
+
+            $result = $reflection->invoke($component->instance());
+
+            $formatters = $result[5];
+            // formatters should contain relation formatter entries
+            expect($formatters)->toBeArray();
+        });
+    });
 });

@@ -8,7 +8,7 @@ describe('Livewire Options Component', function (): void {
         it('extends Livewire Component', function (): void {
             $reflection = new ReflectionClass(Options::class);
 
-            expect($reflection->isSubclassOf(\Livewire\Component::class))->toBeTrue();
+            expect($reflection->isSubclassOf(Livewire\Component::class))->toBeTrue();
         });
 
         it('has render method that returns a View', function (): void {

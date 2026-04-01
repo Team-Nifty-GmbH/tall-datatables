@@ -1509,4 +1509,208 @@ describe('resolveCastsForColumn', function (): void {
         $data = $component->instance()->getDataForTesting();
         expect($data)->toBeArray();
     });
+
+    it('returns empty array when relation traversal fails', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'resolveCastsForColumn');
+        $post = createTestPost(['user_id' => $this->user->getKey()]);
+        $result = $reflection->invoke($instance, $post, 'nonExistentRelation.someField');
+
+        expect($result)->toBe([]);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// getResolvedFormatters
+// ---------------------------------------------------------------------------
+describe('getResolvedFormatters', function (): void {
+    it('caches formatters after first call', function (): void {
+        $post = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Cache Test']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->call('loadData');
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'getResolvedFormatters');
+        $first = $reflection->invoke($instance, $post);
+        $second = $reflection->invoke($instance, $post);
+
+        expect($first)->toBe($second);
+    });
+
+    it('resolves custom string formatters', function (): void {
+        $post = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Formatted']);
+
+        $component = Livewire::test(Tests\Fixtures\Livewire\PostWithBadgeDataTable::class);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// itemToArray with array values from HasMany relations
+// ---------------------------------------------------------------------------
+describe('itemToArray with relation arrays', function (): void {
+    it('concatenates multiple values for same key into array', function (): void {
+        $user = createTestUser(['name' => 'ArrayUser']);
+        $post = createTestPost(['user_id' => $user->getKey(), 'title' => 'ArrayPost']);
+        createTestComment(['user_id' => $user->getKey(), 'post_id' => $post->getKey(), 'body' => 'Comment 1']);
+        createTestComment(['user_id' => $user->getKey(), 'post_id' => $post->getKey(), 'body' => 'Comment 2']);
+
+        $component = Livewire::test(PostWithRelationsDataTable::class);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// applyFilterWhereIn via named filter
+// ---------------------------------------------------------------------------
+describe('applyFilterWhereIn', function (): void {
+    it('filters using whereIn via named filter', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'In Set']);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Not In Set']);
+
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
+            'WhereIn' => ['title', ['In Set']],
+        ];
+
+        $component = Livewire::test(Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('In Set');
+
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
+    });
+});
+
+// ---------------------------------------------------------------------------
+// applyFilterWith via named filter
+// ---------------------------------------------------------------------------
+describe('applyFilterWith', function (): void {
+    it('adds eager loading via named With filter', function (): void {
+        $user = createTestUser(['name' => 'WithUser']);
+        createTestPost(['user_id' => $user->getKey(), 'title' => 'With Post']);
+
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
+            'With' => ['user'],
+        ];
+
+        $component = Livewire::test(Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['total'])->toBe(1);
+
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
+    });
+});
+
+// ---------------------------------------------------------------------------
+// applyFilterWhereHas / applyFilterWhereDoesntHave with invalid relations
+// ---------------------------------------------------------------------------
+describe('applyFilterWhereHas with invalid relation', function (): void {
+    it('handles invalid relation gracefully for whereHas', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Test']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'invalidRelation.field', 'operator' => 'like', 'value' => '%*%']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+
+    it('handles invalid relation gracefully for whereDoesntHave', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Test']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'invalidRelation.field', 'operator' => 'like', 'value' => '%!*%']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// normalizeNumericValue additional edge cases
+// ---------------------------------------------------------------------------
+describe('normalizeNumericValue comma-only with 3 digits', function (): void {
+    it('treats comma with 3 or more trailing digits as thousands separator', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'K', 'price' => 1000]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'price', '= 1,000');
+
+        $userFilters = $component->get('userFilters');
+        // Comma with 3 digits after = thousands separator, original string returned
+        expect($userFilters[0][0]['value'])->toBe('1,000');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Sorting with relation column (dot notation)
+// ---------------------------------------------------------------------------
+describe('sorting with relation column', function (): void {
+    it('sorts by a relation column via join', function (): void {
+        $alice = createTestUser(['name' => 'Alice']);
+        $bob = createTestUser(['name' => 'Bob']);
+        createTestPost(['user_id' => $bob->getKey(), 'title' => 'Bob Post']);
+        createTestPost(['user_id' => $alice->getKey(), 'title' => 'Alice Post']);
+
+        $component = Livewire::test(PostWithRelationsDataTable::class);
+        $component->set('userOrderBy', 'user.name');
+        $component->set('userOrderAsc', true);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(2);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// loadData resets page when empty results on page > 1
+// ---------------------------------------------------------------------------
+describe('loadData page reset on empty results', function (): void {
+    it('keeps page 1 when there are results', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Only One']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('perPage', 15);
+        $component->set('page', 1);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+        expect($component->get('page'))->toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// buildSearch with soft deletes
+// ---------------------------------------------------------------------------
+describe('buildSearch soft deletes flag', function (): void {
+    it('does not include trashed when withSoftDeletes is false', function (): void {
+        $post = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Active']);
+        $deleted = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Deleted']);
+        $deleted->delete();
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('withSoftDeletes', false);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+    });
 });

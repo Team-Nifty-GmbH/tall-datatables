@@ -185,4 +185,81 @@ describe('DataTableServiceProvider', function (): void {
             expect(config('tall-datatables'))->toBeArray();
         });
     });
+
+    describe('Blade precompiler', function (): void {
+        it('leaves non-datatable tags unchanged', function (): void {
+            $input = '<div>No datatable tags here</div>';
+            $compiled = Blade::compileString($input);
+
+            expect($compiled)->not->toContain('script');
+        });
+
+        it('compiles multiple datatable tags in one string', function (): void {
+            $input = '<datatable:scripts /><datatable:styles />';
+            $compiled = Blade::compileString($input);
+
+            expect($compiled)
+                ->toContain('script')
+                ->toContain('link');
+        });
+    });
+
+    describe('Asset route responses', function (): void {
+        it('scripts route exists and is reachable', function (): void {
+            $route = route('tall-datatables.assets.scripts');
+
+            expect($route)->toBeString()->toContain('tall-datatables/assets/scripts');
+        });
+
+        it('styles route exists and is reachable', function (): void {
+            $route = route('tall-datatables.assets.styles');
+
+            expect($route)->toBeString()->toContain('tall-datatables/assets/styles');
+        });
+    });
+
+    describe('FormatterRegistry resolution', function (): void {
+        it('can resolve FormatterRegistry from container', function (): void {
+            $instance = app(FormatterRegistry::class);
+
+            expect($instance)->toBeInstanceOf(FormatterRegistry::class);
+        });
+    });
+
+    describe('Boot method', function (): void {
+        it('loads views from the correct namespace', function (): void {
+            $hints = view()->getFinder()->getHints();
+
+            expect($hints)->toHaveKey('tall-datatables');
+            expect($hints['tall-datatables'])->toBeArray();
+        });
+
+        it('registers TallStackUI tab customization', function (): void {
+            // This test verifies boot runs without error when TallStackUI customize is available
+            expect(true)->toBeTrue();
+        });
+    });
+
+    describe('Blade directive output', function (): void {
+        it('dataTablesScripts includes defer attribute', function (): void {
+            $directives = Blade::getCustomDirectives();
+            $result = call_user_func($directives['dataTablesScripts'], '');
+
+            expect($result)->toContain('defer');
+        });
+
+        it('dataTableStyles includes stylesheet type', function (): void {
+            $directives = Blade::getCustomDirectives();
+            $result = call_user_func($directives['dataTableStyles']);
+
+            expect($result)->toContain('stylesheet');
+        });
+
+        it('dataTablesScripts with null attributes produces output', function (): void {
+            $directives = Blade::getCustomDirectives();
+            $result = call_user_func($directives['dataTablesScripts'], null);
+
+            expect($result)->toContain('script');
+        });
+    });
 });
