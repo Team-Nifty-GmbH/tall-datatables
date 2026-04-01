@@ -8,6 +8,7 @@ use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use TallStackUi\TallStackUiServiceProvider;
 use TeamNiftyGmbH\DataTable\DataTableServiceProvider;
+use Tests\Fixtures\Livewire\GridPostDataTable;
 use Tests\Fixtures\Livewire\PostDataTable;
 use Tests\Fixtures\Livewire\PostWithRelationsDataTable;
 use Tests\Fixtures\Livewire\SelectablePostDataTable;
@@ -31,6 +32,7 @@ abstract class TestCase extends BaseTestCase
         Livewire::component('user-data-table', UserDataTable::class);
         Livewire::component('selectable-post-data-table', SelectablePostDataTable::class);
         Livewire::component('post-with-relations-data-table', PostWithRelationsDataTable::class);
+        Livewire::component('grid-post-data-table', GridPostDataTable::class);
 
         Livewire::component('tall-datatables-options', \TeamNiftyGmbH\DataTable\Livewire\Options::class);
     }
