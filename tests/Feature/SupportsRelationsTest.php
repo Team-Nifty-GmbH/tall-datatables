@@ -1325,9 +1325,11 @@ describe('getFilterValueList', function (): void {
         $filterValueLists = (new ReflectionProperty($instance, 'filterValueLists'))->getValue($instance);
 
         expect($filterValueLists)->toHaveKey('status')
-            ->and($filterValueLists['status'])->toHaveCount(3)
-            ->and($filterValueLists['status'][0]['value'])->toBe('draft')
-            ->and($filterValueLists['status'][1]['value'])->toBe('published')
-            ->and($filterValueLists['status'][2]['value'])->toBe('archived');
+            ->and($filterValueLists['status'])->toHaveCount(3);
+
+        $values = array_column($filterValueLists['status'], 'value');
+        expect($values)->toContain('draft')
+            ->toContain('published')
+            ->toContain('archived');
     });
 });

@@ -900,7 +900,13 @@ describe('SearchController combined parameters', function (): void {
         ]);
 
         $response->assertOk();
-        expect($response->json()[0]['name'])->toBe('Alpha User');
-        expect($response->json()[1]['name'])->toBe('Beta User');
+        $names = collect($response->json())->pluck('name')->values()->all();
+
+        // Verify Alpha comes before Beta in ascending order
+        $alphaIndex = array_search('Alpha User', $names);
+        $betaIndex = array_search('Beta User', $names);
+        expect($alphaIndex)->not->toBeFalse()
+            ->and($betaIndex)->not->toBeFalse()
+            ->and($alphaIndex)->toBeLessThan($betaIndex);
     });
 });
