@@ -14,6 +14,77 @@ beforeEach(function (): void {
 // applyFilters — fixed filters (the $filters property)
 // ---------------------------------------------------------------------------
 describe('applyFilters with fixed filters', function (): void {
+    it('applies a fixed where filter', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Fixed Match', 'is_published' => true]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'No Fixed Match', 'is_published' => false]);
+
+        $component = Livewire::test(\Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+
+        // Set fixed filters before mount
+        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
+            ['is_published', '=', true],
+        ];
+
+        $component = Livewire::test(\Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('Fixed Match');
+
+        // Reset
+        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
+    });
+
+    it('applies a fixed is null filter', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Has Price', 'price' => 100]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'No Price', 'price' => null]);
+
+        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
+            ['column' => 'price', 'operator' => 'is null', 'value' => null],
+        ];
+
+        $component = Livewire::test(\Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('No Price');
+
+        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
+    });
+
+    it('applies a fixed is not null filter', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Has Price', 'price' => 100]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'No Price', 'price' => null]);
+
+        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
+            ['column' => 'price', 'operator' => 'is not null', 'value' => null],
+        ];
+
+        $component = Livewire::test(\Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('Has Price');
+
+        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
+    });
+
+    it('applies a named Where filter method', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Named Filter', 'price' => 50]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Other', 'price' => 100]);
+
+        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
+            'Where' => [['title', '=', 'Named Filter']],
+        ];
+
+        $component = Livewire::test(\Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('Named Filter');
+
+        \Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -1228,5 +1299,214 @@ describe('startSearch', function (): void {
 
         $component->call('startSearch');
         expect($component->get('page'))->toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// allowSoftDeletes detection
+// ---------------------------------------------------------------------------
+describe('allowSoftDeletes', function (): void {
+    it('returns true for models using SoftDeletes trait', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $reflection = new ReflectionMethod($component->instance(), 'allowSoftDeletes');
+        $result = $reflection->invoke($component->instance());
+
+        expect($result)->toBeTrue();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// getIsSearchable
+// ---------------------------------------------------------------------------
+describe('getIsSearchable', function (): void {
+    it('returns false for models without Scout Searchable trait', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $reflection = new ReflectionMethod($component->instance(), 'getIsSearchable');
+        $result = $reflection->invoke($component->instance());
+
+        expect($result)->toBeFalse();
+    });
+
+    it('uses cached isSearchable value when set', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('isSearchable', true);
+
+        $reflection = new ReflectionMethod($component->instance(), 'getIsSearchable');
+        $result = $reflection->invoke($component->instance());
+
+        expect($result)->toBeTrue();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// getReturnKeys with and without soft deletes
+// ---------------------------------------------------------------------------
+describe('getReturnKeys', function (): void {
+    it('includes deleted_at when withSoftDeletes is true', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('withSoftDeletes', true);
+
+        $reflection = new ReflectionMethod($component->instance(), 'getReturnKeys');
+        $result = $reflection->invoke($component->instance());
+
+        expect($result)->toContain('deleted_at');
+    });
+
+    it('excludes deleted_at when withSoftDeletes is false', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('withSoftDeletes', false);
+
+        $reflection = new ReflectionMethod($component->instance(), 'getReturnKeys');
+        $result = $reflection->invoke($component->instance());
+
+        expect($result)->not->toContain('deleted_at');
+    });
+
+    it('always includes modelKeyName and href', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $reflection = new ReflectionMethod($component->instance(), 'getReturnKeys');
+        $result = $reflection->invoke($component->instance());
+
+        expect($result)->toContain('id')
+            ->and($result)->toContain('href');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// normalizeNumericValue edge cases
+// ---------------------------------------------------------------------------
+describe('normalizeNumericValue additional cases', function (): void {
+    it('parses German decimal format (comma as decimal)', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'German', 'price' => 39.99]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'price', '= 39,99');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe(39.99);
+    });
+
+    it('parses value with both dots and commas (European format)', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'European', 'price' => 1234.56]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'price', '= 1.234,56');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe(1234.56);
+    });
+
+    it('parses value with comma thousands separator (US format)', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'US', 'price' => 1234.56]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'price', '= 1,234.56');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe(1234.56);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// applySessionFilter
+// ---------------------------------------------------------------------------
+describe('applySessionFilter', function (): void {
+    it('applies a session filter when present', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Session Match', 'price' => 10]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Session Skip', 'price' => 999]);
+
+        // Set session filter BEFORE mounting the component
+        $cacheKey = PostDataTable::class . '_query';
+        $sessionFilter = new \TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
+            'test-filter',
+            function ($query): void {
+                $query->where('title', 'Session Match');
+            }
+        );
+        session()->put($cacheKey, $sessionFilter);
+
+        $component = Livewire::test(PostDataTable::class);
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('Session Match');
+
+        session()->forget($cacheKey);
+    });
+
+    it('does not crash when no session filter is present', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'No Session Filter']);
+
+        $component = Livewire::test(PostDataTable::class);
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+        expect($component->get('sessionFilter'))->toBe([]);
+    });
+
+    it('clears userFilters on first load of session filter', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Session Post']);
+
+        $cacheKey = PostDataTable::class . '_query';
+        $sessionFilter = new \TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
+            'clearing-filter',
+            function ($query): void {
+                $query->where('title', 'like', '%Session%');
+            }
+        );
+        session()->put($cacheKey, $sessionFilter);
+
+        $component = Livewire::test(PostDataTable::class);
+
+        // After initial load, userFilters should be empty (cleared by session filter)
+        expect($component->get('userFilters'))->toBe([]);
+
+        session()->forget($cacheKey);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// itemToArray with InteractsWithDataTables href
+// ---------------------------------------------------------------------------
+describe('itemToArray generates href', function (): void {
+    it('generates href for models implementing InteractsWithDataTables', function (): void {
+        $post = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Has URL']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['data'][0]['href'])->toBe('/posts/' . $post->getKey());
+    });
+
+    it('sets href to null when hasNoRedirect is true', function (): void {
+        $post = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'No Redirect']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('hasNoRedirect', true);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['data'][0]['href'])->toBeNull();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// resolveCastsForColumn
+// ---------------------------------------------------------------------------
+describe('resolveCastsForColumn', function (): void {
+    it('resolves casts for relation column', function (): void {
+        $user = createTestUser(['name' => 'Casts Test']);
+        createTestPost(['user_id' => $user->getKey(), 'title' => 'Relation Cast']);
+
+        $component = Livewire::test(PostWithRelationsDataTable::class);
+        $component->call('loadData');
+
+        // Should not crash - the method is called internally during formatters resolution
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
     });
 });

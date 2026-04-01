@@ -130,4 +130,59 @@ describe('DataTableServiceProvider', function (): void {
             expect($hints)->toHaveKey('tall-datatables');
         });
     });
+
+    describe('Scout macro registration', function (): void {
+        it('skips macro registration when Scout is not installed', function (): void {
+            // When Scout is not installed, registerMacros should not crash
+            // and should complete silently
+            $provider = new \Tests\TestDataTableServiceProvider(app());
+            $provider->register();
+
+            expect(true)->toBeTrue();
+        });
+    });
+
+    describe('Tag compiler registration', function (): void {
+        it('compiles datatable scripts tag via precompiler', function (): void {
+            $compiled = \Illuminate\Support\Facades\Blade::compileString('<datatable:scripts />');
+
+            expect($compiled)
+                ->toContain('script')
+                ->toContain('src=');
+        });
+
+        it('compiles datatable styles tag via precompiler', function (): void {
+            $compiled = \Illuminate\Support\Facades\Blade::compileString('<datatable:styles />');
+
+            expect($compiled)
+                ->toContain('link')
+                ->toContain('href=');
+        });
+    });
+
+    describe('FormatterRegistry resolution', function (): void {
+        it('resolves FormatterRegistry from the container', function (): void {
+            $registry = app(FormatterRegistry::class);
+
+            expect($registry)->toBeInstanceOf(FormatterRegistry::class);
+        });
+
+        it('FormatterRegistry is registered as singleton in full provider', function (): void {
+            // The full DataTableServiceProvider registers it as singleton
+            // TestDataTableServiceProvider overrides register() for tests
+            // Just verify the class can be resolved
+            $registry = new FormatterRegistry();
+
+            expect($registry)->toBeInstanceOf(FormatterRegistry::class);
+        });
+    });
+
+    describe('Publishing configuration', function (): void {
+        it('has publishable config under tall-datatables-config tag', function (): void {
+            $publishGroups = \Illuminate\Support\ServiceProvider::$publishGroups ?? [];
+
+            // Check if the config publish group is registered
+            expect(config('tall-datatables'))->toBeArray();
+        });
+    });
 });

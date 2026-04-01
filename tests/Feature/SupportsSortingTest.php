@@ -1,6 +1,7 @@
 <?php
 
 use Livewire\Livewire;
+use Tests\Fixtures\Livewire\PostDataTable;
 use Tests\Fixtures\Livewire\SortablePostDataTable;
 
 beforeEach(function (): void {
@@ -108,6 +109,44 @@ describe('SupportsSorting', function (): void {
 
             expect($sorted[0]['id'])->toBe($post1->getKey())
                 ->and($sorted[1]['id'])->toBe($post2->getKey());
+        });
+    });
+
+    describe('default trait behavior', function (): void {
+        it('isSortable returns false by default on the trait', function (): void {
+            // Test the trait directly via an anonymous class
+            $instance = new class()
+            {
+                use \TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSorting;
+            };
+
+            $reflection = new ReflectionMethod($instance, 'isSortable');
+
+            expect($reflection->invoke($instance))->toBeFalse();
+        });
+
+        it('sortRows is a no-op by default on the trait', function (): void {
+            $instance = new class()
+            {
+                use \TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSorting;
+            };
+
+            // Should not throw - just a no-op
+            $instance->sortRows(1, 5);
+
+            // Verify instance is still valid (method did nothing)
+            expect($instance)->toBeObject();
+        });
+
+        it('sortRows accepts string id by default on the trait', function (): void {
+            $instance = new class()
+            {
+                use \TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSorting;
+            };
+
+            $instance->sortRows('uuid-test', 3);
+
+            expect($instance)->toBeObject();
         });
     });
 });

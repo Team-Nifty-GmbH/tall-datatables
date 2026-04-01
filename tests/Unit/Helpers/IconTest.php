@@ -73,4 +73,60 @@ describe('Icon', function (): void {
 
         expect($icon)->toBeInstanceOf(Responsable::class);
     });
+
+    test('getUrl returns a route with name and variant', function (): void {
+        $icon = Icon::make('check', 'outline');
+        $url = $icon->getUrl();
+
+        expect($url)
+            ->toContain('tall-datatables/icons/check')
+            ->toContain('outline');
+    });
+
+    test('getUrl defaults variant to solid', function (): void {
+        $icon = Icon::make('arrow-up');
+        $url = $icon->getUrl();
+
+        expect($url)->toContain('tall-datatables/icons/arrow-up');
+    });
+
+    test('getSvg delegates to getView', function (): void {
+        $icon = Icon::make('check');
+
+        // getSvg and getView should return the same result
+        expect($icon->getSvg())->toBe($icon->getView());
+    });
+
+    test('toHtml delegates to getSvg', function (): void {
+        $icon = Icon::make('check');
+
+        expect($icon->toHtml())->toBe($icon->getSvg());
+    });
+
+    test('toString renders the icon', function (): void {
+        $icon = Icon::make('check');
+        $string = (string) $icon;
+
+        expect($string)->toBe($icon->getSvg());
+    });
+
+    test('toResponse returns an HTTP response with SVG content type', function (): void {
+        $icon = Icon::make('check');
+        $request = new \Illuminate\Http\Request();
+        $response = $icon->toResponse($request);
+
+        expect($response)
+            ->toBeInstanceOf(\Illuminate\Http\Response::class)
+            ->and($response->headers->get('Content-Type'))->toBe('image/svg+xml; charset=utf-8')
+            ->and($response->headers->get('Cache-Control'))->toContain('public');
+    });
+
+    test('getView renders blade x-icon component', function (): void {
+        $icon = Icon::make('check');
+
+        // The getView method should attempt to render the blade component
+        // It may throw or return content depending on whether the icon exists
+        $view = $icon->getView();
+        expect($view)->toBeString();
+    });
 });
