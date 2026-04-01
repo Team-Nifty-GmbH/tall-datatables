@@ -13,23 +13,14 @@ class SearchablePost extends Model implements InteractsWithDataTables
 {
     use Searchable, SoftDeletes;
 
-    protected $table = 'posts';
-
     protected $guarded = ['id'];
+
+    protected $table = 'posts';
 
     protected function casts(): array
     {
         return [
             'is_published' => 'boolean',
-        ];
-    }
-
-    public function toSearchableArray(): array
-    {
-        return [
-            'id' => $this->getKey(),
-            'title' => $this->title,
-            'content' => $this->content,
         ];
     }
 
@@ -56,6 +47,15 @@ class SearchablePost extends Model implements InteractsWithDataTables
     public function getUrl(): ?string
     {
         return '/posts/' . $this->getKey();
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => $this->getKey(),
+            'title' => $this->title,
+            'content' => $this->content,
+        ];
     }
 
     public function user(): BelongsTo

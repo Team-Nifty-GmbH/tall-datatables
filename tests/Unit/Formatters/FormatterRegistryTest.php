@@ -347,7 +347,7 @@ describe('FormatterRegistry', function (): void {
     it('resolveWithOptions handles Arrayable options', function (): void {
         $registry = new FormatterRegistry();
 
-        $arrayable = new class implements Arrayable
+        $arrayable = new class() implements Arrayable
         {
             public function toArray(): array
             {
@@ -384,7 +384,7 @@ describe('FormatterRegistry', function (): void {
     it('resolveWithOptions with Arrayable for non-state type falls through', function (): void {
         $registry = new FormatterRegistry();
 
-        $arrayable = new class implements Arrayable
+        $arrayable = new class() implements Arrayable
         {
             public function toArray(): array
             {

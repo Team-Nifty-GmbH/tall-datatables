@@ -133,20 +133,20 @@ describe('Percentage Cast Direct Methods', function (): void {
     it('delegates to attribute mutator when model has one', function (): void {
         $cast = new Percentage();
 
-        $model = new class() extends \Illuminate\Database\Eloquent\Model
+        $model = new class() extends Illuminate\Database\Eloquent\Model
         {
-            protected $table = 'products';
-
             protected $guarded = ['id'];
+
+            protected $table = 'products';
 
             protected function casts(): array
             {
                 return ['discount' => Percentage::class];
             }
 
-            public function discount(): \Illuminate\Database\Eloquent\Casts\Attribute
+            public function discount(): Illuminate\Database\Eloquent\Casts\Attribute
             {
-                return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+                return Illuminate\Database\Eloquent\Casts\Attribute::make(
                     get: fn ($value) => $value * 100,
                 );
             }

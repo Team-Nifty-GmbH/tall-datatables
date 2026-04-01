@@ -151,7 +151,7 @@ describe('SupportsExporting', function (): void {
 
             $response = $component->instance()->export(['title', 'content']);
 
-            expect($response)->toBeInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
         });
     });
 

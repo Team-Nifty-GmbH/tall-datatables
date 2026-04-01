@@ -499,13 +499,13 @@ describe('HasEloquentListeners – mount fallback without getBroadcastChannel', 
     it('falls back to broadcastChannel concat when model lacks getBroadcastChannel', function (): void {
         // Use a custom datatable with a model that uses BroadcastsEvents but
         // without the static getBroadcastChannel method
-        $modelClass = new class() extends \Illuminate\Database\Eloquent\Model
+        $modelClass = new class() extends Illuminate\Database\Eloquent\Model
         {
-            use \TeamNiftyGmbH\DataTable\Traits\BroadcastsEvents;
-
-            protected $table = 'posts';
+            use TeamNiftyGmbH\DataTable\Traits\BroadcastsEvents;
 
             protected $guarded = ['id'];
+
+            protected $table = 'posts';
         };
 
         $dataTableClass = get_class($modelClass);

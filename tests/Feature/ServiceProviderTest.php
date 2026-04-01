@@ -271,7 +271,7 @@ describe('DataTableServiceProvider', function (): void {
         it('FormatterRegistry has default formatters registered', function (): void {
             $registry = app(FormatterRegistry::class);
 
-            expect($registry->resolve('string'))->toBeInstanceOf(\TeamNiftyGmbH\DataTable\Formatters\StringFormatter::class);
+            expect($registry->resolve('string'))->toBeInstanceOf(TeamNiftyGmbH\DataTable\Formatters\StringFormatter::class);
         });
     });
 
@@ -389,17 +389,16 @@ describe('DataTableServiceProvider', function (): void {
         });
     });
 
-
     describe('FormatterRegistry singleton behavior', function (): void {
         it('returns the same instance on consecutive resolves', function (): void {
-            $instance1 = app(TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry::class);
-            $instance2 = app(TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry::class);
+            $instance1 = app(FormatterRegistry::class);
+            $instance2 = app(FormatterRegistry::class);
 
             expect(spl_object_id($instance1))->toBe(spl_object_id($instance2));
         });
 
         it('can resolve known formatters like boolean and date', function (): void {
-            $registry = app(TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry::class);
+            $registry = app(FormatterRegistry::class);
 
             expect($registry->resolve('boolean'))->toBeInstanceOf(TeamNiftyGmbH\DataTable\Formatters\BooleanFormatter::class);
             expect($registry->resolve('date'))->toBeInstanceOf(TeamNiftyGmbH\DataTable\Formatters\DateFormatter::class);
@@ -438,84 +437,84 @@ describe('DataTableServiceProvider', function (): void {
 
     describe('Scout macros', function (): void {
         it('registers getScoutResults macro on Scout Builder when available', function (): void {
-            if (! class_exists(\Laravel\Scout\Builder::class)) {
+            if (! class_exists(Laravel\Scout\Builder::class)) {
                 $this->markTestSkipped('Scout not installed');
             }
 
-            expect(\Laravel\Scout\Builder::hasMacro('getScoutResults'))->toBeTrue();
+            expect(Laravel\Scout\Builder::hasMacro('getScoutResults'))->toBeTrue();
         });
 
         it('registers toQueryBuilder macro on Scout Builder when available', function (): void {
-            if (! class_exists(\Laravel\Scout\Builder::class)) {
+            if (! class_exists(Laravel\Scout\Builder::class)) {
                 $this->markTestSkipped('Scout not installed');
             }
 
-            expect(\Laravel\Scout\Builder::hasMacro('toQueryBuilder'))->toBeTrue();
+            expect(Laravel\Scout\Builder::hasMacro('toQueryBuilder'))->toBeTrue();
         });
 
         it('registers toEloquentBuilder macro on Scout Builder when available', function (): void {
-            if (! class_exists(\Laravel\Scout\Builder::class)) {
+            if (! class_exists(Laravel\Scout\Builder::class)) {
                 $this->markTestSkipped('Scout not installed');
             }
 
-            expect(\Laravel\Scout\Builder::hasMacro('toEloquentBuilder'))->toBeTrue();
+            expect(Laravel\Scout\Builder::hasMacro('toEloquentBuilder'))->toBeTrue();
         });
 
         it('toEloquentBuilder macro returns an Eloquent Builder', function (): void {
-            if (! class_exists(\Laravel\Scout\Builder::class)) {
+            if (! class_exists(Laravel\Scout\Builder::class)) {
                 $this->markTestSkipped('Scout not installed');
             }
 
             config(['scout.driver' => 'collection']);
 
-            $post = \Tests\Fixtures\Models\SearchablePost::create([
+            $post = Tests\Fixtures\Models\SearchablePost::create([
                 'user_id' => createTestUser()->getKey(),
                 'title' => 'Scout Test Post',
                 'content' => 'Some content',
                 'is_published' => true,
             ]);
 
-            $builder = \Tests\Fixtures\Models\SearchablePost::search('Scout');
+            $builder = Tests\Fixtures\Models\SearchablePost::search('Scout');
             $eloquentBuilder = $builder->toEloquentBuilder();
 
-            expect($eloquentBuilder)->toBeInstanceOf(\Illuminate\Database\Eloquent\Builder::class);
+            expect($eloquentBuilder)->toBeInstanceOf(Illuminate\Database\Eloquent\Builder::class);
         });
 
         it('toQueryBuilder macro returns a Query Builder', function (): void {
-            if (! class_exists(\Laravel\Scout\Builder::class)) {
+            if (! class_exists(Laravel\Scout\Builder::class)) {
                 $this->markTestSkipped('Scout not installed');
             }
 
             config(['scout.driver' => 'collection']);
 
-            $post = \Tests\Fixtures\Models\SearchablePost::create([
+            $post = Tests\Fixtures\Models\SearchablePost::create([
                 'user_id' => createTestUser()->getKey(),
                 'title' => 'Scout Query Post',
                 'content' => 'Some content',
                 'is_published' => true,
             ]);
 
-            $builder = \Tests\Fixtures\Models\SearchablePost::search('Scout');
+            $builder = Tests\Fixtures\Models\SearchablePost::search('Scout');
             $queryBuilder = $builder->toQueryBuilder();
 
-            expect($queryBuilder)->toBeInstanceOf(\Illuminate\Database\Query\Builder::class);
+            expect($queryBuilder)->toBeInstanceOf(Illuminate\Database\Query\Builder::class);
         });
 
         it('getScoutResults macro returns hits, ids, and searchResult keys', function (): void {
-            if (! class_exists(\Laravel\Scout\Builder::class)) {
+            if (! class_exists(Laravel\Scout\Builder::class)) {
                 $this->markTestSkipped('Scout not installed');
             }
 
             config(['scout.driver' => 'collection']);
 
-            \Tests\Fixtures\Models\SearchablePost::create([
+            Tests\Fixtures\Models\SearchablePost::create([
                 'user_id' => createTestUser()->getKey(),
                 'title' => 'Scout Results Post',
                 'content' => 'Some content',
                 'is_published' => true,
             ]);
 
-            $builder = \Tests\Fixtures\Models\SearchablePost::search('Scout');
+            $builder = Tests\Fixtures\Models\SearchablePost::search('Scout');
             $result = $builder->getScoutResults();
 
             expect($result)->toBeArray()

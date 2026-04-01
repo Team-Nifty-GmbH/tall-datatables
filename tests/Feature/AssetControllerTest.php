@@ -138,7 +138,7 @@ describe('AssetController file content', function (): void {
         $response->assertOk();
         // BinaryFileResponse serves files directly, getContent() returns false for these
         $baseResponse = $response->baseResponse;
-        expect($baseResponse)->toBeInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+        expect($baseResponse)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
         expect($baseResponse->getFile()->getPathname())->toBe($jsFiles[0]);
     });
 
@@ -156,7 +156,7 @@ describe('AssetController file content', function (): void {
 
         $response->assertOk();
         $baseResponse = $response->baseResponse;
-        expect($baseResponse)->toBeInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+        expect($baseResponse)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
         expect($baseResponse->getFile()->getPathname())->toBe($cssFiles[0]);
     });
 });

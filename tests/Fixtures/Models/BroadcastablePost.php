@@ -12,9 +12,9 @@ class BroadcastablePost extends Model implements InteractsWithDataTables
 {
     use BroadcastsEvents, SoftDeletes;
 
-    protected $table = 'posts';
-
     protected $guarded = ['id'];
+
+    protected $table = 'posts';
 
     protected function casts(): array
     {

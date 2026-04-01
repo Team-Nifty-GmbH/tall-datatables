@@ -1065,7 +1065,7 @@ describe('setTextFilter multi-value removal empties column', function (): void {
 
 describe('getSearchRoute with configured route', function (): void {
     it('returns route URL when search_route is configured', function (): void {
-        \Illuminate\Support\Facades\Route::any('/search/{model?}', fn () => null)->name('test-search');
+        Illuminate\Support\Facades\Route::any('/search/{model?}', fn () => null)->name('test-search');
         config(['tall-datatables.search_route' => 'test-search']);
 
         $component = Livewire::test(PostDataTable::class);
@@ -1100,7 +1100,7 @@ describe('formatAggregates with array formatter', function (): void {
         $instance = $component->instance();
 
         // Set a formatter as array (formatter class + options)
-        $instance->formatters = ['price' => [\TeamNiftyGmbH\DataTable\Casts\Money::class, []]];
+        $instance->formatters = ['price' => [TeamNiftyGmbH\DataTable\Casts\Money::class, []]];
         $instance->aggregatableCols = ['sum' => ['price']];
         $instance->loadData();
 

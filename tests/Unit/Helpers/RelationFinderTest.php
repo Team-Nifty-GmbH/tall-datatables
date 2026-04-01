@@ -66,7 +66,7 @@ describe('RelationFinder', function (): void {
 
             expect($relations)->toBeInstanceOf(Collection::class);
             $relations->each(function ($relation): void {
-                expect($relation)->toBeInstanceOf(\Spatie\ModelInfo\Relations\Relation::class);
+                expect($relation)->toBeInstanceOf(Spatie\ModelInfo\Relations\Relation::class);
             });
         });
 
@@ -80,7 +80,7 @@ describe('RelationFinder', function (): void {
         });
 
         it('includes relations on Comment model', function (): void {
-            $relations = RelationFinder::forModel(new \Tests\Fixtures\Models\Comment());
+            $relations = RelationFinder::forModel(new Tests\Fixtures\Models\Comment());
 
             expect($relations)->toBeInstanceOf(Collection::class);
             $names = $relations->pluck('name')->toArray();
@@ -114,7 +114,7 @@ describe('RelationFinder', function (): void {
         });
 
         it('handles model with no relation resolvers', function (): void {
-            $relations = RelationFinder::forModel(new \Tests\Fixtures\Models\Comment());
+            $relations = RelationFinder::forModel(new Tests\Fixtures\Models\Comment());
 
             expect($relations)->toBeInstanceOf(Collection::class)
                 ->not->toBeEmpty();
@@ -133,7 +133,7 @@ describe('RelationFinder', function (): void {
         });
 
         it('handles Product model relations', function (): void {
-            $relations = RelationFinder::forModel(new \Tests\Fixtures\Models\Product());
+            $relations = RelationFinder::forModel(new Tests\Fixtures\Models\Product());
 
             $names = $relations->pluck('name')->toArray();
             expect($names)->toContain('user');
@@ -141,11 +141,11 @@ describe('RelationFinder', function (): void {
 
         it('discovers relations registered via resolveRelationUsing', function (): void {
             // Register a dynamic relation resolver on Post
-            \Tests\Fixtures\Models\Post::resolveRelationUsing('dynamicRelation', function ($model) {
-                return $model->belongsTo(\Tests\Fixtures\Models\User::class, 'user_id');
+            Post::resolveRelationUsing('dynamicRelation', function ($model) {
+                return $model->belongsTo(User::class, 'user_id');
             });
 
-            $relations = RelationFinder::forModel(new \Tests\Fixtures\Models\Post());
+            $relations = RelationFinder::forModel(new Post());
             $names = $relations->pluck('name')->toArray();
 
             expect($names)->toContain('dynamicRelation');
@@ -153,12 +153,12 @@ describe('RelationFinder', function (): void {
 
         it('filters out null results from methods that throw exceptions', function (): void {
             // The relations method filters out null entries (from methods that throw)
-            $relations = RelationFinder::forModel(new \Tests\Fixtures\Models\Post());
+            $relations = RelationFinder::forModel(new Post());
 
             // All returned relations should be non-null Relation instances
             $relations->each(function ($relation): void {
                 expect($relation)->not->toBeNull()
-                    ->toBeInstanceOf(\Spatie\ModelInfo\Relations\Relation::class);
+                    ->toBeInstanceOf(Spatie\ModelInfo\Relations\Relation::class);
             });
         });
     });

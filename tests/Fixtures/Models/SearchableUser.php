@@ -11,11 +11,21 @@ class SearchableUser extends Authenticatable
 {
     use Searchable, SoftDeletes;
 
-    protected $table = 'users';
-
     protected $guarded = ['id'];
 
     protected $hidden = ['password'];
+
+    protected $table = 'users';
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class, 'user_id');
+    }
+
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class, 'user_id');
+    }
 
     public function toSearchableArray(): array
     {
@@ -24,15 +34,5 @@ class SearchableUser extends Authenticatable
             'name' => $this->name,
             'email' => $this->email,
         ];
-    }
-
-    public function posts(): HasMany
-    {
-        return $this->hasMany(Post::class, 'user_id');
-    }
-
-    public function comments(): HasMany
-    {
-        return $this->hasMany(Comment::class, 'user_id');
     }
 }

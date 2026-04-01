@@ -1321,4 +1321,3 @@ describe('mountStoresSettings with session cache', function (): void {
             ->and($component->get('userOrderAsc'))->toBeFalse();
     });
 });
-

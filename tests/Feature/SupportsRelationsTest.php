@@ -855,7 +855,7 @@ describe('SupportsRelations', function (): void {
 
     describe('loadSlug cache miss triggers loadRelation', function (): void {
         it('loads relation when cache is empty for a specific path', function (): void {
-            Illuminate\Support\Facades\Cache::flush();
+            Cache::flush();
 
             $component = Livewire::test(PostDataTable::class);
 
@@ -885,7 +885,7 @@ describe('SupportsRelations', function (): void {
             try {
                 $relatedTable = $reflection->invoke($component->instance(), $query, 'comments');
                 expect($relatedTable)->toBe('comments');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // HasMany uses getForeignKey and getLocalKeyName path
                 expect($e->getMessage())->toContain('Unsupported relation type');
             }
@@ -894,10 +894,10 @@ describe('SupportsRelations', function (): void {
 
     describe('constructWith with HasMany relation columns', function (): void {
         it('marks HasMany relation columns with array formatter', function (): void {
-            $component = Livewire::test(Tests\Fixtures\Livewire\PostWithCommentsDataTable::class);
+            $component = Livewire::test(PostWithCommentsDataTable::class);
 
             $reflection = new ReflectionMethod($component->instance(), 'constructWith');
-            Illuminate\Support\Facades\Cache::flush();
+            Cache::flush();
 
             $result = $reflection->invoke($component->instance());
 
@@ -914,7 +914,7 @@ describe('SupportsRelations', function (): void {
             $component = Livewire::test(Tests\Fixtures\Livewire\ProductDataTable::class);
 
             $reflection = new ReflectionMethod($component->instance(), 'constructWith');
-            Illuminate\Support\Facades\Cache::flush();
+            Cache::flush();
 
             $result = $reflection->invoke($component->instance());
 
@@ -993,7 +993,7 @@ describe('SupportsRelations', function (): void {
         it('marks HasMany relation columns as array formatter', function (): void {
             Cache::flush();
 
-            $component = Livewire::test(Tests\Fixtures\Livewire\PostWithCommentsDataTable::class);
+            $component = Livewire::test(PostWithCommentsDataTable::class);
 
             $reflection = new ReflectionMethod($component->instance(), 'constructWith');
             $result = $reflection->invoke($component->instance());
@@ -1008,7 +1008,7 @@ describe('SupportsRelations', function (): void {
         it('excludes HasMany columns from sortable', function (): void {
             Cache::flush();
 
-            $component = Livewire::test(Tests\Fixtures\Livewire\PostWithCommentsDataTable::class);
+            $component = Livewire::test(PostWithCommentsDataTable::class);
 
             $reflection = new ReflectionMethod($component->instance(), 'constructWith');
             $result = $reflection->invoke($component->instance());
@@ -1212,7 +1212,7 @@ describe('getModelRelations key info', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        $modelInfo = \TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
+        $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
 
         $method = new ReflectionMethod($instance, 'getModelRelations');
         $relations = $method->invoke($instance, $modelInfo);
@@ -1226,7 +1226,7 @@ describe('getModelRelations key info', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        $modelInfo = \TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
+        $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
 
         $method = new ReflectionMethod($instance, 'getModelRelations');
         $relations = $method->invoke($instance, $modelInfo);
@@ -1239,7 +1239,7 @@ describe('getModelRelations key info', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        $modelInfo = \TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
+        $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
 
         $method = new ReflectionMethod($instance, 'getModelRelations');
         $relations = $method->invoke($instance, $modelInfo);
@@ -1256,7 +1256,7 @@ describe('getFilterValueList', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        $attribute = \TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class)->attribute('is_published');
+        $attribute = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class)->attribute('is_published');
 
         $method = new ReflectionMethod($instance, 'getFilterValueList');
         $method->invoke($instance, 'is_published', $attribute);
@@ -1273,7 +1273,7 @@ describe('getFilterValueList', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        $attribute = \TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class)->attribute('title');
+        $attribute = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class)->attribute('title');
 
         $method = new ReflectionMethod($instance, 'getFilterValueList');
         $method->invoke($instance, 'title', $attribute);
@@ -1290,7 +1290,7 @@ describe('getFilterValueList', function (): void {
         $prop = new ReflectionProperty($instance, 'filterValueLists');
         $prop->setValue($instance, ['is_published' => [['value' => 'custom', 'label' => 'Custom']]]);
 
-        $attribute = \TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class)->attribute('is_published');
+        $attribute = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class)->attribute('is_published');
 
         $method = new ReflectionMethod($instance, 'getFilterValueList');
         $method->invoke($instance, 'is_published', $attribute);
@@ -1303,7 +1303,7 @@ describe('getFilterValueList', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        $attribute = new \TeamNiftyGmbH\DataTable\ModelInfo\Attribute(
+        $attribute = new TeamNiftyGmbH\DataTable\ModelInfo\Attribute(
             name: 'status',
             phpType: 'string',
             type: 'string',
@@ -1314,7 +1314,7 @@ describe('getFilterValueList', function (): void {
             unique: false,
             fillable: true,
             appended: false,
-            cast: \Tests\Fixtures\Enums\PostStatus::class,
+            cast: Tests\Fixtures\Enums\PostStatus::class,
             virtual: false,
             hidden: false,
         );

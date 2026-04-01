@@ -12,9 +12,9 @@ use Tests\Fixtures\Livewire\BroadcastablePostDataTable;
 use Tests\Fixtures\Livewire\GridPostDataTable;
 use Tests\Fixtures\Livewire\NoListenersPostDataTable;
 use Tests\Fixtures\Livewire\PostDataTable;
+use Tests\Fixtures\Livewire\PostWithCommentsDataTable;
 use Tests\Fixtures\Livewire\PostWithRelationsDataTable;
 use Tests\Fixtures\Livewire\SelectablePostDataTable;
-use Tests\Fixtures\Livewire\PostWithCommentsDataTable;
 use Tests\Fixtures\Livewire\UserDataTable;
 
 abstract class TestCase extends BaseTestCase

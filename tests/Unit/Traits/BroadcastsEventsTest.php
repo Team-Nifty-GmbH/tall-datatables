@@ -74,7 +74,7 @@ describe('BroadcastsEvents – broadcastWith', function (): void {
         $model->id = 1;
         $model->title = 'Test';
         // Simulate a loaded relation
-        $model->setRelation('user', new \Tests\Fixtures\Models\User(['name' => 'Test User']));
+        $model->setRelation('user', new Tests\Fixtures\Models\User(['name' => 'Test User']));
 
         $data = $model->broadcastWith();
         // By default, includeRelations is false, so relations should be excluded
@@ -85,7 +85,7 @@ describe('BroadcastsEvents – broadcastWith', function (): void {
         $model = new BroadcastablePost();
         $model->id = 1;
         $model->title = 'Test';
-        $model->setRelation('user', new \Tests\Fixtures\Models\User(['name' => 'Test User']));
+        $model->setRelation('user', new Tests\Fixtures\Models\User(['name' => 'Test User']));
 
         // Enable includeRelations via reflection
         $reflection = new ReflectionProperty(BroadcastablePost::class, 'includeRelations');
@@ -115,9 +115,9 @@ describe('BroadcastsEvents – broadcastWith', function (): void {
         {
             use BroadcastsEvents;
 
-            protected $table = 'posts';
-
             protected $guarded = ['id'];
+
+            protected $table = 'posts';
 
             protected function broadcastWithout(): array
             {

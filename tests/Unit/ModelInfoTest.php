@@ -369,7 +369,6 @@ describe('ModelInfo morphClass resolution', function (): void {
     });
 });
 
-
 describe('ModelInfo Morph Class', function (): void {
     it('resolves morph class for model without custom morph map', function (): void {
         $modelInfo = ModelInfo::forModel(Post::class);
@@ -401,7 +400,7 @@ describe('ModelInfo forAllModels', function (): void {
         // Verify each item is a ModelInfo instance if any are found
         if ($models->isNotEmpty()) {
             $models->each(function ($modelInfo): void {
-                expect($modelInfo)->toBeInstanceOf(\Spatie\ModelInfo\ModelInfo::class);
+                expect($modelInfo)->toBeInstanceOf(Spatie\ModelInfo\ModelInfo::class);
             });
         } else {
             // No models found in test env, that's fine

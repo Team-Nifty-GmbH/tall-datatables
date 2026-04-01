@@ -2341,7 +2341,7 @@ describe('buildSearch with Scout Searchable model', function (): void {
         $query = $reflection->invoke($instance);
 
         // If we got here, the Scout search path was exercised
-        expect($query)->toBeInstanceOf(\Illuminate\Database\Eloquent\Builder::class);
+        expect($query)->toBeInstanceOf(Illuminate\Database\Eloquent\Builder::class);
     });
 
     it('exercises getScoutSearch method', function (): void {
@@ -2353,7 +2353,7 @@ describe('buildSearch with Scout Searchable model', function (): void {
         $reflection = new ReflectionMethod($instance, 'getScoutSearch');
         $scoutBuilder = $reflection->invoke($instance);
 
-        expect($scoutBuilder)->toBeInstanceOf(\Laravel\Scout\Builder::class);
+        expect($scoutBuilder)->toBeInstanceOf(Laravel\Scout\Builder::class);
     });
 
     it('reports model as searchable when it uses Searchable trait', function (): void {

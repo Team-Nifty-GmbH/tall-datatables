@@ -145,20 +145,20 @@ describe('Link Cast Direct Methods', function (): void {
     it('delegates to attribute mutator when model has one', function (): void {
         $cast = new Link();
 
-        $model = new class() extends \Illuminate\Database\Eloquent\Model
+        $model = new class() extends Illuminate\Database\Eloquent\Model
         {
-            protected $table = 'products';
-
             protected $guarded = ['id'];
+
+            protected $table = 'products';
 
             protected function casts(): array
             {
                 return ['website' => Link::class];
             }
 
-            public function website(): \Illuminate\Database\Eloquent\Casts\Attribute
+            public function website(): Illuminate\Database\Eloquent\Casts\Attribute
             {
-                return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+                return Illuminate\Database\Eloquent\Casts\Attribute::make(
                     get: fn ($value) => 'mutated:' . $value,
                 );
             }

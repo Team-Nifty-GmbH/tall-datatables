@@ -323,9 +323,9 @@ describe('SessionFilter unserialize method', function (): void {
 describe('SessionFilter setDataTableCacheKey with DataTable instance', function (): void {
     it('extracts cache key from DataTable instance', function (): void {
         $user = createTestUser();
-        \Illuminate\Support\Facades\Auth::login($user);
+        Illuminate\Support\Facades\Auth::login($user);
 
-        $component = Livewire\Livewire::test(\Tests\Fixtures\Livewire\PostDataTable::class);
+        $component = Livewire\Livewire::test(Tests\Fixtures\Livewire\PostDataTable::class);
         $instance = $component->instance();
 
         $filter = SessionFilter::make('temp', fn (Builder $query) => $query, 'Test');

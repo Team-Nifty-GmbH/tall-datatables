@@ -198,20 +198,20 @@ describe('BcFloat Cast Direct Methods', function (): void {
     test('delegates to attribute mutator when model has one', function (): void {
         $cast = new BcFloat();
 
-        $model = new class() extends \Illuminate\Database\Eloquent\Model
+        $model = new class() extends Illuminate\Database\Eloquent\Model
         {
-            protected $table = 'products';
-
             protected $guarded = ['id'];
+
+            protected $table = 'products';
 
             protected function casts(): array
             {
                 return ['quantity' => BcFloat::class];
             }
 
-            public function quantity(): \Illuminate\Database\Eloquent\Casts\Attribute
+            public function quantity(): Illuminate\Database\Eloquent\Casts\Attribute
             {
-                return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+                return Illuminate\Database\Eloquent\Casts\Attribute::make(
                     get: fn ($value) => $value * 2,
                 );
             }

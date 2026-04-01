@@ -191,20 +191,20 @@ describe('Money Cast Direct Methods', function (): void {
     it('delegates to attribute mutator when model has one', function (): void {
         $cast = new Money();
 
-        $model = new class() extends \Illuminate\Database\Eloquent\Model
+        $model = new class() extends Illuminate\Database\Eloquent\Model
         {
-            protected $table = 'products';
-
             protected $guarded = ['id'];
+
+            protected $table = 'products';
 
             protected function casts(): array
             {
                 return ['price' => Money::class];
             }
 
-            public function price(): \Illuminate\Database\Eloquent\Casts\Attribute
+            public function price(): Illuminate\Database\Eloquent\Casts\Attribute
             {
-                return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+                return Illuminate\Database\Eloquent\Casts\Attribute::make(
                     get: fn ($value) => $value + 1,
                 );
             }

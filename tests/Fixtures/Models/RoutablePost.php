@@ -10,11 +10,11 @@ class RoutablePost extends Model implements InteractsWithDataTables
 {
     use HasFrontendAttributes;
 
-    protected $table = 'posts';
+    protected ?string $detailRouteName = 'posts.show';
 
     protected $guarded = ['id'];
 
-    protected ?string $detailRouteName = 'posts.show';
+    protected $table = 'posts';
 
     public function getAvatarUrl(): ?string
     {
