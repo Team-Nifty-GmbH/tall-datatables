@@ -18,6 +18,33 @@
             if (this.textFilterRows.length === 0) this.textFilterRows = [0];
             $wire.removeTextFilterRow(index);
         },
+        extraInputs: {},
+        getInputCount(rowIndex, col) {
+            const tf = ($wire.textFilters || {})[rowIndex] || {};
+            const val = tf[col];
+            const serverCount = Array.isArray(val) ? val.length : (val ? 1 : 1);
+            const localCount = this.extraInputs[rowIndex + '-' + col] || 0;
+            return Math.max(serverCount, 1 + localCount);
+        },
+        addColumnInput(rowIndex, col) {
+            const key = rowIndex + '-' + col;
+            this.extraInputs[key] = (this.extraInputs[key] || 0) + 1;
+            this.extraInputs = { ...this.extraInputs };
+        },
+        removeColumnInput(rowIndex, col, valueIndex) {
+            $wire.setTextFilter(col, '', rowIndex, valueIndex);
+            const key = rowIndex + '-' + col;
+            if (this.extraInputs[key] > 0) {
+                this.extraInputs[key]--;
+                this.extraInputs = { ...this.extraInputs };
+            }
+        },
+        getTextFilterValue(rowIndex, col, valueIndex) {
+            const tf = ($wire.textFilters || {})[rowIndex] || {};
+            const val = tf[col];
+            if (Array.isArray(val)) return val[valueIndex] || '';
+            return valueIndex === 0 ? (val || '') : '';
+        },
         init() {
             this.$watch(() => JSON.stringify($wire.textFilters), () => {
                 const tf = $wire.textFilters || {};

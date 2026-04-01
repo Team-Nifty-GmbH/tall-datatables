@@ -176,21 +176,42 @@
                                 </td>
                                 <template x-for="col in $wire.enabledCols" x-bind:key="'filter-' + rowIndex + '-' + col">
                                     <td
-                                        class="dark:bg-secondary-700/30 border-b border-l border-gray-100 bg-gray-50/50 px-0 py-0 dark:border-secondary-700/50"
+                                        class="group/cell dark:bg-secondary-700/30 border-b border-l border-gray-100 bg-gray-50/50 px-0 py-0 dark:border-secondary-700/50"
                                         x-bind:class="($wire.stickyCols || []).includes(col) ? 'sticky left-0 border-r' : ''"
                                         x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : ''"
                                     >
                                         <template x-if="!($wire.filterValueLists || {})[col]">
-                                            <div
-                                                x-effect="if (!(($wire.textFilters || {})[rowIndex] || {})[col]) { const inp = $el.querySelector('input'); if (inp) inp.value = ''; }"
-                                            >
-                                                <input
-                                                    type="search"
-                                                    class="w-full border-0 bg-transparent px-3 py-1 text-sm text-gray-600 placeholder-gray-300 outline-none focus:ring-0 dark:text-gray-300 dark:placeholder-gray-600"
-                                                    placeholder="&#8230;"
-                                                    x-init="$el.value = (($wire.textFilters || {})[rowIndex] || {})[col] || ''"
-                                                    x-on:input.debounce.500ms="$wire.setTextFilter(col, $event.target.value, rowIndex)"
-                                                />
+                                            <div>
+                                                <template x-for="(_, vi) in Array.from({length: getInputCount(rowIndex, col)})" x-bind:key="'vi-' + vi">
+                                                    <div class="flex items-center" x-bind:class="vi > 0 && 'border-t border-gray-100 dark:border-secondary-700/50'">
+                                                        <input
+                                                            type="search"
+                                                            class="min-w-0 flex-1 border-0 bg-transparent px-3 py-1 text-sm text-gray-600 placeholder-gray-300 outline-none focus:ring-0 dark:text-gray-300 dark:placeholder-gray-600"
+                                                            x-bind:placeholder="vi === 0 ? '…' : '{{ __('and') }}…'"
+                                                            x-init="$el.value = getTextFilterValue(rowIndex, col, vi)"
+                                                            x-on:input.debounce.500ms="$wire.setTextFilter(col, $event.target.value, rowIndex, vi)"
+                                                        />
+                                                        <template x-if="getTextFilterValue(rowIndex, col, vi)">
+                                                            <button
+                                                                type="button"
+                                                                class="shrink-0 cursor-pointer px-1 text-gray-400 transition-colors hover:text-emerald-500"
+                                                                x-on:click="addColumnInput(rowIndex, col)"
+                                                                title="{{ __('Add AND condition') }}"
+                                                            >
+                                                                <x-icon name="plus" class="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </template>
+                                                        <template x-if="vi > 0">
+                                                            <button
+                                                                type="button"
+                                                                class="shrink-0 cursor-pointer px-1 text-gray-400 transition-colors hover:text-red-500"
+                                                                x-on:click="removeColumnInput(rowIndex, col, vi)"
+                                                            >
+                                                                <x-icon name="x-mark" class="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </template>
+                                                    </div>
+                                                </template>
                                             </div>
                                         </template>
                                         <template x-if="($wire.filterValueLists || {})[col]">

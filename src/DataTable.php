@@ -553,21 +553,44 @@ class DataTable extends Component
     }
 
     #[Renderless]
-    public function setTextFilter(string $col, ?string $value, int $groupIndex = 0): void
+    public function setTextFilter(string $col, ?string $value, int $groupIndex = 0, int $valueIndex = 0): void
     {
         $this->migrateTextFiltersIfNeeded();
 
-        if ($value !== null && $value !== '') {
-            if (! isset($this->textFilters[$groupIndex])) {
-                $this->textFilters[$groupIndex] = [];
+        if (! isset($this->textFilters[$groupIndex])) {
+            $this->textFilters[$groupIndex] = [];
+        }
+
+        if ($valueIndex === 0 && ! is_array($this->textFilters[$groupIndex][$col] ?? null)) {
+            // Single value (backwards compatible)
+            if ($value !== null && $value !== '') {
+                $this->textFilters[$groupIndex][$col] = $value;
+            } else {
+                unset($this->textFilters[$groupIndex][$col]);
+            }
+        } else {
+            // Multi-value: ensure array
+            $current = $this->textFilters[$groupIndex][$col] ?? [];
+            if (! is_array($current)) {
+                $current = [$current];
             }
 
-            $this->textFilters[$groupIndex][$col] = $value;
-        } else {
-            unset($this->textFilters[$groupIndex][$col]);
-            if (empty($this->textFilters[$groupIndex])) {
-                unset($this->textFilters[$groupIndex]);
+            if ($value !== null && $value !== '') {
+                $current[$valueIndex] = $value;
+            } else {
+                unset($current[$valueIndex]);
+                $current = array_values($current);
             }
+
+            if (empty($current)) {
+                unset($this->textFilters[$groupIndex][$col]);
+            } else {
+                $this->textFilters[$groupIndex][$col] = count($current) === 1 ? $current[0] : $current;
+            }
+        }
+
+        if (empty($this->textFilters[$groupIndex])) {
+            unset($this->textFilters[$groupIndex]);
         }
 
         $this->rebuildTextFilterGroup();
@@ -702,9 +725,16 @@ class DataTable extends Component
                     continue;
                 }
 
-                $parsed = $this->parseTextFilterValue($rawValue, $col);
-                $parsed['source'] = 'text';
-                $this->userFilters[$groupIndex][] = $parsed;
+                $values = is_array($rawValue) ? $rawValue : [$rawValue];
+                foreach ($values as $singleValue) {
+                    if ($singleValue === null || $singleValue === '') {
+                        continue;
+                    }
+
+                    $parsed = $this->parseTextFilterValue($singleValue, $col);
+                    $parsed['source'] = 'text';
+                    $this->userFilters[$groupIndex][] = $parsed;
+                }
             }
         }
 
