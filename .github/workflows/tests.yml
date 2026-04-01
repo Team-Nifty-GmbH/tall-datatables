@@ -15,7 +15,7 @@ jobs:
       matrix:
         php: [8.5]
         laravel: [12.*]
-        livewire: [3.*, 4.*]
+        livewire: [4.*]
         stability: [prefer-stable]
         include:
           - laravel: 12.*
@@ -45,7 +45,7 @@ jobs:
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
       - name: Execute unit and feature tests
-        run: ./vendor/bin/testbench package:test --ci --testsuite=Unit,Feature
+        run: ./vendor/bin/testbench package:test --parallel --testsuite=Unit,Feature
 
   browser:
     runs-on: ubuntu-latest

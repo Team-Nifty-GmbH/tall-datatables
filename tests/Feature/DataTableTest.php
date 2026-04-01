@@ -1104,3 +1104,510 @@ describe('Saved Filters', function (): void {
         expect($options[1]['label'])->toBe('Filter C');
     });
 });
+
+describe('clearFiltersAndSort', function (): void {
+    it('resets all filter and sort properties', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [[['column' => 'title', 'operator' => '=', 'value' => 'test']]])
+            ->set('textFilters', [['title' => 'test']])
+            ->set('userOrderBy', 'title')
+            ->set('userOrderAsc', false)
+            ->set('search', 'hello')
+            ->call('loadData')
+            ->call('clearFiltersAndSort');
+
+        expect($component->get('userFilters'))->toBe([])
+            ->and($component->get('textFilters'))->toBe([])
+            ->and($component->get('userOrderBy'))->toBe('')
+            ->and($component->get('userOrderAsc'))->toBeTrue()
+            ->and($component->get('search'))->toBe('')
+            ->and($component->get('groupBy'))->toBeNull()
+            ->and($component->get('loadedFilterId'))->toBeNull();
+    });
+});
+
+describe('forgetSessionFilter', function (): void {
+    it('clears session filter and resets property', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $cacheKey = $component->instance()->getCacheKey();
+
+        session()->put($cacheKey . '_query', 'some_filter');
+
+        $component->call('forgetSessionFilter');
+
+        expect(session()->has($cacheKey . '_query'))->toBeFalse()
+            ->and($component->get('sessionFilter'))->toBe([]);
+    });
+
+    it('reloads data when loadData flag is true', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('loadData')
+            ->call('forgetSessionFilter', true);
+
+        expect($component->get('initialized'))->toBeTrue();
+    });
+
+    it('does not reload data when loadData flag is false', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('forgetSessionFilter', false);
+
+        expect($component->get('sessionFilter'))->toBe([]);
+    });
+});
+
+describe('formatFilterBadgeValue', function (): void {
+    it('returns raw value when no formatter found', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $result = $component->instance()->formatFilterBadgeValue('title', 'test');
+
+        expect($result)->toBe('test');
+    });
+
+    it('formats value using model casts', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $result = $component->instance()->formatFilterBadgeValue('price', '42.50');
+
+        expect($result)->toBeString();
+    });
+
+    it('handles non-numeric values gracefully', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $result = $component->instance()->formatFilterBadgeValue('title', 'some text');
+
+        expect($result)->toBe('some text');
+    });
+});
+
+describe('removeFilter', function (): void {
+    it('removes a filter at specific index', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Keep']);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Other']);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [
+                    ['column' => 'title', 'operator' => '=', 'value' => 'Keep'],
+                    ['column' => 'price', 'operator' => '>', 'value' => 10],
+                ],
+            ])
+            ->call('loadData')
+            ->call('removeFilter', 0, 1);
+
+        $filters = $component->get('userFilters');
+
+        expect($filters[0])->toHaveCount(1)
+            ->and($filters[0][0]['column'])->toBe('title');
+    });
+
+    it('removes empty groups after removing last filter', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => '=', 'value' => 'test']],
+            ])
+            ->call('loadData')
+            ->call('removeFilter', 0, 0);
+
+        expect($component->get('userFilters'))->toBe([]);
+    });
+
+    it('does nothing when filter index does not exist', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => '=', 'value' => 'test']],
+            ])
+            ->call('loadData')
+            ->call('removeFilter', 5, 0);
+
+        expect($component->get('userFilters'))->toHaveCount(1);
+    });
+
+    it('removes text filter entry from textFilters', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('textFilters', [['title' => 'hello']])
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => 'like', 'value' => '%hello%', 'source' => 'text']],
+            ])
+            ->call('loadData')
+            ->call('removeFilter', 0, 0);
+
+        expect($component->get('userFilters'))->toBe([]);
+    });
+});
+
+describe('removeFilterGroup', function (): void {
+    it('removes entire filter group by index', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => '=', 'value' => 'A']],
+                [['column' => 'title', 'operator' => '=', 'value' => 'B']],
+            ])
+            ->call('loadData')
+            ->call('removeFilterGroup', 0);
+
+        $filters = $component->get('userFilters');
+
+        expect($filters)->toHaveCount(1)
+            ->and($filters[0][0]['value'])->toBe('B');
+    });
+
+    it('does nothing when group index does not exist', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => '=', 'value' => 'A']],
+            ])
+            ->call('loadData')
+            ->call('removeFilterGroup', 5);
+
+        expect($component->get('userFilters'))->toHaveCount(1);
+    });
+
+    it('cleans up textFilters for text-source filters in removed group', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('textFilters', [['title' => 'hello']])
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => 'like', 'value' => '%hello%', 'source' => 'text']],
+            ])
+            ->call('loadData')
+            ->call('removeFilterGroup', 0);
+
+        expect($component->get('userFilters'))->toBe([]);
+    });
+});
+
+describe('removeTextFilterRow', function (): void {
+    it('removes text filter row and rebuilds userFilters', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'title', 'hello', 0)
+            ->call('setTextFilter', 'title', 'world', 1);
+
+        expect($component->get('textFilters'))->toHaveCount(2);
+
+        $component->call('removeTextFilterRow', 0);
+
+        $textFilters = $component->get('textFilters');
+
+        expect($textFilters)->toHaveCount(1);
+    });
+});
+
+describe('setTextFilter with multi-value', function (): void {
+    it('handles multi-value text filter at specific index', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'title', 'first', 0, 0)
+            ->call('setTextFilter', 'title', 'second', 0, 1);
+
+        $textFilters = $component->get('textFilters');
+
+        expect($textFilters[0]['title'])->toBeArray()
+            ->and($textFilters[0]['title'])->toContain('first')
+            ->and($textFilters[0]['title'])->toContain('second');
+    });
+
+    it('removes multi-value entry when value is null', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'title', 'first', 0, 0)
+            ->call('setTextFilter', 'title', 'second', 0, 1)
+            ->call('setTextFilter', 'title', null, 0, 0);
+
+        $textFilters = $component->get('textFilters');
+
+        expect($textFilters[0]['title'])->toBe('second');
+    });
+
+    it('removes group when all text filters are cleared', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'title', 'hello', 0)
+            ->call('setTextFilter', 'title', null, 0);
+
+        expect($component->get('textFilters'))->toBe([]);
+    });
+});
+
+describe('getParsedTextFilters', function (): void {
+    it('returns text-source filters from userFilters', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [
+                    ['column' => 'title', 'operator' => 'like', 'value' => '%hello%', 'source' => 'text'],
+                    ['column' => 'price', 'operator' => '>', 'value' => 10],
+                ],
+            ]);
+
+        $parsed = $component->instance()->getParsedTextFilters();
+
+        expect($parsed)->toHaveCount(1)
+            ->and($parsed[0]['column'])->toBe('title');
+    });
+
+    it('strips LIKE wildcards from display value', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => 'like', 'value' => '%hello%', 'source' => 'text']],
+            ]);
+
+        $parsed = $component->instance()->getParsedTextFilters();
+
+        expect($parsed[0]['value'])->toBe('hello');
+    });
+
+    it('returns empty collection when no text filters exist', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => '=', 'value' => 'test']],
+            ]);
+
+        $parsed = $component->instance()->getParsedTextFilters();
+
+        expect($parsed)->toHaveCount(0);
+    });
+
+    it('translates enum value for display', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $component->instance()->filterValueLists = [
+            'is_published' => [
+                ['value' => 1, 'label' => 'Yes'],
+                ['value' => 0, 'label' => 'No'],
+            ],
+        ];
+
+        $component->set('userFilters', [
+            [['column' => 'is_published', 'operator' => '=', 'value' => 1, 'source' => 'text']],
+        ]);
+
+        $parsed = $component->instance()->getParsedTextFilters();
+
+        expect($parsed[0]['value'])->toBe('Yes');
+    });
+});
+
+describe('getGroupLabels', function (): void {
+    it('returns all required group label keys', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $labels = $component->instance()->getGroupLabels();
+
+        expect($labels)
+            ->toHaveKey('entries')
+            ->toHaveKey('showing')
+            ->toHaveKey('to')
+            ->toHaveKey('of')
+            ->toHaveKey('groups')
+            ->toHaveKey('noGrouping')
+            ->toHaveKey('empty')
+            ->toHaveKey('sum')
+            ->toHaveKey('avg')
+            ->toHaveKey('min')
+            ->toHaveKey('max');
+    });
+});
+
+describe('getIslandData', function (): void {
+    it('returns same data as getViewData', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $islandData = $instance->getIslandData();
+
+        $reflection = new ReflectionMethod($instance, 'getViewData');
+        $viewData = $reflection->invoke($instance);
+
+        expect($islandData)->toBe($viewData);
+    });
+});
+
+describe('forceRender', function (): void {
+    it('is a no-op for backwards compatibility', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('forceRender');
+
+        expect($component->get('initialized'))->toBeTrue();
+    });
+});
+
+describe('reloadData', function (): void {
+    it('reloads data when called', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Reloaded']);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('reloadData');
+
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['total'])->toBe(1);
+    });
+});
+
+describe('updatedSearch', function (): void {
+    it('triggers startSearch on search update', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Findable']);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('selected', [1, 2])
+            ->set('search', 'Findable');
+
+        expect($component->get('selected'))->toBe([])
+            ->and($component->get('page'))->toBe(1);
+    });
+});
+
+describe('dehydrate', function (): void {
+    it('clears data on dehydrate', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('loadData');
+
+        $instance = $component->instance();
+        $instance->dehydrate();
+
+        expect($instance->data)->toBe([]);
+    });
+});
+
+describe('compileActions', function (): void {
+    it('returns empty row actions by default', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'compileActions');
+        $actions = $reflection->invoke($instance, 'row');
+
+        expect($actions)->toBe([]);
+    });
+
+    it('returns empty table actions by default', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'compileActions');
+        $actions = $reflection->invoke($instance, 'table');
+
+        expect($actions)->toBe([]);
+    });
+
+    it('caches actions per type', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'compileActions');
+
+        $first = $reflection->invoke($instance, 'row');
+        $second = $reflection->invoke($instance, 'row');
+
+        expect($first)->toBe($second);
+    });
+});
+
+describe('showRestoreButton', function (): void {
+    it('returns false by default', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'showRestoreButton');
+        $result = $reflection->invoke($instance);
+
+        expect($result)->toBeFalse();
+    });
+});
+
+describe('getSearchRoute', function (): void {
+    it('returns empty string when no search route configured', function (): void {
+        config(['tall-datatables.search_route' => null]);
+
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'getSearchRoute');
+        $route = $reflection->invoke($instance);
+
+        expect($route)->toBe('');
+    });
+});
+
+describe('getTableFields', function (): void {
+    it('returns non-virtual attributes', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'getTableFields');
+        $fields = $reflection->invoke($instance);
+
+        expect($fields)->toBeInstanceOf(Illuminate\Support\Collection::class)
+            ->and($fields->count())->toBeGreaterThan(0);
+    });
+});
+
+describe('getIncludedRelations', function (): void {
+    it('returns self entry for non-relation columns', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'getIncludedRelations');
+        $relations = $reflection->invoke($instance);
+
+        expect($relations)->toHaveKey('self')
+            ->and($relations['self']['model'])->toBe(Post::class);
+    });
+
+    it('returns relation entries for dot-notation columns', function (): void {
+        $component = Livewire::test(PostWithRelationsDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'getIncludedRelations');
+        $relations = $reflection->invoke($instance);
+
+        expect($relations)->toHaveKey('user')
+            ->and($relations['user']['model'])->toBe(Tests\Fixtures\Models\User::class);
+    });
+});
+
+describe('applyUserFilters text filter cleanup', function (): void {
+    it('removes orphaned textFilters entries', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('loadData');
+
+        $component->set('textFilters', [['title' => 'old', 'content' => 'removed']]);
+        $component->set('userFilters', [
+            [['column' => 'title', 'operator' => 'like', 'value' => '%old%', 'source' => 'text']],
+        ]);
+
+        $component->call('applyUserFilters');
+
+        $textFilters = $component->get('textFilters');
+
+        expect($textFilters)->not->toHaveKey('content');
+    });
+});
+
+describe('updatedUserFilters', function (): void {
+    it('does not apply filters when loadingFilter is true', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('loadingFilter', true)
+            ->set('userFilters', [[['column' => 'title', 'operator' => '=', 'value' => 'x']]]);
+
+        expect($component->get('loadingFilter'))->toBeFalse();
+    });
+});

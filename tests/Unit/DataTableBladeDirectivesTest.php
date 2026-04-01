@@ -141,5 +141,44 @@ describe('DataTableBladeDirectives', function (): void {
 
             expect($version)->toContain('.css');
         });
+
+        it('returns null when manifest file does not exist', function (): void {
+            // Create a subclass that overrides the manifest path
+            $directives = new class() extends DataTableBladeDirectives
+            {
+                public function getManifestVersion(string $file, ?string &$route = null): ?string
+                {
+                    $manifestPath = '/nonexistent/path/manifest.json';
+
+                    if (! file_exists($manifestPath)) {
+                        return null;
+                    }
+
+                    return parent::getManifestVersion($file, $route);
+                }
+            };
+
+            $version = $directives->getManifestVersion('resources/js/tall-datatables.js');
+
+            expect($version)->toBeNull();
+        });
+    });
+
+    describe('scripts with absolute', function (): void {
+        it('generates script tag with absolute url', function (): void {
+            $directives = new DataTableBladeDirectives();
+            $result = $directives->scripts(absolute: true);
+
+            expect($result)->toContain('<script');
+        });
+    });
+
+    describe('styles with absolute', function (): void {
+        it('generates style tag with absolute url', function (): void {
+            $directives = new DataTableBladeDirectives();
+            $result = $directives->styles(absolute: true);
+
+            expect($result)->toContain('<link');
+        });
     });
 });

@@ -638,6 +638,13 @@ describe('mountSupportsCache', function (): void {
 });
 
 describe('resetLayout', function (): void {
+    it('does nothing when no layout or cache exists', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('resetLayout');
+
+        expect($component->get('enabledCols'))->toBeArray()->not->toBeEmpty();
+    });
+
     it('deletes layout filter from database', function (): void {
         $this->user->datatableUserSettings()->create([
             'name' => 'layout',
@@ -1114,3 +1121,204 @@ describe('integration scenarios', function (): void {
         expect($setting->component)->toBe(PostDataTable::class);
     });
 });
+
+describe('cacheState', function (): void {
+    it('stores filter state in session when caching is enabled', function (): void {
+        config(['tall-datatables.should_cache' => true]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('perPage', 25)
+            ->set('search', 'test')
+            ->set('userOrderBy', 'title')
+            ->call('loadData')
+            ->call('sortTable', 'title');
+
+        $cacheKey = config('tall-datatables.cache_key') . '.filter:' . $component->instance()->getCacheKey();
+        $cached = Session::get($cacheKey);
+
+        expect($cached)->toBeArray()
+            ->and($cached)->toHaveKey('textFilters')
+            ->and($cached)->toHaveKey('userFilters')
+            ->and($cached)->toHaveKey('enabledCols')
+            ->and($cached)->toHaveKey('aggregatableCols')
+            ->and($cached)->toHaveKey('userOrderBy')
+            ->and($cached)->toHaveKey('userOrderAsc')
+            ->and($cached)->toHaveKey('perPage')
+            ->and($cached)->toHaveKey('search')
+            ->and($cached)->toHaveKey('selected')
+            ->and($cached)->toHaveKey('groupBy');
+    });
+
+    it('does not store in session when caching is disabled', function (): void {
+        config(['tall-datatables.should_cache' => false]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('loadData')
+            ->call('sortTable', 'title');
+
+        $cacheKey = config('tall-datatables.cache_key') . '.filter:' . $component->instance()->getCacheKey();
+
+        expect(Session::has($cacheKey))->toBeFalse();
+    });
+
+    it('creates layout setting in database', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('loadData')
+            ->call('sortTable', 'title');
+
+        $layout = DatatableUserSetting::where('is_layout', true)
+            ->where('cache_key', $component->instance()->getCacheKey())
+            ->first();
+
+        expect($layout)->not->toBeNull()
+            ->and($layout->name)->toBe('layout')
+            ->and($layout->settings)->toHaveKey('enabledCols')
+            ->and($layout->settings)->toHaveKey('perPage');
+    });
+});
+
+describe('compileStoredLayout', function (): void {
+    it('returns correct structure', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'compileStoredLayout');
+        $layout = $reflection->invoke($instance);
+
+        expect($layout)->toHaveKey('name')
+            ->and($layout['name'])->toBe('layout')
+            ->and($layout)->toHaveKey('cache_key')
+            ->and($layout)->toHaveKey('component')
+            ->and($layout)->toHaveKey('settings')
+            ->and($layout)->toHaveKey('is_layout')
+            ->and($layout['is_layout'])->toBeTrue()
+            ->and($layout['settings'])->toHaveKey('enabledCols')
+            ->and($layout['settings'])->toHaveKey('aggregatableCols')
+            ->and($layout['settings'])->toHaveKey('perPage')
+            ->and($layout['settings']['userFilters'])->toBe([]);
+    });
+});
+
+describe('deleteSavedFilterEnabledCols', function (): void {
+    it('removes enabledCols from saved filter settings', function (): void {
+        $setting = $this->user->datatableUserSettings()->create([
+            'name' => 'With Cols',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => [
+                'enabledCols' => ['title', 'content'],
+                'userFilters' => [],
+                'perPage' => 15,
+            ],
+        ]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('deleteSavedFilterEnabledCols', $setting->getKey());
+
+        $setting->refresh();
+
+        expect($setting->settings)->not->toHaveKey('enabledCols');
+    });
+
+    it('does nothing when saved filter does not exist', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('deleteSavedFilterEnabledCols', 99999);
+
+        expect(true)->toBeTrue();
+    });
+});
+
+describe('updateSavedFilter', function (): void {
+    it('updates saved filter name', function (): void {
+        $setting = $this->user->datatableUserSettings()->create([
+            'name' => 'Old Name',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => ['userFilters' => []],
+        ]);
+
+        Livewire::test(PostDataTable::class)
+            ->call('updateSavedFilter', $setting->getKey(), ['name' => 'New Name']);
+
+        $setting->refresh();
+
+        expect($setting->name)->toBe('New Name');
+    });
+
+    it('only allows updating name field', function (): void {
+        $setting = $this->user->datatableUserSettings()->create([
+            'name' => 'Original',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => ['userFilters' => []],
+        ]);
+
+        Livewire::test(PostDataTable::class)
+            ->call('updateSavedFilter', $setting->getKey(), [
+                'name' => 'Updated',
+                'settings' => ['hacked' => true],
+            ]);
+
+        $setting->refresh();
+
+        expect($setting->name)->toBe('Updated')
+            ->and($setting->settings)->not->toHaveKey('hacked');
+    });
+});
+
+describe('saveFilter with permanent flag', function (): void {
+    it('clears other permanent filters when saving as permanent', function (): void {
+        $existingPermanent = $this->user->datatableUserSettings()->create([
+            'name' => 'Existing Permanent',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => ['userFilters' => []],
+            'is_permanent' => true,
+        ]);
+
+        Livewire::test(PostDataTable::class)
+            ->call('saveFilter', 'New Permanent', true);
+
+        $existingPermanent->refresh();
+
+        expect($existingPermanent->is_permanent)->toBeFalse();
+
+        $newPermanent = DatatableUserSetting::where('name', 'New Permanent')->first();
+
+        expect($newPermanent->is_permanent)->toBeTrue();
+    });
+});
+
+describe('saveFilter without enabledCols', function (): void {
+    it('excludes enabledCols when withEnabledCols is false', function (): void {
+        Livewire::test(PostDataTable::class)
+            ->call('saveFilter', 'No Cols', false, false);
+
+        $setting = DatatableUserSetting::where('name', 'No Cols')->first();
+
+        expect($setting->settings)->not->toHaveKey('enabledCols')
+            ->and($setting->settings)->toHaveKey('userFilters');
+    });
+});
+
+describe('mountStoresSettings with session cache', function (): void {
+    it('loads cached state from session on mount', function (): void {
+        config(['tall-datatables.should_cache' => true]);
+
+        $cacheKey = config('tall-datatables.cache_key') . '.filter:' . PostDataTable::class;
+        Session::put($cacheKey, [
+            'perPage' => 50,
+            'search' => 'cached search',
+            'userOrderBy' => 'title',
+            'userOrderAsc' => false,
+        ]);
+
+        $component = Livewire::test(PostDataTable::class);
+
+        expect($component->get('perPage'))->toBe(50)
+            ->and($component->get('search'))->toBe('cached search')
+            ->and($component->get('userOrderBy'))->toBe('title')
+            ->and($component->get('userOrderAsc'))->toBeFalse();
+    });
+});
+

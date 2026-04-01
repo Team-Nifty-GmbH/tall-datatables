@@ -165,3 +165,55 @@ describe('Money Cast Type Safety', function (): void {
         expect((float) $avg)->toBe(200.0);
     });
 });
+
+describe('Money Cast Direct Methods', function (): void {
+    it('set method passes value through unchanged', function (): void {
+        $cast = new Money();
+        $model = new Product();
+
+        expect($cast->set($model, 'price', 42.5, []))->toBe(42.5);
+        expect($cast->set($model, 'price', null, []))->toBeNull();
+        expect($cast->set($model, 'price', 0, []))->toBe(0);
+    });
+
+    it('getFrontendFormatter returns money', function (): void {
+        expect(Money::getFrontendFormatter())->toBe('money');
+        expect(Money::getFrontendFormatter('extra'))->toBe('money');
+    });
+
+    it('handles many decimal places', function (): void {
+        $product = createTestProduct(['price' => 12.3456]);
+
+        // Non-whole number, returned as-is
+        expect($product->price)->toBe(12.3456);
+    });
+
+    it('delegates to attribute mutator when model has one', function (): void {
+        $cast = new Money();
+
+        $model = new class() extends \Illuminate\Database\Eloquent\Model
+        {
+            protected $table = 'products';
+
+            protected $guarded = ['id'];
+
+            protected function casts(): array
+            {
+                return ['price' => Money::class];
+            }
+
+            public function price(): \Illuminate\Database\Eloquent\Casts\Attribute
+            {
+                return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+                    get: fn ($value) => $value + 1,
+                );
+            }
+        };
+
+        $model->setRawAttributes(['price' => 99.0]);
+
+        $result = $cast->get($model, 'price', 99.0, ['price' => 99.0]);
+
+        expect($result)->toBe(100.0);
+    });
+});

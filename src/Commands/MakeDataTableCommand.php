@@ -2,13 +2,12 @@
 
 namespace TeamNiftyGmbH\DataTable\Commands;
 
-use Illuminate\Console\GeneratorCommand;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use Livewire\Features\SupportConsoleCommands\Commands\ComponentParser;
-use Livewire\Features\SupportConsoleCommands\Commands\MakeLivewireCommand;
+use Illuminate\Support\Str;
 use Spatie\ModelInfo\ModelFinder;
 
-class MakeDataTableCommand extends GeneratorCommand
+class MakeDataTableCommand extends Command
 {
     /**
      * The console command description.
@@ -18,8 +17,6 @@ class MakeDataTableCommand extends GeneratorCommand
     protected $description = 'Create a new Livewire DataTable component';
 
     protected string $model;
-
-    protected ComponentParser|\Livewire\Commands\ComponentParser $parser;
 
     /**
      * The name and signature of the console command.
@@ -35,19 +32,18 @@ class MakeDataTableCommand extends GeneratorCommand
     /**
      * Execute the console command.
      */
-    public function handle(): bool
+    public function handle(): int
     {
-        $this->parser = new ComponentParser(
-            config('tall-datatables.data_table_namespace'),
-            config('tall-datatables.view_path'),
-            $this->argument('name'),
-        );
-        $livewireMakeCommand = new MakeLivewireCommand();
+        $name = $this->argument('name');
+        $namespace = $this->resolveNamespace();
+        $className = class_basename($name);
 
-        if ($livewireMakeCommand->isReservedClassName($name = $this->parser->className())) {
-            $this->line('<fg=red;options=bold>Class is reserved:</>' . $name);
+        $reservedNames = ['parent', 'component', 'interface', 'abstract', 'class', 'static', 'self'];
 
-            return false;
+        if (in_array(strtolower($className), $reservedNames)) {
+            $this->line('<fg=red;options=bold>Class is reserved:</>' . $className);
+
+            return self::FAILURE;
         }
 
         if (class_exists($this->argument('model'))) {
@@ -63,37 +59,37 @@ class MakeDataTableCommand extends GeneratorCommand
                 ->first();
             $this->model = $model ?: $this->argument('model');
         }
-        $force = $this->option('force');
 
-        if ($classPath = $this->createClass($force)) {
-            $this->info('Livewire Datatable Created: ' . $classPath);
+        $force = $this->option('force');
+        $classPath = $this->resolveClassPath($name);
+
+        if ($created = $this->createClass($classPath, $namespace, $className, $force)) {
+            $this->info('Livewire Datatable Created: ' . $created);
         }
 
-        return true;
+        return self::SUCCESS;
     }
 
-    protected function classContents(): string
+    protected function classContents(string $namespace, string $className): string
     {
         return str_replace(
             ['[namespace]', '[class]', '[model]', '[model_import]'],
-            [$this->parser->classNamespace(), $this->parser->className(), class_basename($this->model), $this->model],
+            [$namespace, $className, class_basename($this->model), $this->model],
             $this->getStub()
         );
     }
 
-    protected function createClass(bool $force = false): string|bool
+    protected function createClass(string $classPath, string $namespace, string $className, bool $force = false): string|bool
     {
-        $classPath = $this->parser->classPath();
-
         if (! $force && File::exists($classPath)) {
-            $this->line('<fg=red;options=bold>Class already exists:</> ' . $this->parser->relativeClassPath());
+            $this->line('<fg=red;options=bold>Class already exists:</> ' . str_replace(base_path() . '/', '', $classPath));
 
             return false;
         }
 
         $this->ensureDirectoryExists($classPath);
 
-        File::put($classPath, $this->classContents());
+        File::put($classPath, $this->classContents($namespace, $className));
 
         return $classPath;
     }
@@ -115,5 +111,37 @@ class MakeDataTableCommand extends GeneratorCommand
         }
 
         return file_get_contents(__DIR__ . '/../../stubs/livewire.data-table.stub');
+    }
+
+    protected function resolveClassPath(string $name): string
+    {
+        $namespace = config('tall-datatables.data_table_namespace', 'App\\Livewire');
+        $basePath = Str::of($namespace)
+            ->replaceFirst('App\\', '')
+            ->replace('\\', '/')
+            ->prepend(app_path() . '/');
+
+        $subPath = Str::of($name)
+            ->replace('.', '/')
+            ->replace('\\', '/');
+
+        return $basePath . '/' . $subPath . '.php';
+    }
+
+    protected function resolveNamespace(): string
+    {
+        $baseNamespace = config('tall-datatables.data_table_namespace', 'App\\Livewire');
+        $name = $this->argument('name');
+
+        if (str_contains($name, '.') || str_contains($name, '\\') || str_contains($name, '/')) {
+            $parts = preg_split('/[.\\\\\\/]/', $name);
+            array_pop($parts);
+
+            if (! empty($parts)) {
+                return $baseNamespace . '\\' . implode('\\', $parts);
+            }
+        }
+
+        return $baseNamespace;
     }
 }

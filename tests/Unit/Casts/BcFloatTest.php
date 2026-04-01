@@ -165,3 +165,62 @@ describe('BcFloat Cast Type Safety', function (): void {
         expect((float) $avg)->toBe(200.0);
     });
 });
+
+describe('BcFloat Cast Direct Methods', function (): void {
+    test('set method passes value through unchanged', function (): void {
+        $cast = new BcFloat();
+        $model = new Product();
+
+        expect($cast->set($model, 'quantity', 42.5, []))->toBe(42.5);
+        expect($cast->set($model, 'quantity', null, []))->toBeNull();
+        expect($cast->set($model, 'quantity', 0, []))->toBe(0);
+        expect($cast->set($model, 'quantity', '99.99', []))->toBe('99.99');
+    });
+
+    test('get method handles many decimal places', function (): void {
+        $product = createTestProduct(['quantity' => 3.14159]);
+
+        // Since 3.14159 has non-zero fmod, it returns as-is
+        expect($product->quantity)->toBe(3.14159);
+    });
+
+    test('get method rounds whole numbers to two decimal places', function (): void {
+        $product = createTestProduct(['quantity' => 7]);
+
+        expect($product->quantity)->toBe(7.00);
+    });
+
+    test('getFrontendFormatter returns float', function (): void {
+        expect(BcFloat::getFrontendFormatter())->toBe('float');
+        expect(BcFloat::getFrontendFormatter('arg1', 'arg2'))->toBe('float');
+    });
+
+    test('delegates to attribute mutator when model has one', function (): void {
+        $cast = new BcFloat();
+
+        $model = new class() extends \Illuminate\Database\Eloquent\Model
+        {
+            protected $table = 'products';
+
+            protected $guarded = ['id'];
+
+            protected function casts(): array
+            {
+                return ['quantity' => BcFloat::class];
+            }
+
+            public function quantity(): \Illuminate\Database\Eloquent\Casts\Attribute
+            {
+                return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+                    get: fn ($value) => $value * 2,
+                );
+            }
+        };
+
+        $model->setRawAttributes(['quantity' => 50.0]);
+
+        $result = $cast->get($model, 'quantity', 50.0, ['quantity' => 50.0]);
+
+        expect($result)->toBe(100.0);
+    });
+});

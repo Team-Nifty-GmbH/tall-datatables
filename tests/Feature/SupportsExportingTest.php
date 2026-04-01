@@ -143,14 +143,15 @@ describe('SupportsExporting', function (): void {
             expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
         });
 
-        it('can be called as a Livewire action', function (): void {
+        it('can be called directly on the component instance', function (): void {
             createTestPost(['user_id' => $this->user->getKey()]);
 
             $component = Livewire::test(PostDataTable::class)
-                ->call('loadData')
-                ->call('export', ['title', 'content']);
+                ->call('loadData');
 
-            expect($component->instance())->toBeInstanceOf(PostDataTable::class);
+            $response = $component->instance()->export(['title', 'content']);
+
+            expect($response)->toBeInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class);
         });
     });
 

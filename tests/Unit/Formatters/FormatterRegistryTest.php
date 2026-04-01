@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Contracts\Support\Arrayable;
 use TeamNiftyGmbH\DataTable\Formatters\ArrayFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\BadgeFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\BooleanFormatter;
@@ -7,6 +8,9 @@ use TeamNiftyGmbH\DataTable\Formatters\DateFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\FloatFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry;
 use TeamNiftyGmbH\DataTable\Formatters\ImageFormatter;
+use TeamNiftyGmbH\DataTable\Formatters\LinkFormatter;
+use TeamNiftyGmbH\DataTable\Formatters\MoneyFormatter;
+use TeamNiftyGmbH\DataTable\Formatters\PercentageFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\StringFormatter;
 
 describe('FormatterRegistry', function (): void {
@@ -175,5 +179,221 @@ describe('FormatterRegistry', function (): void {
         expect($formatter)->toBeInstanceOf(BadgeFormatter::class)
             ->and($formatter->mapping)->toHaveKey('active')
             ->and($formatter->mapping['active']['color'])->toBe('blue');
+    });
+
+    it('resolves FQCN cast by stripping namespace to basename', function (): void {
+        $registry = new FormatterRegistry();
+
+        $registry->register('Money', new MoneyFormatter());
+
+        $formatter = $registry->resolve('FluxErp\\Casts\\Money');
+
+        expect($formatter)->toBeInstanceOf(MoneyFormatter::class);
+    });
+
+    it('auto-detects FQCN cast basename when not registered', function (): void {
+        $registry = new FormatterRegistry();
+
+        $formatter = $registry->resolve('App\\Casts\\Money');
+
+        expect($formatter)->toBeInstanceOf(MoneyFormatter::class);
+    });
+
+    it('falls back to StringFormatter for unknown FQCN', function (): void {
+        $registry = new FormatterRegistry();
+
+        $formatter = $registry->resolve('App\\Casts\\SomethingCompletelyUnknown');
+
+        expect($formatter)->toBeInstanceOf(StringFormatter::class);
+    });
+
+    it('auto-detects money cast to MoneyFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('money'))->toBeInstanceOf(MoneyFormatter::class);
+    });
+
+    it('auto-detects coloredmoney cast to colored MoneyFormatter', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolve('coloredmoney');
+
+        expect($formatter)->toBeInstanceOf(MoneyFormatter::class)
+            ->and($formatter->colored)->toBeTrue();
+    });
+
+    it('auto-detects percentage cast to PercentageFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('percentage'))->toBeInstanceOf(PercentageFormatter::class);
+    });
+
+    it('auto-detects progresspercentage cast to PercentageFormatter with progressBar', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolve('progresspercentage');
+
+        expect($formatter)->toBeInstanceOf(PercentageFormatter::class)
+            ->and($formatter->progressBar)->toBeTrue();
+    });
+
+    it('auto-detects coloredfloat cast to colored FloatFormatter', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolve('coloredfloat');
+
+        expect($formatter)->toBeInstanceOf(FloatFormatter::class)
+            ->and($formatter->colored)->toBeTrue();
+    });
+
+    it('auto-detects email cast to LinkFormatter with email type', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolve('email');
+
+        expect($formatter)->toBeInstanceOf(LinkFormatter::class)
+            ->and($formatter->type)->toBe('email');
+    });
+
+    it('auto-detects tel cast to LinkFormatter with tel type', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolve('tel');
+
+        expect($formatter)->toBeInstanceOf(LinkFormatter::class)
+            ->and($formatter->type)->toBe('tel');
+    });
+
+    it('auto-detects url cast to LinkFormatter', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolve('url');
+
+        expect($formatter)->toBeInstanceOf(LinkFormatter::class)
+            ->and($formatter->type)->toBe('link');
+    });
+
+    it('auto-detects link cast to LinkFormatter', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolve('link');
+
+        expect($formatter)->toBeInstanceOf(LinkFormatter::class)
+            ->and($formatter->type)->toBe('link');
+    });
+
+    it('auto-detects relativetime cast to DateFormatter with relative mode', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolve('relativetime');
+
+        expect($formatter)->toBeInstanceOf(DateFormatter::class)
+            ->and($formatter->mode)->toBe('relative');
+    });
+
+    it('auto-detects time cast to DateFormatter with time mode', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolve('time');
+
+        expect($formatter)->toBeInstanceOf(DateFormatter::class)
+            ->and($formatter->mode)->toBe('time');
+    });
+
+    it('auto-detects float cast to FloatFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('float'))->toBeInstanceOf(FloatFormatter::class);
+    });
+
+    it('auto-detects double cast to FloatFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('double'))->toBeInstanceOf(FloatFormatter::class);
+    });
+
+    it('auto-detects decimal cast to FloatFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('decimal'))->toBeInstanceOf(FloatFormatter::class);
+    });
+
+    it('auto-detects integer cast to StringFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('integer'))->toBeInstanceOf(StringFormatter::class);
+    });
+
+    it('auto-detects int cast to StringFormatter', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('int'))->toBeInstanceOf(StringFormatter::class);
+    });
+
+    it('resolveWithOptions falls through to resolve for non-state/badge types', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolveWithOptions('boolean', ['some' => 'options']);
+
+        expect($formatter)->toBeInstanceOf(BooleanFormatter::class);
+    });
+
+    it('resolveWithOptions falls through for unknown cast type', function (): void {
+        $registry = new FormatterRegistry();
+        $formatter = $registry->resolveWithOptions('unknown', []);
+
+        expect($formatter)->toBeInstanceOf(StringFormatter::class);
+    });
+
+    it('resolveWithOptions is case-insensitive for state/badge', function (): void {
+        $registry = new FormatterRegistry();
+
+        $formatter = $registry->resolveWithOptions('State', ['open' => 'green']);
+
+        expect($formatter)->toBeInstanceOf(BadgeFormatter::class)
+            ->and($formatter->mapping['open']['color'])->toBe('green');
+    });
+
+    it('resolveWithOptions handles Arrayable options', function (): void {
+        $registry = new FormatterRegistry();
+
+        $arrayable = new class implements Arrayable
+        {
+            public function toArray(): array
+            {
+                return ['pending' => 'yellow', 'done' => 'green'];
+            }
+        };
+
+        $formatter = $registry->resolveWithOptions('badge', $arrayable);
+
+        expect($formatter)->toBeInstanceOf(BadgeFormatter::class)
+            ->and($formatter->mapping)->toHaveKey('pending')
+            ->and($formatter->mapping['pending']['color'])->toBe('yellow')
+            ->and($formatter->mapping['done']['color'])->toBe('green');
+    });
+
+    it('resolveWithOptions translates labels in mapping', function (): void {
+        $registry = new FormatterRegistry();
+
+        $formatter = $registry->resolveWithOptions('state', ['active' => 'green']);
+
+        expect($formatter)->toBeInstanceOf(BadgeFormatter::class)
+            ->and($formatter->mapping['active'])->toHaveKey('label');
+    });
+
+    it('resolves registered FQCN formatter directly', function (): void {
+        $registry = new FormatterRegistry();
+        $custom = new StringFormatter();
+
+        $registry->register('App\\Casts\\CustomType', $custom);
+
+        expect($registry->resolve('App\\Casts\\CustomType'))->toBe($custom);
+    });
+
+    it('resolveWithOptions with Arrayable for non-state type falls through', function (): void {
+        $registry = new FormatterRegistry();
+
+        $arrayable = new class implements Arrayable
+        {
+            public function toArray(): array
+            {
+                return ['key' => 'value'];
+            }
+        };
+
+        $formatter = $registry->resolveWithOptions('date', $arrayable);
+
+        expect($formatter)->toBeInstanceOf(DateFormatter::class);
     });
 });

@@ -141,3 +141,56 @@ describe('Image Cast with InteractsWithDataTables', function (): void {
         expect($product->getAvatarUrl())->toBeNull();
     });
 });
+
+describe('Image Cast Direct Methods', function (): void {
+    it('set method passes value through unchanged', function (): void {
+        $cast = new Image();
+        $model = new Product();
+
+        expect($cast->set($model, 'image_url', 'https://example.com/img.jpg', []))
+            ->toBe('https://example.com/img.jpg');
+        expect($cast->set($model, 'image_url', null, []))->toBeNull();
+        expect($cast->set($model, 'image_url', '', []))->toBe('');
+    });
+
+    it('getFrontendFormatter returns image', function (): void {
+        expect(Image::getFrontendFormatter())->toBe('image');
+        expect(Image::getFrontendFormatter('extra', 'args'))->toBe('image');
+    });
+
+    it('handles special characters in urls', function (): void {
+        $url = 'https://example.com/image.jpg?foo=bar&baz=qux<script>';
+        $product = createTestProduct(['image_url' => $url]);
+
+        expect($product->image_url)->toBe($url);
+    });
+
+    it('delegates to attribute mutator when model has one', function (): void {
+        $cast = new Image();
+
+        $model = new class() extends \Illuminate\Database\Eloquent\Model
+        {
+            protected $table = 'products';
+
+            protected $guarded = ['id'];
+
+            protected function casts(): array
+            {
+                return ['image_url' => Image::class];
+            }
+
+            public function imageUrl(): \Illuminate\Database\Eloquent\Casts\Attribute
+            {
+                return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+                    get: fn ($value) => 'mutated:' . $value,
+                );
+            }
+        };
+
+        $model->setRawAttributes(['image_url' => 'https://example.com/img.jpg']);
+
+        $result = $cast->get($model, 'image_url', 'https://example.com/img.jpg', ['image_url' => 'https://example.com/img.jpg']);
+
+        expect($result)->toBe('mutated:https://example.com/img.jpg');
+    });
+});

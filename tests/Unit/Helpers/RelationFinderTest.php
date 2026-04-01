@@ -66,7 +66,7 @@ describe('RelationFinder', function (): void {
 
             expect($relations)->toBeInstanceOf(Collection::class);
             $relations->each(function ($relation): void {
-                expect($relation)->toBeInstanceOf(Spatie\ModelInfo\Relations\Relation::class);
+                expect($relation)->toBeInstanceOf(\Spatie\ModelInfo\Relations\Relation::class);
             });
         });
 
@@ -80,12 +80,86 @@ describe('RelationFinder', function (): void {
         });
 
         it('includes relations on Comment model', function (): void {
-            $relations = RelationFinder::forModel(new Tests\Fixtures\Models\Comment());
+            $relations = RelationFinder::forModel(new \Tests\Fixtures\Models\Comment());
 
             expect($relations)->toBeInstanceOf(Collection::class);
             $names = $relations->pluck('name')->toArray();
             expect($names)->toContain('user')
                 ->and($names)->toContain('post');
+        });
+
+        it('relation objects have type property', function (): void {
+            $relations = RelationFinder::forModel(new Post());
+            $userRelation = $relations->firstWhere('name', 'user');
+
+            expect($userRelation->type)->toBeString()
+                ->toContain('BelongsTo');
+        });
+
+        it('relation objects have related class property', function (): void {
+            $relations = RelationFinder::forModel(new Post());
+            $userRelation = $relations->firstWhere('name', 'user');
+
+            expect($userRelation->related)->toBe(User::class);
+        });
+
+        it('discovers relations from return type declarations', function (): void {
+            $relations = RelationFinder::forModel(new Post());
+
+            // All relations on Post have explicit return type declarations
+            expect($relations)->not->toBeEmpty();
+            $names = $relations->pluck('name')->toArray();
+            expect($names)->toContain('user')
+                ->toContain('comments');
+        });
+
+        it('handles model with no relation resolvers', function (): void {
+            $relations = RelationFinder::forModel(new \Tests\Fixtures\Models\Comment());
+
+            expect($relations)->toBeInstanceOf(Collection::class)
+                ->not->toBeEmpty();
+        });
+
+        it('does not include non-relation methods that throw exceptions', function (): void {
+            // Methods that invoke incorrectly should be filtered out (return null)
+            $relations = RelationFinder::forModel(new Post());
+
+            $names = $relations->pluck('name')->toArray();
+            // Accessors and non-relation methods should not appear
+            expect($names)->not->toContain('getLabel')
+                ->not->toContain('getDescription')
+                ->not->toContain('getUrl')
+                ->not->toContain('getAvatarUrl');
+        });
+
+        it('handles Product model relations', function (): void {
+            $relations = RelationFinder::forModel(new \Tests\Fixtures\Models\Product());
+
+            $names = $relations->pluck('name')->toArray();
+            expect($names)->toContain('user');
+        });
+
+        it('discovers relations registered via resolveRelationUsing', function (): void {
+            // Register a dynamic relation resolver on Post
+            \Tests\Fixtures\Models\Post::resolveRelationUsing('dynamicRelation', function ($model) {
+                return $model->belongsTo(\Tests\Fixtures\Models\User::class, 'user_id');
+            });
+
+            $relations = RelationFinder::forModel(new \Tests\Fixtures\Models\Post());
+            $names = $relations->pluck('name')->toArray();
+
+            expect($names)->toContain('dynamicRelation');
+        });
+
+        it('filters out null results from methods that throw exceptions', function (): void {
+            // The relations method filters out null entries (from methods that throw)
+            $relations = RelationFinder::forModel(new \Tests\Fixtures\Models\Post());
+
+            // All returned relations should be non-null Relation instances
+            $relations->each(function ($relation): void {
+                expect($relation)->not->toBeNull()
+                    ->toBeInstanceOf(\Spatie\ModelInfo\Relations\Relation::class);
+            });
         });
     });
 });

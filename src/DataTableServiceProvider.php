@@ -57,9 +57,7 @@ class DataTableServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(FormatterRegistry::class, function () {
-            return new FormatterRegistry();
-        });
+        $this->app->singleton(FormatterRegistry::class);
 
         $this->registerBladeDirectives();
         $this->registerTagCompiler();

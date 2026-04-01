@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd" backupGlobals="false" bootstrap="vendor/autoload.php" colors="true" processIsolation="false" stopOnFailure="false" executionOrder="random" failOnWarning="true" failOnRisky="true" failOnEmptyTestSuite="true" beStrictAboutOutputDuringTests="true" cacheDirectory=".phpunit.cache" backupStaticProperties="false" enforceTimeLimit="true" defaultTimeLimit="60" timeoutForLargeTests="120">
+  <php>
+    <ini name="memory_limit" value="512M"/>
+  </php>
   <testsuites>
     <testsuite name="Unit">
       <directory>tests/Unit</directory>
@@ -11,13 +14,6 @@
       <directory>tests/Browser</directory>
     </testsuite>
   </testsuites>
-  <coverage>
-    <report>
-      <html outputDirectory="build/coverage"/>
-      <text outputFile="build/coverage.txt"/>
-      <clover outputFile="build/logs/clover.xml"/>
-    </report>
-  </coverage>
   <logging>
     <junit outputFile="build/report.junit.xml"/>
   </logging>

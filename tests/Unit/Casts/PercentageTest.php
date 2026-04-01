@@ -108,3 +108,54 @@ describe('Percentage Cast Query Operations', function (): void {
         expect($products)->toBe(['Product A', 'Product B', 'Product C']);
     });
 });
+
+describe('Percentage Cast Direct Methods', function (): void {
+    it('set method passes value through unchanged', function (): void {
+        $cast = new Percentage();
+        $model = new Product();
+
+        expect($cast->set($model, 'discount', 0.5, []))->toBe(0.5);
+        expect($cast->set($model, 'discount', null, []))->toBeNull();
+        expect($cast->set($model, 'discount', 0, []))->toBe(0);
+    });
+
+    it('getFrontendFormatter returns percentage', function (): void {
+        expect(Percentage::getFrontendFormatter())->toBe('percentage');
+        expect(Percentage::getFrontendFormatter('extra'))->toBe('percentage');
+    });
+
+    it('handles string numeric values', function (): void {
+        $product = createTestProduct(['discount' => '0.33']);
+
+        expect($product->discount)->toBe('0.33');
+    });
+
+    it('delegates to attribute mutator when model has one', function (): void {
+        $cast = new Percentage();
+
+        $model = new class() extends \Illuminate\Database\Eloquent\Model
+        {
+            protected $table = 'products';
+
+            protected $guarded = ['id'];
+
+            protected function casts(): array
+            {
+                return ['discount' => Percentage::class];
+            }
+
+            public function discount(): \Illuminate\Database\Eloquent\Casts\Attribute
+            {
+                return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+                    get: fn ($value) => $value * 100,
+                );
+            }
+        };
+
+        $model->setRawAttributes(['discount' => 0.25]);
+
+        $result = $cast->get($model, 'discount', 0.25, ['discount' => 0.25]);
+
+        expect($result)->toBe(25.0);
+    });
+});

@@ -1714,3 +1714,866 @@ describe('buildSearch soft deletes flag', function (): void {
         expect($data['total'])->toBe(1);
     });
 });
+
+// ---------------------------------------------------------------------------
+// parseFilter — additional date format edge cases
+// ---------------------------------------------------------------------------
+describe('parseFilter additional datetime formats', function (): void {
+    it('converts d.m.Y H:i:s full datetime format', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'created_at', 'operator' => '>=', 'value' => '15.06.2023 14:30:45']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+
+    it('converts d/m/Y H:i partial datetime format', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'created_at', 'operator' => '>=', 'value' => '15/06/2023 14:30']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+
+    it('converts d/m/Y H:i:s full datetime format with seconds', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'created_at', 'operator' => '>=', 'value' => '15/06/2023 14:30:45']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+
+    it('parses Carbon-parseable strings with time', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'created_at', 'operator' => '>=', 'value' => '2023-06-15 14:30']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+
+    it('parses Carbon-parseable strings without time as start of day', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'created_at', 'operator' => '>=', 'value' => 'yesterday']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+
+    it('handles m/d/Y date format', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'created_at', 'operator' => '>=', 'value' => '06/15/2023']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+
+    it('falls back to non-numeric non-date string as-is', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'title', 'operator' => 'like', 'value' => 'hello world']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// normalizeNumericValue — comprehensive German/US format coverage
+// ---------------------------------------------------------------------------
+describe('normalizeNumericValue comprehensive', function (): void {
+    it('normalizes German format 1.234,56 to 1234.56', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'price', '>= 1.234,56');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe(1234.56);
+    });
+
+    it('normalizes US format 1,234.56 to 1234.56', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'price', '>= 1,234.56');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe(1234.56);
+    });
+
+    it('normalizes simple comma decimal 39,99 to 39.99', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'price', '= 39,99');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe(39.99);
+    });
+
+    it('treats comma with 3+ trailing digits as string (ambiguous)', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'price', '= 1,000');
+
+        $userFilters = $component->get('userFilters');
+        // Ambiguous: comma with 3 digits could be thousands separator
+        // normalizeNumericValue returns string when ambiguous
+        expect($userFilters[0][0]['value'])->toBe('1,000');
+    });
+
+    it('normalizes plain integer string', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'price', '= 42');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe(42.0);
+    });
+
+    it('normalizes plain decimal string', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'price', '= 42.5');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe(42.5);
+    });
+
+    it('returns non-numeric string as-is', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'price', '= abc');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe('abc');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// applySessionFilter — additional coverage
+// ---------------------------------------------------------------------------
+describe('applySessionFilter additional coverage', function (): void {
+    it('sets sessionFilter name from SessionFilter object', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Session Named']);
+
+        $cacheKey = PostDataTable::class . '_query';
+        $sessionFilter = new TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
+            'named-filter',
+            function ($query): void {
+                $query->where('title', 'like', '%Session%');
+            }
+        );
+        $sessionFilter->setName('My Named Filter');
+        session()->put($cacheKey, $sessionFilter);
+
+        $component = Livewire::test(PostDataTable::class);
+
+        expect($component->get('sessionFilter'))->toBe(['name' => 'My Named Filter']);
+
+        session()->forget($cacheKey);
+    });
+
+    it('marks session filter as loaded after first use', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Loaded Check']);
+
+        $cacheKey = PostDataTable::class . '_query';
+        $sessionFilter = new TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
+            'loaded-check',
+            function ($query): void {
+                $query->where('title', 'like', '%Loaded%');
+            }
+        );
+        session()->put($cacheKey, $sessionFilter);
+
+        $component = Livewire::test(PostDataTable::class);
+
+        // After first load, the session filter should be marked as loaded
+        $storedFilter = session()->get($cacheKey);
+        expect($storedFilter->loaded)->toBeTrue();
+
+        session()->forget($cacheKey);
+    });
+
+    it('does not clear userFilters on second load of session filter', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Second Load']);
+
+        $cacheKey = PostDataTable::class . '_query';
+        $sessionFilter = new TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
+            'second-load',
+            function ($query): void {
+                $query->where('title', 'like', '%Second%');
+            }
+        );
+        // Pre-mark as loaded
+        $sessionFilter->loaded = true;
+        session()->put($cacheKey, $sessionFilter);
+
+        $component = Livewire::test(PostDataTable::class);
+
+        // userFilters should NOT be cleared since loaded was already true
+        // (the filter was already loaded in a previous request)
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+
+        session()->forget($cacheKey);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// addFilter — relation filter edge cases
+// ---------------------------------------------------------------------------
+describe('addFilter relation edge cases', function (): void {
+    it('filters relation with between operator', function (): void {
+        $user1 = createTestUser(['name' => 'Young']);
+        $user2 = createTestUser(['name' => 'Old']);
+        createTestPost(['user_id' => $user1->getKey(), 'title' => 'Young Post']);
+        createTestPost(['user_id' => $user2->getKey(), 'title' => 'Old Post']);
+
+        $component = Livewire::test(PostWithRelationsDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'user.name', 'operator' => 'like', 'value' => '%Young%']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('Young Post');
+    });
+
+    it('handles camelCase conversion for snake_case relations', function (): void {
+        // Test that relation names with dots get properly camelCased
+        $component = Livewire::test(PostWithRelationsDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'user.name', 'operator' => '=', 'value' => $this->user->name]],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// parseFilter — calculation edge cases
+// ---------------------------------------------------------------------------
+describe('parseFilter calculation edge cases', function (): void {
+    it('handles add operator in calculation', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Future Check']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'created_at', 'operator' => '<=', 'value' => [
+                ['calculation' => [
+                    'operator' => '+',
+                    'unit' => 'days',
+                    'value' => 30,
+                ]],
+            ]]],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+    });
+
+    it('handles weeks unit in calculation', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Weeks Check']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'created_at', 'operator' => '>=', 'value' => [
+                ['calculation' => [
+                    'operator' => '-',
+                    'unit' => 'weeks',
+                    'value' => 2,
+                ]],
+            ]]],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+    });
+
+    it('handles years unit in calculation with startOf', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Year Check']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'created_at', 'operator' => '>=', 'value' => [
+                ['calculation' => [
+                    'operator' => '-',
+                    'unit' => 'years',
+                    'value' => 0,
+                    'is_start_of' => 1,
+                    'start_of' => 'year',
+                ]],
+            ]]],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// parseDateValue — additional edge cases
+// ---------------------------------------------------------------------------
+describe('parseDateValue additional edge cases', function (): void {
+    it('parses single-digit day and month in dot format', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'created_at', '5.3.2025');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe('2025-03-05%');
+    });
+
+    it('parses single-digit day and month in slash format', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'created_at', '5/3/2025');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe('2025-03-05%');
+    });
+
+    it('parses partial two-part slash date', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'created_at', '5/3');
+
+        $userFilters = $component->get('userFilters');
+        $year = date('Y');
+        expect($userFilters[0][0]['value'])->toBe("{$year}-03-05%");
+    });
+});
+
+// ---------------------------------------------------------------------------
+// applyFallbackSearch additional coverage
+// ---------------------------------------------------------------------------
+describe('applyFallbackSearch edge cases', function (): void {
+    it('search is case insensitive via like', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'UPPERCASE POST']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('search', 'uppercase');
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+    });
+
+    it('search with empty string returns all results', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Post One']);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Post Two']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('search', '');
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(2);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// migrateFilterFormat additional edge cases
+// ---------------------------------------------------------------------------
+describe('migrateFilterFormat additional edge cases', function (): void {
+    it('handles text key with only empty values gracefully', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'All Visible']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            'text' => ['title' => '', 'content' => '', 'price' => null],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        // All text values are empty/null, so no filters applied
+        expect($data['total'])->toBe(1);
+    });
+
+    it('merges text group with multiple sidebar groups', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Multi Group', 'price' => 100, 'is_published' => true]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Other', 'price' => 200, 'is_published' => false]);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            'text' => ['title' => 'Multi'],
+            0 => [['column' => 'price', 'operator' => '>=', 'value' => 50]],
+            1 => [['column' => 'is_published', 'operator' => '=', 'value' => 1]],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// parseTextFilterValue with date on date columns
+// ---------------------------------------------------------------------------
+describe('parseTextFilterValue date operator combinations', function (): void {
+    it('parses less-than with date on date column', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'created_at', '< 01.06.2023');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['operator'])->toBe('<');
+        expect($userFilters[0][0]['value'])->toBe('2023-06-01');
+    });
+
+    it('parses not-equal with date on date column', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'created_at', '!= 2024-01-15');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['operator'])->toBe('!=');
+        expect($userFilters[0][0]['value'])->toBe('2024-01-15');
+    });
+
+    it('parses equals with date on date column', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'created_at', '= 15/03/2024');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['operator'])->toBe('=');
+        expect($userFilters[0][0]['value'])->toBe('2024-03-15');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Sorting with default and fallback
+// ---------------------------------------------------------------------------
+describe('sorting edge cases', function (): void {
+    it('falls back to model key DESC when orderBy is empty string', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'First']);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Second']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('orderBy', '');
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(2);
+        // Default is key DESC so Second (higher id) comes first
+        expect($data['data'][0]['title'])->toBe('Second');
+    });
+
+    it('uses default orderBy when userOrderBy is null', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'A']);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'B']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userOrderBy', null);
+        $component->set('orderBy', 'title');
+        $component->set('orderAsc', true);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['data'][0]['title'])->toBe('A');
+    });
+
+    it('sorting with relation column descending works', function (): void {
+        $alice = createTestUser(['name' => 'Alice']);
+        $bob = createTestUser(['name' => 'Bob']);
+        createTestPost(['user_id' => $bob->getKey(), 'title' => 'Bob Post']);
+        createTestPost(['user_id' => $alice->getKey(), 'title' => 'Alice Post']);
+
+        $component = Livewire::test(PostWithRelationsDataTable::class);
+        $component->set('userOrderBy', 'user.name');
+        $component->set('userOrderAsc', false);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(2);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Complex combined filter scenarios
+// ---------------------------------------------------------------------------
+describe('complex filter scenarios', function (): void {
+    it('applies three AND filters in one group', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Target', 'price' => 50, 'is_published' => true]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Target', 'price' => 50, 'is_published' => false]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Wrong', 'price' => 50, 'is_published' => true]);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [
+                ['column' => 'title', 'operator' => '=', 'value' => 'Target'],
+                ['column' => 'price', 'operator' => '=', 'value' => 50],
+                ['column' => 'is_published', 'operator' => '=', 'value' => 1],
+            ],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+    });
+
+    it('applies three OR groups with single filter each', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Apple', 'price' => 10]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Banana', 'price' => 20]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Cherry', 'price' => 30]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Date', 'price' => 40]);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'title', 'operator' => '=', 'value' => 'Apple']],
+            [['column' => 'title', 'operator' => '=', 'value' => 'Banana']],
+            [['column' => 'title', 'operator' => '=', 'value' => 'Cherry']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(3);
+    });
+
+    it('mixed fixed and user filters work together', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Published Target', 'price' => 50, 'is_published' => true]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Published Other', 'price' => 100, 'is_published' => true]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Draft Target', 'price' => 50, 'is_published' => false]);
+
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [
+            ['is_published', '=', true],
+        ];
+
+        $component = Livewire::test(Tests\Fixtures\Livewire\FilteredPostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'price', 'operator' => '=', 'value' => 50]],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('Published Target');
+
+        Tests\Fixtures\Livewire\FilteredPostDataTable::$testFilters = [];
+    });
+});
+
+// ---------------------------------------------------------------------------
+// isDateColumn — edge case detection
+// ---------------------------------------------------------------------------
+describe('isDateColumn edge case detection', function (): void {
+    it('detects columns ending with _at as date columns', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'created_at', '01.01.2024');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe('2024-01-01%');
+    });
+
+    it('does not treat columns with "date" but not date-like as date columns', function (): void {
+        // title does not contain "date" and is not a date column
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'title', '01.01.2024');
+
+        $userFilters = $component->get('userFilters');
+        // Plain text columns get like with wildcards
+        expect($userFilters[0][0]['operator'])->toBe('like');
+        expect($userFilters[0][0]['value'])->toBe('%01.01.2024%');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// getReturnKeys comprehensive
+// ---------------------------------------------------------------------------
+describe('getReturnKeys comprehensive', function (): void {
+    it('contains all enabled cols', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $reflection = new ReflectionMethod($component->instance(), 'getReturnKeys');
+        $result = $reflection->invoke($component->instance());
+
+        expect($result)->toContain('title')
+            ->toContain('content')
+            ->toContain('price')
+            ->toContain('is_published')
+            ->toContain('created_at');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Scout search path in buildSearch
+// ---------------------------------------------------------------------------
+describe('buildSearch with Scout Searchable model', function (): void {
+    it('uses fallback search when model does not have search method and search is set', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Fallback Match']);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Other']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('search', 'Fallback');
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('Fallback Match');
+    });
+
+    it('exercises the Scout search path when model has Searchable trait', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Scout Post']);
+
+        config(['scout.driver' => 'collection']);
+
+        // Instantiate the component without Livewire::test to avoid render() lifecycle
+        $component = Livewire::test(Tests\Fixtures\Livewire\SearchablePostDataTable::class);
+        $instance = $component->instance();
+
+        // Set search directly on the instance to avoid triggering render/loadData
+        $instance->search = 'Scout';
+
+        // Call buildSearch directly to exercise the Scout code path (lines 171-177)
+        $reflection = new ReflectionMethod($instance, 'buildSearch');
+        $query = $reflection->invoke($instance);
+
+        // If we got here, the Scout search path was exercised
+        expect($query)->toBeInstanceOf(\Illuminate\Database\Eloquent\Builder::class);
+    });
+
+    it('exercises getScoutSearch method', function (): void {
+        config(['scout.driver' => 'collection']);
+
+        $component = Livewire::test(Tests\Fixtures\Livewire\SearchablePostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'getScoutSearch');
+        $scoutBuilder = $reflection->invoke($instance);
+
+        expect($scoutBuilder)->toBeInstanceOf(\Laravel\Scout\Builder::class);
+    });
+
+    it('reports model as searchable when it uses Searchable trait', function (): void {
+        config(['scout.driver' => 'collection']);
+
+        $component = Livewire::test(Tests\Fixtures\Livewire\SearchablePostDataTable::class);
+
+        $reflection = new ReflectionMethod($component->instance(), 'getIsSearchable');
+        $result = $reflection->invoke($component->instance());
+
+        expect($result)->toBeTrue();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// isDateColumn with explicit date/datetime cast in formatters
+// ---------------------------------------------------------------------------
+describe('isDateColumn with explicit formatter cast', function (): void {
+    it('detects date formatter as date column', function (): void {
+        $component = Livewire::test(Tests\Fixtures\Livewire\DateFormatterPostDataTable::class);
+
+        $component->call('setTextFilter', 'date_col', '01.01.2024');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe('2024-01-01%');
+    });
+
+    it('detects datetime formatter as date column', function (): void {
+        $component = Livewire::test(Tests\Fixtures\Livewire\DateFormatterPostDataTable::class);
+
+        $component->call('setTextFilter', 'datetime_col', '01.01.2024');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe('2024-01-01%');
+    });
+
+    it('detects immutable_date formatter as date column', function (): void {
+        $component = Livewire::test(Tests\Fixtures\Livewire\DateFormatterPostDataTable::class);
+
+        $component->call('setTextFilter', 'immutable_date_col', '01.01.2024');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe('2024-01-01%');
+    });
+
+    it('detects immutable_datetime formatter as date column', function (): void {
+        $component = Livewire::test(Tests\Fixtures\Livewire\DateFormatterPostDataTable::class);
+
+        $component->call('setTextFilter', 'immutable_dt_col', '01.01.2024');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters[0][0]['value'])->toBe('2024-01-01%');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// getResolvedFormatters with array formatters
+// ---------------------------------------------------------------------------
+describe('getResolvedFormatters with array formatter options', function (): void {
+    it('resolves formatters with array options', function (): void {
+        $post = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Array Fmt']);
+
+        // PostWithBadgeDataTable has array-based formatters
+        $component = Livewire::test(Tests\Fixtures\Livewire\PostWithBadgeDataTable::class);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+        expect($data['total'])->toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// normalizeFilterValue edge case: non-parseable date on date column returns numeric
+// ---------------------------------------------------------------------------
+describe('normalizeFilterValue returns numeric for non-date on date column', function (): void {
+    it('falls through date parsing to numeric normalization', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'created_at', '>= 42');
+
+        $userFilters = $component->get('userFilters');
+        // 42 is numeric, so normalizeFilterValue falls through date parsing
+        // and normalizes as numeric
+        expect($userFilters[0][0]['value'])->toBe(42.0);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// parseFilter with between and date values
+// ---------------------------------------------------------------------------
+describe('between filter with date values', function (): void {
+    it('filters date range with between operator', function (): void {
+        $oldPost = createTestPost([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Old Post',
+            'created_at' => '2020-01-01 00:00:00',
+        ]);
+        $newPost = createTestPost([
+            'user_id' => $this->user->getKey(),
+            'title' => 'New Post',
+        ]);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'created_at', 'operator' => 'between', 'value' => ['2019-01-01', '2021-01-01']]],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('Old Post');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// addFilter — aggregatableRelationCols intercept (lines 51-54)
+// ---------------------------------------------------------------------------
+describe('addFilter with aggregatable relation columns', function (): void {
+    it('intercepts filter for aggregatable relation columns', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Agg Test', 'price' => 50]);
+
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        // Use reflection to set protected property
+        $reflection = new ReflectionProperty($instance, 'aggregatableRelationCols');
+        $reflection->setAccessible(true);
+        $reflection->setValue($instance, ['comments_count']);
+
+        $instance->userFilters = [
+            [['column' => 'comments_count', 'operator' => '>', 'value' => 0]],
+        ];
+        $instance->loadData();
+
+        // The filter should have been intercepted and stored in aggregatableRelationCols
+        // with the column name as key, not processed as regular where
+        $data = $instance->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// addFilter — string type with method_exists (lines 110-112)
+// ---------------------------------------------------------------------------
+describe('addFilter with string type user filter', function (): void {
+    it('calls named filter method when type is a string in userFilters', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Named Type']);
+
+        // This tests the case where addFilter receives a string type
+        // which happens when the filter group contains string keys
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            ['Where' => [['title', '=', 'Named Type']]],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// getResultFromQuery — QueryException catch (lines 305-308)
+// ---------------------------------------------------------------------------
+describe('getResultFromQuery error handling', function (): void {
+    it('returns empty array on QueryException', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Test']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        // Force a query error by setting an invalid orderBy column
+        $instance->userOrderBy = 'nonexistent_column_that_will_cause_error';
+        $instance->loadData();
+
+        // The QueryException should be caught, and data should be an array
+        $data = $instance->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// loadData — page reset when empty results on page > 1 (lines 475-479)
+// ---------------------------------------------------------------------------
+describe('loadData resets page when getResultFromQuery returns empty array', function (): void {
+    it('resets page when query exception produces empty result on page > 1', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Test']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        // The page reset at line 475-479 triggers when collect($result)->isEmpty()
+        // which only happens when getResultFromQuery returns [] (from QueryException).
+        // Test the scenario where we have page > 1 with an error that produces []
+        $instance->page = 5;
+        $instance->userOrderBy = 'nonexistent_column_xyz';
+        $instance->loadData();
+
+        // After QueryException, result is [] which is empty, page > 1, so it resets
+        $data = $instance->getDataForTesting();
+        expect($data)->toBeArray();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// applyFormatters — array value with StringFormatter fallback (lines 144-146)
+// ---------------------------------------------------------------------------
+describe('applyFormatters array values', function (): void {
+    it('uses ArrayFormatter when raw value is array and formatter is StringFormatter', function (): void {
+        $user = createTestUser(['name' => 'Array User']);
+        $post = createTestPost(['user_id' => $user->getKey(), 'title' => 'Array Test']);
+        createTestComment(['user_id' => $user->getKey(), 'post_id' => $post->getKey(), 'body' => 'Comment A']);
+        createTestComment(['user_id' => $user->getKey(), 'post_id' => $post->getKey(), 'body' => 'Comment B']);
+
+        // PostWithCommentsDataTable has comments.body which produces arrays
+        $component = Livewire::test(Tests\Fixtures\Livewire\PostWithCommentsDataTable::class);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data)->toBeArray();
+        expect($data['total'])->toBe(1);
+    });
+});

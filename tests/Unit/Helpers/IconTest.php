@@ -127,18 +127,18 @@ describe('Icon', function (): void {
     describe('toResponse', function (): void {
         it('returns an HTTP response with SVG content type', function (): void {
             $icon = Icon::make('check');
-            $request = new Illuminate\Http\Request();
+            $request = new \Illuminate\Http\Request();
             $response = $icon->toResponse($request);
 
             expect($response)
-                ->toBeInstanceOf(Illuminate\Http\Response::class)
+                ->toBeInstanceOf(\Illuminate\Http\Response::class)
                 ->and($response->headers->get('Content-Type'))->toBe('image/svg+xml; charset=utf-8')
                 ->and($response->headers->get('Cache-Control'))->toContain('public');
         });
 
         it('includes max-age cache header', function (): void {
             $icon = Icon::make('check');
-            $request = new Illuminate\Http\Request();
+            $request = new \Illuminate\Http\Request();
             $response = $icon->toResponse($request);
 
             expect($response->headers->get('Cache-Control'))->toContain('max-age=31536000');
@@ -146,10 +146,59 @@ describe('Icon', function (): void {
 
         it('response content matches getView output', function (): void {
             $icon = Icon::make('check');
-            $request = new Illuminate\Http\Request();
+            $request = new \Illuminate\Http\Request();
             $response = $icon->toResponse($request);
 
             expect($response->getContent())->toBe($icon->getView());
+        });
+    });
+
+    describe('getComponentName', function (): void {
+        it('builds component name with solid variant', function (): void {
+            $icon = Icon::make('check', 'solid');
+
+            // Access private method via reflection
+            $reflection = new ReflectionClass($icon);
+            $method = $reflection->getMethod('getComponentName');
+            $method->setAccessible(true);
+
+            $componentName = $method->invoke($icon);
+
+            expect($componentName)->toBe('tallstackui::icons.solid.check');
+        });
+
+        it('builds component name with outline variant', function (): void {
+            $icon = Icon::make('arrow-up', 'outline');
+
+            $reflection = new ReflectionClass($icon);
+            $method = $reflection->getMethod('getComponentName');
+            $method->setAccessible(true);
+
+            $componentName = $method->invoke($icon);
+
+            expect($componentName)->toBe('tallstackui::icons.outline.arrow-up');
+        });
+    });
+
+    describe('edge cases', function (): void {
+        it('handles names with hyphens', function (): void {
+            $icon = Icon::make('arrow-left');
+
+            expect($icon->name)->toBe('arrow-left');
+        });
+
+        it('handles mixed case names', function (): void {
+            $icon = Icon::make('ChevronDown');
+
+            expect($icon->name)->toBe('chevrondown');
+        });
+
+        it('handles make with all parameters', function (): void {
+            $icon = Icon::make('check', 'outline', ['class' => 'w-4 h-4', 'id' => 'my-icon']);
+
+            expect($icon->name)->toBe('check');
+            expect($icon->variant)->toBe('outline');
+            expect($icon->attributes)->toBe(['class' => 'w-4 h-4', 'id' => 'my-icon']);
         });
     });
 });

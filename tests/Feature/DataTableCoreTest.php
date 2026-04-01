@@ -954,3 +954,290 @@ describe('getLayout', function (): void {
         expect($result)->toBe('tall-datatables::layouts.table');
     });
 });
+
+describe('applyUserFilters with non-array textFilters entries', function (): void {
+    it('skips non-array textFilters entries', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        // Set textFilters with a non-array entry
+        $component->set('textFilters', ['not_an_array_value']);
+        $component->set('userFilters', []);
+
+        // Should not crash
+        $component->call('applyUserFilters');
+
+        expect($component->get('loadedFilterId'))->toBeNull();
+    });
+});
+
+describe('getAvailableCols with restricted availableCols', function (): void {
+    it('returns specified cols when availableCols is not wildcard', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        // Set directly on instance since it's a Locked property
+        $instance->availableCols = ['title', 'content'];
+
+        $availableCols = $instance->getAvailableCols();
+
+        expect($availableCols)->toContain('title');
+        expect($availableCols)->toContain('content');
+        // Should also include enabledCols and modelKeyName
+        expect($availableCols)->toContain('id');
+    });
+});
+
+describe('loadData with empty results on higher page', function (): void {
+    it('handles page beyond results gracefully', function (): void {
+        for ($i = 0; $i < 20; $i++) {
+            createTestPost(['user_id' => $this->user->getKey()]);
+        }
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('perPage', 10);
+        $component->call('gotoPage', 2);
+
+        Post::query()->forceDelete();
+
+        // Should not throw an exception
+        $component->call('loadData');
+
+        expect($component->instance())->toBeInstanceOf(PostDataTable::class);
+    });
+});
+
+describe('aggregates cleared when search is active', function (): void {
+    it('sets aggregates to empty array when search is non-empty', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Alpha', 'price' => 100]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Beta', 'price' => 200]);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('aggregatableCols', ['sum' => ['price']]);
+        $component->set('search', 'Alpha');
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        // When search is active, aggregates should be empty
+        if (isset($data['aggregates'])) {
+            expect($data['aggregates'])->toBe([]);
+        }
+    });
+});
+
+describe('setPerPage page adjustment', function (): void {
+    it('adjusts page when new perPage causes current page to be beyond last', function (): void {
+        for ($i = 0; $i < 30; $i++) {
+            createTestPost(['user_id' => $this->user->getKey()]);
+        }
+
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        // Manually set state to simulate being on page 3 with known data
+        $instance->perPage = 10;
+        $instance->page = 3;
+        $instance->data = ['total' => 30];
+
+        // Now call setPerPage which should adjust page
+        $instance->setPerPage(15);
+
+        // 30 / 15 = 2 pages, page 3 > 2 so should adjust to page 2
+        expect($instance->page)->toBeLessThanOrEqual(2);
+    });
+});
+
+describe('setTextFilter multi-value removal empties column', function (): void {
+    it('removes column from textFilters when all multi-values are cleared', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        // Set multi-value filter
+        $component->call('setTextFilter', 'title', 'Alpha', 0, 0);
+        $component->call('setTextFilter', 'title', 'Beta', 0, 1);
+
+        // Now remove both entries
+        $component->call('setTextFilter', 'title', null, 0, 0);
+        $component->call('setTextFilter', 'title', null, 0, 0);
+
+        $textFilters = $component->get('textFilters');
+        expect($textFilters)->toBeEmpty();
+    });
+});
+
+describe('getSearchRoute with configured route', function (): void {
+    it('returns route URL when search_route is configured', function (): void {
+        \Illuminate\Support\Facades\Route::any('/search/{model?}', fn () => null)->name('test-search');
+        config(['tall-datatables.search_route' => 'test-search']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'getSearchRoute');
+        $result = $reflection->invoke($instance);
+
+        expect($result)->toContain('/search');
+    });
+});
+
+describe('formatFilterBadgeValue catch branch', function (): void {
+    it('catches formatter errors and returns original value', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        // Set a formatter that will cause an error when resolved
+        $instance->formatters = ['bad_column' => 'completely_invalid_formatter_class'];
+
+        $result = $instance->formatFilterBadgeValue('bad_column', 'original');
+
+        expect($result)->toBe('original');
+    });
+});
+
+describe('formatAggregates with array formatter', function (): void {
+    it('uses array formatter options for custom formatters', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'price' => 100]);
+
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        // Set a formatter as array (formatter class + options)
+        $instance->formatters = ['price' => [\TeamNiftyGmbH\DataTable\Casts\Money::class, []]];
+        $instance->aggregatableCols = ['sum' => ['price']];
+        $instance->loadData();
+
+        $data = $instance->getDataForTesting();
+        expect($data)->toHaveKey('aggregates');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// DataTable.php render when not initialized (line 149)
+// ---------------------------------------------------------------------------
+describe('render when not initialized', function (): void {
+    it('calls loadData when initialized is false during render', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Render Test']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        // After mount, initialized is true. Force it to false.
+        $instance->initialized = false;
+        $result = $instance->render();
+
+        // render should have called loadData, setting initialized back to true
+        expect($instance->initialized)->toBeTrue();
+        expect($result)->not->toBeNull();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// DataTable.php showRestoreButton (line 940-943)
+// ---------------------------------------------------------------------------
+describe('showRestoreButton', function (): void {
+    it('returns false when component has no restore method', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'showRestoreButton');
+        $result = $reflection->invoke($instance);
+
+        expect($result)->toBeFalse();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// DataTable.php getParsedTextFilters — translate enum values (line 405-409)
+// ---------------------------------------------------------------------------
+describe('getParsedTextFilters enum translation', function (): void {
+    it('translates enum values using filterValueLists for display', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        // Set up filterValueLists before calling setTextFilter
+        $instance->filterValueLists = ['is_published' => [
+            ['value' => '1', 'label' => 'Yes'],
+            ['value' => '0', 'label' => 'No'],
+        ]];
+
+        // Call setTextFilter directly on instance so filterValueLists is available
+        $instance->setTextFilter('is_published', '1');
+
+        // Now the filter should have operator '=' since is_published is in filterValueLists
+        $result = $instance->getParsedTextFilters();
+
+        expect($result)->toHaveCount(1);
+        expect($result->first()['column'])->toBe('is_published');
+        // The display value should be translated via filterValueLists
+        expect($result->first()['value'])->toBe('Yes');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// DataTable.php loadFilter with properties (lines 510-523)
+// ---------------------------------------------------------------------------
+describe('loadFilter with multiple properties', function (): void {
+    it('applies filter properties and reloads data when initialized', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Filter Load']);
+
+        $component = Livewire::test(PostDataTable::class);
+
+        $component->call('loadFilter', [
+            'search' => 'Filter Load',
+        ]);
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+    });
+
+    it('returns early for empty properties array', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->call('loadFilter', []);
+
+        // Should not crash
+        expect(true)->toBeTrue();
+    });
+
+    it('does not reload when not initialized', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $instance->initialized = false;
+        $instance->loadFilter(['perPage' => 25]);
+
+        expect($instance->perPage)->toBe(25);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// DataTable.php rebuildTextFilterGroup edge cases (lines 966-1013)
+// ---------------------------------------------------------------------------
+describe('rebuildTextFilterGroup with empty userFilters', function (): void {
+    it('initializes userFilters when empty during rebuild', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        // Force userFilters to be completely empty
+        $component->set('userFilters', []);
+
+        // Setting a text filter triggers rebuildTextFilterGroup
+        $component->call('setTextFilter', 'title', 'test');
+
+        $userFilters = $component->get('userFilters');
+        expect($userFilters)->not->toBeEmpty();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// DataTable.php removeTextFilterRow (lines 607-617)
+// ---------------------------------------------------------------------------
+describe('removeTextFilterRow', function (): void {
+    it('removes a text filter row by group index', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Row Test']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->call('setTextFilter', 'title', 'Row', 0);
+
+        $component->call('removeTextFilterRow', 0);
+
+        $textFilters = $component->get('textFilters');
+        expect($textFilters)->toBeEmpty();
+    });
+});

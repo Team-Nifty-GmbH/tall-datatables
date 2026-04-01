@@ -118,3 +118,56 @@ describe('Link Cast Query Operations', function (): void {
         expect($withoutWebsite)->toBe(1);
     });
 });
+
+describe('Link Cast Direct Methods', function (): void {
+    it('set method passes value through unchanged', function (): void {
+        $cast = new Link();
+        $model = new Product();
+
+        expect($cast->set($model, 'website', 'https://example.com', []))
+            ->toBe('https://example.com');
+        expect($cast->set($model, 'website', null, []))->toBeNull();
+        expect($cast->set($model, 'website', '', []))->toBe('');
+    });
+
+    it('getFrontendFormatter returns link', function (): void {
+        expect(Link::getFrontendFormatter())->toBe('link');
+        expect(Link::getFrontendFormatter('extra'))->toBe('link');
+    });
+
+    it('handles special characters in urls via get', function (): void {
+        $url = 'https://example.com/path?q=hello&lang=de';
+        $product = createTestProduct(['website' => $url]);
+
+        expect($product->website)->toBe($url);
+    });
+
+    it('delegates to attribute mutator when model has one', function (): void {
+        $cast = new Link();
+
+        $model = new class() extends \Illuminate\Database\Eloquent\Model
+        {
+            protected $table = 'products';
+
+            protected $guarded = ['id'];
+
+            protected function casts(): array
+            {
+                return ['website' => Link::class];
+            }
+
+            public function website(): \Illuminate\Database\Eloquent\Casts\Attribute
+            {
+                return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+                    get: fn ($value) => 'mutated:' . $value,
+                );
+            }
+        };
+
+        $model->setRawAttributes(['website' => 'https://example.com']);
+
+        $result = $cast->get($model, 'website', 'https://example.com', ['website' => 'https://example.com']);
+
+        expect($result)->toBe('mutated:https://example.com');
+    });
+});

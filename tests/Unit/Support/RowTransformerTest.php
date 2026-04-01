@@ -145,4 +145,69 @@ describe('RowTransformer::transform', function (): void {
 
         expect($row)->toHaveKey('user.name');
     });
+
+    it('handles deep nested relation columns gracefully', function (): void {
+        $registry = new FormatterRegistry();
+        $transformer = new RowTransformer($registry);
+
+        $user = createTestUser(['name' => 'Nested User']);
+        $post = createTestPost(['user_id' => $user->getKey()]);
+        $comment = createTestComment(['post_id' => $post->getKey(), 'user_id' => $user->getKey()]);
+        $comment->load('post.user');
+
+        $row = $transformer->transform($comment, ['post.user.name']);
+
+        expect($row)->toHaveKey('post.user.name');
+    });
+
+    it('omits display key when formatter escapes same as e(raw)', function (): void {
+        $registry = new FormatterRegistry();
+        $transformer = new RowTransformer($registry);
+
+        $post = createTestPost(['title' => '<b>Bold</b>']);
+
+        $row = $transformer->transform($post, ['title']);
+
+        // StringFormatter calls e() which matches e(rawString), so display is omitted
+        expect($row['title'])->not->toHaveKey('display');
+        expect($row['title']['raw'])->toBe('<b>Bold</b>');
+    });
+
+    it('uses correct base column for dot-notation casts resolution', function (): void {
+        $registry = new FormatterRegistry();
+        $transformer = new RowTransformer($registry);
+
+        $user = createTestUser(['name' => 'John']);
+        $post = createTestPost(['user_id' => $user->getKey()]);
+        $post->load('user');
+
+        $row = $transformer->transform($post, ['user.name']);
+
+        expect($row['user.name']['raw'])->toBe('John');
+    });
+
+    it('handles column with special characters in raw that produces same escaped output', function (): void {
+        $registry = new FormatterRegistry();
+        $transformer = new RowTransformer($registry);
+
+        $post = createTestPost(['title' => 'Normal Title']);
+
+        $row = $transformer->transform($post, ['title']);
+
+        // Normal text: display should be omitted because escaped raw = display
+        expect($row['title'])->not->toHaveKey('display');
+    });
+
+    it('resolveCasts returns empty array for invalid relation', function (): void {
+        $registry = new FormatterRegistry();
+        $transformer = new RowTransformer($registry);
+
+        $post = createTestPost();
+
+        // nonexistent.field - relation does not exist, resolveCasts should catch exception
+        $row = $transformer->transform($post, ['nonexistent.field']);
+
+        expect($row)->toHaveKey('nonexistent.field')
+            ->and($row['nonexistent.field']['raw'])->toBeNull();
+    });
 });

@@ -61,4 +61,38 @@ describe('ArrayFormatter', function (): void {
 
         expect($result)->toContain('<pre');
     });
+
+    it('casts non-array values to escaped string', function (): void {
+        $formatter = new ArrayFormatter();
+
+        expect($formatter->format('plain string'))->toBe('plain string');
+        expect($formatter->format(42))->toBe('42');
+        expect($formatter->format(3.14))->toBe('3.14');
+        expect($formatter->format(true))->toBe('1');
+    });
+
+    it('escapes HTML in non-array scalar values', function (): void {
+        $formatter = new ArrayFormatter();
+
+        $result = $formatter->format('<script>alert(1)</script>');
+
+        expect($result)->not->toContain('<script>')
+            ->toContain('&lt;script&gt;');
+    });
+
+    it('formats flat array with mixed scalar types', function (): void {
+        $formatter = new ArrayFormatter();
+
+        $result = $formatter->format([1, 'two', 3.0, true]);
+
+        expect($result)->toBe('1, two, 3, 1');
+    });
+
+    it('handles associative array with scalar values as flat', function (): void {
+        $formatter = new ArrayFormatter();
+        $result = $formatter->format(['key' => 'Gruesse']);
+
+        // Associative arrays with scalar values are treated as flat
+        expect($result)->toBe('Gruesse');
+    });
 });
