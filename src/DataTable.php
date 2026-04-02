@@ -2,49 +2,37 @@
 
 namespace TeamNiftyGmbH\DataTable;
 
-use Carbon\Exceptions\InvalidFormatException;
-use Composer\InstalledVersions;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
-use Laravel\Scout\Searchable;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
 use Spatie\ModelInfo\Attributes\Attribute;
 use TallStackUi\Traits\Interactions;
-use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
-use TeamNiftyGmbH\DataTable\Helpers\SessionFilter;
+use TeamNiftyGmbH\DataTable\Traits\DataTables\BuildsQueries;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\StoresSettings;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsAggregation;
-use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsCache;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsExporting;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsGrouping;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsRelations;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSelecting;
-use function Livewire\store;
+use Throwable;
 
 class DataTable extends Component
 {
-    use Interactions, StoresSettings, SupportsAggregation, SupportsCache, SupportsExporting, SupportsGrouping,
+    use BuildsQueries, Interactions, StoresSettings, SupportsAggregation, SupportsExporting, SupportsGrouping,
         SupportsRelations, SupportsSelecting;
 
     public array $appends = [];
 
-    /**
-     * These are the columns that will be available to the user.
-     */
     #[Locked]
     public array $availableCols = ['*'];
 
@@ -59,67 +47,32 @@ class DataTable extends Component
 
     public array $enabledCols = [];
 
-    /**
-     * The default filters for the table, these will be applied on every query.
-     * e.g. ['is_active' => true]
-     * This will only show active records, no matter what userFilters will be set.
-     * See it as a globalScope.
-     */
     #[Locked]
     public array $filters = [];
 
-    /**
-     * If some of your cols have available values this variable contains the lists.
-     * e.g. ['status' => ['active', 'inactive']]
-     */
     public array $filterValueLists = [];
 
     public array $formatters = [];
 
-    /**
-     * If set to false the table will have no head, so no captions for the cols.
-     */
     #[Locked]
     public bool $hasHead = true;
 
-    /**
-     * If set to true the table will show no pagination but
-     * load more rows as soon as the table footer comes into viewport.
-     */
     public bool $hasInfiniteScroll = false;
 
-    /**
-     * If set to true the table will not redirect to the detail page.
-     * The alpinejs data-table-row-clicked event will be dispatched anyway.
-     */
     public bool $hasNoRedirect = false;
 
-    /**
-     * If set to false the table will have no sidebar.
-     */
     #[Locked]
     public bool $hasSidebar = true;
 
     public bool $hasStickyCols = true;
 
-    /**
-     * If not empty the given text will be displayed as a headline above the table.
-     */
     public string $headline = '';
 
     public bool $initialized = false;
 
-    /**
-     * If set to false the table will not be filterable.
-     */
     #[Locked]
     public bool $isFilterable = true;
 
-    /**
-     * This is set automatically by the component if its null.
-     * If $this->model uses the Scout Searchable trait, this will be set to true.
-     * You can force enable or disable the search by setting this to true or false.
-     */
     public ?bool $isSearchable = null;
 
     public ?int $loadedFilterId = null;
@@ -136,7 +89,7 @@ class DataTable extends Component
 
     public string $orderBy = '';
 
-    public int|string $page = '1';
+    public int $page = 1;
 
     public int $perPage = 15;
 
@@ -150,6 +103,8 @@ class DataTable extends Component
 
     public array $stickyCols = [];
 
+    public array $textFilters = [];
+
     public array $userFilters = [];
 
     public bool $userOrderAsc = true;
@@ -162,7 +117,7 @@ class DataTable extends Component
 
     protected ?string $includeBefore = null;
 
-    protected $listeners = ['loadData'];
+    protected $listeners = ['dataTableReload' => 'reloadData'];
 
     protected string $model;
 
@@ -170,32 +125,44 @@ class DataTable extends Component
 
     protected string $view = 'tall-datatables::livewire.data-table';
 
+    private ?array $cachedActions = null;
+
+    /** @internal Cached per-request to avoid repeated expensive computation */
+    private ?array $cachedViewData = null;
+
+    private bool $dataLoadedThisRequest = false;
+
     public function mount(): void
     {
-        $this->colLabels = $this->getColLabels();
-
         if (! $this->modelKeyName || ! $this->modelTable) {
             $model = app($this->getModel());
             $this->modelKeyName = $this->modelKeyName ?: $model->getKeyName();
             $this->modelTable = $this->modelTable ?: $model->getTable();
         }
+
+        $this->colLabels = $this->getColLabels();
+        $this->loadData();
     }
 
     public function render(): View|Factory|Application|null
     {
+        if (! $this->initialized) {
+            $this->loadData();
+        }
+
         return view($this->getView(), $this->getViewData());
     }
 
     /**
-     * This ensures that the table will be rendered only once.
+     * Clear data and per-request caches before sending to client.
+     * Data is only needed during render, not in the snapshot.
      */
-    public function hydrate(): void
+    public function dehydrate(): void
     {
-        if (! $this->initialized) {
-            return;
-        }
-
-        $this->skipRender();
+        $this->data = [];
+        $this->cachedViewData = null;
+        $this->cachedActions = null;
+        $this->dataLoadedThisRequest = false;
     }
 
     protected function getTableActions(): array
@@ -206,25 +173,63 @@ class DataTable extends Component
     #[Renderless]
     public function applyUserFilters(): void
     {
+        // Sync textFilters with userFilters (sidebar may have added/removed text-source filters)
+        $activeTextCols = [];
+        foreach ($this->userFilters as $groupIndex => $group) {
+            if (! is_array($group)) {
+                continue;
+            }
+
+            foreach ($group as $filter) {
+                if (($filter['source'] ?? '') === 'text') {
+                    $activeTextCols[$groupIndex][$filter['column']] = true;
+                }
+            }
+        }
+
+        // Remove textFilters entries that are no longer in userFilters
+        foreach ($this->textFilters as $groupIndex => $filtersInGroup) {
+            if (! is_array($filtersInGroup)) {
+                continue;
+            }
+
+            foreach (array_keys($filtersInGroup) as $col) {
+                if (! isset($activeTextCols[$groupIndex][$col])) {
+                    unset($this->textFilters[$groupIndex][$col]);
+                }
+            }
+
+            if (empty($this->textFilters[$groupIndex])) {
+                unset($this->textFilters[$groupIndex]);
+            }
+        }
+
         $this->colLabels = $this->getColLabels();
         $this->loadedFilterId = null;
+        $this->startSearch();
+    }
 
+    #[Renderless]
+    public function clearFiltersAndSort(): void
+    {
+        $this->userFilters = [];
+        $this->textFilters = [];
+        $this->userOrderBy = '';
+        $this->userOrderAsc = true;
+        $this->search = '';
+        $this->groupBy = null;
+        $this->loadedFilterId = null;
         $this->startSearch();
     }
 
     /**
-     * When you need to re-render the table you can call this to force rendering.
+     * @deprecated No longer needed - v2 never skips render
      */
     public function forceRender(): void
     {
-        store($this)->set('skipRender', false);
-
-        if (str_starts_with(InstalledVersions::getPrettyVersion('livewire/livewire'), 'v4.')) {
-            parent::forceRender();
-        }
+        // v2: kept for backwards compatibility but no-ops
     }
 
-    #[Renderless]
     public function forgetSessionFilter(bool $loadData = false): void
     {
         session()->forget($this->getCacheKey() . '_query');
@@ -235,6 +240,32 @@ class DataTable extends Component
         }
     }
 
+    public function formatFilterBadgeValue(string $column, string $value): string
+    {
+        $registry = app(Formatters\FormatterRegistry::class);
+        $formatterKey = $this->getFormatters()[$column] ?? null;
+
+        if (! $formatterKey) {
+            $casts = app($this->getModel())->getCasts();
+            $castValue = $casts[$column] ?? null;
+            $formatterKey = is_array($castValue) ? ($castValue[0] ?? null) : $castValue;
+        }
+
+        if (! $formatterKey) {
+            return $value;
+        }
+
+        try {
+            $formatter = $registry->resolve($formatterKey);
+            $numericValue = is_numeric($value) ? (float) $value : $value;
+            $formatted = $formatter->format($numericValue, []);
+
+            return strip_tags(is_array($formatted) ? ($formatted['display'] ?? $formatted['raw'] ?? $value) : $formatted);
+        } catch (Throwable) {
+            return $value;
+        }
+    }
+
     #[Renderless]
     public function getAvailableCols(): array
     {
@@ -242,38 +273,32 @@ class DataTable extends Component
             ? ModelInfo::forModel($this->getModel())->attributes->pluck('name')->toArray()
             : $this->availableCols;
 
-        return array_values(
-            array_unique(
-                array_merge(
-                    $this->enabledCols,
-                    $availableCols,
-                    [$this->modelKeyName]
-                )
-            )
-        );
+        return array_values(array_unique(array_merge(
+            $this->enabledCols, $availableCols, [$this->modelKeyName]
+        )));
     }
 
     #[Renderless]
     public function getColLabels(?array $cols = null): array
     {
         $colLabels = array_flip(
-            $cols
-                ?: array_merge(
-                    $this->enabledCols,
-                    $this->getAggregatable(),
-                    array_filter(
-                        Arr::dot($this->userFilters),
-                        fn ($key) => str_ends_with($key, '.column'),
-                        ARRAY_FILTER_USE_KEY
-                    )
+            $cols ?: array_merge(
+                $this->enabledCols,
+                $this->getAggregatable(),
+                $this->getGroupableCols(),
+                array_filter(
+                    Arr::dot($this->userFilters),
+                    fn ($key) => str_ends_with($key, '.column'),
+                    ARRAY_FILTER_USE_KEY
                 )
+            )
         );
+
         array_walk($colLabels, function (&$value, $key): void {
             if (str_contains($key, '.') && ! ($this->columnLabels[$key] ?? false)) {
                 $relation = explode('.', Str::beforeLast($key, '.'));
                 $column = Str::afterLast($key, '.');
                 $relation = array_map(fn ($part) => __(Str::headline($part)), $relation);
-
                 $value = implode(' -> ', $relation) . ' -> ' . __(Str::headline($column));
             } else {
                 $value = __(Str::headline($this->columnLabels[$key] ?? $key));
@@ -304,6 +329,18 @@ class DataTable extends Component
         ];
     }
 
+    /**
+     * Re-populate data for assertions in tests. Only call after loadData().
+     */
+    public function getDataForTesting(): array
+    {
+        if (empty($this->data) && $this->initialized) {
+            $this->loadData();
+        }
+
+        return $this->data;
+    }
+
     #[Renderless]
     public function getFormatters(): array
     {
@@ -312,7 +349,6 @@ class DataTable extends Component
             $relationFormatters = method_exists($loadedRelation['model'], 'typeScriptAttributes')
                 ? $loadedRelation['model']::typeScriptAttributes()
                 : app($loadedRelation['model'])->getCasts();
-
             foreach ($loadedRelation['loaded_columns'] as $loadedColumn) {
                 $formatters[$loadedColumn['loaded_as']] = $relationFormatters[$loadedColumn['column']] ?? null;
             }
@@ -324,55 +360,110 @@ class DataTable extends Component
     #[Renderless]
     public function getGroupLabels(): array
     {
-        // Format: "singular|plural" for JavaScript transChoice function
-        $entryTranslation = __('entry');
-        $entriesTranslation = __('entries');
-
         return [
-            'entries' => $entryTranslation . '|' . $entriesTranslation,
-            'showing' => __('Showing'),
-            'to' => __('to'),
-            'of' => __('of'),
-            'groups' => __('Groups'),
-            'noGrouping' => __('No grouping'),
+            'entries' => __('entry') . '|' . __('entries'),
+            'showing' => __('Showing'), 'to' => __('to'), 'of' => __('of'),
+            'groups' => __('Groups'), 'noGrouping' => __('No grouping'),
             'empty' => __('(empty)'),
-            'sum' => __('Sum'),
-            'avg' => __('Avg'),
-            'min' => __('Min'),
-            'max' => __('Max'),
+            'sum' => __('Sum'), 'avg' => __('Avg'), 'min' => __('Min'), 'max' => __('Max'),
         ];
+    }
+
+    public function getIslandData(): array
+    {
+        return $this->getViewData();
     }
 
     #[Renderless]
     public function getOperatorLabels(): array
     {
         return [
-            'like' => __('like'),
-            'not like' => __('not like'),
-            'is null' => __('is null'),
-            'is not null' => __('is not null'),
-            'between' => __('between'),
-            'and' => __('and'),
+            'like' => __('like'), 'not like' => __('not like'),
+            'is null' => __('is null'), 'is not null' => __('is not null'),
+            'between' => __('between'), 'and' => __('and'),
             'Now' => __('Now'),
-            'minutes' => __('Minutes'),
-            'hours' => __('Hours'),
-            'days' => __('Days'),
-            'weeks' => __('Weeks'),
-            'months' => __('Months'),
-            'years' => __('Years'),
-            'minute' => __('Minute'),
-            'hour' => __('Hour'),
-            'day' => __('Day'),
-            'week' => __('Week'),
-            'month' => __('Month'),
-            'year' => __('Year'),
-            'sum' => __('Sum'),
-            'avg' => __('Average'),
-            'min' => __('Minimum'),
-            'max' => __('Maximum'),
-            'Start of' => __('Start of'),
-            'End of' => __('End of'),
+            'minutes' => __('Minutes'), 'hours' => __('Hours'), 'days' => __('Days'),
+            'weeks' => __('Weeks'), 'months' => __('Months'), 'years' => __('Years'),
+            'minute' => __('Minute'), 'hour' => __('Hour'), 'day' => __('Day'),
+            'week' => __('Week'), 'month' => __('Month'), 'year' => __('Year'),
+            'sum' => __('Sum'), 'avg' => __('Average'), 'min' => __('Minimum'), 'max' => __('Maximum'),
+            'Start of' => __('Start of'), 'End of' => __('End of'),
         ];
+    }
+
+    /**
+     * @deprecated Use getActiveFilters() instead
+     */
+    public function getParsedTextFilters(): \Illuminate\Support\Collection
+    {
+        return collect($this->userFilters)
+            ->flatten(1)
+            ->filter(fn ($f) => is_array($f) && ($f['source'] ?? '') === 'text')
+            ->map(function ($filter) {
+                $displayValue = $filter['value'] ?? '';
+
+                // Translate enum/state values for display
+                if ($filter['operator'] === '=' && isset($this->filterValueLists[$filter['column']])) {
+                    $label = collect($this->filterValueLists[$filter['column']])
+                        ->firstWhere('value', $displayValue);
+                    $displayValue = $label['label'] ?? $displayValue;
+                }
+
+                // Strip LIKE wildcards for display
+                if ($filter['operator'] === 'like' && is_string($displayValue)) {
+                    $displayValue = trim($displayValue, '%');
+                }
+
+                return [
+                    'column' => $filter['column'],
+                    'operator' => $filter['operator'],
+                    'value' => $displayValue,
+                ];
+            })
+            ->values();
+    }
+
+    public function getSidebarTabs(): array
+    {
+        $tabs = [];
+
+        if ($this->isFilterable) {
+            $tabs[] = [
+                'id' => 'edit-filters',
+                'label' => __('Filters'),
+                'view' => 'tall-datatables::components.options.tabs.filters',
+            ];
+        }
+
+        $tabs[] = [
+            'id' => 'columns',
+            'label' => __('Columns'),
+            'view' => 'tall-datatables::components.options.tabs.columns',
+        ];
+
+        if ($this->aggregatable) {
+            $tabs[] = [
+                'id' => 'summarize',
+                'label' => __('Summarize'),
+                'view' => 'tall-datatables::components.options.tabs.summarize',
+            ];
+        }
+
+        $tabs[] = [
+            'id' => 'grouping',
+            'label' => __('Group'),
+            'view' => 'tall-datatables::components.options.tabs.grouping',
+        ];
+
+        if ($this->isExportable) {
+            $tabs[] = [
+                'id' => 'export',
+                'label' => __('Export'),
+                'view' => 'tall-datatables::components.options.tabs.export',
+            ];
+        }
+
+        return array_merge($tabs, $this->getCustomSidebarTabs());
     }
 
     #[Renderless]
@@ -383,10 +474,19 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    #[Renderless]
     public function loadData(): void
     {
         $this->initialized = true;
+        $this->dataLoadedThisRequest = true;
+        $this->resolvedFormatters = null;
+        $this->cachedViewData = null;
+
+        // Islands handle the DOM update — skip the full component re-render
+        // to avoid sending 600KB+ of unchanged sidebar/modal HTML.
+        // Full render is needed when non-island parts (like thead) must update.
+        if (request()->isMethod('POST')) {
+            $this->skipRender();
+        }
 
         $query = $this->buildSearch();
         $baseQuery = $query->clone();
@@ -402,16 +502,26 @@ class DataTable extends Component
             ]);
 
             if ($aggregates = $this->getAggregate($baseQuery)) {
-                $this->data['aggregates'] = ! $this->search ? $aggregates : [];
+                $this->data['aggregates'] = ! $this->search
+                    ? $this->formatAggregates($aggregates)
+                    : [];
             }
+
+            $this->renderIsland('body');
+            $this->renderIsland('footer');
+            $this->renderIsland('badges');
 
             return;
         }
 
         $result = $this->getResultFromQuery($query);
 
-        if (collect($result)->isEmpty() && $this->page > 1) {
-            $this->reset('page');
+        $resultIsEmpty = $result instanceof LengthAwarePaginator
+            ? $result->isEmpty()
+            : collect($result)->isEmpty();
+
+        if ($resultIsEmpty && $this->page > 1) {
+            $this->page = 1;
             $this->loadData();
 
             return;
@@ -429,13 +539,19 @@ class DataTable extends Component
         }
 
         if ($aggregates = $this->getAggregate($baseQuery)) {
-            $this->data['aggregates'] = ! $this->search ? $aggregates : [];
+            $this->data['aggregates'] = ! $this->search
+                ? $this->formatAggregates($aggregates)
+                : [];
         }
 
         if ($this->data['links'] ?? false) {
             array_pop($this->data['links']);
             array_shift($this->data['links']);
         }
+
+        $this->renderIsland('body');
+        $this->renderIsland('footer');
+        $this->renderIsland('badges');
     }
 
     #[Renderless]
@@ -457,8 +573,7 @@ class DataTable extends Component
     #[Renderless]
     public function loadMore(): void
     {
-        $this->perPage += $this->perPage;
-
+        $this->perPage = min($this->perPage * 2, 1000);
         $this->loadData();
     }
 
@@ -468,28 +583,162 @@ class DataTable extends Component
     }
 
     #[Renderless]
+    public function reloadData(): void
+    {
+        $this->loadData();
+    }
+
+    #[Renderless]
+    public function removeFilter(int $groupIndex, int $filterIndex): void
+    {
+        if (! isset($this->userFilters[$groupIndex][$filterIndex])) {
+            return;
+        }
+
+        $filter = $this->userFilters[$groupIndex][$filterIndex];
+
+        // If it's a text filter, also remove from textFilters
+        if (($filter['source'] ?? '') === 'text') {
+            foreach ($this->textFilters as $gIdx => $group) {
+                if (is_array($group) && isset($group[$filter['column']])) {
+                    unset($this->textFilters[$gIdx][$filter['column']]);
+                    if (empty($this->textFilters[$gIdx])) {
+                        unset($this->textFilters[$gIdx]);
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        array_splice($this->userFilters[$groupIndex], $filterIndex, 1);
+
+        // Remove empty groups
+        if (empty($this->userFilters[$groupIndex])) {
+            array_splice($this->userFilters, $groupIndex, 1);
+        }
+
+        $this->userFilters = array_values($this->userFilters);
+        $this->cacheState();
+        $this->loadData();
+    }
+
+    #[Renderless]
+    public function removeFilterGroup(int $groupIndex): void
+    {
+        if (! isset($this->userFilters[$groupIndex])) {
+            return;
+        }
+
+        // Clean up textFilters for text-source filters in this group
+        foreach ($this->userFilters[$groupIndex] as $filter) {
+            if (($filter['source'] ?? '') === 'text') {
+                if (isset($this->textFilters[$groupIndex][$filter['column']])) {
+                    unset($this->textFilters[$groupIndex][$filter['column']]);
+                }
+            }
+        }
+
+        if (isset($this->textFilters[$groupIndex]) && empty($this->textFilters[$groupIndex])) {
+            unset($this->textFilters[$groupIndex]);
+        }
+
+        // Remove the userFilters group before re-indexing both arrays
+        // to keep textFilters and userFilters indices aligned
+        array_splice($this->userFilters, $groupIndex, 1);
+        $this->userFilters = array_values($this->userFilters);
+        $this->textFilters = array_values($this->textFilters);
+        $this->cacheState();
+        $this->loadData();
+    }
+
+    #[Renderless]
+    public function removeTextFilterRow(int $groupIndex): void
+    {
+        $this->migrateTextFiltersIfNeeded();
+
+        unset($this->textFilters[$groupIndex]);
+        $this->textFilters = array_values($this->textFilters);
+
+        $this->rebuildTextFilterGroup();
+        $this->cacheState();
+        $this->loadData();
+    }
+
+    #[Renderless]
     public function setPerPage(int $perPage): void
     {
-        if ($this->page > $this->data['total'] / $perPage) {
+        if ($perPage <= 0) {
+            return;
+        }
+
+        if (($this->data['total'] ?? 0) > 0 && $this->page > $this->data['total'] / $perPage) {
             $this->page = (int) ceil($this->data['total'] / $perPage);
         }
 
         $this->perPage = $perPage;
-
         $this->cacheState();
+        $this->loadData();
+    }
 
+    #[Renderless]
+    public function setTextFilter(string $col, ?string $value, int $groupIndex = 0, int $valueIndex = 0): void
+    {
+        $this->migrateTextFiltersIfNeeded();
+
+        if (! isset($this->textFilters[$groupIndex])) {
+            $this->textFilters[$groupIndex] = [];
+        }
+
+        if ($valueIndex === 0 && ! is_array($this->textFilters[$groupIndex][$col] ?? null)) {
+            // Single value (backwards compatible)
+            if ($value !== null && $value !== '') {
+                $this->textFilters[$groupIndex][$col] = $value;
+            } else {
+                unset($this->textFilters[$groupIndex][$col]);
+            }
+        } else {
+            // Multi-value: ensure array
+            $current = $this->textFilters[$groupIndex][$col] ?? [];
+            if (! is_array($current)) {
+                $current = [$current];
+            }
+
+            if ($value !== null && $value !== '') {
+                $current[$valueIndex] = $value;
+            } else {
+                unset($current[$valueIndex]);
+                $current = array_values($current);
+            }
+
+            if (empty($current)) {
+                unset($this->textFilters[$groupIndex][$col]);
+            } else {
+                $this->textFilters[$groupIndex][$col] = count($current) === 1 ? $current[0] : $current;
+            }
+        }
+
+        if (empty($this->textFilters[$groupIndex])) {
+            unset($this->textFilters[$groupIndex]);
+        }
+
+        $this->rebuildTextFilterGroup();
+        $this->cacheState();
         $this->loadData();
     }
 
     #[Renderless]
     public function sortTable(string $col): void
     {
+        if (! $this->isValidSortColumn($col)) {
+            return;
+        }
+
         if ($this->userOrderBy === $col) {
             $this->userOrderAsc = ! $this->userOrderAsc;
         }
 
         $this->userOrderBy = $col;
-
         $this->cacheState();
         $this->loadData();
     }
@@ -498,25 +747,21 @@ class DataTable extends Component
     public function startSearch(): void
     {
         $this->reset('selected');
-        $this->page = '1';
-
+        $this->page = 1;
         $this->cacheState();
         $this->loadData();
     }
 
     #[Renderless]
-    public function syncFromAlpine(string $property, mixed $value): void
+    public function updatedSearch(): void
     {
-        if (! property_exists($this, $property)) {
-            return;
-        }
+        $this->startSearch();
+    }
 
-        $this->{$property} = $value;
-
-        $method = 'updated' . Str::studly($property);
-        if (method_exists($this, $method)) {
-            $this->{$method}();
-        }
+    #[Renderless]
+    public function updatedStickyCols(): void
+    {
+        $this->renderIsland('body');
     }
 
     #[Renderless]
@@ -531,232 +776,67 @@ class DataTable extends Component
         $this->applyUserFilters();
     }
 
-    protected function addFilter(Builder $query, string|int $type, array $filter): void
-    {
-        if (in_array($filter['column'] ?? false, $this->aggregatableRelationCols)) {
-            $this->aggregatableRelationCols[$filter['column']] = $filter;
-
-            return;
-        }
-
-        $filter = $this->parseFilter($filter);
-
-        if (! is_string($type)) {
-            $filter = array_is_list($filter) ? [$filter] : $filter;
-            $target = explode('.', $filter['column']);
-
-            $column = array_pop($target);
-            $relation = implode('.', $target);
-            if ($relation) {
-                $filter['column'] = $column;
-                $filter['relation'] = Str::camel($relation);
-
-                if ($filter['value'] === '%*%') {
-                    $this->applyFilterWhereHas($query, $filter['relation']);
-                } elseif ($filter['value'] === '%!*%') {
-                    $this->applyFilterWhereDoesntHave($query, $filter['relation']);
-                } else {
-                    $query->whereHas($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
-                        unset($filter['relation']);
-                        $this->addFilter($subQuery, $type, $filter);
-
-                        return $subQuery;
-                    });
-                }
-            } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
-                $this->applyFilterWhereNull($query, $filter);
-            } elseif ($filter['operator'] === 'between') {
-                $query->whereBetween($filter['column'], $filter['value']);
-            } else {
-                // Extract column, operator and value in correct order
-                $column = $filter['column'] ?? null;
-                $operator = $filter['operator'] ?? null;
-                $value = $filter['value'] ?? null;
-
-                // Ensure we have all required parts for valid where clause
-                if ($column && $operator && ($value !== null && $value !== '')) {
-                    $query->where($column, $operator, $value);
-                }
-            }
-
-            return;
-        }
-
-        $method = $this->getFilterMethodName($type);
-        if (method_exists($this, $method)) {
-            $this->{$method}($query, $filter);
-        }
-    }
-
-    protected function allowSoftDeletes(): bool
-    {
-        return in_array(
-            SoftDeletes::class,
-            class_uses_recursive(
-                $this->getModel()
-            )
-        );
-    }
-
-    protected function applyFilters(Builder $builder): Builder
-    {
-        // add fixed filters
-        foreach ($this->filters as $type => $filter) {
-            if (! is_string($type)) {
-                if (($filter['operator'] ?? false) && in_array($filter['operator'], ['is null', 'is not null'])) {
-                    $builder->whereNull(columns: $filter['column'], not: $filter['operator'] === 'is not null');
-                } else {
-                    $builder->where([array_values($filter)]);
-                }
-
-                continue;
-            }
-
-            $method = $this->getFilterMethodName($type);
-            if (method_exists($this, $method)) {
-                $this->{$method}($builder, $filter);
-            }
-        }
-
-        // add user filters
-        $builder->where(function ($query): void {
-            foreach ($this->userFilters as $index => $orFilter) {
-                $query->where(function (Builder $query) use ($orFilter): void {
-                    foreach ($orFilter as $type => $filter) {
-                        $this->addFilter($query, $type, $filter);
-                    }
-                }, boolean: $index > 0 ? 'or' : 'and');
-            }
-        });
-
-        // add aggregatable relations
-        foreach ($this->getAggregatableRelationCols() as $aggregatableRelationCol) {
-            $builder->withAggregate(
-                $aggregatableRelationCol->relation,
-                $aggregatableRelationCol->column,
-                $aggregatableRelationCol->function
-            );
-        }
-
-        foreach ($this->aggregatableRelationCols as $index => $aggregatableRelationCol) {
-            if (is_int($index)) {
-                continue;
-            }
-
-            $filter = $this->parseFilter($aggregatableRelationCol);
-
-            $builder->having($filter['column'], $filter['operator'], $filter['value']);
-        }
-
-        return $builder;
-    }
-
-    protected function buildSearch(bool $unpaginated = false): Builder
-    {
-        /** @var Model $model */
-        $model = $this->getModel();
-
-        foreach ($this->getAggregatableRelationCols() as $aggregatableRelationCol) {
-            $this->aggregatableRelationCols[] = $aggregatableRelationCol->alias;
-        }
-
-        if ($this->search && method_exists($model, 'search') && ! $unpaginated) {
-            $query = $this->getScoutSearch()->toEloquentBuilder($this->enabledCols, $this->perPage, $this->page);
-        } else {
-            $query = $model::query();
-        }
-
-        if ($this->withSoftDeletes && $this->allowSoftDeletes()) {
-            $query->withTrashed();
-        }
-
-        if ($this->userOrderBy) {
-            $orderBy = $this->userOrderBy;
-            $orderAsc = $this->userOrderAsc;
-        } else {
-            $orderBy = $this->orderBy;
-            $orderAsc = $this->orderAsc;
-        }
-
-        if (Str::contains($orderBy, '.')) {
-            $orderByColumn = Str::afterLast($orderBy, '.');
-            $table = $this->addDynamicJoin($query, Str::beforeLast($orderBy, '.'));
-            $orderBy = $table . '.' . $orderByColumn;
-
-            $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
-        } else {
-            if ($orderBy) {
-                $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
-            } else {
-                $query->orderBy($this->modelKeyName, 'DESC');
-            }
-        }
-
-        // include selected relationships
-        [
-            $with,
-            $select,
-            $filterable,
-            $this->filterValueLists,
-            $this->sortable,
-            $formatters,
-            $enabledCols,
-        ] = $this->constructWith();
-
-        $this->enabledCols = $enabledCols;
-        $this->formatters = array_merge($formatters, $this->formatters);
-
-        $query->with($with);
-        $query->select(array_merge($select, [$this->modelTable . '.' . $this->modelKeyName]));
-
-        $query = $this->getBuilder($query);
-
-        if (session()->has($this->getCacheKey() . '_query')) {
-            $sessionFilter = session()->get($this->getCacheKey() . '_query');
-
-            if ($sessionFilter instanceof SessionFilter) {
-                $sessionFilter->getClosure()($query, $this);
-
-                $this->sessionFilter = [
-                    'name' => $sessionFilter->name,
-                ];
-
-                if (! $sessionFilter->loaded) {
-                    $this->userFilters = [];
-                    $sessionFilter->loaded = true;
-
-                    session()->put($this->getCacheKey() . '_query', $sessionFilter);
-                }
-            }
-        }
-
-        return $this->applyFilters($query);
-    }
+    /**
+     * Hook to add computed columns (e.g. avatar) before formatters are applied.
+     * Override this instead of itemToArray() to ensure formatters work on your custom columns.
+     */
+    protected function augmentItemArray(array &$itemArray, Model $item): void {}
 
     protected function compileActions(string $type): array
     {
+        if (isset($this->cachedActions[$type])) {
+            return $this->cachedActions[$type];
+        }
+
         $actions = [];
         $methodBaseName = 'get' . ucfirst($type) . 'Actions';
 
         foreach (class_uses_recursive(static::class) as $trait) {
             $method = $methodBaseName . class_basename($trait);
-
             if (method_exists($this, $method)) {
-                $actions = array_merge(
-                    $this->$method(),
-                    $actions
-                );
+                $actions = array_merge($this->$method(), $actions);
             }
         }
 
         if (method_exists($this, $methodBaseName)) {
-            $actions = array_merge(
-                $this->{$methodBaseName}(),
-                $actions
-            );
+            $actions = array_merge($this->{$methodBaseName}(), $actions);
         }
 
+        $this->cachedActions[$type] = $actions;
+
         return $actions;
+    }
+
+    protected function formatAggregates(array $aggregates): array
+    {
+        $registry = app(Formatters\FormatterRegistry::class);
+        $customFormatters = $this->getFormatters();
+        $model = app($this->getModel());
+        $modelCasts = $model->getCasts();
+
+        foreach ($aggregates as $type => $columns) {
+            foreach ($columns as $col => $value) {
+                $baseCol = str_contains($col, '.') ? last(explode('.', $col)) : $col;
+
+                if (isset($customFormatters[$col]) && is_string($customFormatters[$col])) {
+                    $formatter = $registry->resolve($customFormatters[$col]);
+                } elseif (isset($customFormatters[$col]) && is_array($customFormatters[$col])) {
+                    $formatter = $registry->resolveWithOptions($customFormatters[$col][0] ?? 'string', $customFormatters[$col][1] ?? []);
+                } else {
+                    $stringCasts = array_filter($modelCasts, 'is_string');
+                    $formatter = $registry->resolveForColumn($baseCol, $stringCasts);
+                }
+
+                $display = $formatter->format($value, []);
+                $rawString = is_null($value) ? '' : (string) $value;
+
+                if ($display !== e($rawString)) {
+                    $aggregates[$type][$col] = ['raw' => $value, 'display' => $display];
+                }
+            }
+        }
+
+        return $aggregates;
     }
 
     protected function getAppends(): array
@@ -784,6 +864,11 @@ class DataTable extends Component
         return new ComponentAttributeBag();
     }
 
+    protected function getCustomSidebarTabs(): array
+    {
+        return [];
+    }
+
     protected function getEnabledCols(): array
     {
         return $this->enabledCols;
@@ -793,6 +878,7 @@ class DataTable extends Component
     {
         $baseModelInfo = ModelInfo::forModel($this->getModel());
         $loadedRelations = [];
+
         foreach ($this->enabledCols as $enabledCol) {
             if (str_contains($enabledCol, '.')) {
                 $explodedCol = explode('.', $enabledCol);
@@ -806,10 +892,7 @@ class DataTable extends Component
             }
 
             $loadedColumns = $loadedRelations[$path]['loaded_columns'] ?? [];
-            $loadedColumns[$enabledCol] = [
-                'column' => $attribute,
-                'loaded_as' => $enabledCol,
-            ];
+            $loadedColumns[$enabledCol] = ['column' => $attribute, 'loaded_as' => $enabledCol];
             $loadedRelations[$path] = [
                 'model' => $relation?->related ?? $this->getModel(),
                 'loaded_columns' => $loadedColumns,
@@ -818,13 +901,6 @@ class DataTable extends Component
         }
 
         return $loadedRelations;
-    }
-
-    protected function getIsSearchable(): bool
-    {
-        return is_null($this->isSearchable)
-            ? in_array(Searchable::class, class_uses_recursive($this->getModel()))
-            : $this->isSearchable;
     }
 
     protected function getLayout(): string
@@ -842,73 +918,6 @@ class DataTable extends Component
         return $this->model;
     }
 
-    protected function getPaginator(LengthAwarePaginator $paginator): LengthAwarePaginator
-    {
-        return $paginator;
-    }
-
-    protected function getResultFromQuery(Builder $query): LengthAwarePaginator|Collection|array
-    {
-        try {
-            if (property_exists($query, 'scout_pagination')) {
-                $items = $query->get();
-                $total = max(data_get($query->scout_pagination, 'estimatedTotalHits'), $query->count());
-                $limit = data_get($query->scout_pagination, 'limit');
-                $result = new LengthAwarePaginator(
-                    $items,
-                    $total,
-                    $limit,
-                    ceil(data_get($query->scout_pagination, 'offset') / $limit) + 1,
-                );
-            } else {
-                $result = $query->paginate(
-                    perPage: $this->perPage,
-                    page: (int) $this->page
-                );
-            }
-        } catch (QueryException $e) {
-            $this->toast()->error($e->getMessage());
-
-            return [];
-        }
-        $result = $this->getPaginator($result);
-        $resultCollection = $result->getCollection();
-
-        if (property_exists($query, 'hits')) {
-            $mapped = $resultCollection->map(
-                function (Model $item) use ($query) {
-                    $itemArray = $this->itemToArray($item);
-
-                    foreach ($itemArray as $key => $value) {
-                        $itemArray[$key] = data_get($query->hits, $item->getKey() . '._formatted.' . $key, $value);
-                    }
-
-                    return $itemArray;
-                }
-            );
-        } else {
-            // only return the columns that are available
-            $mapped = $resultCollection->map(
-                function (Model $item) {
-                    return $this->itemToArray($item);
-                }
-            );
-        }
-
-        $result->setCollection($mapped);
-
-        return $result;
-    }
-
-    protected function getReturnKeys(): array
-    {
-        return array_filter(array_merge(
-            $this->enabledCols,
-            [$this->modelKeyName, 'href'],
-            $this->withSoftDeletes ? ['deleted_at'] : []
-        ));
-    }
-
     protected function getRightAppends(): array
     {
         return [];
@@ -919,19 +928,18 @@ class DataTable extends Component
         return new ComponentAttributeBag();
     }
 
-    protected function getScoutSearch(): \Laravel\Scout\Builder
+    protected function getSearchRoute(): string
     {
-        return $this->getModel()::search($this->search);
+        return config('tall-datatables.search_route')
+            ? route(config('tall-datatables.search_route'), '')
+            : '';
     }
 
     protected function getTableFields(): \Illuminate\Support\Collection
     {
         return ModelInfo::forModel($this->getModel())
             ->attributes
-            ->filter(function (Attribute $attribute) {
-                return ! $attribute->virtual
-                    && ! $attribute->appended;
-            })
+            ->filter(fn (Attribute $attribute) => ! $attribute->virtual && ! $attribute->appended)
             ->when(
                 $this->availableCols !== ['*'],
                 fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
@@ -955,7 +963,11 @@ class DataTable extends Component
 
     protected function getViewData(): array
     {
-        return [
+        if ($this->cachedViewData !== null) {
+            return $this->cachedViewData;
+        }
+
+        $this->cachedViewData = [
             'searchable' => $this->getIsSearchable(),
             'componentAttributes' => $this->getComponentAttributes(),
             'tableHeadColAttributes' => $this->getTableHeadColAttributes(),
@@ -975,149 +987,16 @@ class DataTable extends Component
             'selectValue' => $this->getSelectValue(),
             'allowSoftDeletes' => $this->allowSoftDeletes(),
             'showRestoreButton' => $this->showRestoreButton(),
+            'aggregatable' => $this->getAggregatable(),
+            'isExportable' => $this->isExportable,
         ];
-    }
 
-    protected function itemToArray($item): array
-    {
-        if ($appends = $this->getAppends()) {
-            $item->append($appends);
-        }
-
-        $rawArray = $item->toArray();
-        $dotted = Arr::dot($rawArray);
-        $itemArray = [];
-        $returnKeys = $this->getReturnKeys();
-
-        // n:n or 1:n or n:1 relations have numeric keys while the relation path has not
-        // so we need to filter out the numeric keys and convert them to the relation path
-        foreach ($dotted as $key => $value) {
-            $originalKey = $key;
-            $explodedKey = explode('.', $key);
-            $key = array_filter($explodedKey, fn ($part) => ! is_numeric($part));
-            $key = implode('.', $key);
-
-            $shortenedKey = Str::beforeLast($key, '.');
-            if (is_array(data_get($rawArray, Str::beforeLast($originalKey, '.'))) && in_array($shortenedKey, $returnKeys)) {
-                $key = $shortenedKey;
-            }
-
-            if (! in_array($key, $returnKeys)) {
-                continue;
-            }
-
-            if (array_key_exists($key, $itemArray)) {
-                if (! is_array($itemArray[$key])) {
-                    $itemArray[$key] = [$itemArray[$key]];
-                }
-                $itemArray[$key][] = $value;
-            } else {
-                $itemArray[$key] = $value;
-            }
-        }
-
-        $itemArray['href'] = in_array(InteractsWithDataTables::class, class_implements($this->getModel()))
-        && ! $this->hasNoRedirect
-        && method_exists($item, 'getUrl')
-            ? $item->getUrl()
-            : null;
-
-        return $itemArray;
-    }
-
-    protected function parseFilter(array $filter): array
-    {
-        $filter = Arr::only($filter, ['column', 'operator', 'value', 'relation']);
-        $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
-
-        $filter['value'] = collect($filter['value'])
-            ->map(function ($value) use (&$filter) {
-                // Try to parse as date if it looks like a date
-                if (is_string($value) && ! is_numeric($value)) {
-                    $dateFormats = ['d.m.Y', 'd/m/Y', 'm/d/Y', 'Y-m-d'];
-                    $dateTimeFormats = ['d.m.Y H:i', 'd/m/Y H:i', 'Y-m-d H:i:s', 'd.m.Y H:i:s', 'd/m/Y H:i:s'];
-
-                    // First try date-only formats
-                    foreach ($dateFormats as $format) {
-                        try {
-                            $date = Carbon::createFromFormat($format, $value);
-
-                            return $date->startOfDay()->format('Y-m-d H:i:s');
-                        } catch (InvalidFormatException) {
-                            continue;
-                        }
-                    }
-
-                    // Then try datetime formats
-                    foreach ($dateTimeFormats as $format) {
-                        try {
-                            $date = Carbon::createFromFormat($format, $value);
-
-                            return $date->format('Y-m-d H:i:s');
-                        } catch (InvalidFormatException) {
-                            continue;
-                        }
-                    }
-
-                    // Try default Carbon parsing as last resort
-                    try {
-                        $date = Carbon::parse($value);
-
-                        // Check if the input contains time information
-                        $hasTime = preg_match('/\d{1,2}:\d{2}/', $value);
-
-                        if (! $hasTime) {
-                            return $date->startOfDay()->format('Y-m-d H:i:s');
-                        }
-
-                        return $date->format('Y-m-d H:i:s');
-                    } catch (InvalidFormatException) {
-                        // Not a date, continue with original value
-                    }
-                }
-
-                return is_numeric($value) ? (float) $value : $value;
-            })
-            ->map(function ($value) {
-                if (! ($value['calculation'] ?? false)) {
-                    return $value;
-                }
-
-                $functionPrefix = $value['calculation']['operator'] === '-' ? 'sub' : 'add';
-                $functionSuffix = ucfirst($value['calculation']['unit']);
-
-                if (
-                    array_key_exists('is_start_of', $value['calculation'])
-                    && is_numeric($value['calculation']['is_start_of'])
-                ) {
-                    $functionStartOfPrefix = $value['calculation']['is_start_of'] ? 'startOf' : 'endOf';
-                    $functionStartOfSuffix = ucfirst($value['calculation']['start_of']);
-
-                    return [
-                        now()
-                            ->{$functionPrefix . $functionSuffix}($value['calculation']['value'])
-                            ->{$functionStartOfPrefix . $functionStartOfSuffix}(),
-                    ];
-                } else {
-                    return [
-                        now()
-                            ->{$functionPrefix . $functionSuffix}($value['calculation']['value']),
-                    ];
-                }
-            })
-            ->all();
-
-        $filter['value'] = count($filter['value']) === 1
-            ? $filter['value'][0]
-            : $filter['value'];
-
-        return $filter;
+        return $this->cachedViewData;
     }
 
     protected function setData(array $data): void
     {
         $this->data = $data;
-        $this->dispatch('data-table-data-loaded', data: $data);
     }
 
     protected function showRestoreButton(): bool
@@ -1125,58 +1004,92 @@ class DataTable extends Component
         return method_exists(static::class, 'restore');
     }
 
-    private function applyFilterWhere(Builder $builder, array $filter): Builder
+    private function isValidSortColumn(string $col): bool
     {
-        return $builder->where($filter);
+        // Allow wildcard sortable (all columns allowed) — validate against enabled cols
+        if ($this->sortable === ['*']) {
+            // For dot-notation (relation sorting), allow if it's in enabledCols
+            if (str_contains($col, '.')) {
+                return in_array($col, $this->enabledCols);
+            }
+
+            // Validate against the model's table columns
+            return in_array($col, ModelInfo::forModel($this->getModel())
+                ->attributes
+                ->pluck('name')
+                ->toArray());
+        }
+
+        return in_array($col, $this->sortable);
     }
 
-    private function applyFilterWhereDoesntHave(Builder $builder, string $relation): Builder
+    private function migrateTextFiltersIfNeeded(): void
     {
-        return $builder->whereDoesntHave(Str::camel($relation));
+        if (empty($this->textFilters)) {
+            return;
+        }
+
+        // Detect old flat format: { 'column_name': 'value' } vs new: { 0: { 'column_name': 'value' } }
+        $firstValue = reset($this->textFilters);
+        if (is_string($firstValue) || is_null($firstValue)) {
+            $this->textFilters = [array_filter($this->textFilters, fn ($v) => is_string($v) && $v !== '')];
+            if (empty($this->textFilters[0])) {
+                $this->textFilters = [];
+            }
+        }
     }
 
-    private function applyFilterWhereHas(Builder $builder, string $relation): Builder
+    private function rebuildTextFilterGroup(): void
     {
-        return $builder->whereHas(Str::camel($relation));
-    }
+        $this->migrateTextFiltersIfNeeded();
 
-    private function applyFilterWhereIn(Builder $builder, array $filter): Builder
-    {
-        return $builder->whereIn($filter[0], $filter[1]);
-    }
+        // Ensure at least one group exists
+        if (empty($this->userFilters) || ! is_array($this->userFilters)) {
+            $this->userFilters = [[]];
+        }
 
-    private function applyFilterWhereNull(Builder $builder, array $filter): Builder
-    {
-        return $builder->whereNull(
-            columns: $filter['column'],
-            boolean: ($filter['boolean'] ?? 'and') !== 'or' ? 'and' : 'or',
-            not: $filter['operator'] === 'is not null'
+        // Remove all existing text-source filters from all groups
+        foreach ($this->userFilters as $groupIndex => $group) {
+            if (! is_array($group)) {
+                continue;
+            }
+
+            $this->userFilters[$groupIndex] = array_values(
+                array_filter($group, fn ($f) => ($f['source'] ?? '') !== 'text')
+            );
+        }
+
+        // Add text filters into their respective groups
+        foreach ($this->textFilters as $groupIndex => $filtersInGroup) {
+            if (! is_array($filtersInGroup)) {
+                continue;
+            }
+
+            if (! isset($this->userFilters[$groupIndex])) {
+                $this->userFilters[$groupIndex] = [];
+            }
+
+            foreach ($filtersInGroup as $col => $rawValue) {
+                if ($rawValue === null || $rawValue === '') {
+                    continue;
+                }
+
+                $values = is_array($rawValue) ? $rawValue : [$rawValue];
+                foreach ($values as $singleValue) {
+                    if ($singleValue === null || $singleValue === '') {
+                        continue;
+                    }
+
+                    $parsed = $this->parseTextFilterValue($singleValue, $col);
+                    $parsed['source'] = 'text';
+                    $this->userFilters[$groupIndex][] = $parsed;
+                }
+            }
+        }
+
+        // Clean up empty groups
+        $this->userFilters = array_values(
+            array_filter($this->userFilters, fn ($g) => is_array($g) && ! empty($g))
         );
-    }
-
-    private function applyFilterWith(Builder $builder, array $filter): Builder
-    {
-        return $builder->with($filter);
-    }
-
-    /**
-     * Get the method name for a filter type.
-     * This mapping prevents conflicts with Livewire's lifecycle methods.
-     */
-    private function getFilterMethodName(string $type): string
-    {
-        return 'applyFilter' . ucfirst($type);
-    }
-
-    /**
-     * You should set the name of the route in your .env file.
-     * e.g. TALL_DATATABLES_SEARCH_ROUTE=datatables.search
-     * The route should lead to the SearchController from this package.
-     */
-    private function getSearchRoute(): string
-    {
-        return config('tall-datatables.search_route')
-            ? route(config('tall-datatables.search_route'), '')
-            : '';
     }
 }

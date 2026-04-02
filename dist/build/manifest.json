@@ -1,0 +1,17 @@
+{
+  "resources/css/tall-datatables.css": {
+    "file": "assets/tall-datatables-BCALzpo5.css",
+    "src": "resources/css/tall-datatables.css",
+    "isEntry": true,
+    "name": "tall-datatables",
+    "names": [
+      "tall-datatables.css"
+    ]
+  },
+  "resources/js/tall-datatables.js": {
+    "file": "assets/tall-datatables-DJON2UXa.js",
+    "name": "tall-datatables",
+    "src": "resources/js/tall-datatables.js",
+    "isEntry": true
+  }
+}

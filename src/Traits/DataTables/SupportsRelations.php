@@ -67,18 +67,31 @@ trait SupportsRelations
     }
 
     #[Renderless]
-    public function loadRelation(?string $model = null, ?string $relationName = null): void
+    public function getSidebarData(): array
+    {
+        if (empty($this->selectedCols)) {
+            $this->loadRelation($this->getModel());
+        }
+
+        return [
+            'selectedCols' => $this->selectedCols,
+            'selectedRelations' => $this->selectedRelations,
+        ];
+    }
+
+    #[Renderless]
+    public function loadRelation(?string $model = null, ?string $relationName = null): array
     {
         if ($this->availableRelations !== ['*'] &&
             ! in_array($relationName, $this->availableRelations) &&
             ! is_null($relationName)
         ) {
-            return;
+            return ['cols' => [], 'relations' => [], 'displayPath' => []];
         }
 
         $model = $model ?: $this->getModel();
 
-        $this->loadedPath = $relationName ? ($this->loadedPath ? $this->loadedPath . '.' : null) . $relationName : null;
+        $this->loadedPath = $relationName ? ($this->loadedPath ? $this->loadedPath . '.' : '') . $relationName : null;
 
         $path = [];
         $previousPath = null;
@@ -122,28 +135,41 @@ trait SupportsRelations
         }, $selectedCols);
 
         Cache::put(
-            'relation-tree-widget.' . $this->loadedPath ?? $this->getModel(),
+            'relation-tree-widget.' . ($this->loadedPath ?? $this->getModel()),
             [
                 'cols' => $this->selectedCols,
                 'relations' => $this->selectedRelations,
                 'displayPath' => $path,
             ]
         );
+
+        return [
+            'cols' => $this->selectedCols,
+            'relations' => $this->selectedRelations,
+            'displayPath' => $path,
+        ];
     }
 
     #[Renderless]
-    public function loadSlug(?string $path = null): void
+    public function loadSlug(?string $path = null): array
     {
         if ($this->availableRelations !== ['*'] && ! in_array($path, $this->availableRelations)) {
-            return;
+            return ['cols' => [], 'relations' => []];
         }
 
         $this->loadedPath = $path;
-        $data = Cache::get('relation-tree-widget.' . $path ?? $this->getModel());
+        $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
 
-        $this->selectedCols = $data['cols'];
-        $this->selectedRelations = $data['relations'];
-        $this->displayPath = $data['displayPath'];
+        if (is_null($data)) {
+            $this->loadRelation($path ?? $this->getModel());
+            $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
+        }
+
+        return [
+            'cols' => data_get($data, 'cols', []),
+            'relations' => data_get($data, 'relations', []),
+            'displayPath' => data_get($data, 'displayPath', []),
+        ];
     }
 
     public function mountSupportsRelations(): void
@@ -164,13 +190,13 @@ trait SupportsRelations
             $relationName = Str::camel($relationName);
 
             if (! method_exists($model, $relationName)) {
-                throw new Exception("Relation '{$relationName}' is not defined on " . get_class($model));
+                throw new Exception("Relation '{$relationName}' is not defined on " . $model::class);
             }
 
             $relation = $model->$relationName();
 
             if (! $relation instanceof \Illuminate\Database\Eloquent\Relations\Relation) {
-                throw new Exception("Method '{$relationName}' on " . get_class($model) . ' does not return a relation.');
+                throw new Exception("Method '{$relationName}' on " . $model::class . ' does not return a relation.');
             }
 
             $relatedModel = $relation->getRelated();
@@ -188,7 +214,7 @@ trait SupportsRelations
                 $localKey = $relation->getLocalKeyName();
                 $query->join($relatedTable, "$relatedTable.$foreignKey", '=', "$parentTable.$localKey");
             } else {
-                throw new Exception("Unsupported relation type for '{$relationName}' on " . get_class($model));
+                throw new Exception("Unsupported relation type for '{$relationName}' on " . $model::class);
             }
 
             $selects[] = "$relatedTable.*";
@@ -214,7 +240,44 @@ trait SupportsRelations
         $cached = Cache::get(config('tall-datatables.cache_key') . '.with');
 
         if ($cached && data_get($cached, $cacheKey, false)) {
-            return $cached[$cacheKey];
+            $result = $cached[$cacheKey];
+
+            // Recompute filterValueLists — cached values may have
+            // stale translated labels from a different locale/user
+            $this->filterValueLists = [];
+            $modelInfos = [];
+            foreach ($result[2] as $enabledCol) {
+                $segments = explode('.', $enabledCol);
+                $fieldName = array_pop($segments);
+                $modelClass = $this->getModel();
+
+                if ($segments) {
+                    $modelInstance = app($modelClass);
+                    foreach ($segments as $segment) {
+                        try {
+                            $modelInstance = $modelInstance->{Str::camel($segment)}()->getRelated();
+                            $modelClass = $modelInstance::class;
+                        } catch (Throwable) {
+                            $modelClass = $this->getModel();
+
+                            break;
+                        }
+                    }
+                }
+
+                if (! isset($modelInfos[$modelClass])) {
+                    $modelInfos[$modelClass] = ModelInfo::forModel($modelClass);
+                }
+
+                $attributeInfo = $modelInfos[$modelClass]->attribute($fieldName);
+                if ($attributeInfo) {
+                    $this->getFilterValueList($enabledCol, $attributeInfo);
+                }
+            }
+
+            $result[3] = $this->filterValueLists;
+
+            return $result;
         }
 
         $modelBase = app($this->getModel());
@@ -279,14 +342,20 @@ trait SupportsRelations
 
             // check if the field is virtual or has a value list to filter
             // if $model is empty, we are on the root model
-            if ($modelInfos[$model ? get_class($model) : $this->getModel()] ?? false) {
-                $modelInfo = $modelInfos[$model ? get_class($model) : $this->getModel()];
+            if ($modelInfos[$model ? $model::class : $this->getModel()] ?? false) {
+                $modelInfo = $modelInfos[$model ? $model::class : $this->getModel()];
             } else {
-                $modelInfo = ModelInfo::forModel($model ? get_class($model) : $this->getModel());
-                $modelInfos[$model ? get_class($model) : $this->getModel()] = $modelInfo;
+                $modelInfo = ModelInfo::forModel($model ? $model::class : $this->getModel());
+                $modelInfos[$model ? $model::class : $this->getModel()] = $modelInfo;
             }
 
             $attributeInfo = $modelInfo->attribute($fieldName);
+
+            if (is_null($attributeInfo)) {
+                $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
+
+                continue;
+            }
 
             $isManyRelation = $relationInstance instanceof HasMany
                 || $relationInstance instanceof HasManyThrough
@@ -355,7 +424,7 @@ trait SupportsRelations
 
     protected function getFilterValueList(string $enabledCol, Attribute $attributeInfo): void
     {
-        if ($filterValueList[$enabledCol] ?? false) {
+        if ($this->filterValueLists[$enabledCol] ?? false) {
             return;
         }
 

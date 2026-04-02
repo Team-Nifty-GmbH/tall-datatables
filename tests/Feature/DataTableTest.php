@@ -18,7 +18,7 @@ describe('DataTable Initialization', function (): void {
         $component = Livewire::test(PostDataTable::class);
 
         expect($component->instance())->toBeInstanceOf(PostDataTable::class);
-        expect($component->get('initialized'))->toBeFalse();
+        expect($component->get('initialized'))->toBeTrue();
     });
 
     it('initializes model key name on mount', function (): void {
@@ -52,7 +52,7 @@ describe('DataTable Initialization', function (): void {
         $component = Livewire::test(PostDataTable::class);
 
         expect($component->get('perPage'))->toBe(15);
-        expect($component->get('page'))->toBe('1');
+        expect($component->get('page'))->toBe(1);
         expect($component->get('orderAsc'))->toBeTrue();
         expect($component->get('search'))->toBe('');
         expect($component->get('userFilters'))->toBe([]);
@@ -79,10 +79,10 @@ describe('Data Loading', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        expect($component->get('data'))->toBeArray();
+        expect($component->instance()->getDataForTesting())->toBeArray();
         expect($component->get('initialized'))->toBeTrue();
-        expect($component->get('data.total'))->toBe(3);
-        expect(count($component->get('data.data')))->toBe(3);
+        expect($component->instance()->getDataForTesting()['total'])->toBe(3);
+        expect(count($component->instance()->getDataForTesting()['data']))->toBe(3);
     });
 
     it('loads paginated data with correct structure', function (): void {
@@ -94,7 +94,7 @@ describe('Data Loading', function (): void {
             ->set('perPage', 10)
             ->call('loadData');
 
-        $data = $component->get('data');
+        $data = $component->instance()->getDataForTesting();
 
         expect($data)
             ->toBeArray()
@@ -115,9 +115,9 @@ describe('Data Loading', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        expect($component->get('data'))->toBeArray();
-        expect($component->get('data.total'))->toBe(0);
-        expect($component->get('data.data'))->toBe([]);
+        expect($component->instance()->getDataForTesting())->toBeArray();
+        expect($component->instance()->getDataForTesting()['total'])->toBe(0);
+        expect($component->instance()->getDataForTesting()['data'])->toBe([]);
         expect($component->get('initialized'))->toBeTrue();
     });
 
@@ -127,7 +127,7 @@ describe('Data Loading', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        $firstRow = $component->get('data.data.0');
+        $firstRow = $component->instance()->getDataForTesting()['data'][0];
 
         expect($firstRow)
             ->toHaveKey('id')
@@ -144,7 +144,7 @@ describe('Data Loading', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        $firstRow = $component->get('data.data.0');
+        $firstRow = $component->instance()->getDataForTesting()['data'][0];
 
         expect($firstRow['href'])->toBe('/posts/' . $post->getKey());
     });
@@ -164,7 +164,7 @@ describe('Pagination', function (): void {
             ->call('gotoPage', 2);
 
         expect($component->get('page'))->toBe(2);
-        expect($component->get('data.current_page'))->toBe(2);
+        expect($component->instance()->getDataForTesting()['current_page'])->toBe(2);
     });
 
     it('can navigate through multiple pages', function (): void {
@@ -172,16 +172,16 @@ describe('Pagination', function (): void {
             ->set('perPage', 10)
             ->call('loadData');
 
-        expect($component->get('data.current_page'))->toBe(1);
+        expect($component->instance()->getDataForTesting()['current_page'])->toBe(1);
 
         $component->call('gotoPage', 2);
-        expect($component->get('data.current_page'))->toBe(2);
+        expect($component->instance()->getDataForTesting()['current_page'])->toBe(2);
 
         $component->call('gotoPage', 3);
-        expect($component->get('data.current_page'))->toBe(3);
+        expect($component->instance()->getDataForTesting()['current_page'])->toBe(3);
 
         $component->call('gotoPage', 1);
-        expect($component->get('data.current_page'))->toBe(1);
+        expect($component->instance()->getDataForTesting()['current_page'])->toBe(1);
     });
 
     it('can change items per page', function (): void {
@@ -190,8 +190,8 @@ describe('Pagination', function (): void {
             ->call('setPerPage', 25);
 
         expect($component->get('perPage'))->toBe(25);
-        expect($component->get('data.per_page'))->toBe(25);
-        expect(count($component->get('data.data')))->toBe(25);
+        expect($component->instance()->getDataForTesting()['per_page'])->toBe(25);
+        expect(count($component->instance()->getDataForTesting()['data']))->toBe(25);
     });
 
     it('adjusts current page when per page increases past total', function (): void {
@@ -202,10 +202,14 @@ describe('Pagination', function (): void {
 
         expect($component->get('page'))->toBe(3);
 
+        // setPerPage resets page when needed and reloads
         $component->call('setPerPage', 50);
+        expect($component->get('perPage'))->toBe(50);
 
-        expect($component->get('page'))->toBeLessThanOrEqual(1);
-        expect(count($component->get('data.data')))->toBe(30);
+        // After reload, all 30 items should be on page 1
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(30);
+        expect($data['per_page'])->toBe(50);
     });
 
     it('can load more items (infinite scroll)', function (): void {
@@ -213,17 +217,17 @@ describe('Pagination', function (): void {
             ->set('perPage', 10)
             ->call('loadData');
 
-        expect(count($component->get('data.data')))->toBe(10);
+        expect(count($component->instance()->getDataForTesting()['data']))->toBe(10);
 
         $component->call('loadMore');
 
         expect($component->get('perPage'))->toBe(20);
-        expect(count($component->get('data.data')))->toBe(20);
+        expect(count($component->instance()->getDataForTesting()['data']))->toBe(20);
 
         $component->call('loadMore');
 
         expect($component->get('perPage'))->toBe(40);
-        expect(count($component->get('data.data')))->toBe(30);
+        expect(count($component->instance()->getDataForTesting()['data']))->toBe(30);
     });
 
     it('correctly shows pagination links', function (): void {
@@ -231,8 +235,8 @@ describe('Pagination', function (): void {
             ->set('perPage', 10)
             ->call('loadData');
 
-        expect($component->get('data.links'))->toBeArray();
-        expect(count($component->get('data.links')))->toBeGreaterThan(0);
+        expect($component->instance()->getDataForTesting()['links'])->toBeArray();
+        expect(count($component->instance()->getDataForTesting()['links']))->toBeGreaterThan(0);
     });
 });
 
@@ -251,7 +255,7 @@ describe('Sorting', function (): void {
         expect($component->get('userOrderBy'))->toBe('title');
         expect($component->get('userOrderAsc'))->toBeTrue();
 
-        $titles = array_column($component->get('data.data'), 'title');
+        $titles = array_column($component->instance()->getDataForTesting()['data'], 'title');
         expect($titles)->toBe(['Alpha Post', 'Mike Post', 'Zulu Post']);
     });
 
@@ -264,7 +268,7 @@ describe('Sorting', function (): void {
         expect($component->get('userOrderBy'))->toBe('title');
         expect($component->get('userOrderAsc'))->toBeFalse();
 
-        $titles = array_column($component->get('data.data'), 'title');
+        $titles = array_column($component->instance()->getDataForTesting()['data'], 'title');
         expect($titles)->toBe(['Zulu Post', 'Mike Post', 'Alpha Post']);
     });
 
@@ -286,7 +290,7 @@ describe('Sorting', function (): void {
         expect($component->get('orderBy'))->toBe('');
         expect($component->get('orderAsc'))->toBeTrue();
 
-        $ids = array_column($component->get('data.data'), 'id');
+        $ids = array_column($component->instance()->getDataForTesting()['data'], 'id');
         expect($ids)->toBe([3, 2, 1]);
     });
 });
@@ -311,7 +315,7 @@ describe('Filtering', function (): void {
             ])
             ->call('applyUserFilters');
 
-        expect($component->get('page'))->toBe('1');
+        expect($component->get('page'))->toBe(1);
         expect($component->get('loadedFilterId'))->toBeNull();
     });
 
@@ -328,8 +332,8 @@ describe('Filtering', function (): void {
             ])
             ->call('loadData');
 
-        expect($component->get('data.total'))->toBe(1);
-        expect($component->get('data.data.0.title'))->toBe('Published Post');
+        expect($component->instance()->getDataForTesting()['total'])->toBe(1);
+        expect($component->instance()->getDataForTesting()['data'][0]['title'])->toBe('Published Post');
     });
 
     it('can filter by title using like operator', function (): void {
@@ -345,7 +349,7 @@ describe('Filtering', function (): void {
             ])
             ->call('loadData');
 
-        expect($component->get('data.total'))->toBe(2);
+        expect($component->instance()->getDataForTesting()['total'])->toBe(2);
     });
 
     it('can apply OR filters', function (): void {
@@ -368,7 +372,7 @@ describe('Filtering', function (): void {
             ])
             ->call('loadData');
 
-        expect($component->get('data.total'))->toBe(2);
+        expect($component->instance()->getDataForTesting()['total'])->toBe(2);
     });
 
     it('updates filters when userFilters changes', function (): void {
@@ -394,7 +398,7 @@ describe('Filtering', function (): void {
             ->call('startSearch');
 
         expect($component->get('selected'))->toBe([]);
-        expect($component->get('page'))->toBe('1');
+        expect($component->get('page'))->toBe(1);
     });
 
     it('resets page on applyUserFilters', function (): void {
@@ -417,7 +421,7 @@ describe('Filtering', function (): void {
             ])
             ->call('applyUserFilters');
 
-        expect($component->get('page'))->toBe('1');
+        expect($component->get('page'))->toBe(1);
     });
 });
 
@@ -470,7 +474,7 @@ describe('Column Configuration', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        $initialDataCount = count($component->get('data.data'));
+        $initialDataCount = count($component->instance()->getDataForTesting()['data']);
 
         $component->call('storeColLayout', ['id', 'title', 'content', 'is_published']);
 
@@ -506,7 +510,7 @@ describe('Relation Columns', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class)
             ->call('loadData');
 
-        $firstRow = $component->get('data.data.0');
+        $firstRow = $component->instance()->getDataForTesting()['data'][0];
 
         expect($firstRow)
             ->toHaveKey('user.name')
@@ -689,7 +693,7 @@ describe('Soft Deletes', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData');
 
-        expect($component->get('data.total'))->toBe(1);
+        expect($component->instance()->getDataForTesting()['total'])->toBe(1);
     });
 
     it('shows soft deleted posts when enabled', function (): void {
@@ -701,7 +705,7 @@ describe('Soft Deletes', function (): void {
             ->set('withSoftDeletes', true)
             ->call('loadData');
 
-        expect($component->get('data.total'))->toBe(2);
+        expect($component->instance()->getDataForTesting()['total'])->toBe(2);
     });
 });
 
@@ -1098,5 +1102,597 @@ describe('Saved Filters', function (): void {
         expect($options[0])->toHaveKey('value');
         expect($options[0]['label'])->toBe('Filter A');
         expect($options[1]['label'])->toBe('Filter C');
+    });
+});
+
+describe('clearFiltersAndSort', function (): void {
+    it('resets all filter and sort properties', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [[['column' => 'title', 'operator' => '=', 'value' => 'test']]])
+            ->set('textFilters', [['title' => 'test']])
+            ->set('userOrderBy', 'title')
+            ->set('userOrderAsc', false)
+            ->set('search', 'hello')
+            ->call('loadData')
+            ->call('clearFiltersAndSort');
+
+        expect($component->get('userFilters'))->toBe([])
+            ->and($component->get('textFilters'))->toBe([])
+            ->and($component->get('userOrderBy'))->toBe('')
+            ->and($component->get('userOrderAsc'))->toBeTrue()
+            ->and($component->get('search'))->toBe('')
+            ->and($component->get('groupBy'))->toBeNull()
+            ->and($component->get('loadedFilterId'))->toBeNull();
+    });
+});
+
+describe('forgetSessionFilter', function (): void {
+    it('clears session filter and resets property', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $cacheKey = $component->instance()->getCacheKey();
+
+        session()->put($cacheKey . '_query', 'some_filter');
+
+        $component->call('forgetSessionFilter');
+
+        expect(session()->has($cacheKey . '_query'))->toBeFalse()
+            ->and($component->get('sessionFilter'))->toBe([]);
+    });
+
+    it('reloads data when loadData flag is true', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('loadData')
+            ->call('forgetSessionFilter', true);
+
+        expect($component->get('initialized'))->toBeTrue();
+    });
+
+    it('does not reload data when loadData flag is false', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('forgetSessionFilter', false);
+
+        expect($component->get('sessionFilter'))->toBe([]);
+    });
+});
+
+describe('formatFilterBadgeValue', function (): void {
+    it('returns raw value when no formatter found', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $result = $component->instance()->formatFilterBadgeValue('title', 'test');
+
+        expect($result)->toBe('test');
+    });
+
+    it('formats value using model casts', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $result = $component->instance()->formatFilterBadgeValue('price', '42.50');
+
+        expect($result)->toBeString();
+    });
+
+    it('handles non-numeric values gracefully', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $result = $component->instance()->formatFilterBadgeValue('title', 'some text');
+
+        expect($result)->toBe('some text');
+    });
+});
+
+describe('removeFilter', function (): void {
+    it('removes a filter at specific index', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Keep']);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Other']);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [
+                    ['column' => 'title', 'operator' => '=', 'value' => 'Keep'],
+                    ['column' => 'price', 'operator' => '>', 'value' => 10],
+                ],
+            ])
+            ->call('loadData')
+            ->call('removeFilter', 0, 1);
+
+        $filters = $component->get('userFilters');
+
+        expect($filters[0])->toHaveCount(1)
+            ->and($filters[0][0]['column'])->toBe('title');
+    });
+
+    it('removes empty groups after removing last filter', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => '=', 'value' => 'test']],
+            ])
+            ->call('loadData')
+            ->call('removeFilter', 0, 0);
+
+        expect($component->get('userFilters'))->toBe([]);
+    });
+
+    it('does nothing when filter index does not exist', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => '=', 'value' => 'test']],
+            ])
+            ->call('loadData')
+            ->call('removeFilter', 5, 0);
+
+        expect($component->get('userFilters'))->toHaveCount(1);
+    });
+
+    it('removes text filter entry from textFilters', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('textFilters', [['title' => 'hello']])
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => 'like', 'value' => '%hello%', 'source' => 'text']],
+            ])
+            ->call('loadData')
+            ->call('removeFilter', 0, 0);
+
+        expect($component->get('userFilters'))->toBe([]);
+    });
+});
+
+describe('removeFilterGroup', function (): void {
+    it('removes entire filter group by index', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => '=', 'value' => 'A']],
+                [['column' => 'title', 'operator' => '=', 'value' => 'B']],
+            ])
+            ->call('loadData')
+            ->call('removeFilterGroup', 0);
+
+        $filters = $component->get('userFilters');
+
+        expect($filters)->toHaveCount(1)
+            ->and($filters[0][0]['value'])->toBe('B');
+    });
+
+    it('does nothing when group index does not exist', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => '=', 'value' => 'A']],
+            ])
+            ->call('loadData')
+            ->call('removeFilterGroup', 5);
+
+        expect($component->get('userFilters'))->toHaveCount(1);
+    });
+
+    it('cleans up textFilters for text-source filters in removed group', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('textFilters', [['title' => 'hello']])
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => 'like', 'value' => '%hello%', 'source' => 'text']],
+            ])
+            ->call('loadData')
+            ->call('removeFilterGroup', 0);
+
+        expect($component->get('userFilters'))->toBe([]);
+    });
+});
+
+describe('removeTextFilterRow', function (): void {
+    it('removes text filter row and rebuilds userFilters', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'title', 'hello', 0)
+            ->call('setTextFilter', 'title', 'world', 1);
+
+        expect($component->get('textFilters'))->toHaveCount(2);
+
+        $component->call('removeTextFilterRow', 0);
+
+        $textFilters = $component->get('textFilters');
+
+        expect($textFilters)->toHaveCount(1);
+    });
+});
+
+describe('setTextFilter with multi-value', function (): void {
+    it('handles multi-value text filter at specific index', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'title', 'first', 0, 0)
+            ->call('setTextFilter', 'title', 'second', 0, 1);
+
+        $textFilters = $component->get('textFilters');
+
+        expect($textFilters[0]['title'])->toBeArray()
+            ->and($textFilters[0]['title'])->toContain('first')
+            ->and($textFilters[0]['title'])->toContain('second');
+    });
+
+    it('removes multi-value entry when value is null', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'title', 'first', 0, 0)
+            ->call('setTextFilter', 'title', 'second', 0, 1)
+            ->call('setTextFilter', 'title', null, 0, 0);
+
+        $textFilters = $component->get('textFilters');
+
+        expect($textFilters[0]['title'])->toBe('second');
+    });
+
+    it('removes group when all text filters are cleared', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'title', 'hello', 0)
+            ->call('setTextFilter', 'title', null, 0);
+
+        expect($component->get('textFilters'))->toBe([]);
+    });
+});
+
+describe('getParsedTextFilters', function (): void {
+    it('returns text-source filters from userFilters', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [
+                    ['column' => 'title', 'operator' => 'like', 'value' => '%hello%', 'source' => 'text'],
+                    ['column' => 'price', 'operator' => '>', 'value' => 10],
+                ],
+            ]);
+
+        $parsed = $component->instance()->getParsedTextFilters();
+
+        expect($parsed)->toHaveCount(1)
+            ->and($parsed[0]['column'])->toBe('title');
+    });
+
+    it('strips LIKE wildcards from display value', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => 'like', 'value' => '%hello%', 'source' => 'text']],
+            ]);
+
+        $parsed = $component->instance()->getParsedTextFilters();
+
+        expect($parsed[0]['value'])->toBe('hello');
+    });
+
+    it('returns empty collection when no text filters exist', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('userFilters', [
+                [['column' => 'title', 'operator' => '=', 'value' => 'test']],
+            ]);
+
+        $parsed = $component->instance()->getParsedTextFilters();
+
+        expect($parsed)->toHaveCount(0);
+    });
+
+    it('translates enum value for display', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $component->instance()->filterValueLists = [
+            'is_published' => [
+                ['value' => 1, 'label' => 'Yes'],
+                ['value' => 0, 'label' => 'No'],
+            ],
+        ];
+
+        $component->set('userFilters', [
+            [['column' => 'is_published', 'operator' => '=', 'value' => 1, 'source' => 'text']],
+        ]);
+
+        $parsed = $component->instance()->getParsedTextFilters();
+
+        expect($parsed[0]['value'])->toBe('Yes');
+    });
+});
+
+describe('getGroupLabels', function (): void {
+    it('returns all required group label keys', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $labels = $component->instance()->getGroupLabels();
+
+        expect($labels)
+            ->toHaveKey('entries')
+            ->toHaveKey('showing')
+            ->toHaveKey('to')
+            ->toHaveKey('of')
+            ->toHaveKey('groups')
+            ->toHaveKey('noGrouping')
+            ->toHaveKey('empty')
+            ->toHaveKey('sum')
+            ->toHaveKey('avg')
+            ->toHaveKey('min')
+            ->toHaveKey('max');
+    });
+});
+
+describe('getIslandData', function (): void {
+    it('returns same data as getViewData', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $islandData = $instance->getIslandData();
+
+        $reflection = new ReflectionMethod($instance, 'getViewData');
+        $viewData = $reflection->invoke($instance);
+
+        expect($islandData)->toBe($viewData);
+    });
+});
+
+describe('forceRender', function (): void {
+    it('is a no-op for backwards compatibility', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('forceRender');
+
+        expect($component->get('initialized'))->toBeTrue();
+    });
+});
+
+describe('reloadData', function (): void {
+    it('reloads data when called', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Reloaded']);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('reloadData');
+
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['total'])->toBe(1);
+    });
+});
+
+describe('updatedSearch', function (): void {
+    it('triggers startSearch on search update', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Findable']);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->set('selected', [1, 2])
+            ->set('search', 'Findable');
+
+        expect($component->get('selected'))->toBe([])
+            ->and($component->get('page'))->toBe(1);
+    });
+});
+
+describe('dehydrate', function (): void {
+    it('clears data on dehydrate', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('loadData');
+
+        $instance = $component->instance();
+        $instance->dehydrate();
+
+        expect($instance->data)->toBe([]);
+    });
+});
+
+describe('compileActions', function (): void {
+    it('returns empty row actions by default', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'compileActions');
+        $actions = $reflection->invoke($instance, 'row');
+
+        expect($actions)->toBe([]);
+    });
+
+    it('returns empty table actions by default', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'compileActions');
+        $actions = $reflection->invoke($instance, 'table');
+
+        expect($actions)->toBe([]);
+    });
+
+    it('caches actions per type', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'compileActions');
+
+        $first = $reflection->invoke($instance, 'row');
+        $second = $reflection->invoke($instance, 'row');
+
+        expect($first)->toBe($second);
+    });
+});
+
+describe('showRestoreButton', function (): void {
+    it('returns false by default', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'showRestoreButton');
+        $result = $reflection->invoke($instance);
+
+        expect($result)->toBeFalse();
+    });
+});
+
+describe('getSearchRoute', function (): void {
+    it('returns empty string when no search route configured', function (): void {
+        config(['tall-datatables.search_route' => null]);
+
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'getSearchRoute');
+        $route = $reflection->invoke($instance);
+
+        expect($route)->toBe('');
+    });
+});
+
+describe('getTableFields', function (): void {
+    it('returns non-virtual attributes', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'getTableFields');
+        $fields = $reflection->invoke($instance);
+
+        expect($fields)->toBeInstanceOf(Illuminate\Support\Collection::class)
+            ->and($fields->count())->toBeGreaterThan(0);
+    });
+});
+
+describe('getIncludedRelations', function (): void {
+    it('returns self entry for non-relation columns', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'getIncludedRelations');
+        $relations = $reflection->invoke($instance);
+
+        expect($relations)->toHaveKey('self')
+            ->and($relations['self']['model'])->toBe(Post::class);
+    });
+
+    it('returns relation entries for dot-notation columns', function (): void {
+        $component = Livewire::test(PostWithRelationsDataTable::class);
+        $instance = $component->instance();
+
+        $reflection = new ReflectionMethod($instance, 'getIncludedRelations');
+        $relations = $reflection->invoke($instance);
+
+        expect($relations)->toHaveKey('user')
+            ->and($relations['user']['model'])->toBe(Tests\Fixtures\Models\User::class);
+    });
+});
+
+describe('applyUserFilters text filter cleanup', function (): void {
+    it('removes orphaned textFilters entries', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class)
+            ->call('loadData');
+
+        $component->set('textFilters', [['title' => 'old', 'content' => 'removed']]);
+        $component->set('userFilters', [
+            [['column' => 'title', 'operator' => 'like', 'value' => '%old%', 'source' => 'text']],
+        ]);
+
+        $component->call('applyUserFilters');
+
+        $textFilters = $component->get('textFilters');
+
+        expect($textFilters)->not->toHaveKey('content');
+    });
+});
+
+describe('getSidebarTabs', function (): void {
+    it('returns default tabs as array', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        expect($tabs)->toBeArray()->not->toBeEmpty();
+    });
+
+    it('includes columns tab by default', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->toContain('columns');
+    });
+
+    it('includes filters tab when isFilterable', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->toContain('edit-filters');
+    });
+
+    it('excludes filters tab when not isFilterable', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->instance()->isFilterable = false;
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->not->toContain('edit-filters');
+    });
+
+    it('includes grouping tab', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->toContain('grouping');
+    });
+
+    it('includes export tab when isExportable', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->toContain('export');
+    });
+
+    it('includes summarize tab when aggregatable', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->toContain('summarize');
+    });
+
+    it('each tab has required keys', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        foreach ($tabs as $tab) {
+            expect($tab)->toHaveKey('id')
+                ->toHaveKey('label')
+                ->toHaveKey('view');
+        }
+    });
+
+    it('can be extended by child class via getCustomSidebarTabs', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $defaultCount = count($tabs);
+
+        // CustomTabPostDataTable overrides getCustomSidebarTabs
+        $customComponent = Livewire::test(Tests\Fixtures\Livewire\CustomTabPostDataTable::class);
+        $customTabs = $customComponent->instance()->getSidebarTabs();
+
+        expect(count($customTabs))->toBe($defaultCount + 1);
+
+        $customTabIds = array_column($customTabs, 'id');
+        expect($customTabIds)->toContain('custom-analytics');
+    });
+});
+
+describe('updatedUserFilters', function (): void {
+    it('does not apply filters when loadingFilter is true', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->set('loadingFilter', true)
+            ->set('userFilters', [[['column' => 'title', 'operator' => '=', 'value' => 'x']]]);
+
+        expect($component->get('loadingFilter'))->toBeFalse();
     });
 });

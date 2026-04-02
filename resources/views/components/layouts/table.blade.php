@@ -1,437 +1,389 @@
-<x-tall-datatables::table
-    x-on:data-table-record-selected="if(! $wire.selected.includes('*')) return; ! $event.target.checked ? $wire.wildcardSelectExcluded.push($event.detail.{{ $selectValue }}) : console.log('adding')"
-    class="relative"
+@props([
+    'hasHead' => true,
+    'isFilterable' => true,
+    'showFilterInputs' => true,
+    'tableHeadColAttributes' => new \Illuminate\View\ComponentAttributeBag(),
+    'selectAttributes' => new \Illuminate\View\ComponentAttributeBag(),
+    'selectedActions' => [],
+    'rowActions' => [],
+    'rowAttributes' => new \Illuminate\View\ComponentAttributeBag(),
+    'cellAttributes' => new \Illuminate\View\ComponentAttributeBag(),
+    'hasInfiniteScroll' => false,
+    'hasStickyCols' => true,
+    'hasSidebar' => true,
+    'useWireNavigate' => true,
+    'isSelectable' => false,
+    'selectValue' => 'record.id',
+    'allowSoftDeletes' => false,
+    'showRestoreButton' => false,
+])
+<div
+    class="mt-3 flex flex-col"
+    x-data="{ showSelectedActions: false, hasSelected: false }"
+    x-on:change="hasSelected = $el.querySelectorAll('tbody input[type=checkbox]:checked, tbody input[type=hidden][value=true]').length > 0"
 >
-    <tr
-        wire:loading.delay.longer
-        wire:target.except="storeColLayout"
-        x-cloak
-        class="absolute top-0 right-0 bottom-0 w-full"
-    >
-        <td>
-            <x-tall-datatables::spinner />
-        </td>
-    </tr>
-    @if ($hasHead)
-        <x-slot:header>
-            <tr>
-                @if ($isSelectable)
-                    <x-tall-datatables::table.head-cell
-                        class="min-w-24 px-0! py-0!"
-                    >
-                        <div class="flex items-center justify-center gap-1.5">
-                            @if ($selectValue === 'index')
-                                <x-checkbox
-                                    x-on:change="function (e) {
-                                                if (e.target.checked) {
-                                                        $wire.selected = Array.from(getData().keys());
-                                                    $wire.selected.push('*');
-                                                } else {
-                                                    $wire.selected = [];
-                                                    $wire.wildcardSelectExcluded = [];
-                                                }
-                                            }"
-                                    value="*"
-                                    wire:model="selected"
-                                />
-                            @else
-                                <x-checkbox
-                                    x-on:change="function (e) {
-                                            if (e.target.checked) {
-                                                $wire.selected = getData().map((record) => {{ $selectValue }});
+    <div class="relative overflow-x-auto shadow-sm sm:rounded-lg">
+        <table class="dark:bg-secondary-800 min-w-full table-auto border-collapse bg-white text-sm text-gray-500 dark:text-gray-50">
+            <thead style="z-index: 9">
+                @if ($hasHead)
+                    <tr>
+                        @if ($isSelectable)
+                            <x-tall-datatables::table.head-cell class="w-10 px-0! py-0!">
+                                <div class="flex items-center justify-center">
+                                    <x-checkbox
+                                        value="*"
+                                        x-on:change="
+                                            if ($event.target.checked) {
+                                                $wire.selected = {{ json_encode(
+                                                    $selectValue === 'index'
+                                                        ? range(0, max(0, count($this->data['data'] ?? []) - 1))
+                                                        : array_column($this->data['data'] ?? [], $this->modelKeyName)
+                                                ) }};
                                                 $wire.selected.push('*');
                                             } else {
                                                 $wire.selected = [];
                                                 $wire.wildcardSelectExcluded = [];
                                             }
-                                        }"
-                                    value="*"
-                                    wire:model="selected"
-                                />
-                            @endif
-                            <x-button
-                                color="secondary"
-                                light
-                                class="px-1.5 py-1.5"
-                                x-ref="selectedActions"
-                                flat
-                                icon="chevron-down"
-                                x-on:click="$wire.selected.length > 0 ? showSelectedActions = true : null"
-                            />
-                        </div>
-                    </x-tall-datatables::table.head-cell>
-                @else
-                    <th class="max-w-0"></th>
-                @endif
-                <template x-for="(col, index) in enabledCols">
-                    <x-tall-datatables::table.head-cell
-                        x-bind:class="stickyCols.includes(col) && 'left-0 z-10 border-r'"
-                        x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
-                        :attributes="$tableHeadColAttributes"
-                    >
-                        <div class="flex">
-                            <div
-                                type="button"
-                                wire:loading.attr="disabled"
-                                class="group flex flex-row items-center space-x-1.5"
-                                x-on:click="$wire.sortable.includes(col) && $wire.sortTable(col)"
-                                x-bind:class="$wire.sortable.includes(col) ? 'cursor-pointer' : ''"
-                            >
-                                <span x-text="getLabel(col)"></span>
-                                <x-icon
-                                    x-bind:class="Object.keys($wire.sortable).length && orderByCol === col
-                                    ? (orderAsc || 'rotate-180')
-                                    : 'opacity-0'"
-                                    name="chevron-up"
-                                    class="h-4 w-4 transition-all"
-                                />
-                            </div>
-                            @if ($hasStickyCols)
-                                <div class="h-4 w-4">
-                                    <svg
-                                        x-bind:class="stickyCols.includes(col) ? 'fill-indigo-600' : ''"
-                                        x-on:click="toggleStickyCol(col)"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="100%"
-                                        height="100%"
-                                        fill="currentColor"
-                                        viewBox="0 0 256 256"
-                                    >
-                                        <path
-                                            d="M235.32,81.37,174.63,20.69a16,16,0,0,0-22.63,0L98.37,74.49c-10.66-3.34-35-7.37-60.4,13.14a16,16,0,0,0-1.29,23.78L85,159.71,42.34,202.34a8,8,0,0,0,11.32,11.32L96.29,171l48.29,48.29A16,16,0,0,0,155.9,224c.38,0,.75,0,1.13,0a15.93,15.93,0,0,0,11.64-6.33c19.64-26.1,17.75-47.32,13.19-60L235.33,104A16,16,0,0,0,235.32,81.37ZM224,92.69h0l-57.27,57.46a8,8,0,0,0-1.49,9.22c9.46,18.93-1.8,38.59-9.34,48.62L48,100.08c12.08-9.74,23.64-12.31,32.48-12.31A40.13,40.13,0,0,1,96.81,91a8,8,0,0,0,9.25-1.51L163.32,32,224,92.68Z"
-                                        ></path>
-                                    </svg>
-                                </div>
-                            @endif
-
-                            @if ($isFilterable && ! $showFilterInputs)
-                                <x-icon
-                                    name="funnel"
-                                    x-show="filterable.includes(col)"
-                                    class="h-4 w-4 cursor-pointer"
-                                    x-on:click="loadSidebar({column: col, operator: '', value: '', relation: ''})"
-                                />
-                            @endif
-                        </div>
-                    </x-tall-datatables::table.head-cell>
-                </template>
-                @if ($rowActions ?? false)
-                    <x-tall-datatables::table.head-cell class="w-[1%]">
-                        {{ __('Actions') }}
-                    </x-tall-datatables::table.head-cell>
-                @endif
-
-                @if ($hasSidebar)
-                    <x-tall-datatables::table.head-cell
-                        class="dark:bg-secondary-800 sticky right-0 flex w-4 flex-row-reverse bg-white py-0! shadow-inner"
-                    >
-                        <div class="flex w-full flex-row-reverse items-center">
-                            <x-button
-                                color="secondary"
-                                light
-                                icon="cog"
-                                x-on:click="loadSidebar()"
-                            />
-                        </div>
-                    </x-tall-datatables::table.head-cell>
-                @endif
-            </tr>
-            @if ($isFilterable && $showFilterInputs)
-                <tr>
-                    <td class="dark:bg-secondary-600 max-w-0 bg-gray-50"></td>
-                    <template x-for="(col, index) in enabledCols">
-                        <td
-                            class="dark:bg-secondary-600 bg-gray-50 px-2 py-1"
-                            x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
-                            x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r'"
-                        >
-                            <template
-                                x-if="! filterValueLists.hasOwnProperty(col)"
-                            >
-                                <div
-                                    x-cloak
-                                    x-show="filterable.includes(col)"
-                                >
-                                    <x-input
-                                        type="search"
-                                        class="p-1"
-                                        x-model.debounce.500ms="textFilter[col]"
+                                        "
+                                        :checked="in_array('*', $this->selected)"
+                                        sm
                                     />
                                 </div>
-                            </template>
-                            <template
-                                x-if="filterValueLists.hasOwnProperty(col)"
+                            </x-tall-datatables::table.head-cell>
+                        @else
+                            <th class="max-w-0"></th>
+                        @endif
+                        <template x-for="col in $wire.enabledCols" x-bind:key="col">
+                            <x-tall-datatables::table.head-cell
+                                x-bind:class="($wire.stickyCols || []).includes(col) ? 'left-0 z-10 border-r' : ''"
+                                x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : 'z-index: 1'"
+                                :attributes="$tableHeadColAttributes"
                             >
-                                <x-select.native
-                                    x-model="textFilter[col]"
-                                    placeholder="{{ __('Value') }}"
-                                >
-                                    <option value=""></option>
-                                    <template
-                                        x-for="item in filterValueLists[col]"
+                                <div class="group flex items-center gap-1">
+                                    <div
+                                        class="flex flex-row items-center space-x-1.5"
+                                        x-bind:class="($wire.sortable || []).includes(col) || ($wire.sortable || []).includes('*') ? 'cursor-pointer' : ''"
+                                        x-on:click="(($wire.sortable || []).includes(col) || ($wire.sortable || []).includes('*')) && $wire.sortTable(col)"
                                     >
-                                        <option
-                                            x-bind:value="item.value"
-                                            x-text="item.label"
-                                        ></option>
-                                    </template>
-                                </x-select.native>
-                            </template>
-                        </td>
-                    </template>
-                    @if ($rowActions ?? false)
-                        <td class="dark:bg-secondary-800 bg-gray-50"></td>
-                    @endif
-
-                    @if ($hasSidebar)
-                        <td
-                            class="dark:bg-secondary-800 bg-gray-50"
-                        ></td>
-                    @endif
-                </tr>
-            @endif
-        </x-slot>
-    @endif
-
-    <template x-if="! getData().length && ! isGrouped() && initialized">
-        <tr>
-            <td colspan="100%" class="h-24 w-24 p-8">
-                <div class="w-full flex-col items-center dark:text-gray-50">
-                    <x-icon
-                        outline
-                        name="face-frown"
-                        class="m-auto h-24 w-24"
-                    />
-                    <div class="text-center">
-                        {{ __('No data found') }}
-                    </div>
-                </div>
-            </td>
-        </tr>
-    </template>
-
-    <template x-if="isGrouped() && ! getGroups().length && initialized">
-        <tr>
-            <td colspan="100%" class="h-24 w-24 p-8">
-                <div class="w-full flex-col items-center dark:text-gray-50">
-                    <x-icon
-                        outline
-                        name="face-frown"
-                        class="m-auto h-24 w-24"
-                    />
-                    <div class="text-center">
-                        {{ __('No data found') }}
-                    </div>
-                </div>
-            </td>
-        </tr>
-    </template>
-
-    <tr x-show="! initialized">
-        <td colspan="100%" class="h-24 w-24 p-8"></td>
-    </tr>
-
-    <template x-if="isGrouped()">
-        <x-tall-datatables::layouts.partials.table-groups
-            :is-selectable="$isSelectable"
-            :select-value="$selectValue"
-            :select-attributes="$selectAttributes"
-            :row-attributes="$rowAttributes"
-            :cell-attributes="$cellAttributes"
-            :allow-soft-deletes="$allowSoftDeletes"
-            :use-wire-navigate="$useWireNavigate"
-            :row-actions="$rowActions ?? []"
-            :show-restore-button="$showRestoreButton"
-            :has-sidebar="$hasSidebar"
-        />
-    </template>
-
-    <template
-        x-for="(record, index) in getData()"
-        x-bind:key="{{ $selectValue }}"
-    >
-        <tr
-            x-show="! isGrouped()"
-            x-cloak
-            x-bind:data-id="record.id"
-            x-bind:key="record.id"
-            x-on:click="$dispatch('data-table-row-clicked', {record: record})"
-            @if($allowSoftDeletes) x-bind:class="record.deleted_at ? 'opacity-50' : ''" @endif
-            {{ $rowAttributes->merge(['class' => 'hover:bg-gray-100 dark:hover:bg-secondary-900']) }}
-        >
-            @if ($isSelectable)
-                <td
-                    class="border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
-                >
-                    <div
-                        {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}
-                    >
-                        <x-checkbox
-                            x-on:click="$event.stopPropagation();"
-                            x-on:change="$dispatch('data-table-record-selected', {record: record, index: index, value: $el.checked});"
-                            x-bind:value="{{ $selectValue }}"
-                            x-model.number="$wire.selected"
-                        />
-                    </div>
-                </td>
-            @else
-                <td
-                    class="max-w-0 border-b border-slate-200 text-sm whitespace-nowrap dark:border-slate-600"
-                ></td>
-            @endif
-            <template x-for="col in enabledCols">
-                <x-tall-datatables::table.cell
-                    :use-wire-navigate="$useWireNavigate"
-                    x-bind:class="stickyCols.includes(col) && 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50'"
-                    x-bind:style="stickyCols.includes(col) && 'z-index: 2'"
-                    x-bind:href="record.deleted_at ? false : (record?.href ?? false)"
-                >
-                    <div class="flex flex-wrap gap-1.5">
-                        <div
-                            class="flex flex-wrap gap-1"
-                            x-cloak
-                            x-show="leftAppend[col]"
-                            x-html="formatter(leftAppend[col], record)"
-                        ></div>
-                        <div class="grow">
-                            <div
-                                class="flex flex-wrap gap-1"
-                                x-cloak
-                                x-show="topAppend[col]"
-                                x-html="formatter(topAppend[col], record)"
-                            ></div>
-                            <div
-                                class="flex flex-wrap gap-1"
-                                {{ $cellAttributes->merge(['x-html' => 'formatter(col, record)']) }}
-                            ></div>
-                            <div
-                                class="flex flex-wrap gap-1"
-                                x-cloak
-                                x-show="bottomAppend[col]"
-                                x-html="formatter(bottomAppend[col], record)"
-                            ></div>
-                        </div>
-                        <div
-                            class="flex flex-wrap gap-1"
-                            x-cloak
-                            x-show="rightAppend[col]"
-                            x-html="formatter(rightAppend[col], record)"
-                        ></div>
-                    </div>
-                </x-tall-datatables::table.cell>
-            </template>
-            @if (($rowActions ?? false) || ($showRestoreButton && $allowSoftDeletes))
-                <td
-                    x-on:click.stop
-                    class="border-b border-slate-200 px-3 py-4 whitespace-nowrap dark:border-slate-600"
-                >
-                    <div
-                        class="flex gap-1.5"
-                        @if($allowSoftDeletes) x-bind:class="record.deleted_at ? 'hidden' : ''" @endif
-                    >
-                        @foreach ($rowActions ?? [] as $rowAction)
-                            {{ $rowAction }}
-                        @endforeach
-                    </div>
-                    @if ($showRestoreButton && $allowSoftDeletes)
-                        <div class="flex gap-1.5" x-show="record.deleted_at">
-                            <x-button
-                                color="indigo"
-                                wire:click="restore(record.id)"
+                                        <span x-text="($wire.colLabels || {})[col] || col.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')).join(' → ')"></span>
+                                        <x-icon
+                                            name="chevron-up"
+                                            class="h-3 w-3 transition-all"
+                                            x-cloak
+                                            x-show="$wire.userOrderBy === col"
+                                            x-bind:class="$wire.userOrderAsc ? '' : 'rotate-180'"
+                                        />
+                                    </div>
+                                    @if ($hasStickyCols)
+                                        <div class="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                             x-bind:class="($wire.stickyCols || []).includes(col) && 'opacity-100!'"
+                                        >
+                                            <svg
+                                                class="text-gray-300 hover:text-gray-500 cursor-pointer transition-colors"
+                                                x-bind:class="($wire.stickyCols || []).includes(col) ? 'text-primary-500! hover:text-primary-600!' : ''"
+                                                x-on:click="
+                                                    let cols = [...($wire.stickyCols || [])];
+                                                    if (cols.includes(col)) {
+                                                        cols = cols.filter(c => c !== col);
+                                                    } else {
+                                                        cols.push(col);
+                                                    }
+                                                    $wire.stickyCols = cols;
+                                                "
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="100%"
+                                                height="100%"
+                                                fill="currentColor"
+                                                viewBox="0 0 256 256"
+                                            >
+                                                <path
+                                                    d="M235.32,81.37,174.63,20.69a16,16,0,0,0-22.63,0L98.37,74.49c-10.66-3.34-35-7.37-60.4,13.14a16,16,0,0,0-1.29,23.78L85,159.71,42.34,202.34a8,8,0,0,0,11.32,11.32L96.29,171l48.29,48.29A16,16,0,0,0,155.9,224c.38,0,.75,0,1.13,0a15.93,15.93,0,0,0,11.64-6.33c19.64-26.1,17.75-47.32,13.19-60L235.33,104A16,16,0,0,0,235.32,81.37ZM224,92.69h0l-57.27,57.46a8,8,0,0,0-1.49,9.22c9.46,18.93-1.8,38.59-9.34,48.62L48,100.08c12.08-9.74,23.64-12.31,32.48-12.31A40.13,40.13,0,0,1,96.81,91a8,8,0,0,0,9.25-1.51L163.32,32,224,92.68Z"
+                                                ></path>
+                                            </svg>
+                                        </div>
+                                    @endif
+                                    @if ($isFilterable && ! $showFilterInputs)
+                                        <x-icon
+                                            name="funnel"
+                                            class="h-4 w-4 cursor-pointer"
+                                            x-on:click="$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase())"
+                                        />
+                                    @endif
+                                </div>
+                            </x-tall-datatables::table.head-cell>
+                        </template>
+                        @if ($rowActions)
+                            <x-tall-datatables::table.head-cell class="w-[1%]">
+                                {{ __('Actions') }}
+                            </x-tall-datatables::table.head-cell>
+                        @endif
+                        @if ($hasSidebar)
+                            <x-tall-datatables::table.head-cell
+                                class="dark:bg-secondary-800 sticky right-0 flex w-4 flex-row-reverse bg-white py-0! shadow-inner"
                             >
-                                {{ __('Restore') }}
-                            </x-button>
-                        </div>
+                                <div class="flex w-full flex-row-reverse items-center">
+                                    <x-button
+                                        color="secondary"
+                                        flat
+                                        sm
+                                        icon="cog-6-tooth"
+                                        x-on:click="$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase())"
+                                    />
+                                </div>
+                            </x-tall-datatables::table.head-cell>
+                        @endif
+                    </tr>
+                    @if ($isFilterable && $showFilterInputs)
+                        <template x-for="(rowIndex, i) in textFilterRows" x-bind:key="'filter-row-' + rowIndex">
+                            <tr>
+                                <td class="dark:bg-secondary-700/30 border-b border-gray-100 bg-gray-50/50 px-1 py-0 dark:border-secondary-700/50">
+                                    <template x-if="i === 0">
+                                        <div class="relative flex items-center justify-center" x-show="hasSelected" x-cloak>
+                                            <x-button
+                                                color="secondary"
+                                                flat
+                                                sm
+                                                icon="chevron-down"
+                                                x-on:click="showSelectedActions = !showSelectedActions"
+                                            />
+                                            <div
+                                                x-on:click.outside="showSelectedActions = false"
+                                                x-transition:enter="transition duration-200 ease-out"
+                                                x-transition:enter-start="scale-95 opacity-0"
+                                                x-transition:enter-end="scale-100 opacity-100"
+                                                x-transition:leave="transition duration-75 ease-in"
+                                                x-transition:leave-start="scale-100 opacity-100"
+                                                x-transition:leave-end="scale-95 opacity-0"
+                                                class="absolute left-0 top-full z-50 mt-1 min-w-48"
+                                                x-cloak
+                                                x-show="showSelectedActions"
+                                            >
+                                                <x-card x-on:click="showSelectedActions = false;">
+                                                    <div class="flex flex-col gap-1.5">
+                                                        @foreach ($selectedActions as $action)
+                                                            {{ $action }}
+                                                        @endforeach
+                                                    </div>
+                                                </x-card>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template x-if="i > 0">
+                                        <div class="flex items-center justify-center">
+                                            <span class="text-xs font-medium text-emerald-600 dark:text-emerald-400">{{ __('or') }}</span>
+                                        </div>
+                                    </template>
+                                </td>
+                                <template x-for="col in $wire.enabledCols" x-bind:key="'filter-' + rowIndex + '-' + col">
+                                    <td
+                                        class="group/cell dark:bg-secondary-700/30 border-b border-l border-gray-100 bg-gray-50/50 px-0 py-0 dark:border-secondary-700/50"
+                                        x-bind:class="($wire.stickyCols || []).includes(col) ? 'sticky left-0 border-r' : ''"
+                                        x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : ''"
+                                    >
+                                        <template x-if="!($wire.filterValueLists || {})[col]">
+                                            <div>
+                                                <template x-for="(_, vi) in Array.from({length: getInputCount(rowIndex, col)})" x-bind:key="'vi-' + vi">
+                                                    <div class="flex items-center" x-bind:class="vi > 0 && 'border-t border-gray-100 dark:border-secondary-700/50'">
+                                                        <input
+                                                            type="search"
+                                                            class="min-w-0 flex-1 border-0 bg-transparent px-3 py-1 text-sm text-gray-600 placeholder-gray-300 outline-none focus:ring-0 dark:text-gray-300 dark:placeholder-gray-600"
+                                                            x-bind:placeholder="vi === 0 ? '…' : '{{ __('and') }}…'"
+                                                            x-init="$el.value = getTextFilterValue(rowIndex, col, vi)"
+                                                            x-on:input.debounce.500ms="$wire.setTextFilter(col, $event.target.value, rowIndex, vi)"
+                                                        />
+                                                        <template x-if="getTextFilterValue(rowIndex, col, vi)">
+                                                            <button
+                                                                type="button"
+                                                                class="shrink-0 cursor-pointer px-1 text-gray-400 transition-colors hover:text-emerald-500"
+                                                                x-on:click="addColumnInput(rowIndex, col)"
+                                                                title="{{ __('Add AND condition') }}"
+                                                            >
+                                                                <x-icon name="plus" class="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </template>
+                                                        <template x-if="vi > 0">
+                                                            <button
+                                                                type="button"
+                                                                class="shrink-0 cursor-pointer px-1 text-gray-400 transition-colors hover:text-red-500"
+                                                                x-on:click="removeColumnInput(rowIndex, col, vi)"
+                                                            >
+                                                                <x-icon name="x-mark" class="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <template x-if="($wire.filterValueLists || {})[col]">
+                                            <div
+                                                x-effect="if (!(($wire.textFilters || {})[rowIndex] || {})[col]) { const sel = $el.querySelector('select'); if (sel) sel.value = ''; }"
+                                            >
+                                                <select
+                                                    class="w-full border-0 bg-transparent px-3 py-1 text-sm text-gray-600 outline-none focus:ring-0 dark:text-gray-300"
+                                                    x-init="$nextTick(() => $el.value = (($wire.textFilters || {})[rowIndex] || {})[col] || '')"
+                                                    x-on:change="$wire.setTextFilter(col, $event.target.value, rowIndex)"
+                                                >
+                                                    <option value=""></option>
+                                                    <template x-for="item in ($wire.filterValueLists || {})[col]" x-bind:key="item.value">
+                                                        <option x-bind:value="item.value" x-text="item.label"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </template>
+                                    </td>
+                                </template>
+                                @if ($rowActions)
+                                    <td class="dark:bg-secondary-700/30 border-b border-gray-100 bg-gray-50/50 dark:border-secondary-700/50"></td>
+                                @endif
+                                @if ($hasSidebar)
+                                    <td class="dark:bg-secondary-700/30 sticky right-0 border-b border-gray-100 bg-gray-50/50 dark:border-secondary-700/50">
+                                        <div class="flex items-center justify-end gap-0.5 px-1">
+                                            <template x-if="i === 0">
+                                                <button
+                                                    type="button"
+                                                    x-on:click="addTextFilterRow()"
+                                                    class="cursor-pointer rounded p-0.5 text-gray-400 transition-colors hover:text-emerald-500"
+                                                    title="{{ __('Add OR filter row') }}"
+                                                >
+                                                    <x-icon name="plus" class="h-4 w-4" />
+                                                </button>
+                                            </template>
+                                            <template x-if="i > 0">
+                                                <button
+                                                    type="button"
+                                                    x-on:click="removeTextFilterRow(rowIndex)"
+                                                    class="cursor-pointer rounded p-0.5 text-gray-400 transition-colors hover:text-red-500"
+                                                >
+                                                    <x-icon name="x-mark" class="h-4 w-4" />
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </td>
+                                @endif
+                            </tr>
+                        </template>
                     @endif
-                </td>
-            @endif
-
-            {{-- Empty cell for the col selection --}}
-            @if ($hasSidebar)
-                <td
-                    class="table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
-                ></td>
-            @endif
-        </tr>
-    </template>
-    <x-slot:footer>
-        <template x-for="(aggregate, name) in data.aggregates">
-            <tr
-                class="dark:hover:bg-secondary-800 dark:bg-secondary-900 bg-gray-50 hover:bg-gray-100"
-            >
-                <td
-                    class="border-b border-slate-200 px-3 py-4 text-sm font-bold whitespace-nowrap dark:border-slate-600"
-                    x-text="getLabel(name)"
-                ></td>
-                <template x-for="col in enabledCols">
-                    <x-tall-datatables::table.cell>
-                        <div
-                            class="flex font-semibold"
-                            x-html="formatter(col, aggregate)"
-                        ></div>
-                    </x-tall-datatables::table.cell>
-                </template>
-                <td
-                    class="table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
-                ></td>
-                @if ($rowActions)
-                    <td
-                        class="table-cell border-b border-slate-200 px-3 py-4 text-sm whitespace-nowrap dark:border-slate-600"
-                    ></td>
                 @endif
-            </tr>
-        </template>
-        @if (! $hasInfiniteScroll)
-            <template x-if="data.hasOwnProperty('current_page')">
-                <tr>
-                    <td colspan="100%">
-                        <x-tall-datatables::pagination />
+            </thead>
+            <tbody class="relative">
+                <tr
+                    wire:loading.delay.shorter
+                    wire:target.except="storeColLayout"
+                    x-cloak
+                    class="absolute top-0 right-0 bottom-0 left-0 z-10"
+                >
+                    <td>
+                        <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-secondary-800/50">
+                            <svg class="h-8 w-8 animate-spin text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
                     </td>
                 </tr>
-            </template>
-        @else
-            <tr>
-                <td
-                    x-intersect:enter="$wire.get('initialized') && $wire.loadMore()"
-                    colspan="100%"
-                >
-                    <x-button
-                        color="secondary"
-                        light
-                        flat
-                        loading="loadMore"
-                        delay="longer"
-                        class="w-full"
-                    >
-                        {{ __('Loading...') }}
-                    </x-button>
-                </td>
-            </tr>
-        @endif
-    </x-slot>
-    @if ($isSelectable)
-        <x-slot:floatingElements>
-            <div
-                x-on:click.outside="showSelectedActions = false"
-                x-transition:enter="transition duration-200 ease-out"
-                x-transition:enter-start="scale-95 opacity-0"
-                x-transition:enter-end="scale-100 opacity-100"
-                x-transition:leave="transition duration-75 ease-in"
-                x-transition:leave-start="scale-100 opacity-100"
-                x-transition:leave-end="scale-95 opacity-0"
-                class="z-30"
-                x-cloak
-                x-show="showSelectedActions"
-                x-anchor.bottom-start.offset.5="$refs.selectedActions"
-            >
-                <x-card x-on:click="showSelectedActions = false;">
-                    <div class="flex flex-col gap-1.5">
-                        @foreach ($selectedActions as $action)
-                            {{ $action }}
-                        @endforeach
-                    </div>
-                </x-card>
-            </div>
-        </x-slot>
-    @endif
-</x-tall-datatables::table>
+                @island(name: 'body')
+                @php extract($this->getIslandData()); @endphp
+                @if (! $this->initialized)
+                    <tr>
+                        <td colspan="100%" class="h-24 w-24 p-8"></td>
+                    </tr>
+                @elseif ($this->isGrouped())
+                    @if (empty($this->data['groups'] ?? []))
+                        <tr>
+                            <td colspan="100%" class="h-24 w-24 p-8">
+                                <div class="w-full flex-col items-center dark:text-gray-50">
+                                    <x-icon outline name="face-frown" class="m-auto h-24 w-24" />
+                                    <div class="text-center">{{ __('No data found') }}</div>
+                                </div>
+                            </td>
+                        </tr>
+                    @else
+                        <x-tall-datatables::layouts.partials.table-groups
+                            :is-selectable="$isSelectable"
+                            :select-value="$selectValue"
+                            :select-attributes="$selectAttributes"
+                            :row-attributes="$rowAttributes"
+                            :cell-attributes="$cellAttributes"
+                            :allow-soft-deletes="$allowSoftDeletes"
+                            :use-wire-navigate="$useWireNavigate"
+                            :row-actions="$rowActions"
+                            :show-restore-button="$showRestoreButton"
+                            :has-sidebar="$hasSidebar"
+                        />
+                    @endif
+                @elseif (empty($this->data['data'] ?? []))
+                    <tr>
+                        <td colspan="100%" class="h-24 w-24 p-8">
+                            <div class="w-full flex-col items-center dark:text-gray-50">
+                                <x-icon outline name="face-frown" class="m-auto h-24 w-24" />
+                                <div class="text-center">{{ __('No data found') }}</div>
+                            </div>
+                        </td>
+                    </tr>
+                @else
+                    @foreach ($this->data['data'] ?? [] as $index => $record)
+                        <x-tall-datatables::layouts.partials.table-row
+                            :record="$record"
+                            :index="$index"
+                            :is-selectable="$isSelectable"
+                            :select-value="$selectValue"
+                            :select-attributes="$selectAttributes"
+                            :row-attributes="$rowAttributes"
+                            :cell-attributes="$cellAttributes"
+                            :allow-soft-deletes="$allowSoftDeletes"
+                            :use-wire-navigate="$useWireNavigate"
+                            :row-actions="$rowActions"
+                            :show-restore-button="$showRestoreButton"
+                            :has-sidebar="$hasSidebar"
+                        />
+                    @endforeach
+                @endif
+                @endisland
+            </tbody>
+            <tfoot>
+                @island(name: 'footer')
+                @php extract($this->getIslandData()); @endphp
+                @if (! empty($this->data['aggregates'] ?? []))
+                    @foreach ($this->data['aggregates'] as $name => $aggregate)
+                        <tr class="dark:bg-secondary-800 bg-gray-50/50 text-sm text-gray-500 dark:text-gray-400">
+                            <td class="border-t border-gray-100 px-3 py-2.5 font-medium whitespace-nowrap dark:border-secondary-700/50">
+                                {{ $this->getGroupLabels()[$name] ?? \Illuminate\Support\Str::headline($name) }}
+                            </td>
+                            @foreach ($this->enabledCols as $col)
+                                <td class="border-t border-gray-100 px-3 py-2.5 whitespace-nowrap dark:border-secondary-700/50">
+                                    <span class="font-medium">
+                                        @if (is_array($aggregate[$col] ?? null) && isset($aggregate[$col]['display']))
+                                            {!! $aggregate[$col]['display'] !!}
+                                        @else
+                                            {{ $aggregate[$col] ?? '' }}
+                                        @endif
+                                    </span>
+                                </td>
+                            @endforeach
+                            <td class="border-t border-gray-100 px-3 py-2.5 whitespace-nowrap dark:border-secondary-700/50"></td>
+                            @if ($rowActions)
+                                <td class="border-t border-gray-100 px-3 py-2.5 whitespace-nowrap dark:border-secondary-700/50"></td>
+                            @endif
+                        </tr>
+                    @endforeach
+                @endif
+                @if (! $hasInfiniteScroll)
+                    @if (isset($this->data['current_page']))
+                        <tr>
+                            <td colspan="100%">
+                                <x-tall-datatables::pagination />
+                            </td>
+                        </tr>
+                    @endif
+                @else
+                    <tr>
+                        <td x-intersect:enter="$wire.initialized && $wire.loadMore()" colspan="100%">
+                            <x-button color="secondary" light flat loading="loadMore" delay="longer" class="w-full" :text="__('Loading...')" />
+                        </td>
+                    </tr>
+                @endif
+                @endisland
+            </tfoot>
+        </table>
+    </div>
+</div>

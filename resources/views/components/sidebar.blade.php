@@ -1,5 +1,6 @@
 <div>
     <div
+        x-cloak
         x-on:click="{{ $attributes->get('x-show') }} = false"
         class="bg-secondary-400/60 dark:bg-secondary-700/60 fixed inset-0 z-30 transform overflow-y-auto p-4 transition-opacity"
         {{ $attributes }}

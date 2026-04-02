@@ -2,24 +2,18 @@
     @includeWhen($includeBefore, $includeBefore)
     @if ($hasSidebar)
         @teleport('body')
-            <x-slide id="data-table-sidebar-{{ $this->getId() }}" size="2xl">
-                <livewire:tall-datatables-options
-                    :is-filterable="$isFilterable"
-                    :aggregatable="$aggregatable"
-                    :is-exportable="$isExportable"
-                    lazy
-                />
-                <x-slot:footer>
-                    <x-button
-                        color="secondary"
-                        light
-                        x-on:click="$slideClose('data-table-sidebar-' + $wire.id.toLowerCase());"
-                    >
-                        {{ __('Close') }}
-                    </x-button>
-                </x-slot>
-            </x-slide>
-        @endteleport
+                <x-slide id="data-table-sidebar-{{ strtolower($this->getId()) }}" size="2xl">
+                    <x-tall-datatables::options />
+                    <x-slot:footer>
+                        <x-button
+                            color="secondary"
+                            light
+                            :text="__('Close')"
+                            x-on:click="$tsui.close.slide('data-table-sidebar-' + $wire.id.toLowerCase());"
+                        />
+                    </x-slot:footer>
+                </x-slide>
+            @endteleport
     @endif
 
     @if ($hasHead)

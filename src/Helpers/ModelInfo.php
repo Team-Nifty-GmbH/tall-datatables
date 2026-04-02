@@ -20,6 +20,12 @@ class ModelInfo extends BaseModelInfo
 
     public ?string $morphClass = null;
 
+    public static function flush(): void
+    {
+        static::$cachedModelInfos = null;
+        Cache::forget(config('tall-datatables.cache_key') . '.modelInfo');
+    }
+
     /**
      * @return Collection<BaseModelInfo>
      */

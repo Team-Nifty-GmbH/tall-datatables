@@ -8,11 +8,11 @@
     </div>
 @endif
 
-<div class="flex w-full justify-end gap-5">
+<div class="flex w-full justify-end gap-2">
     @if (count($this->savedFilters) > 0 && $this->showSavedFilters)
         <div>
             <x-select.styled
-                x-on:select="loadSavedFilter()"
+                x-on:select="$wire.loadSavedFilter()"
                 wire:model="loadedFilterId"
                 select="label:label|value:value"
                 :placeholder="__('Saved filters')"
@@ -37,145 +37,139 @@
             <x-input
                 type="search"
                 icon="magnifying-glass"
-                x-model.debounce.500ms="search"
+                wire:model.live.debounce.500ms="search"
                 :placeholder="__('Search in :model…', ['model' => __(\Illuminate\Support\Str::plural($modelName))])"
             ></x-input>
         </div>
     @endif
 
     @if ($tableActions)
-        <div class="flex gap-3">
+        <div class="flex gap-1.5">
             @foreach ($tableActions as $tableAction)
                 {{ $tableAction }}
             @endforeach
         </div>
     @endif
 </div>
-<div
-    class="flex flex-wrap items-center gap-1.5 pt-3"
-    x-cloak
-    x-show="
-        filters.length > 0 ||
-            orderByCol ||
-            groupBy ||
-            Object.keys($wire.sessionFilter).length !== 0
-    "
->
-    <div x-show="Object.keys($wire.sessionFilter).length !== 0" x-cloak>
-        <div
-            class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 pr-6.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
-        >
-            <x-badge light flat>
-                <x-slot:text>
-                    <span x-text="$wire.sessionFilter.name"></span>
-                </x-slot>
-            </x-badge>
-            <div class="top-0.5 right-0.5">
-                <x-button.circle
-                    color="red"
-                    sm
-                    icon="x-mark"
-                    x-on:click="$wire.forgetSessionFilter(true)"
-                />
-            </div>
-        </div>
-    </div>
-    <template x-for="(orFilters, orIndex) in filters">
-        <div class="flex items-center justify-center">
-            <div
-                class="dark:bg-secondary-800 pointer-events-auto flex w-full rounded-lg bg-white p-1.5 text-sm leading-5 shadow-xl shadow-black/5 hover:bg-slate-50"
-                x-on:click="filterIndex = orIndex"
-                x-bind:class="filterIndex === orIndex ? 'ring-2 ring-indigo-600' : 'ring-1 ring-slate-700/10'"
-            >
-                <div class="flex justify-between">
-                    <div class="flex gap-1 pt-1">
-                        <template x-for="(filter, index) in orFilters">
-                            <div>
-                                <x-badge flat light color="indigo">
-                                    <x-slot:text>
-                                        <span
-                                            x-text="filterBadge(filter)"
-                                        ></span>
-                                    </x-slot>
-                                    <x-slot
-                                        name="right"
-                                        class="relative flex h-2 w-2 items-center"
-                                    >
-                                        <button
-                                            type="button"
-                                            x-on:click="removeFilter(index, orIndex)"
-                                        >
-                                            <x-icon
-                                                name="x-mark"
-                                                class="h-4 w-4"
-                                            />
-                                        </button>
-                                    </x-slot>
-                                </x-badge>
-                                <template
-                                    x-if="orFilters.length - 1 !== index"
-                                >
-                                    <x-badge
-                                        flat
-                                        color="red"
-                                        :text="__('and')"
-                                    />
-                                </template>
-                            </div>
-                        </template>
-                    </div>
+@island(name: 'badges')
+    @if ($this->search
+        || $this->userOrderBy
+        || $this->groupBy
+        || ! empty($this->sessionFilter)
+        || ! empty($this->userFilters)
+    )
+        <div class="flex flex-wrap items-center gap-2 pt-3">
+            @if ($this->search)
+                <div>
+                    <x-badge light flat>
+                        <x-slot:text>
+                            {{ __('Search') }}&nbsp;{{ $this->search }}
+                        </x-slot>
+                        <x-slot name="right" class="relative flex h-2 w-2 items-center">
+                            <button type="button" class="cursor-pointer" wire:click="$set('search', '')">
+                                <x-icon name="x-mark" class="h-4 w-4" />
+                            </button>
+                        </x-slot>
+                    </x-badge>
                 </div>
-                <div class="top-0.5 right-0.5">
-                    <x-button.circle
-                        color="red"
-                        sm
-                        icon="x-mark"
-                        x-on:click="removeFilterGroup(orIndex)"
-                    />
+            @endif
+            @if (! empty($this->sessionFilter))
+                <div>
+                    <x-badge light flat>
+                        <x-slot:text>{{ $this->sessionFilter['name'] ?? '' }}</x-slot>
+                        <x-slot name="right" class="relative flex h-2 w-2 items-center">
+                            <button type="button" class="cursor-pointer" wire:click="forgetSessionFilter(true)">
+                                <x-icon name="x-mark" class="h-4 w-4" />
+                            </button>
+                        </x-slot>
+                    </x-badge>
                 </div>
-            </div>
-            <div
-                class="pl-1"
-                x-claok
-                x-show="filters.length - 1 !== orIndex"
-            >
-                <x-badge flat color="emerald" :text="__('or')" />
-            </div>
+            @endif
+            @foreach ($this->userFilters as $orIndex => $orFilters)
+                @if (! is_array($orFilters))
+                    @continue
+                @endif
+                @php $hasMultipleGroups = count(array_filter($this->userFilters, 'is_array')) > 1; @endphp
+                <div class="flex flex-wrap items-center gap-2 {{ $hasMultipleGroups ? 'rounded-md border border-gray-200 dark:border-secondary-700/50 px-2 py-1' : '' }}">
+                    @foreach ($orFilters as $filterIndex => $filter)
+                        @if (! is_array($filter) || empty($filter['column'] ?? ''))
+                            @continue
+                        @endif
+                        @php
+                            $displayValue = $filter['value'] ?? '';
+                            $operator = $filter['operator'] ?? '=';
+                            // Translate enum/state values
+                            if ($operator === '=' && isset($this->filterValueLists[$filter['column']])) {
+                                $label = collect($this->filterValueLists[$filter['column']])->firstWhere('value', $displayValue);
+                                $displayValue = $label['label'] ?? $displayValue;
+                            }
+                            // Strip LIKE wildcards
+                            if ($operator === 'like' && is_string($displayValue)) {
+                                $displayValue = trim($displayValue, '%');
+                            }
+                            if (is_array($displayValue)) {
+                                $displayValue = implode(', ', array_map(fn ($v) => is_array($v) ? json_encode($v) : $v, $displayValue));
+                            }
+                        @endphp
+                        <div>
+                            <x-badge flat light>
+                                <x-slot:text>
+                                    {{ $this->colLabels[$filter['column']] ?? \Illuminate\Support\Str::headline($filter['column']) }}
+                                    {{ __($operator) }}
+                                    @if (! in_array($operator, ['is null', 'is not null', 'has', 'has not']))
+                                        {{ $displayValue }}
+                                    @endif
+                                </x-slot>
+                                <x-slot name="right" class="relative flex h-2 w-2 items-center">
+                                    <button type="button" class="cursor-pointer" wire:click="removeFilter({{ $orIndex }}, {{ $filterIndex }})">
+                                        <x-icon name="x-mark" class="h-4 w-4" />
+                                    </button>
+                                </x-slot>
+                            </x-badge>
+                        </div>
+                        @if (! $loop->last)
+                            <x-badge flat color="red" :text="__('and')" />
+                        @endif
+                    @endforeach
+                    @if ($hasMultipleGroups)
+                        <button type="button" class="cursor-pointer text-gray-400 hover:text-red-500 transition-colors" wire:click="removeFilterGroup({{ $orIndex }})">
+                            <x-icon name="x-mark" class="h-4 w-4" />
+                        </button>
+                    @endif
+                </div>
+                @if (! $loop->last)
+                    <x-badge flat color="emerald" :text="__('or')" />
+                @endif
+            @endforeach
+            @if ($this->userOrderBy)
+                <div>
+                    <x-badge light flat color="amber">
+                        <x-slot:text>
+                            {{ __('Order by') }}&nbsp;{{ $this->colLabels[$this->userOrderBy] ?? $this->userOrderBy }}&nbsp;{{ $this->userOrderAsc ? __('asc') : __('desc') }}
+                        </x-slot>
+                        <x-slot name="right" class="relative flex h-2 w-2 items-center">
+                            <button type="button" class="cursor-pointer" wire:click="sortTable('')">
+                                <x-icon name="x-mark" class="h-4 w-4" />
+                            </button>
+                        </x-slot>
+                    </x-badge>
+                </div>
+            @endif
+            @if ($this->groupBy)
+                <div>
+                    <x-badge light flat color="cyan">
+                        <x-slot:text>
+                            {{ __('Grouped by') }}&nbsp;{{ $this->colLabels[$this->groupBy] ?? $this->groupBy }}
+                        </x-slot>
+                        <x-slot name="right" class="relative flex h-2 w-2 items-center">
+                            <button type="button" class="cursor-pointer" wire:click="setGroupBy(null)">
+                                <x-icon name="x-mark" class="h-4 w-4" />
+                            </button>
+                        </x-slot>
+                    </x-badge>
+                </div>
+            @endif
+            <x-button rounded color="red" :text="__('Clear')" wire:click="clearFiltersAndSort" class="h-8" />
         </div>
-    </template>
-    <div x-cloak x-show="orderByCol">
-        <x-badge light flat color="amber">
-            <x-slot:text>
-                <span>{{ __('Order by') }}</span>
-                &nbsp;
-                <span x-text="getLabel(orderByCol)"></span>
-                &nbsp;
-                <span
-                    x-text="orderAsc ? '{{ __('asc') }}' : '{{ __('desc') }}'"
-                ></span>
-            </x-slot>
-            <x-slot name="right" class="relative flex h-2 w-2 items-center">
-                <button type="button" x-on:click="$wire.sortTable('')">
-                    <x-icon name="x-mark" class="h-4 w-4" />
-                </button>
-            </x-slot>
-        </x-badge>
-    </div>
-    <div x-cloak x-show="groupBy">
-        <x-badge light flat color="cyan">
-            <x-slot:text>
-                <span>{{ __('Grouped by') }}</span>
-                &nbsp;
-                <span x-text="getLabel(groupBy)"></span>
-            </x-slot>
-            <x-slot name="right" class="relative flex h-2 w-2 items-center">
-                <button type="button" x-on:click="$wire.setGroupBy(null)">
-                    <x-icon name="x-mark" class="h-4 w-4" />
-                </button>
-            </x-slot>
-        </x-badge>
-    </div>
-    <x-button rounded color="red" x-on:click="clearFilters" class="h-8">
-        {{ __('Clear') }}
-    </x-button>
-</div>
+    @endif
+@endisland

@@ -2,14 +2,12 @@
 
 namespace TeamNiftyGmbH\DataTable\Commands;
 
-use Composer\InstalledVersions;
-use Illuminate\Console\GeneratorCommand;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use Livewire\Features\SupportConsoleCommands\Commands\ComponentParser;
-use Livewire\Features\SupportConsoleCommands\Commands\MakeLivewireCommand;
+use Illuminate\Support\Str;
 use Spatie\ModelInfo\ModelFinder;
 
-class MakeDataTableCommand extends GeneratorCommand
+class MakeDataTableCommand extends Command
 {
     /**
      * The console command description.
@@ -19,8 +17,6 @@ class MakeDataTableCommand extends GeneratorCommand
     protected $description = 'Create a new Livewire DataTable component';
 
     protected string $model;
-
-    protected ComponentParser|\Livewire\Commands\ComponentParser $parser;
 
     /**
      * The name and signature of the console command.
@@ -36,30 +32,18 @@ class MakeDataTableCommand extends GeneratorCommand
     /**
      * Execute the console command.
      */
-    public function handle(): bool
+    public function handle(): int
     {
-        $version = InstalledVersions::getVersion('livewire/livewire');
+        $name = $this->argument('name');
+        $namespace = $this->resolveNamespace();
+        $className = class_basename($name);
 
-        if (version_compare($version, '3.0.0', '<')) {
-            $this->parser = new \Livewire\Commands\ComponentParser(
-                config('tall-datatables.data_table_namespace'),
-                config('tall-datatables.view_path'),
-                $this->argument('name'),
-            );
-            $livewireMakeCommand = new \Livewire\Commands\MakeCommand();
-        } else {
-            $this->parser = new ComponentParser(
-                config('tall-datatables.data_table_namespace'),
-                config('tall-datatables.view_path'),
-                $this->argument('name'),
-            );
-            $livewireMakeCommand = new MakeLivewireCommand();
-        }
+        $reservedNames = ['parent', 'component', 'interface', 'abstract', 'class', 'static', 'self'];
 
-        if ($livewireMakeCommand->isReservedClassName($name = $this->parser->className())) {
-            $this->line('<fg=red;options=bold>Class is reserved:</>' . $name);
+        if (in_array(strtolower($className), $reservedNames)) {
+            $this->line('<fg=red;options=bold>Class is reserved:</>' . $className);
 
-            return false;
+            return self::FAILURE;
         }
 
         if (class_exists($this->argument('model'))) {
@@ -75,13 +59,46 @@ class MakeDataTableCommand extends GeneratorCommand
                 ->first();
             $this->model = $model ?: $this->argument('model');
         }
-        $force = $this->option('force');
 
-        if ($classPath = $this->createClass($force)) {
-            $this->info('Livewire Datatable Created: ' . $classPath);
+        $force = $this->option('force');
+        $classPath = $this->resolveClassPath($name);
+
+        if ($created = $this->createClass($classPath, $namespace, $className, $force)) {
+            $this->info('Livewire Datatable Created: ' . $created);
         }
 
-        return true;
+        return self::SUCCESS;
+    }
+
+    protected function classContents(string $namespace, string $className): string
+    {
+        return str_replace(
+            ['[namespace]', '[class]', '[model]', '[model_import]'],
+            [$namespace, $className, class_basename($this->model), $this->model],
+            $this->getStub()
+        );
+    }
+
+    protected function createClass(string $classPath, string $namespace, string $className, bool $force = false): string|bool
+    {
+        if (! $force && File::exists($classPath)) {
+            $this->line('<fg=red;options=bold>Class already exists:</> ' . str_replace(base_path() . '/', '', $classPath));
+
+            return false;
+        }
+
+        $this->ensureDirectoryExists($classPath);
+
+        File::put($classPath, $this->classContents($namespace, $className));
+
+        return $classPath;
+    }
+
+    protected function ensureDirectoryExists(string $path): void
+    {
+        if (! File::isDirectory(dirname($path))) {
+            File::makeDirectory(dirname($path), 0777, true, true);
+        }
     }
 
     /**
@@ -96,36 +113,35 @@ class MakeDataTableCommand extends GeneratorCommand
         return file_get_contents(__DIR__ . '/../../stubs/livewire.data-table.stub');
     }
 
-    private function classContents(): string
+    protected function resolveClassPath(string $name): string
     {
-        return str_replace(
-            ['[namespace]', '[class]', '[model]', '[model_import]', '[columns]'],
-            [$this->parser->classNamespace(), $this->parser->className(), class_basename($this->model), $this->model],
-            $this->getStub()
-        );
+        $namespace = config('tall-datatables.data_table_namespace', 'App\\Livewire');
+        $basePath = Str::of($namespace)
+            ->replaceFirst('App\\', '')
+            ->replace('\\', '/')
+            ->prepend(app_path() . '/');
+
+        $subPath = Str::of($name)
+            ->replace('.', '/')
+            ->replace('\\', '/');
+
+        return $basePath . '/' . $subPath . '.php';
     }
 
-    private function createClass(bool $force = false): string|bool
+    protected function resolveNamespace(): string
     {
-        $classPath = $this->parser->classPath();
+        $baseNamespace = config('tall-datatables.data_table_namespace', 'App\\Livewire');
+        $name = $this->argument('name');
 
-        if (! $force && File::exists($classPath)) {
-            $this->line('<fg=red;options=bold>Class already exists:</> ' . $this->parser->relativeClassPath());
+        if (str_contains($name, '.') || str_contains($name, '\\') || str_contains($name, '/')) {
+            $parts = preg_split('/[.\\\\\\/]/', $name);
+            array_pop($parts);
 
-            return false;
+            if (! empty($parts)) {
+                return $baseNamespace . '\\' . implode('\\', $parts);
+            }
         }
 
-        $this->ensureDirectoryExists($classPath);
-
-        File::put($classPath, $this->classContents());
-
-        return $classPath;
-    }
-
-    private function ensureDirectoryExists(string $path): void
-    {
-        if (! File::isDirectory(dirname($path))) {
-            File::makeDirectory(dirname($path), 0777, true, true);
-        }
+        return $baseNamespace;
     }
 }

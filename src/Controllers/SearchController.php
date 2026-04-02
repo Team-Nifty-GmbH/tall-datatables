@@ -3,19 +3,22 @@
 namespace TeamNiftyGmbH\DataTable\Controllers;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Scout\Searchable;
 use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
+use Throwable;
 
 class SearchController extends Controller
 {
-    public function __invoke(Request $request, $model)
+    public function __invoke(Request $request, string $model): mixed
     {
         $model = str_replace('/', '\\', $model);
 
-        if (! class_exists($model) || ! in_array(Searchable::class, class_uses($model))) {
+        if (! class_exists($model) || ! in_array(Searchable::class, class_uses_recursive($model))) {
             abort(404);
         }
 
@@ -39,7 +42,27 @@ class SearchController extends Controller
         }
 
         if ($request->has('with')) {
-            $query->with($request->get('with'));
+            $modelInstance = app($model);
+            $requestedWith = $request->get('with');
+            $relations = is_array($requestedWith) ? $requestedWith : [$requestedWith];
+
+            $validRelations = array_filter($relations, function (string $relation) use ($modelInstance): bool {
+                $relationName = explode('.', $relation)[0];
+
+                if (! method_exists($modelInstance, $relationName)) {
+                    return false;
+                }
+
+                try {
+                    return $modelInstance->{$relationName}() instanceof Relation;
+                } catch (Throwable) {
+                    return false;
+                }
+            });
+
+            if (! empty($validRelations)) {
+                $query->with(is_array($requestedWith) ? $validRelations : $validRelations[0]);
+            }
         }
 
         if ($request->has('limit')) {
@@ -49,11 +72,15 @@ class SearchController extends Controller
         }
 
         if ($request->has('orderBy')) {
-            $query->orderBy($request->get('orderBy'));
-        }
+            $orderByColumn = $request->get('orderBy');
+            $table = app($model)->getTable();
 
-        if ($request->has('orderDirection')) {
-            $query->orderBy($request->get('orderDirection'));
+            if (Schema::hasColumn($table, $orderByColumn)) {
+                $direction = in_array(strtolower($request->get('orderDirection', 'asc')), ['asc', 'desc'])
+                    ? $request->get('orderDirection', 'asc')
+                    : 'asc';
+                $query->orderBy($orderByColumn, $direction);
+            }
         }
 
         if ($request->has('where')) {
@@ -105,15 +132,46 @@ class SearchController extends Controller
         }
 
         if ($request->has('fields')) {
-            $query->select($request->get('fields'));
+            $fields = $request->get('fields');
+
+            if (is_array($fields)) {
+                $table = app($model)->getTable();
+                $fields = array_filter($fields, fn (string $field) => Schema::hasColumn($table, $field));
+            }
+
+            if (! empty($fields)) {
+                $query->select($fields);
+            }
         }
 
         if ($request->has('whereDoesntHave')) {
-            $query->whereDoesntHave($request->get('whereDoesntHave'));
+            $relation = $request->get('whereDoesntHave');
+            $modelInstance = app($model);
+
+            if (is_string($relation) && method_exists($modelInstance, $relation)) {
+                try {
+                    if ($modelInstance->{$relation}() instanceof Relation) {
+                        $query->whereDoesntHave($relation);
+                    }
+                } catch (Throwable) {
+                    // Invalid relation — skip silently
+                }
+            }
         }
 
         if ($request->has('whereHas')) {
-            $query->whereHas($request->get('whereHas'));
+            $relation = $request->get('whereHas');
+            $modelInstance = app($model);
+
+            if (is_string($relation) && method_exists($modelInstance, $relation)) {
+                try {
+                    if ($modelInstance->{$relation}() instanceof Relation) {
+                        $query->whereHas($relation);
+                    }
+                } catch (Throwable) {
+                    // Invalid relation — skip silently
+                }
+            }
         }
 
         $result = $query->get();

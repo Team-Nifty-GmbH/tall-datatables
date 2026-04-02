@@ -32,7 +32,7 @@ trait HasEloquentListeners
 
         $this->broadcastChannels[$model->getKey()] = $model->broadcastChannel();
 
-        $this->skipRender();
+        // v2: removed skipRender - Blade needs re-render to show changes
     }
 
     public function echoDeleted(array $eventData): void
@@ -47,7 +47,7 @@ trait HasEloquentListeners
         $this->data['total']--;
         $this->data['to']--;
 
-        $this->skipRender();
+        // v2: removed skipRender - Blade needs re-render to show changes
     }
 
     public function echoRestored(array $eventData): void
@@ -64,7 +64,6 @@ trait HasEloquentListeners
     {
         $model = $this->buildSearch()->whereKey($this->getKeyFromEventData($eventData))->first();
         if (is_null($model)) {
-            // seems like the model doesnt match the search criteria
             $this->echoDeleted($eventData);
 
             return;
@@ -75,7 +74,7 @@ trait HasEloquentListeners
         $data[$model->getKey()] = $item;
         $this->data['data'] = array_values($data);
 
-        $this->skipRender();
+        // v2: removed skipRender - Blade needs re-render to show changes
     }
 
     public function eloquentEventOccurred(string $event, array $data): void
@@ -87,6 +86,83 @@ trait HasEloquentListeners
         }
 
         $this->{$event}($data);
+    }
+
+    /**
+     * Return Echo event-to-method mapping for Livewire listeners.
+     *
+     * @return array<string, string>
+     */
+    public function getEloquentListeners(): array
+    {
+        $model = $this->getModel();
+
+        if ($this->withoutEloquentListeners ||
+            ! in_array(BroadcastsEvents::class, class_uses_recursive($model))
+        ) {
+            return [];
+        }
+
+        $baseName = class_basename($model);
+
+        return [
+            ".{$baseName}Created" => 'echoCreated',
+            ".{$baseName}Updated" => 'echoUpdated',
+            ".{$baseName}Deleted" => 'echoDeleted',
+            ".{$baseName}Trashed" => 'echoTrashed',
+            ".{$baseName}Restored" => 'echoRestored',
+        ];
+    }
+
+    public function mountHasEloquentListeners(): void
+    {
+        $model = $this->getModel();
+
+        if ($this->withoutEloquentListeners ||
+            ! in_array(BroadcastsEvents::class, class_uses_recursive($model))
+        ) {
+            return;
+        }
+
+        // Pre-populate the created channel so Echo listeners
+        // can subscribe immediately after mount.
+        if (method_exists($model, 'getBroadcastChannel')) {
+            $this->broadcastChannels['created'] = $model::getBroadcastChannel(true);
+        } else {
+            $newModel = new $model();
+            $this->broadcastChannels['created'] = $newModel->broadcastChannel() . '1';
+        }
+    }
+
+    /**
+     * Trigger a full reload of the data.
+     */
+    public function refreshData(): void
+    {
+        $this->loadData();
+    }
+
+    /**
+     * Re-query a single row from the database and replace it in $this->data.
+     */
+    public function refreshRow(array $eventData): void
+    {
+        $key = $this->getKeyFromEventData($eventData);
+        if (is_null($key)) {
+            return;
+        }
+
+        $model = $this->buildSearch()->whereKey($key)->first();
+        if (is_null($model)) {
+            $this->echoDeleted($eventData);
+
+            return;
+        }
+
+        $item = $this->itemToArray($model);
+        $data = Arr::keyBy($this->data['data'], $this->modelKeyName);
+        $data[$model->getKey()] = $item;
+        $this->data['data'] = array_values($data);
     }
 
     protected function getKeyFromEventData(array $eventData): int|string|null
@@ -112,7 +188,7 @@ trait HasEloquentListeners
             $this->broadcastChannels['created'] = $model::getBroadcastChannel(true);
         } else {
             $newModel = new $model();
-            $this->broadcastChannels['created'] = $newModel->broadcastChannel() . $model::max($newModel->getKeyName()) + 1;
+            $this->broadcastChannels['created'] = $newModel->broadcastChannel() . ($model::max($newModel->getKeyName()) + 1);
         }
 
         return $paginator;

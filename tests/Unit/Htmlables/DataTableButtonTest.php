@@ -223,3 +223,219 @@ describe('DataTableButton Method Chaining', function (): void {
         expect($button->flat)->toBeTrue();
     });
 });
+
+describe('DataTableButton toHtml Rendering', function (): void {
+    it('renders a standard button', function (): void {
+        $button = DataTableButton::make()
+            ->text('Click Me')
+            ->color('primary');
+
+        $html = $button->toHtml();
+
+        expect($html)->toBeString()
+            ->not->toBeEmpty();
+    });
+
+    it('renders a circle button', function (): void {
+        $button = DataTableButton::make()
+            ->circle()
+            ->icon('pencil')
+            ->color('primary');
+
+        $html = $button->toHtml();
+
+        expect($html)->toBeString()
+            ->not->toBeEmpty();
+    });
+
+    it('circle button defaults icon to pencil', function (): void {
+        $button = DataTableButton::make()
+            ->circle()
+            ->color('primary');
+
+        // circle sets default icon to pencil internally
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('uses default color secondary when no color set', function (): void {
+        $button = DataTableButton::make()->text('Default');
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('uses default size md when no size set', function (): void {
+        $button = DataTableButton::make()->text('Default Size');
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('renders with custom attributes', function (): void {
+        $button = DataTableButton::make()
+            ->text('With Attrs')
+            ->attributes(['data-id' => '42']);
+
+        $html = $button->toHtml();
+
+        expect($html)->toContain('data-id');
+    });
+
+    it('renders with wire:click attribute', function (): void {
+        $button = DataTableButton::make()
+            ->text('Save')
+            ->wireClick('save()');
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('renders with href', function (): void {
+        $button = DataTableButton::make()
+            ->text('Link')
+            ->href('/dashboard');
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('renders with outline style', function (): void {
+        $button = DataTableButton::make()
+            ->text('Outline')
+            ->outline();
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('renders with flat style', function (): void {
+        $button = DataTableButton::make()
+            ->text('Flat')
+            ->flat();
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('renders with square style', function (): void {
+        $button = DataTableButton::make()
+            ->text('Square')
+            ->square();
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('renders with round style', function (): void {
+        $button = DataTableButton::make()
+            ->text('Round')
+            ->round();
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('renders with position right', function (): void {
+        $button = DataTableButton::make()
+            ->text('Icon Right')
+            ->icon('arrow-right')
+            ->position('right');
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('renders with loading', function (): void {
+        $button = DataTableButton::make()
+            ->text('Loading')
+            ->loading('submit');
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('renders with delay', function (): void {
+        $button = DataTableButton::make()
+            ->text('Delayed')
+            ->delay('500');
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+
+    it('renders with light variant', function (): void {
+        $button = DataTableButton::make()
+            ->text('Light')
+            ->light();
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toBeEmpty();
+    });
+});
+
+describe('DataTableButton mergeClass', function (): void {
+    it('merges string class into attributes', function (): void {
+        $button = DataTableButton::make()
+            ->class('existing-class')
+            ->mergeClass('new-class');
+
+        expect($button->attributes['class'])->toBeArray()
+            ->toContain('new-class')
+            ->toContain('existing-class');
+    });
+
+    it('handles merge when no class is set', function (): void {
+        $button = DataTableButton::make()
+            ->mergeClass('new-class');
+
+        expect($button->attributes['class'])->toBeArray()
+            ->toContain('new-class');
+    });
+});
+
+describe('DataTableButton full method', function (): void {
+    it('sets full property', function (): void {
+        $button = DataTableButton::make()->full();
+
+        expect($button->full)->toBeTrue();
+    });
+
+    it('can disable full', function (): void {
+        $button = DataTableButton::make()->full(false);
+
+        expect($button->full)->toBeFalse();
+    });
+
+    it('renders with w-full class when full is set', function (): void {
+        $button = DataTableButton::make()
+            ->text('Full Width')
+            ->full();
+
+        $html = $button->toHtml();
+
+        expect($html)->toContain('w-full');
+    });
+
+    it('does not render with w-full class when full is not set', function (): void {
+        $button = DataTableButton::make()
+            ->text('Normal Width');
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toContain('w-full');
+    });
+});

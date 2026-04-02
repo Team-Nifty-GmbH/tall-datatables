@@ -218,3 +218,120 @@ describe('SessionFilter with Real Query', function (): void {
         expect($query->first()->title)->toBe('Published');
     });
 });
+
+describe('SessionFilter __serialize and __unserialize', function (): void {
+    it('__serialize returns array with all properties', function (): void {
+        $filter = SessionFilter::make('test-key', fn (Builder $query) => $query, 'Test Name');
+        $data = $filter->__serialize();
+
+        expect($data)
+            ->toBeArray()
+            ->toHaveKeys(['dataTableCacheKey', 'closure', 'name', 'loaded']);
+        expect($data['dataTableCacheKey'])->toBe('test-key');
+        expect($data['name'])->toBe('Test Name');
+        expect($data['loaded'])->toBeFalse();
+    });
+
+    it('__unserialize restores all properties from array', function (): void {
+        $filter = SessionFilter::make('original', fn (Builder $query) => $query, 'Original');
+        $filter->loaded = true;
+
+        $serialized = serialize($filter);
+        $restored = unserialize($serialized);
+
+        expect($restored->dataTableCacheKey)->toBe('original');
+        expect($restored->name)->toBe('Original');
+        expect($restored->loaded)->toBeTrue();
+    });
+
+    it('serialize method returns string representation', function (): void {
+        $filter = SessionFilter::make('test', fn (Builder $query) => $query, 'Filter');
+
+        $serialized = $filter->serialize();
+
+        expect($serialized)->toBeString();
+        $unserialized = unserialize($serialized);
+        expect($unserialized)->toBeArray()
+            ->toHaveKey('name')
+            ->toHaveKey('dataTableCacheKey');
+    });
+
+    it('unserialize method restores from string', function (): void {
+        $filter = SessionFilter::make('from-str', fn (Builder $query) => $query, 'StringFilter');
+
+        $serialized = serialize($filter);
+        $restored = unserialize($serialized);
+
+        expect($restored->name)->toBe('StringFilter');
+        expect($restored->dataTableCacheKey)->toBe('from-str');
+    });
+
+    it('loaded defaults to false in unserialized data without loaded key', function (): void {
+        $filter = SessionFilter::make('key', fn (Builder $query) => $query, 'test');
+        $filter->loaded = false;
+
+        $serialized = serialize($filter);
+        $restored = unserialize($serialized);
+
+        expect($restored->loaded)->toBeFalse();
+    });
+});
+
+describe('SessionFilter constructor edge cases', function (): void {
+    it('constructor wraps closure in SerializableClosure', function (): void {
+        $filter = new SessionFilter(
+            dataTableCacheKey: 'key',
+            closure: fn () => 'test',
+            name: 'Test'
+        );
+
+        expect($filter->closure)->toBeInstanceOf(SerializableClosure::class);
+    });
+
+    it('defaults loaded to false', function (): void {
+        $filter = new SessionFilter(
+            dataTableCacheKey: 'key',
+            closure: fn () => null,
+            name: 'Test'
+        );
+
+        expect($filter->loaded)->toBeFalse();
+    });
+});
+
+describe('SessionFilter unserialize method', function (): void {
+    it('restores from string via unserialize method', function (): void {
+        $filter = SessionFilter::make('test-key', fn (Builder $query) => $query, 'MyFilter');
+        $filter->loaded = true;
+
+        $serializedInner = $filter->serialize();
+
+        $newFilter = new SessionFilter(
+            dataTableCacheKey: 'placeholder',
+            closure: fn () => null,
+            name: 'placeholder'
+        );
+
+        $newFilter->unserialize($serializedInner);
+
+        expect($newFilter->dataTableCacheKey)->toBe('test-key');
+        expect($newFilter->name)->toBe('MyFilter');
+        expect($newFilter->loaded)->toBeTrue();
+    });
+});
+
+describe('SessionFilter setDataTableCacheKey with DataTable instance', function (): void {
+    it('extracts cache key from DataTable instance', function (): void {
+        $user = createTestUser();
+        Illuminate\Support\Facades\Auth::login($user);
+
+        $component = Livewire\Livewire::test(Tests\Fixtures\Livewire\PostDataTable::class);
+        $instance = $component->instance();
+
+        $filter = SessionFilter::make('temp', fn (Builder $query) => $query, 'Test');
+        $filter->setDataTableCacheKey($instance);
+
+        expect($filter->dataTableCacheKey)->toBe($instance->getCacheKey());
+        expect($filter->dataTableCacheKey)->toBeString();
+    });
+});

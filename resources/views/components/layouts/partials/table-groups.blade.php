@@ -10,19 +10,189 @@
     'showRestoreButton' => false,
     'hasSidebar' => true,
 ])
-<template x-for="row in getFlatGroupedRows()" x-bind:key="row._key">
+@php
+    $groups = $this->data['groups'] ?? [];
+    $enabledCols = $this->enabledCols;
+    $modelKeyName = $this->modelKeyName;
+@endphp
+@foreach ($groups as $group)
+    {{-- Group header row --}}
     <tr
-        x-bind:data-row-type="row.rowType"
-        x-bind:data-id="row.record?.id"
-        x-bind:class="{
-            'dark:bg-secondary-700 cursor-pointer bg-gray-100 hover:bg-gray-200 dark:hover:bg-secondary-600': row.rowType === 'group-header',
-            'hover:bg-gray-100 dark:hover:bg-secondary-900': row.rowType === 'data',
-            'dark:bg-secondary-800 bg-gray-50': row.rowType === 'pagination',
-            'dark:bg-secondary-800 bg-gray-100': row.rowType === 'groups-pagination',
-            'opacity-50': row.rowType === 'data' && row.record?.deleted_at
-        }"
-        x-on:click="row.rowType === 'group-header' ? toggleGroup(row.group.key) : (row.rowType === 'data' ? $dispatch('data-table-row-clicked', {record: row.record}) : null)"
-        x-html="renderGroupedRow(row)"
+        wire:key="group-header-{{ $group['key'] }}"
+        class="dark:bg-secondary-800 cursor-pointer bg-gray-50 hover:bg-gray-100 dark:hover:bg-secondary-700/50 transition-colors"
+        wire:click="toggleGroup('{{ $group['key'] }}')"
     >
+        <td colspan="100%" class="border-b border-gray-100 px-3 py-2.5 dark:border-secondary-700/50">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <x-icon
+                        name="chevron-right"
+                        class="h-4 w-4 transition-transform {{ $group['expanded'] ? 'rotate-90' : '' }}"
+                    />
+                    <span class="font-semibold text-gray-700 dark:text-gray-200">
+                        {{ $group['label'] }}
+                    </span>
+                    <x-badge flat color="gray" :text="(string) $group['count']" />
+                </div>
+                @if (! empty($group['aggregates']))
+                    <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                        @foreach ($group['aggregates'] as $type => $values)
+                            @foreach ($values as $col => $value)
+                                <span>
+                                    <span class="font-medium">{{ __(ucfirst($type)) }}</span>
+                                    {{ $this->colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}:
+                                    {!! is_array($value) ? ($value['display'] ?? e($value['raw'] ?? '')) : e($value) !!}
+                                </span>
+                            @endforeach
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </td>
     </tr>
-</template>
+
+    {{-- Group data rows (when expanded) --}}
+    @if ($group['expanded'] && ! empty($group['data']))
+        @foreach ($group['data'] as $index => $record)
+            <tr
+                wire:key="group-row-{{ $group['key'] }}-{{ $record[$modelKeyName] ?? $index }}"
+                x-data="{ record: {{ json_encode($record) }} }"
+                x-on:click="$dispatch('data-table-row-clicked', {record})"
+                @if($allowSoftDeletes && ($record['deleted_at'] ?? null)) class="opacity-50" @endif
+                {{ $rowAttributes->merge(['class' => 'hover:bg-gray-50 dark:hover:bg-secondary-900/50 transition-colors']) }}
+            >
+                @if ($isSelectable)
+                    <td
+                        class="border-b border-gray-100 px-3 py-2.5 text-sm whitespace-nowrap dark:border-secondary-700"
+                    >
+                        <div
+                            {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}
+                        >
+                            <x-checkbox
+                                x-on:click.stop
+                                value="{{ $record[$modelKeyName] ?? $index }}"
+                                wire:model.number="selected"
+                                sm
+                            />
+                        </div>
+                    </td>
+                @else
+                    <td
+                        class="max-w-0 border-b border-gray-100 text-sm whitespace-nowrap dark:border-secondary-700"
+                    ></td>
+                @endif
+                @foreach ($enabledCols as $col)
+                    <x-tall-datatables::table.cell
+                        :use-wire-navigate="$useWireNavigate"
+                        :class="in_array($col, $this->stickyCols) ? 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50' : ''"
+                        :style="in_array($col, $this->stickyCols) ? 'z-index: 2' : ''"
+                        :href="(($allowSoftDeletes && ($record['deleted_at'] ?? null)) ? null : ($record['href'] ?? null))"
+                    >
+                        @if (is_array($record[$col] ?? null) && isset($record[$col]['display']))
+                            {!! $record[$col]['display'] !!}
+                        @elseif (is_array($record[$col] ?? null) && isset($record[$col]['raw']))
+                            {{ $record[$col]['raw'] }}
+                        @else
+                            {{ $record[$col] ?? '' }}
+                        @endif
+                    </x-tall-datatables::table.cell>
+                @endforeach
+                @if ($rowActions || ($showRestoreButton && $allowSoftDeletes))
+                    <td
+                        x-on:click.stop
+                        class="border-b border-gray-100 px-3 py-2.5 whitespace-nowrap dark:border-secondary-700"
+                    >
+                        @if (! ($allowSoftDeletes && ($record['deleted_at'] ?? null)))
+                            <div class="flex gap-1.5">
+                                @foreach ($rowActions as $rowAction)
+                                    {{ $rowAction }}
+                                @endforeach
+                            </div>
+                        @endif
+                        @if ($showRestoreButton && $allowSoftDeletes && ($record['deleted_at'] ?? null))
+                            <div class="flex gap-1.5">
+                                <x-button
+                                    color="indigo"
+                                    :text="__('Restore')"
+                                    wire:click="restore({{ $record[$modelKeyName] ?? 0 }})"
+                                />
+                            </div>
+                        @endif
+                    </td>
+                @endif
+
+                @if ($hasSidebar)
+                    <td
+                        class="table-cell border-b border-gray-100 px-3 py-2.5 text-sm whitespace-nowrap dark:border-secondary-700"
+                    ></td>
+                @endif
+            </tr>
+        @endforeach
+
+        {{-- Group pagination --}}
+        @if ($group['pagination'] && $group['pagination']['last_page'] > 1)
+            <tr wire:key="group-pagination-{{ $group['key'] }}">
+                <td colspan="100%" class="border-b border-gray-100 px-3 py-2 dark:border-secondary-700">
+                    <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                        <span>
+                            {{ __('Showing') }} {{ $group['pagination']['from'] ?? 0 }}
+                            {{ __('to') }} {{ $group['pagination']['to'] ?? 0 }}
+                            {{ __('of') }} {{ $group['pagination']['total'] ?? 0 }}
+                        </span>
+                        <div class="flex gap-1">
+                            <x-button
+                                color="secondary"
+                                light
+                                sm
+                                icon="chevron-left"
+                                :disabled="$group['pagination']['current_page'] <= 1"
+                                wire:click="setGroupPage('{{ $group['key'] }}', {{ $group['pagination']['current_page'] - 1 }})"
+                            />
+                            <x-button
+                                color="secondary"
+                                light
+                                sm
+                                icon="chevron-right"
+                                :disabled="$group['pagination']['current_page'] >= $group['pagination']['last_page']"
+                                wire:click="setGroupPage('{{ $group['key'] }}', {{ $group['pagination']['current_page'] + 1 }})"
+                            />
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        @endif
+    @endif
+@endforeach
+
+{{-- Groups-level pagination --}}
+@if (($this->data['groups_pagination']['last_page'] ?? 1) > 1)
+    <tr wire:key="groups-pagination">
+        <td colspan="100%" class="border-b border-gray-100 px-3 py-2 dark:border-secondary-700">
+            <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                <span>
+                    {{ __('Groups') }}: {{ __('Showing') }}
+                    {{ $this->data['groups_pagination']['current_page'] ?? 1 }}
+                    {{ __('of') }} {{ $this->data['groups_pagination']['last_page'] ?? 1 }}
+                </span>
+                <div class="flex gap-1">
+                    <x-button
+                        color="secondary"
+                        light
+                        sm
+                        icon="chevron-left"
+                        :disabled="($this->data['groups_pagination']['current_page'] ?? 1) <= 1"
+                        wire:click="setGroupsPage({{ ($this->data['groups_pagination']['current_page'] ?? 1) - 1 }})"
+                    />
+                    <x-button
+                        color="secondary"
+                        light
+                        sm
+                        icon="chevron-right"
+                        :disabled="($this->data['groups_pagination']['current_page'] ?? 1) >= ($this->data['groups_pagination']['last_page'] ?? 1)"
+                        wire:click="setGroupsPage({{ ($this->data['groups_pagination']['current_page'] ?? 1) + 1 }})"
+                    />
+                </div>
+            </div>
+        </td>
+    </tr>
+@endif

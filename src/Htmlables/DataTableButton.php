@@ -7,8 +7,6 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Arr;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\ComponentAttributeBag;
-use TallStackUi\View\Components\Button\Button;
-use TallStackUi\View\Components\Button\Circle;
 
 class DataTableButton implements Htmlable
 {
@@ -19,6 +17,7 @@ class DataTableButton implements Htmlable
         public bool $square = false,
         public bool $outline = false,
         public bool $flat = false,
+        public bool $full = false,
         public bool $circle = false,
         public ?string $color = null,
         public ?string $size = null,
@@ -37,6 +36,7 @@ class DataTableButton implements Htmlable
         bool $square = false,
         bool $outline = false,
         bool $flat = false,
+        bool $full = false,
         bool $circle = false,
         ?string $color = null,
         ?string $size = null,
@@ -53,6 +53,7 @@ class DataTableButton implements Htmlable
             square: $square,
             outline: $outline,
             flat: $flat,
+            full: $full,
             circle: $circle,
             color: $color,
             size: $size,
@@ -257,32 +258,44 @@ class DataTableButton implements Htmlable
             return '';
         }
 
-        if ($this->circle) {
-            $buttonClass = Circle::class;
-            $this->icon = is_null($this->icon) ? 'pencil' : $this->icon;
-        } else {
-            $this->text = is_null($this->text) ? '' : $this->text;
-            $buttonClass = Button::class;
+        $attrs = $this->attributes;
+        if ($this->full) {
+            $attrs['class'] = trim(($attrs['class'] ?? '') . ' w-full');
         }
 
-        $button = new $buttonClass(
-            text: $this->text ?? null,
-            icon: $this->icon,
-            position: $this->position ?? 'left',
-            color: $this->color ?? 'secondary',
-            square: $this->square,
-            round: $this->round,
-            href: $this->href,
-            loading: $this->loading,
-            delay: $this->delay,
-            outline: $this->outline,
-            flat: $this->flat,
-            size: $this->size ?? 'md',
-            light: $this->light ?? false,
-        );
-        $button->attributes = new ComponentAttributeBag($this->attributes);
+        $attributes = new ComponentAttributeBag($attrs);
+        $size = $this->size ?? 'md';
 
-        return BladeCompiler::renderComponent($button);
+        $props = [
+            'color' => $this->color ?? 'secondary',
+            'href' => $this->href,
+            'loading' => $this->loading,
+            'delay' => $this->delay,
+            'outline' => $this->outline ?: false,
+            'flat' => $this->flat,
+            'light' => $this->light ?? false,
+            $size => true,
+        ];
+
+        if ($this->circle) {
+            $props['icon'] = $this->icon ?? 'pencil';
+
+            return BladeCompiler::render(
+                '<x-button.circle :$icon :$color :$href :$loading :$delay :$outline :$flat :$light :$' . $size . ' ' . $attributes->toHtml() . ' />',
+                $props
+            );
+        }
+
+        $props['text'] = $this->text ?? '';
+        $props['icon'] = $this->icon;
+        $props['position'] = $this->position ?? 'left';
+        $props['square'] = $this->square ? '' : null;
+        $props['round'] = $this->round ? '' : null;
+
+        return BladeCompiler::render(
+            '<x-button :$text :$icon :$position :$color :$square :$round :$href :$loading :$delay :$outline :$flat :$light :$' . $size . ' ' . $attributes->toHtml() . ' />',
+            $props
+        );
     }
 
     /**

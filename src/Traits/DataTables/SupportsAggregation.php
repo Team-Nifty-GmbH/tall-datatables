@@ -7,7 +7,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Livewire\Attributes\Renderless;
 use Spatie\ModelInfo\Attributes\Attribute;
 
 trait SupportsAggregation
@@ -23,41 +22,47 @@ trait SupportsAggregation
 
     protected array $aggregatableRelationCols = [];
 
-    #[Renderless]
     public function applyAggregations(): void
     {
+        $allAggregatedCols = collect($this->aggregatableCols)->flatten()->unique()->values()->toArray();
+        $missing = array_diff($allAggregatedCols, $this->enabledCols);
+
+        if (! empty($missing)) {
+            $this->enabledCols = array_values(array_unique(array_merge($this->enabledCols, $missing)));
+            $this->colLabels = $this->getColLabels();
+        }
+
         $this->cacheState();
         $this->loadData();
     }
 
     protected function getAggregatable(): array
     {
-        $foreignKeys = collect(
-            Cache::remember(
-                'column-listing:' . $this->modelTable,
+        return once(function () {
+            $foreignKeys = Cache::remember(
+                'foreign-keys:' . $this->modelTable,
                 86400,
-                fn () => Schema::getColumnListing($this->modelTable),
-            ),
-        )
-            ->pluck('columns')
-            ->flatten()
-            ->unique()
-            ->toArray();
+                fn () => array_filter(
+                    Schema::getColumnListing($this->modelTable),
+                    fn (string $col) => str_ends_with($col, '_id') || str_ends_with($col, '_by')
+                ),
+            );
 
-        return $this->aggregatable === ['*']
-            ? $this->getTableFields()
-                ->filter(function (Attribute $attribute) use ($foreignKeys) {
-                    return (in_array($attribute->phpType, ['int', 'float'])
-                            || Str::contains($attribute->type, ['decimal', 'float', 'double', 'bigint']))
-                        && ! in_array($attribute->name, $foreignKeys)
-                        && ! $attribute->virtual
-                        && ! $attribute->appended
-                        && ! $attribute->hidden
-                        && $attribute->name !== $this->modelKeyName;
-                })
-                ->pluck('name')
-                ->toArray()
-            : $this->aggregatable;
+            return $this->aggregatable === ['*']
+                ? $this->getTableFields()
+                    ->filter(function (Attribute $attribute) use ($foreignKeys) {
+                        return (in_array($attribute->phpType, ['int', 'float'])
+                                || Str::contains($attribute->type, ['decimal', 'float', 'double', 'bigint']))
+                            && ! in_array($attribute->name, $foreignKeys)
+                            && ! $attribute->virtual
+                            && ! $attribute->appended
+                            && ! $attribute->hidden
+                            && $attribute->name !== $this->modelKeyName;
+                    })
+                    ->pluck('name')
+                    ->toArray()
+                : $this->aggregatable;
+        });
     }
 
     protected function getAggregatableRelationCols(): array

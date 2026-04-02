@@ -32,9 +32,12 @@ trait SupportsGrouping
             ->toArray();
     }
 
-    #[Renderless]
     public function setGroupBy(?string $column): void
     {
+        if ($column !== null && ! in_array($column, $this->getGroupableCols())) {
+            return;
+        }
+
         $this->groupBy = $column;
         $this->groupPages = [];
         $this->expandedGroups = [];
@@ -44,21 +47,18 @@ trait SupportsGrouping
         $this->loadData();
     }
 
-    #[Renderless]
     public function setGroupPage(string $groupKey, int $page): void
     {
         $this->groupPages[$groupKey] = $page;
         $this->loadData();
     }
 
-    #[Renderless]
     public function setGroupsPage(int $page): void
     {
         $this->currentGroupsPage = $page;
         $this->loadData();
     }
 
-    #[Renderless]
     public function toggleGroup(string $groupKey): void
     {
         if (in_array($groupKey, $this->expandedGroups)) {
@@ -114,6 +114,7 @@ trait SupportsGrouping
 
     protected function loadGroupedData(Builder $query): array
     {
+        $this->groupsPerPage = max($this->groupsPerPage, 1);
         $groupColumn = $this->groupBy;
 
         $groupQuery = $query->clone();
@@ -149,7 +150,8 @@ trait SupportsGrouping
             ];
 
             if (! empty($this->aggregatableCols)) {
-                $groupInfo['aggregates'] = $this->getAggregate($query->clone()->where($groupColumn, $value));
+                $aggregates = $this->getAggregate($query->clone()->where($groupColumn, $value));
+                $groupInfo['aggregates'] = $aggregates ? $this->formatAggregates($aggregates) : [];
             }
 
             if ($isExpanded) {

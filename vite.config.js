@@ -13,14 +13,14 @@ export default defineConfig({
         }),
     ],
     build: {
-        outDir: 'dist',
+        outDir: 'dist/build',
         rollupOptions: {
             output: {
-                entryFileNames: 'build/assets/tall-datatables-[hash].js',
-                chunkFileNames: 'build/assets/tall-datatables-[hash].js',
-                assetFileNames: 'build/assets/tall-datatables-[hash].[ext]',
+                entryFileNames: 'assets/tall-datatables-[hash].js',
+                chunkFileNames: 'assets/tall-datatables-[hash].js',
+                assetFileNames: 'assets/tall-datatables-[hash].[ext]',
             },
         },
-        manifest: 'build/manifest.json',
+        manifest: 'manifest.json',
     },
 });

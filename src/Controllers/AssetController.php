@@ -17,11 +17,15 @@ class AssetController extends Controller
     {
         $assetPath = dirname(__DIR__, 2) . '/dist/build/assets/';
 
-        $path = request()->has('id')
-            ? 'tall-datatables-' . request()->get('id') :
-            null;
+        $id = request()->has('id')
+            ? str_replace(['/', '\\', '..'], '', request()->get('id'))
+            : null;
 
-        $path = file_exists($assetPath . $path)
+        $path = $id
+            ? 'tall-datatables-' . $id
+            : null;
+
+        $path = $path && file_exists($assetPath . $path)
             ? $assetPath . $path
             : File::glob($assetPath . 'tall-datatables*.js')[0];
 
@@ -38,10 +42,15 @@ class AssetController extends Controller
     {
         $assetPath = dirname(__DIR__, 2) . '/dist/build/assets/';
 
-        $path = request()->has('id')
-            ? 'tall-datatables-' . request()->get('id') :
-            null;
-        $path = file_exists($assetPath . $path)
+        $id = request()->has('id')
+            ? str_replace(['/', '\\', '..'], '', request()->get('id'))
+            : null;
+
+        $path = $id
+            ? 'tall-datatables-' . $id
+            : null;
+
+        $path = $path && file_exists($assetPath . $path)
             ? $assetPath . $path
             : File::glob($assetPath . 'tall-datatables*.css')[0];
 
