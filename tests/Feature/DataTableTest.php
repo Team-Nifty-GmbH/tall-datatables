@@ -1677,7 +1677,7 @@ describe('getSidebarTabs', function (): void {
         $defaultCount = count($tabs);
 
         // CustomTabPostDataTable overrides getCustomSidebarTabs
-        $customComponent = Livewire::test(\Tests\Fixtures\Livewire\CustomTabPostDataTable::class);
+        $customComponent = Livewire::test(Tests\Fixtures\Livewire\CustomTabPostDataTable::class);
         $customTabs = $customComponent->instance()->getSidebarTabs();
 
         expect(count($customTabs))->toBe($defaultCount + 1);

@@ -266,54 +266,6 @@ class DataTable extends Component
         }
     }
 
-    public function getSidebarTabs(): array
-    {
-        $tabs = [];
-
-        if ($this->isFilterable) {
-            $tabs[] = [
-                'id' => 'edit-filters',
-                'label' => __('Filters'),
-                'view' => 'tall-datatables::components.options.tabs.filters',
-            ];
-        }
-
-        $tabs[] = [
-            'id' => 'columns',
-            'label' => __('Columns'),
-            'view' => 'tall-datatables::components.options.tabs.columns',
-        ];
-
-        if ($this->aggregatable) {
-            $tabs[] = [
-                'id' => 'summarize',
-                'label' => __('Summarize'),
-                'view' => 'tall-datatables::components.options.tabs.summarize',
-            ];
-        }
-
-        $tabs[] = [
-            'id' => 'grouping',
-            'label' => __('Group'),
-            'view' => 'tall-datatables::components.options.tabs.grouping',
-        ];
-
-        if ($this->isExportable) {
-            $tabs[] = [
-                'id' => 'export',
-                'label' => __('Export'),
-                'view' => 'tall-datatables::components.options.tabs.export',
-            ];
-        }
-
-        return array_merge($tabs, $this->getCustomSidebarTabs());
-    }
-
-    protected function getCustomSidebarTabs(): array
-    {
-        return [];
-    }
-
     #[Renderless]
     public function getAvailableCols(): array
     {
@@ -469,6 +421,49 @@ class DataTable extends Component
                 ];
             })
             ->values();
+    }
+
+    public function getSidebarTabs(): array
+    {
+        $tabs = [];
+
+        if ($this->isFilterable) {
+            $tabs[] = [
+                'id' => 'edit-filters',
+                'label' => __('Filters'),
+                'view' => 'tall-datatables::components.options.tabs.filters',
+            ];
+        }
+
+        $tabs[] = [
+            'id' => 'columns',
+            'label' => __('Columns'),
+            'view' => 'tall-datatables::components.options.tabs.columns',
+        ];
+
+        if ($this->aggregatable) {
+            $tabs[] = [
+                'id' => 'summarize',
+                'label' => __('Summarize'),
+                'view' => 'tall-datatables::components.options.tabs.summarize',
+            ];
+        }
+
+        $tabs[] = [
+            'id' => 'grouping',
+            'label' => __('Group'),
+            'view' => 'tall-datatables::components.options.tabs.grouping',
+        ];
+
+        if ($this->isExportable) {
+            $tabs[] = [
+                'id' => 'export',
+                'label' => __('Export'),
+                'view' => 'tall-datatables::components.options.tabs.export',
+            ];
+        }
+
+        return array_merge($tabs, $this->getCustomSidebarTabs());
     }
 
     #[Renderless]
@@ -867,6 +862,11 @@ class DataTable extends Component
     protected function getComponentAttributes(): ComponentAttributeBag
     {
         return new ComponentAttributeBag();
+    }
+
+    protected function getCustomSidebarTabs(): array
+    {
+        return [];
     }
 
     protected function getEnabledCols(): array
