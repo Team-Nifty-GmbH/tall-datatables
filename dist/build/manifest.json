@@ -1,15 +1,15 @@
 {
   "resources/css/tall-datatables.css": {
-    "file": "assets/tall-datatables-BCALzpo5.css",
-    "src": "resources/css/tall-datatables.css",
-    "isEntry": true,
+    "file": "assets/tall-datatables-Im2cLBSt.css",
     "name": "tall-datatables",
     "names": [
       "tall-datatables.css"
-    ]
+    ],
+    "src": "resources/css/tall-datatables.css",
+    "isEntry": true
   },
   "resources/js/tall-datatables.js": {
-    "file": "assets/tall-datatables-DJON2UXa.js",
+    "file": "assets/tall-datatables-sU77Nlj6.js",
     "name": "tall-datatables",
     "src": "resources/js/tall-datatables.js",
     "isEntry": true
