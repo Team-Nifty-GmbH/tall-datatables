@@ -12,6 +12,7 @@ use Tests\Fixtures\Livewire\BroadcastablePostDataTable;
 use Tests\Fixtures\Livewire\GridPostDataTable;
 use Tests\Fixtures\Livewire\NoListenersPostDataTable;
 use Tests\Fixtures\Livewire\PostDataTable;
+use Tests\Fixtures\Livewire\CustomTabPostDataTable;
 use Tests\Fixtures\Livewire\PostWithCommentsDataTable;
 use Tests\Fixtures\Livewire\PostWithRelationsDataTable;
 use Tests\Fixtures\Livewire\SelectablePostDataTable;
@@ -39,6 +40,7 @@ abstract class TestCase extends BaseTestCase
         Livewire::component('broadcastable-post-data-table', BroadcastablePostDataTable::class);
         Livewire::component('no-listeners-post-data-table', NoListenersPostDataTable::class);
         Livewire::component('post-with-comments-data-table', PostWithCommentsDataTable::class);
+        Livewire::component('custom-tab-post-data-table', CustomTabPostDataTable::class);
 
         Livewire::component('tall-datatables-options', \TeamNiftyGmbH\DataTable\Livewire\Options::class);
     }

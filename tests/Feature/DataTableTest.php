@@ -1602,6 +1602,91 @@ describe('applyUserFilters text filter cleanup', function (): void {
     });
 });
 
+describe('getSidebarTabs', function (): void {
+    it('returns default tabs as array', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        expect($tabs)->toBeArray()->not->toBeEmpty();
+    });
+
+    it('includes columns tab by default', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->toContain('columns');
+    });
+
+    it('includes filters tab when isFilterable', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->toContain('edit-filters');
+    });
+
+    it('excludes filters tab when not isFilterable', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $component->instance()->isFilterable = false;
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->not->toContain('edit-filters');
+    });
+
+    it('includes grouping tab', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->toContain('grouping');
+    });
+
+    it('includes export tab when isExportable', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->toContain('export');
+    });
+
+    it('includes summarize tab when aggregatable', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $tabIds = array_column($tabs, 'id');
+        expect($tabIds)->toContain('summarize');
+    });
+
+    it('each tab has required keys', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        foreach ($tabs as $tab) {
+            expect($tab)->toHaveKey('id')
+                ->toHaveKey('label')
+                ->toHaveKey('view');
+        }
+    });
+
+    it('can be extended by child class via getCustomSidebarTabs', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $tabs = $component->instance()->getSidebarTabs();
+
+        $defaultCount = count($tabs);
+
+        // CustomTabPostDataTable overrides getCustomSidebarTabs
+        $customComponent = Livewire::test(\Tests\Fixtures\Livewire\CustomTabPostDataTable::class);
+        $customTabs = $customComponent->instance()->getSidebarTabs();
+
+        expect(count($customTabs))->toBe($defaultCount + 1);
+
+        $customTabIds = array_column($customTabs, 'id');
+        expect($customTabIds)->toContain('custom-analytics');
+    });
+});
+
 describe('updatedUserFilters', function (): void {
     it('does not apply filters when loadingFilter is true', function (): void {
         $component = Livewire::test(PostDataTable::class)
