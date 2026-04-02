@@ -94,7 +94,7 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Execute browser tests
-        run: ./vendor/bin/testbench package:test --ci --testsuite=Browser
+        run: ./vendor/bin/testbench package:test --parallel --testsuite=Browser
 
       - name: Upload browser test artifacts
         if: failure()
