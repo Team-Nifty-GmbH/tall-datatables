@@ -240,7 +240,44 @@ trait SupportsRelations
         $cached = Cache::get(config('tall-datatables.cache_key') . '.with');
 
         if ($cached && data_get($cached, $cacheKey, false)) {
-            return $cached[$cacheKey];
+            $result = $cached[$cacheKey];
+
+            // Recompute filterValueLists — cached values may have
+            // stale translated labels from a different locale/user
+            $this->filterValueLists = [];
+            $modelInfos = [];
+            foreach ($result[2] as $enabledCol) {
+                $segments = explode('.', $enabledCol);
+                $fieldName = array_pop($segments);
+                $modelClass = $this->getModel();
+
+                if ($segments) {
+                    $modelInstance = app($modelClass);
+                    foreach ($segments as $segment) {
+                        try {
+                            $modelInstance = $modelInstance->{Str::camel($segment)}()->getRelated();
+                            $modelClass = $modelInstance::class;
+                        } catch (Throwable) {
+                            $modelClass = $this->getModel();
+
+                            break;
+                        }
+                    }
+                }
+
+                if (! isset($modelInfos[$modelClass])) {
+                    $modelInfos[$modelClass] = ModelInfo::forModel($modelClass);
+                }
+
+                $attributeInfo = $modelInfos[$modelClass]->attribute($fieldName);
+                if ($attributeInfo) {
+                    $this->getFilterValueList($enabledCol, $attributeInfo);
+                }
+            }
+
+            $result[3] = $this->filterValueLists;
+
+            return $result;
         }
 
         $modelBase = app($this->getModel());
@@ -313,6 +350,12 @@ trait SupportsRelations
             }
 
             $attributeInfo = $modelInfo->attribute($fieldName);
+
+            if (is_null($attributeInfo)) {
+                $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
+
+                continue;
+            }
 
             $isManyRelation = $relationInstance instanceof HasMany
                 || $relationInstance instanceof HasManyThrough

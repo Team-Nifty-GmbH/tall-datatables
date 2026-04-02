@@ -30,7 +30,7 @@
                 @if ($this->perPage ?? false)
                     <x-select.native
                         class="ml-1 border-0 bg-transparent py-0 pr-6 pl-1 text-sm text-gray-600 focus:ring-0 dark:text-gray-300"
-                        wire:model.live="perPage"
+                        wire:model="perPage"
                         x-on:change="$wire.setPerPage($event.target.value)"
                     >
                         <option value="15">15 {{ __('per page') }}</option>

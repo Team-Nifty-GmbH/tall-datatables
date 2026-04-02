@@ -198,3 +198,39 @@ describe('OR query logic', function (): void {
         expect($userFilters[0][1]['column'])->toBe('is_published');
     });
 });
+
+describe('removeFilterGroup index alignment', function (): void {
+    it('keeps textFilters and userFilters indices aligned after removing middle group', function (): void {
+        $component = Livewire::test(PostDataTable::class)
+            ->call('setTextFilter', 'title', 'Alpha', 0)
+            ->call('setTextFilter', 'title', 'Beta', 1)
+            ->call('setTextFilter', 'title', 'Gamma', 2);
+
+        // Verify 3 groups exist
+        $textFilters = $component->get('textFilters');
+        $userFilters = $component->get('userFilters');
+        expect($textFilters)->toHaveCount(3);
+        expect($userFilters)->toHaveCount(3);
+
+        // Remove the middle group (index 1)
+        $component->call('removeFilterGroup', 1);
+
+        $textFilters = $component->get('textFilters');
+        $userFilters = $component->get('userFilters');
+
+        // Should have 2 groups remaining
+        expect($textFilters)->toHaveCount(2);
+        expect($userFilters)->toHaveCount(2);
+
+        // textFilters and userFilters should still be aligned:
+        // Group 0 should have "Alpha", Group 1 should have "Gamma"
+        expect($textFilters[0]['title'])->toBe('Alpha');
+        expect($textFilters[1]['title'])->toBe('Gamma');
+
+        // userFilters groups should match
+        expect($userFilters[0][0]['column'])->toBe('title');
+        expect($userFilters[0][0]['value'])->toBe('%Alpha%');
+        expect($userFilters[1][0]['column'])->toBe('title');
+        expect($userFilters[1][0]['value'])->toBe('%Gamma%');
+    });
+});

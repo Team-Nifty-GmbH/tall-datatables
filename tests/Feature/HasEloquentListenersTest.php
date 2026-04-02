@@ -538,4 +538,28 @@ describe('HasEloquentListeners – getPaginator not on page 1', function (): voi
         $channels = $component->get('broadcastChannels');
         expect($channels)->toHaveKey('created');
     });
+
+    it('computes correct next ID for created broadcast channel on page 2', function (): void {
+        for ($i = 0; $i < 20; $i++) {
+            BroadcastablePost::create([
+                'user_id' => $this->user->getKey(),
+                'title' => "Post $i",
+                'content' => 'Content',
+                'is_published' => true,
+            ]);
+        }
+
+        $maxId = BroadcastablePost::max('id');
+        $expectedNextId = $maxId + 1;
+
+        $component = Livewire::test(BroadcastablePostDataTable::class);
+        $component->set('perPage', 10);
+        $component->call('gotoPage', 2);
+
+        $channels = $component->get('broadcastChannels');
+        $createdChannel = $channels['created'];
+
+        // The created channel should end with the next expected ID
+        expect($createdChannel)->toEndWith((string) $expectedNextId);
+    });
 });

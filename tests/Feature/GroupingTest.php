@@ -1019,3 +1019,18 @@ describe('getGroupKey with boolean false', function (): void {
         expect($reflection->invoke($instance, 'hello'))->toBe('hello');
     });
 });
+
+describe('groupsPerPage division by zero', function (): void {
+    it('does not crash when groupsPerPage is zero', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        $instance->groupsPerPage = 0;
+
+        // setGroupBy triggers loadData which calls loadGroupedData with the division
+        $instance->setGroupBy('is_published');
+
+        // If we reach here without DivisionByZeroError, the guard works
+        expect($instance->groupBy)->toBe('is_published');
+    });
+});

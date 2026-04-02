@@ -19,6 +19,7 @@ use TeamNiftyGmbH\DataTable\Components\DataTableOptions as DataTableOptionsV2;
 use TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
+use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Livewire\Options;
 
 class DataTableServiceProvider extends ServiceProvider
@@ -32,6 +33,10 @@ class DataTableServiceProvider extends ServiceProvider
         Livewire::component('data-table-filters', DataTableFilters::class);
         Livewire::component('data-table-options-v2', DataTableOptionsV2::class);
         $this->offerPublishing();
+
+        $this->app['events']->listen('Laravel\Octane\Events\RequestTerminated', function (): void {
+            ModelInfo::flush();
+        });
 
         $this->commands([
             MakeDataTableCommand::class,

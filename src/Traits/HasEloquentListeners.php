@@ -188,7 +188,7 @@ trait HasEloquentListeners
             $this->broadcastChannels['created'] = $model::getBroadcastChannel(true);
         } else {
             $newModel = new $model();
-            $this->broadcastChannels['created'] = $newModel->broadcastChannel() . $model::max($newModel->getKeyName()) + 1;
+            $this->broadcastChannels['created'] = $newModel->broadcastChannel() . ($model::max($newModel->getKeyName()) + 1);
         }
 
         return $paginator;

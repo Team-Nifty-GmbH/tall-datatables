@@ -1241,3 +1241,60 @@ describe('removeTextFilterRow', function (): void {
         expect($textFilters)->toBeEmpty();
     });
 });
+
+describe('loadMore perPage cap', function (): void {
+    it('caps perPage at maximum after repeated calls', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        // Call loadMore many times (10 times would be 15 * 2^10 = 15360 without a cap)
+        for ($i = 0; $i < 10; $i++) {
+            $component->call('loadMore');
+        }
+
+        expect($component->get('perPage'))->toBeLessThanOrEqual(1000);
+    });
+});
+
+describe('setPerPage guards', function (): void {
+    it('does not allow perPage to be set to zero', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $component->call('setPerPage', 0);
+
+        expect($component->get('perPage'))->toBeGreaterThan(0);
+    });
+
+    it('does not allow perPage to be set to negative', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $component->call('setPerPage', -5);
+
+        expect($component->get('perPage'))->toBeGreaterThan(0);
+    });
+});
+
+describe('loadData recursion guard', function (): void {
+    it('resets page to 1 and completes without error when page exceeds results', function (): void {
+        // No data in the database, but page is set to 5
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('page', 5);
+        $component->call('loadData');
+
+        expect($component->get('page'))->toBe(1);
+    });
+
+    it('does not recurse more than once even with empty results', function (): void {
+        // With no data and page > 1, loadData should recurse exactly once
+        // (to reset page to 1), not infinitely
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+        $instance->page = 100;
+
+        // This should complete without stack overflow or timeout
+        $instance->loadData();
+
+        expect($instance->page)->toBe(1);
+        expect($instance->data)->toHaveKey('total');
+        expect($instance->data['total'])->toBe(0);
+    });
+});

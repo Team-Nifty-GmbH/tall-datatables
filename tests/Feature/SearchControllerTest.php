@@ -910,3 +910,156 @@ describe('SearchController combined parameters', function (): void {
             ->and($alphaIndex)->toBeLessThan($betaIndex);
     });
 });
+
+describe('SearchController SQL injection prevention', function (): void {
+    test('orderBy with SQL injection payload is ignored', function (): void {
+        SearchablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Safe Post',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+
+        $response = $this->postJson(searchUrl(SearchablePost::class), [
+            'orderBy' => '(SELECT 1)',
+        ]);
+
+        $response->assertOk();
+        expect($response->json())->toHaveCount(1);
+    });
+
+    test('fields with SQL injection payload are filtered out', function (): void {
+        SearchableUser::create([
+            'name' => 'Safe User',
+            'email' => 'safe@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        $response = $this->postJson(searchUrl(SearchableUser::class), [
+            'fields' => ['id', 'name', '(SELECT password FROM users)'],
+        ]);
+
+        $response->assertOk();
+        $item = $response->json()[0];
+        expect($item)->toHaveKey('id');
+        expect($item)->toHaveKey('name');
+        expect(array_keys($item))->not->toContain('(SELECT password FROM users)');
+    });
+
+    test('with containing non-existent relation is ignored', function (): void {
+        SearchablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Safe Post',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+
+        $response = $this->postJson(searchUrl(SearchablePost::class), [
+            'with' => 'nonExistentRelation',
+        ]);
+
+        $response->assertOk();
+        expect($response->json())->toHaveCount(1);
+    });
+
+    test('orderBy with valid column still works after sanitization', function (): void {
+        SearchablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => 'B Post',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+        SearchablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => 'A Post',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+
+        $response = $this->postJson(searchUrl(SearchablePost::class), [
+            'orderBy' => 'title',
+            'orderDirection' => 'asc',
+        ]);
+
+        $response->assertOk();
+        expect($response->json()[0]['label'])->toBe('A Post');
+    });
+
+    test('fields with valid columns still works after sanitization', function (): void {
+        SearchableUser::create([
+            'name' => 'Valid Fields User',
+            'email' => 'valid@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        $response = $this->postJson(searchUrl(SearchableUser::class), [
+            'fields' => ['id', 'name'],
+        ]);
+
+        $response->assertOk();
+        $item = $response->json()[0];
+        expect($item)->toHaveKey('id');
+        expect($item)->toHaveKey('name');
+    });
+
+    test('whereHas with non-existent relation is ignored', function (): void {
+        SearchablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Safe Post',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+
+        $response = $this->postJson(searchUrl(SearchablePost::class), [
+            'whereHas' => 'nonExistentRelation',
+        ]);
+
+        $response->assertOk();
+        expect($response->json())->toHaveCount(1);
+    });
+
+    test('whereDoesntHave with non-existent relation is ignored', function (): void {
+        SearchablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Safe Post',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+
+        $response = $this->postJson(searchUrl(SearchablePost::class), [
+            'whereDoesntHave' => 'nonExistentRelation',
+        ]);
+
+        $response->assertOk();
+        expect($response->json())->toHaveCount(1);
+    });
+
+    test('whereHas with valid relation still works after validation', function (): void {
+        $postWithComments = SearchablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Post with comments',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+        Comment::create([
+            'post_id' => $postWithComments->getKey(),
+            'user_id' => $this->user->getKey(),
+            'body' => 'A comment',
+        ]);
+
+        SearchablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Post without comments',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+
+        $response = $this->postJson(searchUrl(SearchablePost::class), [
+            'whereHas' => 'comments',
+        ]);
+
+        $response->assertOk();
+        expect($response->json())->toHaveCount(1);
+        expect($response->json()[0]['label'])->toBe('Post with comments');
+    });
+});

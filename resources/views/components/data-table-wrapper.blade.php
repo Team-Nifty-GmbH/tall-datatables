@@ -1,6 +1,6 @@
 <div
     x-data="{
-        stickyCols: $wire.stickyCols,
+        get stickyCols() { return $wire.stickyCols; },
         showSelectedActions: false,
         textFilterRows: (() => {
             const tf = $wire.textFilters || {};

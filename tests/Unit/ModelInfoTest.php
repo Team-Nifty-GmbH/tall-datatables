@@ -429,6 +429,30 @@ describe('ModelInfo AttributeFinder fallback', function (): void {
     });
 });
 
+describe('ModelInfo flush', function (): void {
+    beforeEach(function (): void {
+        $reflection = new ReflectionClass(ModelInfo::class);
+        $prop = $reflection->getProperty('cachedModelInfos');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
+        Cache::forget(config('tall-datatables.cache_key') . '.modelInfo');
+    });
+
+    it('resets static cache when flush is called', function (): void {
+        // Populate cache
+        $info1 = ModelInfo::forModel(Post::class);
+
+        // Flush
+        ModelInfo::flush();
+
+        // After flush, forModel should return a new instance
+        $info2 = ModelInfo::forModel(Post::class);
+
+        // The instances should not be the same object reference after flush
+        expect($info1)->not->toBe($info2);
+    });
+});
+
 describe('ModelInfo ClassMorphViolationException fallback', function (): void {
     beforeEach(function (): void {
         $reflection = new ReflectionClass(ModelInfo::class);

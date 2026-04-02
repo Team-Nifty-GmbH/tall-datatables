@@ -33,13 +33,13 @@ describe('AssetController scripts', function (): void {
         expect($response->headers->get('Content-Type'))->toContain('text/javascript');
     });
 
-    test('without id parameter falls back to directory path causing error', function (): void {
-        // When no id is provided, $path is null, and file_exists($assetPath . null)
-        // checks if the directory exists (which it does), so $path becomes the directory.
-        // This causes Utils::pretendResponseIsFile to fail with a FileNotFoundException.
+    test('without id parameter falls back to glob and serves valid file', function (): void {
+        // When no id is provided, $id is null, so $path is null.
+        // The glob fallback serves the first matching JS file.
         $response = $this->get(route('tall-datatables.assets.scripts'));
 
-        $response->assertServerError();
+        $response->assertOk();
+        expect($response->headers->get('Content-Type'))->toContain('text/javascript');
     });
 });
 
@@ -67,10 +67,11 @@ describe('AssetController styles', function (): void {
         expect($response->headers->get('Content-Type'))->toContain('text/css');
     });
 
-    test('without id parameter falls back to directory path causing error', function (): void {
+    test('without id parameter falls back to glob and serves valid file', function (): void {
         $response = $this->get(route('tall-datatables.assets.styles'));
 
-        $response->assertServerError();
+        $response->assertOk();
+        expect($response->headers->get('Content-Type'))->toContain('text/css');
     });
 });
 
@@ -119,6 +120,31 @@ describe('AssetController glob fallback', function (): void {
         expect($cssFiles)->not->toBeEmpty();
         expect(basename($cssFiles[0]))->toStartWith('tall-datatables');
         expect(basename($cssFiles[0]))->toEndWith('.css');
+    });
+});
+
+describe('AssetController path traversal prevention', function (): void {
+    test('scripts rejects path traversal attempt', function (): void {
+        $response = $this->get(route('tall-datatables.assets.scripts', ['id' => '../../../etc/passwd']));
+
+        // After sanitization, path traversal chars are stripped so the file won't be found.
+        // The controller falls back to glob and serves the valid JS file.
+        $response->assertOk();
+        expect($response->headers->get('Content-Type'))->toContain('text/javascript');
+    });
+
+    test('styles rejects path traversal attempt', function (): void {
+        $response = $this->get(route('tall-datatables.assets.styles', ['id' => '../../../etc/passwd']));
+
+        $response->assertOk();
+        expect($response->headers->get('Content-Type'))->toContain('text/css');
+    });
+
+    test('scripts strips directory separators from id', function (): void {
+        $response = $this->get(route('tall-datatables.assets.scripts', ['id' => '..%2F..%2F..%2Fetc%2Fpasswd']));
+
+        $response->assertOk();
+        expect($response->headers->get('Content-Type'))->toContain('text/javascript');
     });
 });
 

@@ -2577,3 +2577,80 @@ describe('applyFormatters array values', function (): void {
         expect($data['total'])->toBe(1);
     });
 });
+
+// ---------------------------------------------------------------------------
+// parseFilter — must NOT convert non-date strings to dates via Carbon::parse
+// ---------------------------------------------------------------------------
+describe('parseFilter does not convert non-date strings to dates', function (): void {
+    it('keeps string value "active" as-is on a non-date column', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'active']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'title', 'operator' => '=', 'value' => 'active']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        // "active" should match as a string, not be converted to a datetime
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('active');
+    });
+
+    it('keeps string value "pending" as-is on a non-date column', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'pending']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'title', 'operator' => '=', 'value' => 'pending']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('pending');
+    });
+
+    it('keeps string value "draft" as-is on a non-date column', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'draft']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'title', 'operator' => '=', 'value' => 'draft']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('draft');
+    });
+
+    it('does not convert "january" to a date on a non-date column', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'january']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'title', 'operator' => '=', 'value' => 'january']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        // "january" should NOT be converted to a date, so it should match
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('january');
+    });
+
+    it('does not convert "yesterday" to a date on a non-date column', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'yesterday']);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->set('userFilters', [
+            [['column' => 'title', 'operator' => '=', 'value' => 'yesterday']],
+        ]);
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+        expect($data['total'])->toBe(1);
+        expect($data['data'][0]['title'])->toBe('yesterday');
+    });
+});

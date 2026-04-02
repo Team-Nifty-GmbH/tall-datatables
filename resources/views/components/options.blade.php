@@ -225,7 +225,7 @@
                                                                 2xs
                                                                 icon="x-mark"
                                                                 x-on:click="
-                                                                    savedFilters.splice(savedFilters.indexOf(index), 1);
+                                                                    savedFilters.splice(index, 1);
                                                                     $wire.deleteSavedFilter(filter.id)
                                                                 "
                                                             />
@@ -809,10 +809,12 @@
                                     x-on:click="
                                         searchRelations = null;
                                         searchColumns = null;
-                                        const d = await $wire.loadSlug();
-                                        selectedCols = d?.cols || [];
-                                        selectedRelations = d?.relations || [];
-                                        displayPath = d?.displayPath || [];
+                                        (async () => {
+                                            const d = await $wire.loadSlug();
+                                            selectedCols = d?.cols || [];
+                                            selectedRelations = d?.relations || [];
+                                            displayPath = d?.displayPath || [];
+                                        })();
                                     "
                                 />
                             </li>
@@ -826,10 +828,12 @@
                                         x-on:click="
                                             searchRelations = null;
                                             searchColumns = null;
-                                            const d = await $wire.loadSlug(segment.value);
-                                            selectedCols = d?.cols || [];
-                                            selectedRelations = d?.relations || [];
-                                            displayPath = d?.displayPath || [];
+                                            (async () => {
+                                                const d = await $wire.loadSlug(segment.value);
+                                                selectedCols = d?.cols || [];
+                                                selectedRelations = d?.relations || [];
+                                                displayPath = d?.displayPath || [];
+                                            })();
                                         "
                                     >
                                         <span x-text="segment.label"></span>
@@ -860,7 +864,7 @@
                                         wire:loading.attr="disabled"
                                         x-bind:id="col.attribute"
                                         x-bind:value="col.attribute"
-                                        x-on:change="loadFilterable; addCol(col.attribute);"
+                                        x-on:change="loadFilterable(); addCol(col.attribute);"
                                         x-model="enabledCols"
                                     />
                                     <span
@@ -888,10 +892,12 @@
                                     x-on:click="
                                         searchRelations = null;
                                         searchColumns = null;
-                                        const data = await $wire.loadRelation(relation.model, relation.name);
-                                        selectedCols = data?.cols || [];
-                                        selectedRelations = data?.relations || [];
-                                        displayPath = data?.displayPath || [];
+                                        (async () => {
+                                            const data = await $wire.loadRelation(relation.model, relation.name);
+                                            selectedCols = data?.cols || [];
+                                            selectedRelations = data?.relations || [];
+                                            displayPath = data?.displayPath || [];
+                                        })();
                                     "
                                 >
                                     <span

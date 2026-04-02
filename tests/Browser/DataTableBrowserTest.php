@@ -470,11 +470,11 @@ describe('DataTable Browser Sorting', function (): void {
             });
         }');
 
-        // Clear sort
+        // Clear sort via clearFiltersAndSort (sortTable("") is rejected by validation)
         $page->script('() => {
             const comp = document.querySelector("[wire\\\\:id]");
             const wireId = comp?.getAttribute("wire:id");
-            window.Livewire?.find(wireId)?.call("sortTable", "");
+            window.Livewire?.find(wireId)?.call("clearFiltersAndSort");
         }');
 
         // Wait for sort to be cleared
@@ -2294,5 +2294,43 @@ describe('DataTable Browser Saved Filters', function (): void {
 
         $page->wait(2)
             ->assertNoJavascriptErrors();
+    });
+});
+
+describe('DataTable Browser StickyCols Reactivity', function (): void {
+    it('reflects stickyCols changes from Livewire in Alpine getter', function (): void {
+        $page = visitLivewire(PostDataTable::class);
+
+        $page->wait(2);
+
+        // Read initial stickyCols from Alpine x-data wrapper
+        $before = $page->script('() => {
+            const wrapper = document.querySelector("[tall-datatable]");
+            return wrapper ? Alpine.$data(wrapper).stickyCols : null;
+        }');
+        $before = is_array($before) && isset($before[0]) ? $before[0] : $before;
+
+        expect($before)->toBeArray();
+
+        // Toggle a sticky col via Livewire
+        $page->script('() => {
+            const comp = document.querySelector("[wire\\\\:id]");
+            const wireId = comp?.getAttribute("wire:id");
+            const lw = window.Livewire?.find(wireId);
+            const current = lw?.$get("stickyCols") || [];
+            current.push("title");
+            lw?.$set("stickyCols", current);
+        }');
+
+        $page->wait(2);
+
+        // Read stickyCols again — the getter should reflect the Livewire change
+        $after = $page->script('() => {
+            const wrapper = document.querySelector("[tall-datatable]");
+            return wrapper ? Alpine.$data(wrapper).stickyCols : null;
+        }');
+        $after = is_array($after) && isset($after[0]) ? $after[0] : $after;
+
+        expect($after)->toContain('title');
     });
 });

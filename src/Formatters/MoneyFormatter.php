@@ -22,17 +22,19 @@ class MoneyFormatter implements Formatter
         $formatted = $formatter->formatCurrency((float) $value, $currencyCode);
 
         if (! $this->colored) {
-            return $formatted;
+            return e($formatted);
         }
 
+        $escaped = e($formatted);
+
         if (bccomp((string) $value, '0', 10) === -1) {
-            return '<span class="text-red-600">' . $formatted . '</span>';
+            return '<span class="text-red-600">' . $escaped . '</span>';
         }
 
         if (bccomp((string) $value, '0', 10) === 1) {
-            return '<span class="text-green-600">' . $formatted . '</span>';
+            return '<span class="text-green-600">' . $escaped . '</span>';
         }
 
-        return $formatted;
+        return $escaped;
     }
 }

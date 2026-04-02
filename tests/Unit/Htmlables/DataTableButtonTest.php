@@ -419,4 +419,23 @@ describe('DataTableButton full method', function (): void {
 
         expect($button->full)->toBeFalse();
     });
+
+    it('renders with w-full class when full is set', function (): void {
+        $button = DataTableButton::make()
+            ->text('Full Width')
+            ->full();
+
+        $html = $button->toHtml();
+
+        expect($html)->toContain('w-full');
+    });
+
+    it('does not render with w-full class when full is not set', function (): void {
+        $button = DataTableButton::make()
+            ->text('Normal Width');
+
+        $html = $button->toHtml();
+
+        expect($html)->not->toContain('w-full');
+    });
 });

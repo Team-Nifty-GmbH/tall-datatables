@@ -17,6 +17,7 @@ class DataTableButton implements Htmlable
         public bool $square = false,
         public bool $outline = false,
         public bool $flat = false,
+        public bool $full = false,
         public bool $circle = false,
         public ?string $color = null,
         public ?string $size = null,
@@ -35,6 +36,7 @@ class DataTableButton implements Htmlable
         bool $square = false,
         bool $outline = false,
         bool $flat = false,
+        bool $full = false,
         bool $circle = false,
         ?string $color = null,
         ?string $size = null,
@@ -51,6 +53,7 @@ class DataTableButton implements Htmlable
             square: $square,
             outline: $outline,
             flat: $flat,
+            full: $full,
             circle: $circle,
             color: $color,
             size: $size,
@@ -255,7 +258,12 @@ class DataTableButton implements Htmlable
             return '';
         }
 
-        $attributes = new ComponentAttributeBag($this->attributes);
+        $attrs = $this->attributes;
+        if ($this->full) {
+            $attrs['class'] = trim(($attrs['class'] ?? '') . ' w-full');
+        }
+
+        $attributes = new ComponentAttributeBag($attrs);
         $size = $this->size ?? 'md';
 
         $props = [

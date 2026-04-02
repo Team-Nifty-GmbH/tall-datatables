@@ -456,8 +456,10 @@ trait BuildsQueries
 
         $filter['value'] = is_array($filter['value']) ? $filter['value'] : [$filter['value']];
 
+        $column = $filter['column'] ?? '';
+
         $filter['value'] = collect($filter['value'])
-            ->map(function ($value) use (&$filter) {
+            ->map(function ($value) use ($column) {
                 if (is_string($value) && ! is_numeric($value)) {
                     $dateFormats = ['d.m.Y', 'd/m/Y', 'm/d/Y', 'Y-m-d'];
                     $dateTimeFormats = ['d.m.Y H:i', 'd/m/Y H:i', 'Y-m-d H:i:s', 'd.m.Y H:i:s', 'd/m/Y H:i:s'];
@@ -482,17 +484,21 @@ trait BuildsQueries
                         }
                     }
 
-                    try {
-                        $date = Carbon::parse($value);
+                    // Only attempt permissive Carbon::parse() on date-type columns
+                    // to avoid converting words like "january" or "yesterday" to dates
+                    if ($this->isDateColumn($column)) {
+                        try {
+                            $date = Carbon::parse($value);
 
-                        $hasTime = preg_match('/\d{1,2}:\d{2}/', $value);
+                            $hasTime = preg_match('/\d{1,2}:\d{2}/', $value);
 
-                        if (! $hasTime) {
-                            return $date->startOfDay()->format('Y-m-d H:i:s');
+                            if (! $hasTime) {
+                                return $date->startOfDay()->format('Y-m-d H:i:s');
+                            }
+
+                            return $date->format('Y-m-d H:i:s');
+                        } catch (InvalidFormatException) {
                         }
-
-                        return $date->format('Y-m-d H:i:s');
-                    } catch (InvalidFormatException) {
                     }
                 }
 

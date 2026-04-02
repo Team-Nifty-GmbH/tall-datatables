@@ -34,6 +34,10 @@ trait SupportsGrouping
 
     public function setGroupBy(?string $column): void
     {
+        if ($column !== null && ! in_array($column, $this->getGroupableCols())) {
+            return;
+        }
+
         $this->groupBy = $column;
         $this->groupPages = [];
         $this->expandedGroups = [];
@@ -110,6 +114,7 @@ trait SupportsGrouping
 
     protected function loadGroupedData(Builder $query): array
     {
+        $this->groupsPerPage = max($this->groupsPerPage, 1);
         $groupColumn = $this->groupBy;
 
         $groupQuery = $query->clone();

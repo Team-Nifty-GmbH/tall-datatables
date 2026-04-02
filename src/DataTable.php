@@ -7,6 +7,7 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
@@ -472,8 +473,12 @@ class DataTable extends Component
 
         $result = $this->getResultFromQuery($query);
 
-        if (collect($result)->isEmpty() && $this->page > 1) {
-            $this->reset('page');
+        $resultIsEmpty = $result instanceof LengthAwarePaginator
+            ? $result->isEmpty()
+            : collect($result)->isEmpty();
+
+        if ($resultIsEmpty && $this->page > 1) {
+            $this->page = 1;
             $this->loadData();
 
             return;
@@ -525,7 +530,7 @@ class DataTable extends Component
     #[Renderless]
     public function loadMore(): void
     {
-        $this->perPage += $this->perPage;
+        $this->perPage = min($this->perPage * 2, 1000);
         $this->loadData();
     }
 
@@ -595,10 +600,11 @@ class DataTable extends Component
             unset($this->textFilters[$groupIndex]);
         }
 
-        $this->textFilters = array_values($this->textFilters);
-
+        // Remove the userFilters group before re-indexing both arrays
+        // to keep textFilters and userFilters indices aligned
         array_splice($this->userFilters, $groupIndex, 1);
         $this->userFilters = array_values($this->userFilters);
+        $this->textFilters = array_values($this->textFilters);
         $this->cacheState();
         $this->loadData();
     }
@@ -619,7 +625,11 @@ class DataTable extends Component
     #[Renderless]
     public function setPerPage(int $perPage): void
     {
-        if ($perPage > 0 && ($this->data['total'] ?? 0) > 0 && $this->page > $this->data['total'] / $perPage) {
+        if ($perPage <= 0) {
+            return;
+        }
+
+        if (($this->data['total'] ?? 0) > 0 && $this->page > $this->data['total'] / $perPage) {
             $this->page = (int) ceil($this->data['total'] / $perPage);
         }
 
@@ -677,6 +687,10 @@ class DataTable extends Component
     #[Renderless]
     public function sortTable(string $col): void
     {
+        if (! $this->isValidSortColumn($col)) {
+            return;
+        }
+
         if ($this->userOrderBy === $col) {
             $this->userOrderAsc = ! $this->userOrderAsc;
         }
@@ -940,6 +954,25 @@ class DataTable extends Component
     protected function showRestoreButton(): bool
     {
         return method_exists(static::class, 'restore');
+    }
+
+    private function isValidSortColumn(string $col): bool
+    {
+        // Allow wildcard sortable (all columns allowed) — validate against enabled cols
+        if ($this->sortable === ['*']) {
+            // For dot-notation (relation sorting), allow if it's in enabledCols
+            if (str_contains($col, '.')) {
+                return in_array($col, $this->enabledCols);
+            }
+
+            // Validate against the model's table columns
+            return in_array($col, ModelInfo::forModel($this->getModel())
+                ->attributes
+                ->pluck('name')
+                ->toArray());
+        }
+
+        return in_array($col, $this->sortable);
     }
 
     private function migrateTextFiltersIfNeeded(): void
