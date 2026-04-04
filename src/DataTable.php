@@ -93,6 +93,7 @@ class DataTable extends Component
 
     public int $perPage = 15;
 
+    #[Locked]
     public bool $positiveEmptyState = false;
 
     public string $search = '';
