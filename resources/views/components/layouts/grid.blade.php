@@ -96,8 +96,8 @@
         @elseif (empty($this->data['data'] ?? []))
             <div class="h-24 w-full p-8">
                 <div class="flex w-full flex-col items-center dark:text-gray-50">
-                    <x-icon outline name="face-frown" class="m-auto h-24 w-24" />
-                    <div class="text-center">{{ __('No data found') }}</div>
+                    <x-icon outline name="{{ $this->positiveEmptyState ? 'face-smile' : 'face-frown' }}" class="m-auto h-24 w-24" />
+                    <div class="text-center">{{ $this->positiveEmptyState ? __('All clear!') : __('No data found') }}</div>
                 </div>
             </div>
         @else

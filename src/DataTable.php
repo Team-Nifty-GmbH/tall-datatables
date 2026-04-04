@@ -93,6 +93,8 @@ class DataTable extends Component
 
     public int $perPage = 15;
 
+    public bool $positiveEmptyState = false;
+
     public string $search = '';
 
     public array $sessionFilter = [];
