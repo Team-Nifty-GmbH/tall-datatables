@@ -174,6 +174,41 @@ describe('Shared Saved Filters', function (): void {
         });
     });
 
+    describe('is_own flag', function (): void {
+        it('includes is_own flag in saved filter data', function (): void {
+            Livewire::test(SharedFiltersPostDataTable::class)
+                ->call('loadData')
+                ->call('saveFilter', 'My Filter');
+
+            $component = Livewire::test(SharedFiltersPostDataTable::class);
+            $filter = collect($component->get('savedFilters'))->first();
+
+            expect($filter)->toHaveKey('is_own')
+                ->and($filter['is_own'])->toBeTrue();
+        });
+
+        it('marks shared filters from other users as not own', function (): void {
+            DatatableUserSetting::create([
+                'name' => 'Others Filter',
+                'component' => SharedFiltersPostDataTable::class,
+                'cache_key' => SharedFiltersPostDataTable::class,
+                'settings' => ['userFilters' => [], 'userOrderBy' => '', 'userOrderAsc' => true, 'perPage' => 15, 'aggregatableCols' => ['sum' => [], 'avg' => [], 'min' => [], 'max' => []]],
+                'authenticatable_id' => $this->otherUser->getKey(),
+                'authenticatable_type' => get_class($this->otherUser),
+                'is_shared' => true,
+                'is_permanent' => false,
+                'is_layout' => false,
+            ]);
+
+            $component = Livewire::test(SharedFiltersPostDataTable::class);
+            $otherFilter = collect($component->get('savedFilters'))
+                ->where('name', 'Others Filter')
+                ->first();
+
+            expect($otherFilter['is_own'])->toBeFalse();
+        });
+    });
+
     describe('view data', function (): void {
         it('exposes canShareFilters as false by default', function (): void {
             $component = Livewire::test(PostDataTable::class);

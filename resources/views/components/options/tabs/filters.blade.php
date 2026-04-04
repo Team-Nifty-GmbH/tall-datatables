@@ -43,7 +43,7 @@
                             <div>
                                 <x-card>
                                     <x-slot:header>
-                                        <template x-if="filter.authenticatable_id == {{ auth()->id() }}">
+                                        <template x-if="filter.is_own">
                                             <div class="flex gap-2 w-full">
                                                 <x-input sm
                                                     x-model="filter.name"
@@ -60,7 +60,7 @@
                                                 />
                                             </div>
                                         </template>
-                                        <template x-if="filter.authenticatable_id != {{ auth()->id() }}">
+                                        <template x-if="!filter.is_own">
                                             <div class="w-full px-1 text-sm font-medium text-gray-700 dark:text-gray-300" x-text="filter.name"></div>
                                         </template>
                                     </x-slot>

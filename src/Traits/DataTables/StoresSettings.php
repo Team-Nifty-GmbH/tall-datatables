@@ -65,7 +65,7 @@ trait StoresSettings
     {
         $user = Auth::user();
 
-        if (! $user || ! method_exists($user, 'getDataTableSettings')) {
+        if (! $user || ! method_exists($user, 'datatableUserSettings')) {
             return [];
         }
 
@@ -82,7 +82,10 @@ trait StoresSettings
                 });
 
                 if ($this->canShareFilters()) {
-                    $q->orWhere('is_shared', true);
+                    $q->orWhere(function ($shared) use ($user): void {
+                        $shared->where('is_shared', true)
+                            ->where('authenticatable_type', $user->getMorphClass());
+                    });
                 }
             });
 
@@ -90,10 +93,17 @@ trait StoresSettings
             $filter($query);
         }
 
-        return $query
-            ->orderByRaw('LOWER(name)')
-            ->get()
-            ->toArray();
+        $results = $query->orderByRaw('LOWER(name)')->get()->toArray();
+
+        $userId = $user->getKey();
+        $userType = $user->getMorphClass();
+
+        return array_map(function (array $filter) use ($userId, $userType): array {
+            $filter['is_own'] = $filter['authenticatable_id'] == $userId
+                && $filter['authenticatable_type'] === $userType;
+
+            return $filter;
+        }, $results);
     }
 
     public function loadSavedFilter(): void
