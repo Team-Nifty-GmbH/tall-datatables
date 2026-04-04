@@ -163,4 +163,45 @@ describe('Multi-Sort', function (): void {
             expect($fresh->get('userMultiSort'))->toBe([]);
         });
     });
+
+    describe('clearFiltersAndSort', function (): void {
+        it('clears userMultiSort when clearFiltersAndSort is called', function (): void {
+            $component = Livewire::test(PostDataTable::class)
+                ->call('loadData')
+                ->call('sortTable', 'title', false)
+                ->call('sortTable', 'created_at', true)
+                ->call('clearFiltersAndSort');
+
+            expect($component->get('userMultiSort'))->toBe([]);
+        });
+    });
+
+    describe('stale filter loading', function (): void {
+        it('resets userMultiSort when loading old filter without userMultiSort key', function (): void {
+            // First set up multi-sort
+            $component = Livewire::test(PostDataTable::class)
+                ->call('loadData')
+                ->call('sortTable', 'title', false)
+                ->call('sortTable', 'created_at', true);
+
+            expect($component->get('userMultiSort'))->toHaveCount(1);
+
+            // Save a filter WITHOUT multi-sort (simulate old format)
+            $component->call('sortTable', 'id', false) // clear multi-sort
+                ->call('saveFilter', 'Old Style Filter');
+
+            // Re-apply multi-sort
+            $component->call('sortTable', 'title', false)
+                ->call('sortTable', 'created_at', true);
+
+            expect($component->get('userMultiSort'))->toHaveCount(1);
+
+            // Load the old filter - should clear multi-sort
+            $filterId = data_get($component->get('savedFilters'), '0.id');
+            $component->set('loadedFilterId', $filterId)
+                ->call('loadSavedFilter');
+
+            expect($component->get('userMultiSort'))->toBe([]);
+        });
+    });
 });

@@ -667,6 +667,12 @@ trait BuildsQueries
 
     private function applyOrderBy(Builder $query, string $orderBy, bool $orderAsc): void
     {
+        if (empty($orderBy)) {
+            $query->orderBy($this->modelKeyName, 'DESC');
+
+            return;
+        }
+
         if (Str::contains($orderBy, '.')) {
             $orderByColumn = Str::afterLast($orderBy, '.');
             $table = $this->addDynamicJoin($query, Str::beforeLast($orderBy, '.'));
@@ -674,11 +680,7 @@ trait BuildsQueries
 
             $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
         } else {
-            if ($orderBy) {
-                $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
-            } else {
-                $query->orderBy($this->modelKeyName, 'DESC');
-            }
+            $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
         }
     }
 
@@ -723,7 +725,9 @@ trait BuildsQueries
         $this->applyOrderBy($query, $orderBy, $orderAsc);
 
         foreach ($this->userMultiSort as $sort) {
-            $this->applyOrderBy($query, $sort['column'], $sort['asc']);
+            if ($this->isValidSortColumn($sort['column'])) {
+                $this->applyOrderBy($query, $sort['column'], $sort['asc']);
+            }
         }
     }
 

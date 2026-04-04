@@ -218,6 +218,7 @@ class DataTable extends Component
         $this->textFilters = [];
         $this->userOrderBy = '';
         $this->userOrderAsc = true;
+        $this->userMultiSort = [];
         $this->search = '';
         $this->groupBy = null;
         $this->loadedFilterId = null;
@@ -561,6 +562,10 @@ class DataTable extends Component
     {
         if (! $properties) {
             return;
+        }
+
+        if (! array_key_exists('userMultiSort', $properties)) {
+            $this->userMultiSort = [];
         }
 
         foreach ($properties as $property => $value) {
