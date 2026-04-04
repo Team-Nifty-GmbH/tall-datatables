@@ -665,6 +665,23 @@ trait BuildsQueries
         return $builder->with($filter);
     }
 
+    private function applyOrderBy(Builder $query, string $orderBy, bool $orderAsc): void
+    {
+        if (Str::contains($orderBy, '.')) {
+            $orderByColumn = Str::afterLast($orderBy, '.');
+            $table = $this->addDynamicJoin($query, Str::beforeLast($orderBy, '.'));
+            $orderBy = $table . '.' . $orderByColumn;
+
+            $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
+        } else {
+            if ($orderBy) {
+                $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
+            } else {
+                $query->orderBy($this->modelKeyName, 'DESC');
+            }
+        }
+    }
+
     /**
      * Apply session filters to the query if present.
      */
@@ -703,18 +720,10 @@ trait BuildsQueries
             $orderAsc = $this->orderAsc;
         }
 
-        if (Str::contains($orderBy, '.')) {
-            $orderByColumn = Str::afterLast($orderBy, '.');
-            $table = $this->addDynamicJoin($query, Str::beforeLast($orderBy, '.'));
-            $orderBy = $table . '.' . $orderByColumn;
+        $this->applyOrderBy($query, $orderBy, $orderAsc);
 
-            $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
-        } else {
-            if ($orderBy) {
-                $query->orderBy($orderBy, $orderAsc ? 'ASC' : 'DESC');
-            } else {
-                $query->orderBy($this->modelKeyName, 'DESC');
-            }
+        foreach ($this->userMultiSort as $sort) {
+            $this->applyOrderBy($query, $sort['column'], $sort['asc']);
         }
     }
 

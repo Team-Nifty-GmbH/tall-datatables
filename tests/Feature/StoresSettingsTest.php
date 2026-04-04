@@ -914,6 +914,7 @@ describe('cacheState (via SupportsCache)', function (): void {
             'aggregatableCols',
             'userOrderBy',
             'userOrderAsc',
+            'userMultiSort',
             'perPage',
             'search',
             'selected',

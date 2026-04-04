@@ -172,6 +172,7 @@ trait StoresSettings
                     'userFilters' => $this->userFilters,
                     'userOrderBy' => $this->userOrderBy,
                     'userOrderAsc' => $this->userOrderAsc,
+                    'userMultiSort' => $this->userMultiSort,
                     'perPage' => $this->perPage,
                 ],
                 $withEnabledCols ? ['enabledCols' => $this->enabledCols] : []
@@ -215,6 +216,7 @@ trait StoresSettings
             'aggregatableCols' => $this->aggregatableCols,
             'userOrderBy' => $this->userOrderBy,
             'userOrderAsc' => $this->userOrderAsc,
+            'userMultiSort' => $this->userMultiSort,
             'perPage' => $this->perPage,
             'search' => $this->search,
             'selected' => $this->selected,

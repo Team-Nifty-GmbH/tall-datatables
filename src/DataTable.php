@@ -107,6 +107,8 @@ class DataTable extends Component
 
     public array $userFilters = [];
 
+    public array $userMultiSort = [];
+
     public bool $userOrderAsc = true;
 
     public string $userOrderBy = '';
@@ -728,17 +730,40 @@ class DataTable extends Component
     }
 
     #[Renderless]
-    public function sortTable(string $col): void
+    public function sortTable(string $col, bool $append = false): void
     {
         if (! $this->isValidSortColumn($col)) {
             return;
         }
 
-        if ($this->userOrderBy === $col) {
-            $this->userOrderAsc = ! $this->userOrderAsc;
+        if ($append) {
+            if ($col === $this->userOrderBy) {
+                $this->userOrderAsc = ! $this->userOrderAsc;
+            } else {
+                $existingIndex = collect($this->userMultiSort)
+                    ->search(fn (array $sort) => $sort['column'] === $col);
+
+                if ($existingIndex === false) {
+                    $this->userMultiSort[] = ['column' => $col, 'asc' => true];
+                } else {
+                    if ($this->userMultiSort[$existingIndex]['asc']) {
+                        $this->userMultiSort[$existingIndex]['asc'] = false;
+                    } else {
+                        array_splice($this->userMultiSort, $existingIndex, 1);
+                        $this->userMultiSort = array_values($this->userMultiSort);
+                    }
+                }
+            }
+        } else {
+            if ($this->userOrderBy === $col) {
+                $this->userOrderAsc = ! $this->userOrderAsc;
+            } else {
+                $this->userOrderAsc = true;
+            }
+            $this->userOrderBy = $col;
+            $this->userMultiSort = [];
         }
 
-        $this->userOrderBy = $col;
         $this->cacheState();
         $this->loadData();
     }
