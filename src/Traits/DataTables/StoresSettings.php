@@ -65,15 +65,35 @@ trait StoresSettings
     {
         $user = Auth::user();
 
-        if ($user && method_exists($user, 'getDataTableSettings')) {
-            return $user
-                ->getDataTableSettings($this, $filter)
-                ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
-                ->values()
-                ->toArray();
+        if (! $user || ! method_exists($user, 'getDataTableSettings')) {
+            return [];
         }
 
-        return [];
+        $settingModel = config('tall-datatables.models.datatable_user_setting');
+        $cacheKey = $this->getCacheKey();
+
+        $query = $settingModel::query()
+            ->where('component', static::class)
+            ->where('cache_key', $cacheKey)
+            ->where(function ($q) use ($user): void {
+                $q->where(function ($own) use ($user): void {
+                    $own->where('authenticatable_id', $user->getKey())
+                        ->where('authenticatable_type', $user->getMorphClass());
+                });
+
+                if ($this->canShareFilters()) {
+                    $q->orWhere('is_shared', true);
+                }
+            });
+
+        if ($filter) {
+            $filter($query);
+        }
+
+        return $query
+            ->orderByRaw('LOWER(name)')
+            ->get()
+            ->toArray();
     }
 
     public function loadSavedFilter(): void
@@ -151,7 +171,7 @@ trait StoresSettings
      * @throws MissingTraitException
      */
     #[Renderless]
-    public function saveFilter(string $name, bool $permanent = false, bool $withEnabledCols = true): void
+    public function saveFilter(string $name, bool $permanent = false, bool $withEnabledCols = true, bool $isShared = false): void
     {
         $this->ensureAuthHasTrait();
 
@@ -177,6 +197,7 @@ trait StoresSettings
                 $withEnabledCols ? ['enabledCols' => $this->enabledCols] : []
             ),
             'is_permanent' => $permanent,
+            'is_shared' => $this->canShareFilters() && $isShared,
         ]);
 
         $this->savedFilters = $this->getSavedFilters(
@@ -197,10 +218,16 @@ trait StoresSettings
     #[Renderless]
     public function updateSavedFilter($filterID, array $data): void
     {
+        $allowed = ['name'];
+
+        if ($this->canShareFilters()) {
+            $allowed[] = 'is_shared';
+        }
+
         Auth::user()
             ->datatableUserSettings()
             ->whereKey($filterID)
-            ->update(Arr::only($data, ['name']));
+            ->update(Arr::only($data, $allowed));
     }
 
     /**
@@ -237,6 +264,11 @@ trait StoresSettings
             );
         } catch (MissingTraitException) {
         }
+    }
+
+    protected function canShareFilters(): bool
+    {
+        return false;
     }
 
     /**

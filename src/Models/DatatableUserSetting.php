@@ -28,6 +28,7 @@ class DatatableUserSetting extends Model
             'settings' => 'array',
             'is_layout' => 'boolean',
             'is_permanent' => 'boolean',
+            'is_shared' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

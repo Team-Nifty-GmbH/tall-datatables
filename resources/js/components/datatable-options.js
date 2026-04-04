@@ -8,6 +8,7 @@ export default function datatable_options(wire) {
         filterName: '',
         permanent: false,
         withEnabledCols: true,
+        isShared: false,
         sortCols: [],
         newFilter: {
             column: '',

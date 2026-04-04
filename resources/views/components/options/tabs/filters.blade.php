@@ -43,21 +43,26 @@
                             <div>
                                 <x-card>
                                     <x-slot:header>
-                                        <div class="flex gap-2 w-full">
-                                            <x-input sm
-                                                x-model="filter.name"
-                                                x-on:input.debounce="$wire.updateSavedFilter(filter.id, filter)"
-                                            />
-                                            <x-button.circle
-                                                color="red"
-                                                2xs
-                                                icon="x-mark"
-                                                x-on:click="
-                                                    savedFilters.splice(index, 1);
-                                                    $wire.deleteSavedFilter(filter.id)
-                                                "
-                                            />
-                                        </div>
+                                        <template x-if="filter.authenticatable_id == {{ auth()->id() }}">
+                                            <div class="flex gap-2 w-full">
+                                                <x-input sm
+                                                    x-model="filter.name"
+                                                    x-on:input.debounce="$wire.updateSavedFilter(filter.id, filter)"
+                                                />
+                                                <x-button.circle
+                                                    color="red"
+                                                    2xs
+                                                    icon="x-mark"
+                                                    x-on:click="
+                                                        savedFilters.splice(index, 1);
+                                                        $wire.deleteSavedFilter(filter.id)
+                                                    "
+                                                />
+                                            </div>
+                                        </template>
+                                        <template x-if="filter.authenticatable_id != {{ auth()->id() }}">
+                                            <div class="w-full px-1 text-sm font-medium text-gray-700 dark:text-gray-300" x-text="filter.name"></div>
+                                        </template>
                                     </x-slot>
                                     <div
                                         class="flex justify-between text-sm"
@@ -73,6 +78,16 @@
                                                     ></span>
                                                 </x-slot>
                                             </x-badge>
+                                            @if($this->canShareFilters())
+                                                <template x-if="filter.is_shared">
+                                                    <x-badge
+                                                        flat
+                                                        color="blue"
+                                                        :text="__('Shared')"
+                                                        sm
+                                                    />
+                                                </template>
+                                            @endif
                                         </div>
                                         <div
                                             class="flex items-center gap-1"
