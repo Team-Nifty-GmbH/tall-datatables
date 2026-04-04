@@ -22,7 +22,7 @@
     x-data="{ record: {{ json_encode($record) }} }"
     x-on:click="$dispatch('data-table-row-clicked', {record})"
     @if($allowSoftDeletes && ($record['deleted_at'] ?? null)) class="opacity-50" @endif
-    @if($isSortable) x-sort:item="{{ $record[$modelKeyName] ?? $index }}" @endif
+    @if($isSortable && isset($record[$modelKeyName])) x-sort:item="{{ $record[$modelKeyName] }}" @endif
     {{ $rowAttributes->merge(['class' => 'group hover:bg-gray-50 dark:hover:bg-secondary-900/50 transition-colors']) }}
 >
     @if ($isSelectable)

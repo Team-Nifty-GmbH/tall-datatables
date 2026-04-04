@@ -266,7 +266,8 @@
                     @endif
                 @endif
             </thead>
-            <tbody class="relative" @if($isSortable) x-sort="$wire.sortRows($item, $position)" @endif>
+            {{-- isSortable is a static value (set at class level via isSortable()), not reactive --}}
+            <tbody class="relative" @if($isSortable && !$this->isGrouped()) x-sort="$wire.sortRows($item, $position)" @endif>
                 <tr
                     wire:loading.delay.shorter
                     wire:target.except="storeColLayout"
