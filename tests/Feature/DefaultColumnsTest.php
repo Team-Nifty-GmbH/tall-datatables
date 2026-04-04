@@ -2,6 +2,7 @@
 
 use Livewire\Livewire;
 use TeamNiftyGmbH\DataTable\Models\DatatableUserSetting;
+use Tests\Fixtures\Livewire\DefaultColumnsPostDataTable;
 use Tests\Fixtures\Livewire\PostDataTable;
 
 beforeEach(function (): void {
@@ -10,9 +11,51 @@ beforeEach(function (): void {
 });
 
 describe('User-controlled Default Columns', function (): void {
+    describe('canSaveDefaultColumns gate', function (): void {
+        it('does not render the Set as Default button when canSaveDefaultColumns returns false', function (): void {
+            $component = Livewire::test(PostDataTable::class);
+
+            $component->assertDontSee(__('Set as Default'));
+        });
+
+        it('renders the Set as Default button when canSaveDefaultColumns returns true', function (): void {
+            $component = Livewire::test(DefaultColumnsPostDataTable::class);
+
+            $component->assertSee(__('Set as Default'));
+        });
+
+        it('does not save default columns when canSaveDefaultColumns returns false', function (): void {
+            Livewire::test(PostDataTable::class)
+                ->call('loadData')
+                ->set('enabledCols', ['id', 'title'])
+                ->call('saveDefaultColumns');
+
+            expect(DatatableUserSetting::where('is_default_columns', true)->count())->toBe(0);
+        });
+
+        it('does not delete default columns when canSaveDefaultColumns returns false', function (): void {
+            DatatableUserSetting::create([
+                'name' => '__default_columns__',
+                'component' => PostDataTable::class,
+                'cache_key' => PostDataTable::class,
+                'settings' => ['enabledCols' => ['id', 'title']],
+                'is_default_columns' => true,
+                'is_permanent' => false,
+                'is_layout' => false,
+                'authenticatable_id' => $this->user->getKey(),
+                'authenticatable_type' => $this->user->getMorphClass(),
+            ]);
+
+            Livewire::test(PostDataTable::class)
+                ->call('deleteDefaultColumns');
+
+            expect(DatatableUserSetting::where('is_default_columns', true)->count())->toBe(1);
+        });
+    });
+
     describe('saveDefaultColumns', function (): void {
         it('saves current enabledCols as default columns setting', function (): void {
-            Livewire::test(PostDataTable::class)
+            Livewire::test(DefaultColumnsPostDataTable::class)
                 ->call('loadData')
                 ->set('enabledCols', ['id', 'title'])
                 ->call('saveDefaultColumns');
@@ -30,7 +73,7 @@ describe('User-controlled Default Columns', function (): void {
         });
 
         it('updates existing default columns setting instead of creating duplicate', function (): void {
-            Livewire::test(PostDataTable::class)
+            Livewire::test(DefaultColumnsPostDataTable::class)
                 ->call('loadData')
                 ->set('enabledCols', ['id', 'title'])
                 ->call('saveDefaultColumns')
@@ -53,7 +96,7 @@ describe('User-controlled Default Columns', function (): void {
         });
 
         it('stores component and cache_key correctly', function (): void {
-            Livewire::test(PostDataTable::class)
+            Livewire::test(DefaultColumnsPostDataTable::class)
                 ->call('loadData')
                 ->set('enabledCols', ['title'])
                 ->call('saveDefaultColumns');
@@ -62,8 +105,8 @@ describe('User-controlled Default Columns', function (): void {
                 ->where('is_default_columns', true)
                 ->first();
 
-            expect($setting->component)->toBe(PostDataTable::class)
-                ->and($setting->cache_key)->toBe(PostDataTable::class);
+            expect($setting->component)->toBe(DefaultColumnsPostDataTable::class)
+                ->and($setting->cache_key)->toBe(DefaultColumnsPostDataTable::class);
         });
     });
 
@@ -218,7 +261,7 @@ describe('User-controlled Default Columns', function (): void {
 
     describe('deleteDefaultColumns', function (): void {
         it('deletes the default columns setting', function (): void {
-            Livewire::test(PostDataTable::class)
+            Livewire::test(DefaultColumnsPostDataTable::class)
                 ->call('loadData')
                 ->set('enabledCols', ['id', 'title'])
                 ->call('saveDefaultColumns')
@@ -228,7 +271,7 @@ describe('User-controlled Default Columns', function (): void {
         });
 
         it('does not affect other settings when deleting default columns', function (): void {
-            $component = Livewire::test(PostDataTable::class)
+            $component = Livewire::test(DefaultColumnsPostDataTable::class)
                 ->call('loadData')
                 ->set('enabledCols', ['id', 'title'])
                 ->call('saveDefaultColumns')

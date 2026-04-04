@@ -27,6 +27,10 @@ trait StoresSettings
     #[Renderless]
     public function deleteDefaultColumns(): void
     {
+        if (! $this->canSaveDefaultColumns()) {
+            return;
+        }
+
         $this->ensureAuthHasTrait();
 
         Auth::user()->datatableUserSettings()
@@ -187,6 +191,10 @@ trait StoresSettings
     #[Renderless]
     public function saveDefaultColumns(): void
     {
+        if (! $this->canSaveDefaultColumns()) {
+            return;
+        }
+
         $this->ensureAuthHasTrait();
 
         Auth::user()->datatableUserSettings()->updateOrCreate(
@@ -294,6 +302,11 @@ trait StoresSettings
             );
         } catch (MissingTraitException) {
         }
+    }
+
+    protected function canSaveDefaultColumns(): bool
+    {
+        return false;
     }
 
     /**

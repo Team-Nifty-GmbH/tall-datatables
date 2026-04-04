@@ -58,6 +58,7 @@
             x-on:click="resetLayout"
             :text="__('Reset Layout')"
         />
+        @if($this->canSaveDefaultColumns())
         <x-button
             color="primary"
             light
@@ -65,6 +66,7 @@
             wire:click="saveDefaultColumns"
             :text="__('Set as Default')"
         />
+        @endif
     </div>
     </div>
     <div
