@@ -25,6 +25,7 @@ return new class() extends Migration
             $table->morphs('authenticatable', 'datatable_authenticatable');
             $table->boolean('is_permanent')->default(false);
             $table->boolean('is_layout')->default(false);
+            $table->boolean('is_default_columns')->default(false);
             $table->timestamps();
         });
     }

@@ -25,6 +25,21 @@ trait StoresSettings
      * @throws MissingTraitException
      */
     #[Renderless]
+    public function deleteDefaultColumns(): void
+    {
+        $this->ensureAuthHasTrait();
+
+        Auth::user()->datatableUserSettings()
+            ->where('component', static::class)
+            ->where('cache_key', $this->getCacheKey())
+            ->where('is_default_columns', true)
+            ->delete();
+    }
+
+    /**
+     * @throws MissingTraitException
+     */
+    #[Renderless]
     public function deleteSavedFilter(string $id): void
     {
         $this->ensureAuthHasTrait();
@@ -106,6 +121,16 @@ trait StoresSettings
             $this->loadedFilterId = data_get($permanentFilter, 'id') ?? data_get($layoutFilter, 'id');
         }
 
+        if (is_null($permanentFilter)) {
+            $defaultColumns = data_get($this->getSavedFilters(
+                fn (Builder $query) => $query->where('is_default_columns', true)
+            ), 0);
+
+            if (! is_null($defaultColumns)) {
+                $this->enabledCols = data_get($defaultColumns, 'settings.enabledCols', $this->enabledCols);
+            }
+        }
+
         // Load cached session state
         if (config('tall-datatables.should_cache')) {
             $cachedFilters = Session::get(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
@@ -141,10 +166,42 @@ trait StoresSettings
             Session::remove(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
 
             $this->reset(array_keys(array_merge($layout?->settings ?? [], $cached ?? [])));
+
+            $defaultColumns = data_get($this->getSavedFilters(
+                fn (Builder $query) => $query->where('is_default_columns', true)
+            ), 0);
+
+            if (! is_null($defaultColumns)) {
+                $this->enabledCols = data_get($defaultColumns, 'settings.enabledCols', $this->getEnabledCols());
+            }
+
             $this->colLabels = $this->getColLabels();
             $this->loadData();
         } catch (MissingTraitException) {
         }
+    }
+
+    /**
+     * @throws MissingTraitException
+     */
+    #[Renderless]
+    public function saveDefaultColumns(): void
+    {
+        $this->ensureAuthHasTrait();
+
+        Auth::user()->datatableUserSettings()->updateOrCreate(
+            [
+                'component' => static::class,
+                'cache_key' => $this->getCacheKey(),
+                'is_default_columns' => true,
+            ],
+            [
+                'name' => '__default_columns__',
+                'settings' => ['enabledCols' => $this->enabledCols],
+                'is_layout' => false,
+                'is_permanent' => false,
+            ]
+        );
     }
 
     /**
