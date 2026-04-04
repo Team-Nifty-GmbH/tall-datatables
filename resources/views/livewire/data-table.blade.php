@@ -50,6 +50,7 @@
         :select-value="$selectValue"
         :allow-soft-deletes="$allowSoftDeletes"
         :show-restore-button="$showRestoreButton"
+        :is-sortable="$isSortable"
     />
     @includeWhen($includeAfter, $includeAfter)
 </x-tall-datatables::data-table-wrapper>

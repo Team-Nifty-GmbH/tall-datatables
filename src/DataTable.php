@@ -24,12 +24,13 @@ use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsExporting;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsGrouping;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsRelations;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSelecting;
+use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSorting;
 use Throwable;
 
 class DataTable extends Component
 {
     use BuildsQueries, Interactions, StoresSettings, SupportsAggregation, SupportsExporting, SupportsGrouping,
-        SupportsRelations, SupportsSelecting;
+        SupportsRelations, SupportsSelecting, SupportsSorting;
 
     public array $appends = [];
 
@@ -993,6 +994,7 @@ class DataTable extends Component
             'aggregatable' => $this->getAggregatable(),
             'isExportable' => $this->isExportable,
             'canShareFilters' => $this->canShareFilters(),
+            'isSortable' => $this->isSortable(),
         ];
 
         return $this->cachedViewData;
