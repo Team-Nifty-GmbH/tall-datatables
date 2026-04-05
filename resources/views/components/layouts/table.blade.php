@@ -291,9 +291,9 @@
                     @if (empty($this->data['groups'] ?? []))
                         <tr>
                             <td colspan="100%" class="h-24 w-24 p-8">
-                                <div class="w-full flex-col items-center dark:text-gray-50">
-                                    <x-icon outline name="face-frown" class="m-auto h-24 w-24" />
-                                    <div class="text-center">{{ __('No data found') }}</div>
+                                <div class="flex w-full flex-col items-center dark:text-gray-50">
+                                    <x-icon outline name="{{ $this->positiveEmptyState ? 'face-smile' : 'face-frown' }}" class="m-auto h-24 w-24" />
+                                    <div class="text-center">{{ $this->positiveEmptyState ? __('All clear!') : __('No data found') }}</div>
                                 </div>
                             </td>
                         </tr>
@@ -314,9 +314,9 @@
                 @elseif (empty($this->data['data'] ?? []))
                     <tr>
                         <td colspan="100%" class="h-24 w-24 p-8">
-                            <div class="w-full flex-col items-center dark:text-gray-50">
-                                <x-icon outline name="face-frown" class="m-auto h-24 w-24" />
-                                <div class="text-center">{{ __('No data found') }}</div>
+                            <div class="flex w-full flex-col items-center dark:text-gray-50">
+                                <x-icon outline name="{{ $this->positiveEmptyState ? 'face-smile' : 'face-frown' }}" class="m-auto h-24 w-24" />
+                                <div class="text-center">{{ $this->positiveEmptyState ? __('All clear!') : __('No data found') }}</div>
                             </div>
                         </td>
                     </tr>
