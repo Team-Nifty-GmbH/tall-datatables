@@ -35,6 +35,10 @@
 - **ARIA Attributes** — Semantic HTML with `aria-sort`, `role` attributes and proper table structure.
 - **Keyboard Navigation** — Arrow key and tab navigation through cells and rows.
 
+### Aggregation
+
+- **Relation Count Columns** — Add `withCount` based columns for relations (e.g. "Orders Count" for a contact). Displayed as a regular column with filter input in the header. Filtering on count columns uses HAVING clauses.
+
 ### Extensibility
 
 - **Action Builder DSL** — A fluent API for defining row, table and bulk actions instead of raw arrays.
@@ -59,6 +63,7 @@
 
 ### v2.2 — Filters, Export & Views
 
+- [ ] Relation count columns with HAVING filter
 - [ ] Saved views (opt-in)
 - [ ] Extended filter operators (`in`, `not in`, `starts with`, `contains`, custom)
 - [ ] Relative date filters
