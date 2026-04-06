@@ -466,17 +466,22 @@ trait BuildsQueries
 
         $column = $filter['column'] ?? '';
 
+        $displayTz = $this->getDisplayTimezone();
+        $dbTz = $this->getDatabaseTimezone();
+
         $filter['value'] = collect($filter['value'])
-            ->map(function ($value) use ($column) {
+            ->map(function ($value) use ($column, $displayTz, $dbTz) {
                 if (is_string($value) && ! is_numeric($value)) {
                     $dateFormats = ['d.m.Y', 'd/m/Y', 'm/d/Y', 'Y-m-d'];
                     $dateTimeFormats = ['d.m.Y H:i', 'd/m/Y H:i', 'Y-m-d H:i:s', 'd.m.Y H:i:s', 'd/m/Y H:i:s'];
 
                     foreach ($dateFormats as $format) {
                         try {
-                            $date = Carbon::createFromFormat($format, $value);
+                            $date = Carbon::createFromFormat($format, $value, $displayTz)
+                                ->startOfDay()
+                                ->setTimezone($dbTz);
 
-                            return $date->startOfDay()->format('Y-m-d H:i:s');
+                            return $date->format('Y-m-d H:i:s');
                         } catch (InvalidFormatException) {
                             continue;
                         }
@@ -484,7 +489,8 @@ trait BuildsQueries
 
                     foreach ($dateTimeFormats as $format) {
                         try {
-                            $date = Carbon::createFromFormat($format, $value);
+                            $date = Carbon::createFromFormat($format, $value, $displayTz)
+                                ->setTimezone($dbTz);
 
                             return $date->format('Y-m-d H:i:s');
                         } catch (InvalidFormatException) {
@@ -496,15 +502,15 @@ trait BuildsQueries
                     // to avoid converting words like "january" or "yesterday" to dates
                     if ($this->isDateColumn($column)) {
                         try {
-                            $date = Carbon::parse($value);
+                            $date = Carbon::parse($value, $displayTz);
 
                             $hasTime = preg_match('/\d{1,2}:\d{2}/', $value);
 
                             if (! $hasTime) {
-                                return $date->startOfDay()->format('Y-m-d H:i:s');
+                                $date = $date->startOfDay();
                             }
 
-                            return $date->format('Y-m-d H:i:s');
+                            return $date->setTimezone($dbTz)->format('Y-m-d H:i:s');
                         } catch (InvalidFormatException) {
                         }
                     }
