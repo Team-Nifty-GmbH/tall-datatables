@@ -38,15 +38,18 @@ class DateFormatter implements Formatter
             return '';
         }
 
+        $locale = $context['_locale'] ?? app()->getLocale();
+        $carbon = $carbon->locale($locale);
+
         if ($this->format !== null) {
             return e($carbon->format($this->format));
         }
 
         return match ($this->mode) {
-            'date' => e($carbon->format('d.m.Y')),
-            'time' => e($carbon->format('H:i')),
+            'date' => e($carbon->isoFormat('L')),
+            'time' => e($carbon->isoFormat('LT')),
             'relative', 'relativeTime' => e($carbon->diffForHumans()),
-            default => e($carbon->format('d.m.Y H:i')),
+            default => e($carbon->isoFormat('L LT')),
         };
     }
 }

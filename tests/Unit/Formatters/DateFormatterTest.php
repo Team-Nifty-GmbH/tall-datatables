@@ -16,22 +16,25 @@ describe('DateFormatter', function (): void {
         expect($formatter->format('not-a-date'))->toBe('');
     });
 
-    it('formats date in date mode', function (): void {
+    it('formats date in date mode using locale', function (): void {
         $formatter = new DateFormatter(mode: 'date');
 
-        expect($formatter->format('2024-01-15'))->toBe('15.01.2024');
+        expect($formatter->format('2024-01-15', ['_locale' => 'de']))->toBe('15.01.2024');
+        expect($formatter->format('2024-01-15', ['_locale' => 'en']))->toBe('01/15/2024');
     });
 
-    it('formats datetime in datetime mode', function (): void {
+    it('formats datetime in datetime mode using locale', function (): void {
         $formatter = new DateFormatter(mode: 'datetime');
 
-        expect($formatter->format('2024-01-15 14:30:00'))->toBe('15.01.2024 14:30');
+        expect($formatter->format('2024-01-15 14:30:00', ['_locale' => 'de']))->toBe('15.01.2024 14:30');
+        expect($formatter->format('2024-01-15 14:30:00', ['_locale' => 'en']))->toBe('01/15/2024 2:30 PM');
     });
 
-    it('formats time in time mode', function (): void {
+    it('formats time in time mode using locale', function (): void {
         $formatter = new DateFormatter(mode: 'time');
 
-        expect($formatter->format('2024-01-15 14:30:00'))->toBe('14:30');
+        expect($formatter->format('2024-01-15 14:30:00', ['_locale' => 'de']))->toBe('14:30');
+        expect($formatter->format('2024-01-15 14:30:00', ['_locale' => 'en']))->toBe('2:30 PM');
     });
 
     it('formats relative with diffForHumans in relative mode', function (): void {
@@ -46,7 +49,7 @@ describe('DateFormatter', function (): void {
         )->toBeTrue();
     });
 
-    it('uses custom format when provided', function (): void {
+    it('uses custom format when provided (bypasses locale)', function (): void {
         $formatter = new DateFormatter(format: 'Y/m/d');
 
         expect($formatter->format('2024-01-15'))->toBe('2024/01/15');
@@ -62,30 +65,35 @@ describe('DateFormatter', function (): void {
         $formatter = new DateFormatter(mode: 'date');
         $carbon = Carbon::createFromDate(2024, 6, 15);
 
-        expect($formatter->format($carbon))->toBe('15.06.2024');
+        expect($formatter->format($carbon, ['_locale' => 'de']))->toBe('15.06.2024');
     });
 
     it('formats unix timestamp', function (): void {
         $formatter = new DateFormatter(mode: 'date');
         $timestamp = Carbon::createFromDate(2024, 1, 15)->startOfDay()->timestamp;
 
-        expect($formatter->format($timestamp))->toBe('15.01.2024');
+        expect($formatter->format($timestamp, ['_locale' => 'de']))->toBe('15.01.2024');
     });
 
-    it('uses datetime as default mode', function (): void {
-        $formatter = new DateFormatter();
+    it('falls back to app locale when no locale in context', function (): void {
+        app()->setLocale('de');
+        $formatter = new DateFormatter(mode: 'date');
 
-        expect($formatter->format('2024-01-15 14:30:00'))->toBe('15.01.2024 14:30');
+        expect($formatter->format('2024-01-15'))->toBe('15.01.2024');
+
+        app()->setLocale('en');
+
+        expect($formatter->format('2024-01-15'))->toBe('01/15/2024');
     });
 
     describe('timezone conversion', function (): void {
         it('converts from database timezone to display timezone', function (): void {
             $formatter = new DateFormatter(mode: 'datetime');
 
-            // DB stores UTC, display in Europe/Berlin (UTC+1 in winter)
             $result = $formatter->format('2024-01-15 14:30:00', [
                 '_dbTimezone' => 'UTC',
                 '_displayTimezone' => 'Europe/Berlin',
+                '_locale' => 'de',
             ]);
 
             expect($result)->toBe('15.01.2024 15:30');
@@ -94,10 +102,10 @@ describe('DateFormatter', function (): void {
         it('converts from database timezone to display timezone in summer (DST)', function (): void {
             $formatter = new DateFormatter(mode: 'datetime');
 
-            // UTC+2 in summer (CEST)
             $result = $formatter->format('2024-07-15 14:30:00', [
                 '_dbTimezone' => 'UTC',
                 '_displayTimezone' => 'Europe/Berlin',
+                '_locale' => 'de',
             ]);
 
             expect($result)->toBe('15.07.2024 16:30');
@@ -109,6 +117,7 @@ describe('DateFormatter', function (): void {
             $result = $formatter->format('2024-01-15 23:30:00', [
                 '_dbTimezone' => 'UTC',
                 '_displayTimezone' => 'Europe/Berlin',
+                '_locale' => 'de',
             ]);
 
             expect($result)->toBe('00:30');
@@ -117,10 +126,10 @@ describe('DateFormatter', function (): void {
         it('converts date mode with timezone (date can shift)', function (): void {
             $formatter = new DateFormatter(mode: 'date');
 
-            // 23:30 UTC = 00:30 next day in Berlin
             $result = $formatter->format('2024-01-15 23:30:00', [
                 '_dbTimezone' => 'UTC',
                 '_displayTimezone' => 'Europe/Berlin',
+                '_locale' => 'de',
             ]);
 
             expect($result)->toBe('16.01.2024');
@@ -137,14 +146,6 @@ describe('DateFormatter', function (): void {
             expect($result)->toBe('2024-01-15 09:30:00');
         });
 
-        it('does not convert when no timezone context provided', function (): void {
-            $formatter = new DateFormatter(mode: 'datetime');
-
-            $result = $formatter->format('2024-01-15 14:30:00');
-
-            expect($result)->toBe('15.01.2024 14:30');
-        });
-
         it('converts Carbon instance with timezone context', function (): void {
             $formatter = new DateFormatter(mode: 'datetime');
             $carbon = Carbon::parse('2024-01-15 14:30:00', 'UTC');
@@ -152,6 +153,7 @@ describe('DateFormatter', function (): void {
             $result = $formatter->format($carbon, [
                 '_dbTimezone' => 'UTC',
                 '_displayTimezone' => 'Europe/Berlin',
+                '_locale' => 'de',
             ]);
 
             expect($result)->toBe('15.01.2024 15:30');
@@ -163,9 +165,67 @@ describe('DateFormatter', function (): void {
             $result = $formatter->format('2024-01-15 14:30:00', [
                 '_dbTimezone' => 'Europe/Berlin',
                 '_displayTimezone' => 'Europe/Berlin',
+                '_locale' => 'de',
             ]);
 
             expect($result)->toBe('15.01.2024 14:30');
+        });
+    });
+
+    describe('locale formatting', function (): void {
+        it('formats date in English locale', function (): void {
+            $formatter = new DateFormatter(mode: 'date');
+
+            expect($formatter->format('2024-01-15', ['_locale' => 'en']))->toBe('01/15/2024');
+        });
+
+        it('formats datetime in English locale', function (): void {
+            $formatter = new DateFormatter(mode: 'datetime');
+
+            expect($formatter->format('2024-01-15 14:30:00', ['_locale' => 'en']))->toBe('01/15/2024 2:30 PM');
+        });
+
+        it('formats time in English locale', function (): void {
+            $formatter = new DateFormatter(mode: 'time');
+
+            expect($formatter->format('2024-01-15 14:30:00', ['_locale' => 'en']))->toBe('2:30 PM');
+        });
+
+        it('formats date in French locale', function (): void {
+            $formatter = new DateFormatter(mode: 'date');
+
+            expect($formatter->format('2024-01-15', ['_locale' => 'fr']))->toBe('15/01/2024');
+        });
+
+        it('locale context overrides app locale', function (): void {
+            app()->setLocale('en');
+            $formatter = new DateFormatter(mode: 'date');
+
+            expect($formatter->format('2024-01-15', ['_locale' => 'de']))->toBe('15.01.2024');
+        });
+
+        it('same formatter switches output by locale context for date mode', function (): void {
+            $formatter = new DateFormatter(mode: 'date');
+
+            expect($formatter->format('2024-01-15', ['_locale' => 'de']))->toBe('15.01.2024')
+                ->and($formatter->format('2024-01-15', ['_locale' => 'en']))->toBe('01/15/2024')
+                ->and($formatter->format('2024-01-15', ['_locale' => 'fr']))->toBe('15/01/2024');
+        });
+
+        it('same formatter switches output by locale context for datetime mode', function (): void {
+            $formatter = new DateFormatter(mode: 'datetime');
+
+            expect($formatter->format('2024-01-15 14:30:00', ['_locale' => 'de']))->toBe('15.01.2024 14:30')
+                ->and($formatter->format('2024-01-15 14:30:00', ['_locale' => 'en']))->toBe('01/15/2024 2:30 PM')
+                ->and($formatter->format('2024-01-15 14:30:00', ['_locale' => 'fr']))->toBe('15/01/2024 14:30');
+        });
+
+        it('same formatter switches output by locale context for time mode', function (): void {
+            $formatter = new DateFormatter(mode: 'time');
+
+            expect($formatter->format('2024-01-15 14:30:00', ['_locale' => 'de']))->toBe('14:30')
+                ->and($formatter->format('2024-01-15 14:30:00', ['_locale' => 'en']))->toBe('2:30 PM')
+                ->and($formatter->format('2024-01-15 14:30:00', ['_locale' => 'fr']))->toBe('14:30');
         });
     });
 });
