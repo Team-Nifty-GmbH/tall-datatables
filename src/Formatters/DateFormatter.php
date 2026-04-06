@@ -19,27 +19,37 @@ class DateFormatter implements Formatter
             return '';
         }
 
+        $dbTimezone = $context['_dbTimezone'] ?? null;
+        $displayTimezone = $context['_displayTimezone'] ?? null;
+
         try {
             if ($value instanceof Carbon) {
-                $carbon = $value;
+                $carbon = $value->copy();
             } elseif (is_numeric($value)) {
                 $carbon = Carbon::createFromTimestamp($value);
             } else {
-                $carbon = Carbon::parse($value);
+                $carbon = Carbon::parse($value, $dbTimezone);
+            }
+
+            if ($displayTimezone) {
+                $carbon = $carbon->setTimezone($displayTimezone);
             }
         } catch (Throwable) {
             return '';
         }
+
+        $locale = $context['_locale'] ?? app()->getLocale();
+        $carbon = $carbon->locale($locale);
 
         if ($this->format !== null) {
             return e($carbon->format($this->format));
         }
 
         return match ($this->mode) {
-            'date' => e($carbon->format('d.m.Y')),
-            'time' => e($carbon->format('H:i')),
+            'date' => e($carbon->isoFormat('L')),
+            'time' => e($carbon->isoFormat('LT')),
             'relative', 'relativeTime' => e($carbon->diffForHumans()),
-            default => e($carbon->format('d.m.Y H:i')),
+            default => e($carbon->isoFormat('L LT')),
         };
     }
 }

@@ -261,7 +261,10 @@ class DataTable extends Component
         try {
             $formatter = $registry->resolve($formatterKey);
             $numericValue = is_numeric($value) ? (float) $value : $value;
-            $formatted = $formatter->format($numericValue, []);
+            $formatted = $formatter->format($numericValue, [
+                '_dbTimezone' => $this->getDatabaseTimezone(),
+                '_displayTimezone' => $this->getDisplayTimezone(),
+            ]);
 
             return strip_tags(is_array($formatted) ? ($formatted['display'] ?? $formatted['raw'] ?? $value) : $formatted);
         } catch (Throwable) {
@@ -830,7 +833,10 @@ class DataTable extends Component
                     $formatter = $registry->resolveForColumn($baseCol, $stringCasts);
                 }
 
-                $display = $formatter->format($value, []);
+                $display = $formatter->format($value, [
+                    '_dbTimezone' => $this->getDatabaseTimezone(),
+                    '_displayTimezone' => $this->getDisplayTimezone(),
+                ]);
                 $rawString = is_null($value) ? '' : (string) $value;
 
                 if ($display !== e($rawString)) {
@@ -870,6 +876,16 @@ class DataTable extends Component
     protected function getCustomSidebarTabs(): array
     {
         return [];
+    }
+
+    protected function getDatabaseTimezone(): string
+    {
+        return config('app.timezone');
+    }
+
+    protected function getDisplayTimezone(): string
+    {
+        return config('app.timezone');
     }
 
     protected function getEnabledCols(): array
