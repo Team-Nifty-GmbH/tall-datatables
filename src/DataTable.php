@@ -989,6 +989,7 @@ class DataTable extends Component
             'showRestoreButton' => $this->showRestoreButton(),
             'aggregatable' => $this->getAggregatable(),
             'isExportable' => $this->isExportable,
+            'canSaveDefaultColumns' => $this->canSaveDefaultColumns(),
         ];
 
         return $this->cachedViewData;
