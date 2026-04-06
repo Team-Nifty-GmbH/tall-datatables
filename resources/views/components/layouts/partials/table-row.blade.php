@@ -65,7 +65,7 @@
             class="border-b border-gray-100 px-3 py-2.5 whitespace-nowrap dark:border-secondary-700/50"
         >
             @if (! ($allowSoftDeletes && ($record['deleted_at'] ?? null)))
-                <div class="flex gap-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="flex gap-1.5 whitespace-nowrap">
                     @foreach ($rowActions as $rowAction)
                         {{ $rowAction }}
                     @endforeach
