@@ -40,6 +40,8 @@ trait SupportsRelations
     #[Locked]
     public array $with = [];
 
+    protected array $withCountRelations = [];
+
     #[Renderless]
     public function getFilterableColumns(?string $name = null): array
     {
@@ -242,6 +244,21 @@ trait SupportsRelations
         if ($cached && data_get($cached, $cacheKey, false)) {
             $result = $cached[$cacheKey];
 
+            // Restore withCountRelations from enabledCols
+            $this->withCountRelations = [];
+            foreach ($this->enabledCols as $col) {
+                if (str_ends_with($col, '_count')) {
+                    $relationName = Str::camel(Str::beforeLast($col, '_count'));
+
+                    try {
+                        app($this->getModel())->{$relationName}();
+                        $this->withCountRelations[] = $relationName;
+                    } catch (BadMethodCallException) {
+                        // Not a relation
+                    }
+                }
+            }
+
             // Recompute filterValueLists — cached values may have
             // stale translated labels from a different locale/user
             $this->filterValueLists = [];
@@ -286,8 +303,25 @@ trait SupportsRelations
         $filterable = [];
         $sortable = [];
         $relatedFormatters = [];
+        $this->withCountRelations = [];
 
         foreach (array_merge($this->enabledCols, $this->getReturnKeys()) as $enabledCol) {
+            // Handle _count columns: e.g. 'posts_count' → withCount('posts')
+            if (str_ends_with($enabledCol, '_count')) {
+                $relationName = Str::camel(Str::beforeLast($enabledCol, '_count'));
+
+                try {
+                    $modelBase->{$relationName}();
+                    $this->withCountRelations[] = $relationName;
+                    $filterable[] = $enabledCol;
+                    $sortable[] = $enabledCol;
+                } catch (BadMethodCallException) {
+                    $this->enabledCols = array_diff($this->enabledCols, [$enabledCol]);
+                }
+
+                continue;
+            }
+
             $segments = explode('.', $enabledCol);
             $fieldName = array_pop($segments);
 

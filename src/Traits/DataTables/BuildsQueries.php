@@ -56,6 +56,27 @@ trait BuildsQueries
 
         $filter = $this->parseFilter($filter);
 
+        // Count columns (verified in constructWith) → has() / doesntHave() query
+        if (! is_string($type) && $this->isCountColumn($filter['column'] ?? '')) {
+            $relationName = Str::camel(Str::beforeLast($filter['column'], '_count'));
+            $operator = $filter['operator'] ?? '=';
+            $value = (int) ($filter['value'] ?? 0);
+
+            try {
+                if ($value === 0 && $operator === '=') {
+                    $query->doesntHave($relationName);
+                } elseif ($value === 0 && $operator === '<=') {
+                    $query->doesntHave($relationName);
+                } else {
+                    $query->has($relationName, $operator, $value);
+                }
+            } catch (Throwable) {
+                // Invalid relation — skip
+            }
+
+            return;
+        }
+
         if (! is_string($type)) {
             $filter = array_is_list($filter) ? [$filter] : $filter;
             $target = explode('.', $filter['column']);
@@ -207,6 +228,10 @@ trait BuildsQueries
 
         $query->with($with);
         $query->select(array_merge($select, [$this->modelTable . '.' . $this->modelKeyName]));
+
+        if (! empty($this->withCountRelations)) {
+            $query->withCount($this->withCountRelations);
+        }
 
         $query = $this->getBuilder($query);
 
@@ -738,6 +763,17 @@ trait BuildsQueries
     private function getFilterMethodName(string $type): string
     {
         return 'applyFilter' . ucfirst($type);
+    }
+
+    private function isCountColumn(string $column): bool
+    {
+        if (! str_ends_with($column, '_count')) {
+            return false;
+        }
+
+        $relationName = Str::camel(Str::beforeLast($column, '_count'));
+
+        return in_array($relationName, $this->withCountRelations ?? []);
     }
 
     private function isDateColumn(string $column): bool
