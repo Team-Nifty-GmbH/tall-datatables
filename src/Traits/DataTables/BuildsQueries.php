@@ -906,6 +906,15 @@ trait BuildsQueries
             ];
         }
 
+        // = or != without value → is null / is not null
+        if (preg_match('/^(!=|=)\s*$/', $trimmed, $matches)) {
+            return [
+                'column' => $column,
+                'operator' => $matches[1] === '=' ? 'is null' : 'is not null',
+                'value' => null,
+            ];
+        }
+
         // Support operator prefixes: >=, <=, !=, >, <, =
         if (preg_match('/^(>=|<=|!=|>|<|=)\s*(.+)$/', $trimmed, $matches)) {
             $filterValue = $this->normalizeFilterValue($matches[2], $column);
