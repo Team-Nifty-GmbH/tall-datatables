@@ -16,6 +16,7 @@
     'selectValue' => 'record.id',
     'allowSoftDeletes' => false,
     'showRestoreButton' => false,
+    'isSortable' => false,
 ])
 <div
     class="mt-3 flex flex-col"
@@ -265,7 +266,8 @@
                     @endif
                 @endif
             </thead>
-            <tbody class="relative">
+            {{-- isSortable is a static value (set at class level via isSortable()), not reactive --}}
+            <tbody class="relative" @if($isSortable && !$this->isGrouped()) x-sort="$wire.sortRows($item, $position)" @endif>
                 <tr
                     wire:loading.delay.shorter
                     wire:target.except="storeColLayout"
@@ -335,6 +337,7 @@
                             :row-actions="$rowActions"
                             :show-restore-button="$showRestoreButton"
                             :has-sidebar="$hasSidebar"
+                            :is-sortable="$isSortable"
                         />
                     @endforeach
                 @endif
