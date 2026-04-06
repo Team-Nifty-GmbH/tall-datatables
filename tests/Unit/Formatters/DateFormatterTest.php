@@ -77,4 +77,95 @@ describe('DateFormatter', function (): void {
 
         expect($formatter->format('2024-01-15 14:30:00'))->toBe('15.01.2024 14:30');
     });
+
+    describe('timezone conversion', function (): void {
+        it('converts from database timezone to display timezone', function (): void {
+            $formatter = new DateFormatter(mode: 'datetime');
+
+            // DB stores UTC, display in Europe/Berlin (UTC+1 in winter)
+            $result = $formatter->format('2024-01-15 14:30:00', [
+                '_dbTimezone' => 'UTC',
+                '_displayTimezone' => 'Europe/Berlin',
+            ]);
+
+            expect($result)->toBe('15.01.2024 15:30');
+        });
+
+        it('converts from database timezone to display timezone in summer (DST)', function (): void {
+            $formatter = new DateFormatter(mode: 'datetime');
+
+            // UTC+2 in summer (CEST)
+            $result = $formatter->format('2024-07-15 14:30:00', [
+                '_dbTimezone' => 'UTC',
+                '_displayTimezone' => 'Europe/Berlin',
+            ]);
+
+            expect($result)->toBe('15.07.2024 16:30');
+        });
+
+        it('converts time mode with timezone', function (): void {
+            $formatter = new DateFormatter(mode: 'time');
+
+            $result = $formatter->format('2024-01-15 23:30:00', [
+                '_dbTimezone' => 'UTC',
+                '_displayTimezone' => 'Europe/Berlin',
+            ]);
+
+            expect($result)->toBe('00:30');
+        });
+
+        it('converts date mode with timezone (date can shift)', function (): void {
+            $formatter = new DateFormatter(mode: 'date');
+
+            // 23:30 UTC = 00:30 next day in Berlin
+            $result = $formatter->format('2024-01-15 23:30:00', [
+                '_dbTimezone' => 'UTC',
+                '_displayTimezone' => 'Europe/Berlin',
+            ]);
+
+            expect($result)->toBe('16.01.2024');
+        });
+
+        it('converts with custom format and timezone', function (): void {
+            $formatter = new DateFormatter(format: 'Y-m-d H:i:s');
+
+            $result = $formatter->format('2024-01-15 14:30:00', [
+                '_dbTimezone' => 'UTC',
+                '_displayTimezone' => 'America/New_York',
+            ]);
+
+            expect($result)->toBe('2024-01-15 09:30:00');
+        });
+
+        it('does not convert when no timezone context provided', function (): void {
+            $formatter = new DateFormatter(mode: 'datetime');
+
+            $result = $formatter->format('2024-01-15 14:30:00');
+
+            expect($result)->toBe('15.01.2024 14:30');
+        });
+
+        it('converts Carbon instance with timezone context', function (): void {
+            $formatter = new DateFormatter(mode: 'datetime');
+            $carbon = Carbon::parse('2024-01-15 14:30:00', 'UTC');
+
+            $result = $formatter->format($carbon, [
+                '_dbTimezone' => 'UTC',
+                '_displayTimezone' => 'Europe/Berlin',
+            ]);
+
+            expect($result)->toBe('15.01.2024 15:30');
+        });
+
+        it('handles same database and display timezone', function (): void {
+            $formatter = new DateFormatter(mode: 'datetime');
+
+            $result = $formatter->format('2024-01-15 14:30:00', [
+                '_dbTimezone' => 'Europe/Berlin',
+                '_displayTimezone' => 'Europe/Berlin',
+            ]);
+
+            expect($result)->toBe('15.01.2024 14:30');
+        });
+    });
 });

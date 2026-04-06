@@ -128,6 +128,9 @@ trait BuildsQueries
     {
         $formatters = $this->getResolvedFormatters($item);
 
+        $context['_dbTimezone'] = $this->getDatabaseTimezone();
+        $context['_displayTimezone'] = $this->getDisplayTimezone();
+
         foreach ($this->enabledCols as $col) {
             if (! array_key_exists($col, $itemArray)) {
                 continue;
@@ -339,9 +342,14 @@ trait BuildsQueries
             $registry = app(FormatterRegistry::class);
             $customFormatters = $this->getFormatters();
 
+            $dbTimezone = $this->getDatabaseTimezone();
+            $displayTimezone = $this->getDisplayTimezone();
+
             $mapped = $resultCollection->map(
-                function (Model $item) use ($registry, $customFormatters) {
+                function (Model $item) use ($registry, $customFormatters, $dbTimezone, $displayTimezone) {
                     $itemArray = $this->itemToArray($item);
+                    $itemArray['_dbTimezone'] = $dbTimezone;
+                    $itemArray['_displayTimezone'] = $displayTimezone;
 
                     // Re-apply formatters to columns that were added after parent::itemToArray()
                     // (e.g. avatar set in child class override) and not yet formatted
