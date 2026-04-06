@@ -371,7 +371,7 @@ class DataTable extends Component
             'showing' => __('Showing'), 'to' => __('to'), 'of' => __('of'),
             'groups' => __('Groups'), 'noGrouping' => __('No grouping'),
             'empty' => __('(empty)'),
-            'sum' => __('Sum'), 'avg' => __('Avg'), 'min' => __('Min'), 'max' => __('Max'),
+            'sum' => __('Sum'), 'avg' => __('Avg'), 'min' => __('Min'), 'max' => __('Max'), 'count' => __('Count'),
         ];
     }
 
@@ -392,7 +392,7 @@ class DataTable extends Component
             'weeks' => __('Weeks'), 'months' => __('Months'), 'years' => __('Years'),
             'minute' => __('Minute'), 'hour' => __('Hour'), 'day' => __('Day'),
             'week' => __('Week'), 'month' => __('Month'), 'year' => __('Year'),
-            'sum' => __('Sum'), 'avg' => __('Average'), 'min' => __('Minimum'), 'max' => __('Maximum'),
+            'sum' => __('Sum'), 'avg' => __('Average'), 'min' => __('Minimum'), 'max' => __('Maximum'), 'count' => __('Count'),
             'Start of' => __('Start of'), 'End of' => __('End of'),
         ];
     }

@@ -44,6 +44,14 @@
                     x-model="aggregatableCols.max"
                 />
             </div>
+            <div class="py-1">
+                <x-checkbox
+                    sm
+                    :label="__('Count')"
+                    x-bind:value="col"
+                    x-model="aggregatableCols.count"
+                />
+            </div>
         </div>
     </template>
 </div>
