@@ -165,6 +165,15 @@
                             })();
                         "
                     >
+                        <div x-on:click.stop>
+                            <x-checkbox
+                                sm
+                                x-bind:value="relation.name + '_count'"
+                                x-bind:checked="$wire.enabledCols.includes(relation.name + '_count')"
+                                x-on:change="addCol(relation.name + '_count'); loadFilterable();"
+                                wire:loading.attr="disabled"
+                            />
+                        </div>
                         <span
                             class="truncate text-sm text-gray-700 dark:text-gray-300"
                             x-text="relation.label"
