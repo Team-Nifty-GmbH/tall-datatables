@@ -41,7 +41,7 @@ jobs:
           node-version: 22
 
       - name: Install NPM dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build frontend assets
         run: npm run build
