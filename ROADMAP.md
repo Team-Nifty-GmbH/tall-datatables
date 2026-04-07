@@ -65,7 +65,7 @@
 ### v2.2 — Filters, Export & Views
 
 - [ ] Saved views (opt-in)
-- [ ] Extended filter operators (`in`, `not in`, `starts with`, `contains`, custom)
+- [x] Extended filter operators (`in`, `not in`, `starts with`, `contains`)
 - [x] Relative date filters
 - [x] CSV export
 - [x] JSON export

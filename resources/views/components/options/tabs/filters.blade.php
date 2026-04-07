@@ -293,6 +293,24 @@
             <option value="between">
                 {{ __('between') }}
             </option>
+            <option value="starts with">
+                {{ __('starts with') }}
+            </option>
+            <option value="ends with">
+                {{ __('ends with') }}
+            </option>
+            <option value="contains">
+                {{ __('contains') }}
+            </option>
+            <option value="does not contain">
+                {{ __('does not contain') }}
+            </option>
+            <option value="in">
+                {{ __('in') }}
+            </option>
+            <option value="not in">
+                {{ __('not in') }}
+            </option>
         </datalist>
     </div>
     <div
@@ -476,6 +494,13 @@
         class="break-long-words max-w-md text-xs text-gray-400 dark:text-gray-500"
     >
         {{ __('When using the like or not like filter, you can use the % sign as a placeholder. Examples: "test%" for values that start with "test", "%test" for values that end with "test", and "%test%" for values that contain "test" anywhere.') }}
+    </div>
+    <div
+        x-cloak
+        x-show="newFilter.operator === 'in' || newFilter.operator === 'not in'"
+        class="break-long-words max-w-md text-xs text-gray-400 dark:text-gray-500"
+    >
+        {{ __('Separate multiple values with commas. Example: "Berlin, München, Hamburg"') }}
     </div>
     <div class="py-1">
         <x-checkbox
