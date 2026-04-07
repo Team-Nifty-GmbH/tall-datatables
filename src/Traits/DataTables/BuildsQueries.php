@@ -56,6 +56,27 @@ trait BuildsQueries
 
         $filter = $this->parseFilter($filter);
 
+        // Count columns (verified in constructWith) → has() / doesntHave() query
+        if (! is_string($type) && $this->isCountColumn($filter['column'] ?? '')) {
+            $relationName = Str::camel(Str::beforeLast($filter['column'], '_count'));
+            $operator = $filter['operator'] ?? '=';
+            $value = (int) ($filter['value'] ?? 0);
+
+            try {
+                if ($value === 0 && $operator === '=') {
+                    $query->doesntHave($relationName);
+                } elseif ($value === 0 && $operator === '<=') {
+                    $query->doesntHave($relationName);
+                } else {
+                    $query->has($relationName, $operator, $value);
+                }
+            } catch (Throwable) {
+                // Invalid relation — skip
+            }
+
+            return;
+        }
+
         if (! is_string($type)) {
             $filter = array_is_list($filter) ? [$filter] : $filter;
             $target = explode('.', $filter['column']);
@@ -127,6 +148,9 @@ trait BuildsQueries
     protected function applyFormatters(array &$itemArray, Model $item, array $context): void
     {
         $formatters = $this->getResolvedFormatters($item);
+
+        $context['_dbTimezone'] = $this->getDatabaseTimezone();
+        $context['_displayTimezone'] = $this->getDisplayTimezone();
 
         foreach ($this->enabledCols as $col) {
             if (! array_key_exists($col, $itemArray)) {
@@ -204,6 +228,10 @@ trait BuildsQueries
 
         $query->with($with);
         $query->select(array_merge($select, [$this->modelTable . '.' . $this->modelKeyName]));
+
+        if (! empty($this->withCountRelations)) {
+            $query->withCount($this->withCountRelations);
+        }
 
         $query = $this->getBuilder($query);
 
@@ -339,9 +367,14 @@ trait BuildsQueries
             $registry = app(FormatterRegistry::class);
             $customFormatters = $this->getFormatters();
 
+            $dbTimezone = $this->getDatabaseTimezone();
+            $displayTimezone = $this->getDisplayTimezone();
+
             $mapped = $resultCollection->map(
-                function (Model $item) use ($registry, $customFormatters) {
+                function (Model $item) use ($registry, $customFormatters, $dbTimezone, $displayTimezone) {
                     $itemArray = $this->itemToArray($item);
+                    $itemArray['_dbTimezone'] = $dbTimezone;
+                    $itemArray['_displayTimezone'] = $displayTimezone;
 
                     // Re-apply formatters to columns that were added after parent::itemToArray()
                     // (e.g. avatar set in child class override) and not yet formatted
@@ -458,17 +491,22 @@ trait BuildsQueries
 
         $column = $filter['column'] ?? '';
 
+        $displayTz = $this->getDisplayTimezone();
+        $dbTz = $this->getDatabaseTimezone();
+
         $filter['value'] = collect($filter['value'])
-            ->map(function ($value) use ($column) {
+            ->map(function ($value) use ($column, $displayTz, $dbTz) {
                 if (is_string($value) && ! is_numeric($value)) {
                     $dateFormats = ['d.m.Y', 'd/m/Y', 'm/d/Y', 'Y-m-d'];
                     $dateTimeFormats = ['d.m.Y H:i', 'd/m/Y H:i', 'Y-m-d H:i:s', 'd.m.Y H:i:s', 'd/m/Y H:i:s'];
 
                     foreach ($dateFormats as $format) {
                         try {
-                            $date = Carbon::createFromFormat($format, $value);
+                            $date = Carbon::createFromFormat($format, $value, $displayTz)
+                                ->startOfDay()
+                                ->setTimezone($dbTz);
 
-                            return $date->startOfDay()->format('Y-m-d H:i:s');
+                            return $date->format('Y-m-d H:i:s');
                         } catch (InvalidFormatException) {
                             continue;
                         }
@@ -476,7 +514,8 @@ trait BuildsQueries
 
                     foreach ($dateTimeFormats as $format) {
                         try {
-                            $date = Carbon::createFromFormat($format, $value);
+                            $date = Carbon::createFromFormat($format, $value, $displayTz)
+                                ->setTimezone($dbTz);
 
                             return $date->format('Y-m-d H:i:s');
                         } catch (InvalidFormatException) {
@@ -488,15 +527,15 @@ trait BuildsQueries
                     // to avoid converting words like "january" or "yesterday" to dates
                     if ($this->isDateColumn($column)) {
                         try {
-                            $date = Carbon::parse($value);
+                            $date = Carbon::parse($value, $displayTz);
 
                             $hasTime = preg_match('/\d{1,2}:\d{2}/', $value);
 
                             if (! $hasTime) {
-                                return $date->startOfDay()->format('Y-m-d H:i:s');
+                                $date = $date->startOfDay();
                             }
 
-                            return $date->format('Y-m-d H:i:s');
+                            return $date->setTimezone($dbTz)->format('Y-m-d H:i:s');
                         } catch (InvalidFormatException) {
                         }
                     }
@@ -726,6 +765,17 @@ trait BuildsQueries
         return 'applyFilter' . ucfirst($type);
     }
 
+    private function isCountColumn(string $column): bool
+    {
+        if (! str_ends_with($column, '_count')) {
+            return false;
+        }
+
+        $relationName = Str::camel(Str::beforeLast($column, '_count'));
+
+        return in_array($relationName, $this->withCountRelations ?? []);
+    }
+
     private function isDateColumn(string $column): bool
     {
         $formatters = $this->getFormatters();
@@ -889,6 +939,15 @@ trait BuildsQueries
                 'column' => $column,
                 'operator' => 'like',
                 'value' => '%*%',
+            ];
+        }
+
+        // = or != without value → is null / is not null
+        if (preg_match('/^(!=|=)\s*$/', $trimmed, $matches)) {
+            return [
+                'column' => $column,
+                'operator' => $matches[1] === '=' ? 'is null' : 'is not null',
+                'value' => null,
             ];
         }
 

@@ -24,12 +24,13 @@ use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsExporting;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsGrouping;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsRelations;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSelecting;
+use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsSorting;
 use Throwable;
 
 class DataTable extends Component
 {
     use BuildsQueries, Interactions, StoresSettings, SupportsAggregation, SupportsExporting, SupportsGrouping,
-        SupportsRelations, SupportsSelecting;
+        SupportsRelations, SupportsSelecting, SupportsSorting;
 
     public array $appends = [];
 
@@ -92,6 +93,9 @@ class DataTable extends Component
     public int $page = 1;
 
     public int $perPage = 15;
+
+    #[Locked]
+    public bool $positiveEmptyState = false;
 
     public string $search = '';
 
@@ -258,7 +262,10 @@ class DataTable extends Component
         try {
             $formatter = $registry->resolve($formatterKey);
             $numericValue = is_numeric($value) ? (float) $value : $value;
-            $formatted = $formatter->format($numericValue, []);
+            $formatted = $formatter->format($numericValue, [
+                '_dbTimezone' => $this->getDatabaseTimezone(),
+                '_displayTimezone' => $this->getDisplayTimezone(),
+            ]);
 
             return strip_tags(is_array($formatted) ? ($formatted['display'] ?? $formatted['raw'] ?? $value) : $formatted);
         } catch (Throwable) {
@@ -365,7 +372,7 @@ class DataTable extends Component
             'showing' => __('Showing'), 'to' => __('to'), 'of' => __('of'),
             'groups' => __('Groups'), 'noGrouping' => __('No grouping'),
             'empty' => __('(empty)'),
-            'sum' => __('Sum'), 'avg' => __('Avg'), 'min' => __('Min'), 'max' => __('Max'),
+            'sum' => __('Sum'), 'avg' => __('Avg'), 'min' => __('Min'), 'max' => __('Max'), 'count' => __('Count'),
         ];
     }
 
@@ -386,7 +393,7 @@ class DataTable extends Component
             'weeks' => __('Weeks'), 'months' => __('Months'), 'years' => __('Years'),
             'minute' => __('Minute'), 'hour' => __('Hour'), 'day' => __('Day'),
             'week' => __('Week'), 'month' => __('Month'), 'year' => __('Year'),
-            'sum' => __('Sum'), 'avg' => __('Average'), 'min' => __('Minimum'), 'max' => __('Maximum'),
+            'sum' => __('Sum'), 'avg' => __('Average'), 'min' => __('Minimum'), 'max' => __('Maximum'), 'count' => __('Count'),
             'Start of' => __('Start of'), 'End of' => __('End of'),
         ];
     }
@@ -827,7 +834,10 @@ class DataTable extends Component
                     $formatter = $registry->resolveForColumn($baseCol, $stringCasts);
                 }
 
-                $display = $formatter->format($value, []);
+                $display = $formatter->format($value, [
+                    '_dbTimezone' => $this->getDatabaseTimezone(),
+                    '_displayTimezone' => $this->getDisplayTimezone(),
+                ]);
                 $rawString = is_null($value) ? '' : (string) $value;
 
                 if ($display !== e($rawString)) {
@@ -867,6 +877,16 @@ class DataTable extends Component
     protected function getCustomSidebarTabs(): array
     {
         return [];
+    }
+
+    protected function getDatabaseTimezone(): string
+    {
+        return config('app.timezone');
+    }
+
+    protected function getDisplayTimezone(): string
+    {
+        return config('app.timezone');
     }
 
     protected function getEnabledCols(): array
@@ -990,6 +1010,8 @@ class DataTable extends Component
             'aggregatable' => $this->getAggregatable(),
             'isExportable' => $this->isExportable,
             'canSaveDefaultColumns' => $this->canSaveDefaultColumns(),
+            'canShareFilters' => $this->canShareFilters(),
+            'isSortable' => $this->isSortable(),
         ];
 
         return $this->cachedViewData;

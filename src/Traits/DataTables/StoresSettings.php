@@ -82,15 +82,45 @@ trait StoresSettings
     {
         $user = Auth::user();
 
-        if ($user && method_exists($user, 'getDataTableSettings')) {
-            return $user
-                ->getDataTableSettings($this, $filter)
-                ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
-                ->values()
-                ->toArray();
+        if (! $user || ! method_exists($user, 'datatableUserSettings')) {
+            return [];
         }
 
-        return [];
+        $settingModel = config('tall-datatables.models.datatable_user_setting');
+        $cacheKey = $this->getCacheKey();
+
+        $query = $settingModel::query()
+            ->where('component', static::class)
+            ->where('cache_key', $cacheKey)
+            ->where(function ($q) use ($user): void {
+                $q->where(function ($own) use ($user): void {
+                    $own->where('authenticatable_id', $user->getKey())
+                        ->where('authenticatable_type', $user->getMorphClass());
+                });
+
+                if ($this->canShareFilters()) {
+                    $q->orWhere(function ($shared) use ($user): void {
+                        $shared->where('is_shared', true)
+                            ->where('authenticatable_type', $user->getMorphClass());
+                    });
+                }
+            });
+
+        if ($filter) {
+            $filter($query);
+        }
+
+        $results = $query->orderByRaw('LOWER(name)')->get()->toArray();
+
+        $userId = $user->getKey();
+        $userType = $user->getMorphClass();
+
+        return array_map(function (array $filter) use ($userId, $userType): array {
+            $filter['is_own'] = $filter['authenticatable_id'] == $userId
+                && $filter['authenticatable_type'] === $userType;
+
+            return $filter;
+        }, $results);
     }
 
     public function loadSavedFilter(): void
@@ -221,7 +251,7 @@ trait StoresSettings
      * @throws MissingTraitException
      */
     #[Renderless]
-    public function saveFilter(string $name, bool $permanent = false, bool $withEnabledCols = true): void
+    public function saveFilter(string $name, bool $permanent = false, bool $withEnabledCols = true, bool $isShared = false): void
     {
         $this->ensureAuthHasTrait();
 
@@ -247,6 +277,7 @@ trait StoresSettings
                 $withEnabledCols ? ['enabledCols' => $this->enabledCols] : []
             ),
             'is_permanent' => $permanent,
+            'is_shared' => $this->canShareFilters() && $isShared,
         ]);
 
         $this->savedFilters = $this->getSavedFilters(
@@ -267,10 +298,16 @@ trait StoresSettings
     #[Renderless]
     public function updateSavedFilter($filterID, array $data): void
     {
+        $allowed = ['name'];
+
+        if ($this->canShareFilters()) {
+            $allowed[] = 'is_shared';
+        }
+
         Auth::user()
             ->datatableUserSettings()
             ->whereKey($filterID)
-            ->update(Arr::only($data, ['name']));
+            ->update(Arr::only($data, $allowed));
     }
 
     /**
@@ -310,6 +347,11 @@ trait StoresSettings
     }
 
     protected function canSaveDefaultColumns(): bool
+    {
+        return false;
+    }
+
+    protected function canShareFilters(): bool
     {
         return false;
     }

@@ -16,6 +16,7 @@
     'selectValue' => 'record.id',
     'allowSoftDeletes' => false,
     'showRestoreButton' => false,
+    'isSortable' => false,
 ])
 <div
     class="mt-3 flex flex-col"
@@ -265,7 +266,8 @@
                     @endif
                 @endif
             </thead>
-            <tbody class="relative">
+            {{-- isSortable is a static value (set at class level via isSortable()), not reactive --}}
+            <tbody class="relative" @if($isSortable && !$this->isGrouped()) x-sort="$wire.sortRows($item, $position)" @endif>
                 <tr
                     wire:loading.delay.shorter
                     wire:target.except="storeColLayout"
@@ -291,9 +293,9 @@
                     @if (empty($this->data['groups'] ?? []))
                         <tr>
                             <td colspan="100%" class="h-24 w-24 p-8">
-                                <div class="w-full flex-col items-center dark:text-gray-50">
-                                    <x-icon outline name="face-frown" class="m-auto h-24 w-24" />
-                                    <div class="text-center">{{ __('No data found') }}</div>
+                                <div class="flex w-full flex-col items-center dark:text-gray-50">
+                                    <x-icon outline name="{{ $this->positiveEmptyState ? 'face-smile' : 'face-frown' }}" class="m-auto h-24 w-24" />
+                                    <div class="text-center">{{ $this->positiveEmptyState ? __('All clear!') : __('No data found') }}</div>
                                 </div>
                             </td>
                         </tr>
@@ -314,9 +316,9 @@
                 @elseif (empty($this->data['data'] ?? []))
                     <tr>
                         <td colspan="100%" class="h-24 w-24 p-8">
-                            <div class="w-full flex-col items-center dark:text-gray-50">
-                                <x-icon outline name="face-frown" class="m-auto h-24 w-24" />
-                                <div class="text-center">{{ __('No data found') }}</div>
+                            <div class="flex w-full flex-col items-center dark:text-gray-50">
+                                <x-icon outline name="{{ $this->positiveEmptyState ? 'face-smile' : 'face-frown' }}" class="m-auto h-24 w-24" />
+                                <div class="text-center">{{ $this->positiveEmptyState ? __('All clear!') : __('No data found') }}</div>
                             </div>
                         </td>
                     </tr>
@@ -335,6 +337,7 @@
                             :row-actions="$rowActions"
                             :show-restore-button="$showRestoreButton"
                             :has-sidebar="$hasSidebar"
+                            :is-sortable="$isSortable"
                         />
                     @endforeach
                 @endif

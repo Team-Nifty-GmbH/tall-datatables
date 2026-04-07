@@ -18,6 +18,7 @@ trait SupportsAggregation
         'avg' => [],
         'min' => [],
         'max' => [],
+        'count' => [],
     ];
 
     protected array $aggregatableRelationCols = [];
@@ -74,7 +75,7 @@ trait SupportsAggregation
     {
         $aggregates = [];
         foreach ($this->aggregatableCols as $type => $columns) {
-            if (! in_array($type, ['sum', 'avg', 'min', 'max'])) {
+            if (! in_array($type, ['sum', 'avg', 'min', 'max', 'count'])) {
                 continue;
             }
 
