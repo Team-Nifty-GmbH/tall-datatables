@@ -338,85 +338,136 @@
         x-show="filterSelectType === 'text'"
         class="flex w-full flex-col gap-1.5"
     >
-        <div class="w-full">
+        {{-- Date column: preset dropdown --}}
+        <div
+            x-cloak
+            x-show="getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')"
+        >
+            <x-select.native
+                sm
+                name="new-filter-date-preset"
+                x-on:change="applyDatePreset($event.target.value)"
+                :label="__('Date preset')"
+            >
+                <option value="">{{ __('Select...') }}</option>
+                <optgroup label="{{ __('Current') }}">
+                    <option value="today">{{ __('Today') }}</option>
+                    <option value="yesterday">{{ __('Yesterday') }}</option>
+                    <option value="this_week">{{ __('This week') }}</option>
+                    <option value="this_month">{{ __('This month') }}</option>
+                    <option value="this_quarter">{{ __('This quarter') }}</option>
+                    <option value="this_year">{{ __('This year') }}</option>
+                </optgroup>
+                <optgroup label="{{ __('Past periods') }}">
+                    <option value="last_7_days">{{ __('Last 7 days') }}</option>
+                    <option value="last_30_days">{{ __('Last 30 days') }}</option>
+                    <option value="last_week">{{ __('Last week') }}</option>
+                    <option value="last_month">{{ __('Last month') }}</option>
+                    <option value="last_quarter">{{ __('Last quarter') }}</option>
+                    <option value="last_year">{{ __('Last year') }}</option>
+                </optgroup>
+                <option value="custom">{{ __('Custom...') }}</option>
+            </x-select.native>
+
+            {{-- Inline custom calculation fields --}}
+            <div
+                x-cloak
+                x-show="datePresetLabel === '' && newFilter.value[0]?.hasOwnProperty('calculation')"
+                class="mt-2 flex flex-col gap-2 rounded-md border border-gray-200 p-2 dark:border-secondary-700"
+            >
+                <div class="flex items-center gap-1.5">
+                    <x-button
+                        sm
+                        x-bind:class="newFilterCalculation.operator === '-' && 'ring-2 ring-offset-2'"
+                        x-on:click="newFilterCalculation.operator = '-'"
+                        color="red"
+                        text="-"
+                    />
+                    <x-button
+                        sm
+                        x-bind:class="newFilterCalculation.operator === '+' && 'ring-2 ring-offset-2'"
+                        x-on:click="newFilterCalculation.operator = '+'"
+                        color="emerald"
+                        text="+"
+                    />
+                    <x-number sm min="0" x-model="newFilterCalculation.value" />
+                    <x-select.native sm x-model="newFilterCalculation.unit">
+                        <option value="days">{{ __('Days') }}</option>
+                        <option value="weeks">{{ __('Weeks') }}</option>
+                        <option value="months">{{ __('Months') }}</option>
+                        <option value="years">{{ __('Years') }}</option>
+                    </x-select.native>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <x-select.native sm x-model="newFilterCalculation.is_start_of">
+                        <option value="">{{ __('Same time') }}</option>
+                        <option value="1">{{ __('Start of') }}</option>
+                        <option value="0">{{ __('End of') }}</option>
+                    </x-select.native>
+                    <div
+                        x-cloak
+                        x-show="newFilterCalculation.is_start_of?.length > 0"
+                        class="flex-1"
+                    >
+                        <x-select.native sm x-model="newFilterCalculation.start_of">
+                            <option value="day">{{ __('Day') }}</option>
+                            <option value="week">{{ __('Week') }}</option>
+                            <option value="month">{{ __('Month') }}</option>
+                            <option value="quarter">{{ __('Quarter') }}</option>
+                            <option value="year">{{ __('Year') }}</option>
+                        </x-select.native>
+                    </div>
+                </div>
+                <x-button
+                    sm
+                    color="primary"
+                    :text="__('Apply')"
+                    x-on:click="addCalculation(0); newFilter.operator = 'between';"
+                />
+            </div>
+
+            {{-- Show selected preset label --}}
+            <div
+                x-cloak
+                x-show="datePresetLabel !== '' && newFilter.value[0]?.hasOwnProperty('calculation')"
+                class="mt-1"
+            >
+                <x-badge
+                    color="indigo"
+                    x-text="datePresetLabel"
+                ></x-badge>
+            </div>
+        </div>
+
+        {{-- Non-date column: normal text/number input --}}
+        <div
+            x-cloak
+            x-show="! getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')"
+            class="w-full"
+        >
             <x-input sm
                 sm
                 name="new-filter-value"
-                x-show="! newFilter.value[0]?.hasOwnProperty('calculation')"
                 x-bind:type="getFilterInputType(newFilter.relation + '.' + newFilter.column)"
                 x-model="newFilter.value[0]"
                 placeholder="{{ __('Value') }}"
                 x-ref="filterValue"
             />
-            <div
-                class="flex shrink-0"
-                x-cloak
-                x-show="newFilter.value[0]?.hasOwnProperty('calculation')"
-            >
-                <x-badge
-                    color="indigo"
-                    x-text="getCalculationLabel(newFilter.value[0]?.calculation)"
-                ></x-badge>
-            </div>
-            <div
-                x-cloak
-                x-show="
-                    getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith(
-                        'date',
-                    )
-                "
-            >
-                <x-button
-                    color="secondary"
-                    light
-                    icon="calculator"
-                    class="w-full"
-                    x-on:click="dateCalculation = 0; $tsui.open.modal('date-calculation');"
-                ></x-button>
-            </div>
         </div>
+
+        {{-- Non-date between: second value input --}}
         <div
             x-cloak
-            x-show="newFilter.operator === 'between'"
+            x-show="newFilter.operator === 'between' && ! getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith('date')"
         >
             <span class="block text-center text-xs text-gray-400 dark:text-gray-500">{{ __('and') }}</span>
-            <div class="flex items-center gap-1.5">
-                <x-input sm
-                    name="new-filter-value-2"
-                    class="w-full"
-                    x-cloak
-                    x-show="! newFilter.value[1]?.hasOwnProperty('calculation')"
-                    x-bind:type="getFilterInputType(newFilter.relation + '.' + newFilter.column)"
-                    x-model="newFilter.value[1]"
-                    placeholder="{{ __('Value') }}"
-                    x-ref="filterValue"
-                />
-                <div
-                    class="flex shrink-0"
-                    x-show="newFilter.value[1]?.hasOwnProperty('calculation')"
-                >
-                    <x-badge
-                        color="indigo"
-                        x-text="getCalculationLabel(newFilter.value[1]?.calculation)"
-                    ></x-badge>
-                </div>
-                <div
-                    x-cloak
-                    x-show="
-                        getFilterInputType(newFilter.relation + '.' + newFilter.column).startsWith(
-                            'date',
-                        )
-                    "
-                >
-                    <x-button
-                        color="secondary"
-                        light
-                        icon="calculator"
-                        class="w-full"
-                        x-on:click="dateCalculation = 1; $tsui.open.modal('date-calculation');"
-                    ></x-button>
-                </div>
-            </div>
+            <x-input sm
+                name="new-filter-value-2"
+                class="w-full"
+                x-bind:type="getFilterInputType(newFilter.relation + '.' + newFilter.column)"
+                x-model="newFilter.value[1]"
+                placeholder="{{ __('Value') }}"
+            />
         </div>
     </div>
     <div
