@@ -392,6 +392,9 @@ class DataTable extends Component
     {
         return [
             'like' => __('like'), 'not like' => __('not like'),
+            'starts with' => __('starts with'), 'ends with' => __('ends with'),
+            'contains' => __('contains'), 'does not contain' => __('does not contain'),
+            'in' => __('in'), 'not in' => __('not in'),
             'is null' => __('is null'), 'is not null' => __('is not null'),
             'between' => __('between'), 'and' => __('and'),
             'Now' => __('Now'),
