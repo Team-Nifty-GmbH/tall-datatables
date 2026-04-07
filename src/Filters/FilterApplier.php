@@ -50,6 +50,13 @@ class FilterApplier
 
         return match ($operator) {
             'like' => $query->where($column, 'like', $value),
+            'not like' => $query->where($column, 'not like', $value),
+            'starts with' => $query->where($column, 'like', $value . '%'),
+            'ends with' => $query->where($column, 'like', '%' . $value),
+            'contains' => $query->where($column, 'like', '%' . $value . '%'),
+            'does not contain' => $query->where($column, 'not like', '%' . $value . '%'),
+            'in' => $query->whereIn($column, array_map('trim', explode(',', $value))),
+            'not in' => $query->whereNotIn($column, array_map('trim', explode(',', $value))),
             'between' => $query->whereBetween($column, $value),
             'is null' => $query->whereNull($column),
             'is not null' => $query->whereNotNull($column),

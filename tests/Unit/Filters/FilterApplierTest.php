@@ -166,4 +166,101 @@ describe('FilterApplier::apply', function (): void {
         $posts = $result->get();
         expect($posts)->toHaveCount(2);
     });
+
+    it('applies a starts with filter', function (): void {
+        $applier = new FilterApplier();
+        createTestPost(['title' => 'Hello World']);
+        createTestPost(['title' => 'Goodbye World']);
+        $result = $applier->apply(Post::query(), [
+            ['column' => 'title', 'operator' => 'starts with', 'value' => 'Hello'],
+        ]);
+        $posts = $result->get();
+        expect($posts)->toHaveCount(1)->and($posts->first()->title)->toBe('Hello World');
+    });
+
+    it('applies an ends with filter', function (): void {
+        $applier = new FilterApplier();
+        createTestPost(['title' => 'Hello World']);
+        createTestPost(['title' => 'Hello Universe']);
+        $result = $applier->apply(Post::query(), [
+            ['column' => 'title', 'operator' => 'ends with', 'value' => 'World'],
+        ]);
+        $posts = $result->get();
+        expect($posts)->toHaveCount(1)->and($posts->first()->title)->toBe('Hello World');
+    });
+
+    it('applies a contains filter', function (): void {
+        $applier = new FilterApplier();
+        createTestPost(['title' => 'Hello World']);
+        createTestPost(['title' => 'Goodbye Moon']);
+        $result = $applier->apply(Post::query(), [
+            ['column' => 'title', 'operator' => 'contains', 'value' => 'World'],
+        ]);
+        $posts = $result->get();
+        expect($posts)->toHaveCount(1)->and($posts->first()->title)->toBe('Hello World');
+    });
+
+    it('applies a does not contain filter', function (): void {
+        $applier = new FilterApplier();
+        createTestPost(['title' => 'Hello World']);
+        createTestPost(['title' => 'Goodbye Moon']);
+        $result = $applier->apply(Post::query(), [
+            ['column' => 'title', 'operator' => 'does not contain', 'value' => 'World'],
+        ]);
+        $posts = $result->get();
+        expect($posts)->toHaveCount(1)->and($posts->first()->title)->toBe('Goodbye Moon');
+    });
+
+    it('applies an in filter with comma-separated values', function (): void {
+        $applier = new FilterApplier();
+        createTestPost(['title' => 'Alpha']);
+        createTestPost(['title' => 'Beta']);
+        createTestPost(['title' => 'Gamma']);
+        $result = $applier->apply(Post::query(), [
+            ['column' => 'title', 'operator' => 'in', 'value' => 'Alpha, Gamma'],
+        ]);
+        $posts = $result->get();
+        expect($posts)->toHaveCount(2);
+        expect($posts->pluck('title')->toArray())->toContain('Alpha')->toContain('Gamma');
+    });
+
+    it('applies a not in filter with comma-separated values', function (): void {
+        $applier = new FilterApplier();
+        createTestPost(['title' => 'Alpha']);
+        createTestPost(['title' => 'Beta']);
+        createTestPost(['title' => 'Gamma']);
+        $result = $applier->apply(Post::query(), [
+            ['column' => 'title', 'operator' => 'not in', 'value' => 'Alpha, Gamma'],
+        ]);
+        $posts = $result->get();
+        expect($posts)->toHaveCount(1)->and($posts->first()->title)->toBe('Beta');
+    });
+
+    it('applies a contains filter on relation columns', function (): void {
+        $applier = new FilterApplier();
+        $userA = createTestUser(['name' => 'Alice Smith']);
+        $userB = createTestUser(['name' => 'Bob Jones']);
+        createTestPost(['user_id' => $userA->getKey()]);
+        createTestPost(['user_id' => $userB->getKey()]);
+        $result = $applier->apply(Post::query(), [
+            ['column' => 'user.name', 'operator' => 'contains', 'value' => 'Alice'],
+        ]);
+        $posts = $result->get();
+        expect($posts)->toHaveCount(1);
+    });
+
+    it('applies an in filter on relation columns', function (): void {
+        $applier = new FilterApplier();
+        $userA = createTestUser(['name' => 'Alice']);
+        $userB = createTestUser(['name' => 'Bob']);
+        $userC = createTestUser(['name' => 'Charlie']);
+        createTestPost(['user_id' => $userA->getKey()]);
+        createTestPost(['user_id' => $userB->getKey()]);
+        createTestPost(['user_id' => $userC->getKey()]);
+        $result = $applier->apply(Post::query(), [
+            ['column' => 'user.name', 'operator' => 'in', 'value' => 'Alice, Charlie'],
+        ]);
+        $posts = $result->get();
+        expect($posts)->toHaveCount(2);
+    });
 });
