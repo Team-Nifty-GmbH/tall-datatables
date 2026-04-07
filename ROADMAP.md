@@ -62,16 +62,16 @@
 - [x] Multi-sort
 - [x] Relation count columns
 
-### v2.2 — Filters, Export & Views
+### v2.2 — Filters & Export ✓
 
-- [ ] Saved views (opt-in)
 - [x] Extended filter operators (`in`, `not in`, `starts with`, `contains`)
 - [x] Relative date filters
 - [x] CSV export
 - [x] JSON export
 
-### v2.3 — Kanban, Accessibility & DX
+### v2.3 — Views, Kanban, Accessibility & DX
 
+- [ ] View-mode switcher (table/grid/kanban per DataTable)
 - [ ] Kanban view layout
 - [ ] ARIA attributes & semantic HTML
 - [ ] Keyboard navigation
