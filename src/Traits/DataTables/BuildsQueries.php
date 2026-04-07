@@ -111,6 +111,22 @@ trait BuildsQueries
                         if (is_array($filter['value']) && count($filter['value']) === 2) {
                             $query->whereBetween($filter['column'], $filter['value']);
                         }
+                    } elseif (in_array($filter['operator'], ['starts with', 'ends with', 'contains', 'does not contain'])) {
+                        $value = $filter['value'] ?? '';
+                        $likeOperator = $filter['operator'] === 'does not contain' ? 'not like' : 'like';
+                        $pattern = match ($filter['operator']) {
+                            'starts with' => $value . '%',
+                            'ends with' => '%' . $value,
+                            'contains', 'does not contain' => '%' . $value . '%',
+                        };
+                        $query->where($filter['column'], $likeOperator, $pattern);
+                    } elseif (in_array($filter['operator'], ['in', 'not in'])) {
+                        $values = array_map('trim', explode(',', $filter['value'] ?? ''));
+                        if ($filter['operator'] === 'in') {
+                            $query->whereIn($filter['column'], $values);
+                        } else {
+                            $query->whereNotIn($filter['column'], $values);
+                        }
                     } else {
                         $column = $filter['column'] ?? null;
                         $operator = $filter['operator'] ?? null;
