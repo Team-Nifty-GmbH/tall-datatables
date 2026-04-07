@@ -272,7 +272,7 @@ describe('Sorting', function (): void {
         expect($titles)->toBe(['Zulu Post', 'Mike Post', 'Alpha Post']);
     });
 
-    it('keeps descending when changing column', function (): void {
+    it('resets to ascending when changing column', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('loadData')
             ->call('sortTable', 'title')
@@ -280,7 +280,7 @@ describe('Sorting', function (): void {
             ->call('sortTable', 'created_at');
 
         expect($component->get('userOrderBy'))->toBe('created_at');
-        expect($component->get('userOrderAsc'))->toBeFalse();
+        expect($component->get('userOrderAsc'))->toBeTrue();
     });
 
     it('defaults to descending by primary key without explicit sort', function (): void {

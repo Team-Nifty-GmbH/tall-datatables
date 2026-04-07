@@ -64,16 +64,33 @@
                                     <div
                                         class="flex flex-row items-center space-x-1.5"
                                         x-bind:class="($wire.sortable || []).includes(col) || ($wire.sortable || []).includes('*') ? 'cursor-pointer' : ''"
-                                        x-on:click="(($wire.sortable || []).includes(col) || ($wire.sortable || []).includes('*')) && $wire.sortTable(col)"
+                                        x-on:click="(($wire.sortable || []).includes(col) || ($wire.sortable || []).includes('*')) && $wire.sortTable(col, $event.shiftKey)"
                                     >
                                         <span x-text="($wire.colLabels || {})[col] || col.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')).join(' → ')"></span>
-                                        <x-icon
-                                            name="chevron-up"
-                                            class="h-3 w-3 transition-all"
-                                            x-cloak
-                                            x-show="$wire.userOrderBy === col"
-                                            x-bind:class="$wire.userOrderAsc ? '' : 'rotate-180'"
-                                        />
+                                        <template x-if="$wire.userOrderBy === col">
+                                            <span class="flex items-center gap-0.5">
+                                                <x-icon
+                                                    name="chevron-up"
+                                                    class="h-3 w-3 transition-all"
+                                                    x-bind:class="$wire.userOrderAsc ? '' : 'rotate-180'"
+                                                />
+                                                <span
+                                                    x-cloak
+                                                    x-show="($wire.userMultiSort || []).length > 0"
+                                                    class="text-xs text-gray-400"
+                                                >1</span>
+                                            </span>
+                                        </template>
+                                        <template x-for="(sort, sortIndex) in ($wire.userMultiSort || [])" x-bind:key="sort.column">
+                                            <span x-cloak x-show="sort.column === col" class="flex items-center gap-0.5">
+                                                <x-icon
+                                                    name="chevron-up"
+                                                    class="h-3 w-3 transition-all"
+                                                    x-bind:class="sort.asc ? '' : 'rotate-180'"
+                                                />
+                                                <span class="text-xs text-gray-400" x-text="sortIndex + 2"></span>
+                                            </span>
+                                        </template>
                                     </div>
                                     @if ($hasStickyCols)
                                         <div class="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity"

@@ -281,14 +281,14 @@ describe('sortTable', function (): void {
         expect($component->get('userOrderAsc'))->toBeFalse();
     });
 
-    it('keeps current direction when changing to different column', function (): void {
+    it('resets direction to ASC when changing to different column', function (): void {
         $component = Livewire::test(PostDataTable::class)
             ->call('sortTable', 'title')
             ->call('sortTable', 'title')
             ->call('sortTable', 'content');
 
         expect($component->get('userOrderBy'))->toBe('content');
-        expect($component->get('userOrderAsc'))->toBeFalse();
+        expect($component->get('userOrderAsc'))->toBeTrue();
     });
 });
 
