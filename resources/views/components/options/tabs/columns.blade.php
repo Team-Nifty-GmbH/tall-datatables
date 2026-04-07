@@ -50,7 +50,7 @@
             </div>
         </template>
     </div>
-    <div class="flex justify-start pt-2">
+    <div class="flex justify-start gap-2 pt-2">
         <x-button
             color="secondary"
             light
@@ -58,6 +58,15 @@
             x-on:click="resetLayout"
             :text="__('Reset Layout')"
         />
+        @if($this->canSaveDefaultColumns())
+            <x-button
+                color="primary"
+                light
+                loading="saveDefaultColumns"
+                wire:click="saveDefaultColumns"
+                :text="__('Set as Default')"
+            />
+        @endif
     </div>
     </div>
     <div

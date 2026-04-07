@@ -21,6 +21,23 @@ trait StoresSettings
 
     public bool $showSavedFilters = true;
 
+    #[Renderless]
+    public function deleteDefaultColumns(): void
+    {
+        if (! $this->canSaveDefaultColumns()) {
+            return;
+        }
+
+        $this->ensureAuthHasTrait();
+
+        $settingModel = config('tall-datatables.models.datatable_user_setting');
+        $settingModel::query()
+            ->where('component', static::class)
+            ->where('cache_key', $this->getCacheKey())
+            ->where('is_default_columns', true)
+            ->delete();
+    }
+
     /**
      * @throws MissingTraitException
      */
@@ -121,6 +138,18 @@ trait StoresSettings
 
     public function mountStoresSettings(): void
     {
+        // Load global default columns (applies to all users, lowest priority override)
+        $settingModel = config('tall-datatables.models.datatable_user_setting');
+        $defaultColumns = $settingModel::query()
+            ->where('component', static::class)
+            ->where('cache_key', $this->getCacheKey())
+            ->where('is_default_columns', true)
+            ->first();
+
+        if ($defaultColumns) {
+            $this->enabledCols = data_get($defaultColumns->settings, 'enabledCols', $this->enabledCols);
+        }
+
         $this->savedFilters = $this->getSavedFilters(
             fn (Builder $query) => $query->where('is_layout', false)
         );
@@ -163,18 +192,59 @@ trait StoresSettings
                 ->first();
             $cached = Session::get(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
 
-            if (! $layout && ! $cached) {
-                return;
-            }
-
             $layout?->delete();
             Session::remove(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());
 
-            $this->reset(array_keys(array_merge($layout?->settings ?? [], $cached ?? [])));
+            $resetKeys = array_keys(array_merge($layout?->settings ?? [], $cached ?? []));
+            if (! in_array('enabledCols', $resetKeys)) {
+                $resetKeys[] = 'enabledCols';
+            }
+            $this->reset($resetKeys);
+
+            // Restore global default columns if available
+            $settingModel = config('tall-datatables.models.datatable_user_setting');
+            $defaultColumns = $settingModel::query()
+                ->where('component', static::class)
+                ->where('cache_key', $this->getCacheKey())
+                ->where('is_default_columns', true)
+                ->first();
+
+            if ($defaultColumns) {
+                $this->enabledCols = data_get($defaultColumns->settings, 'enabledCols', $this->enabledCols);
+            }
+
             $this->colLabels = $this->getColLabels();
             $this->loadData();
         } catch (MissingTraitException) {
         }
+    }
+
+    #[Renderless]
+    public function saveDefaultColumns(): void
+    {
+        if (! $this->canSaveDefaultColumns()) {
+            return;
+        }
+
+        $this->ensureAuthHasTrait();
+
+        $settingModel = config('tall-datatables.models.datatable_user_setting');
+
+        $settingModel::updateOrCreate(
+            [
+                'component' => static::class,
+                'cache_key' => $this->getCacheKey(),
+                'is_default_columns' => true,
+            ],
+            [
+                'name' => '__default_columns__',
+                'settings' => ['enabledCols' => $this->enabledCols],
+                'is_layout' => false,
+                'is_permanent' => false,
+                'authenticatable_id' => Auth::id(),
+                'authenticatable_type' => Auth::user()->getMorphClass(),
+            ]
+        );
     }
 
     /**
@@ -274,6 +344,11 @@ trait StoresSettings
             );
         } catch (MissingTraitException) {
         }
+    }
+
+    protected function canSaveDefaultColumns(): bool
+    {
+        return false;
     }
 
     protected function canShareFilters(): bool
