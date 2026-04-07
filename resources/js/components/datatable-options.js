@@ -35,6 +35,7 @@ export default function datatable_options(wire) {
             max: [],
         },
         exportColumns: [],
+        exportFormat: 'xlsx',
         relationTableFields: {},
         filterSelectType: 'text',
         filterIndex: 0,

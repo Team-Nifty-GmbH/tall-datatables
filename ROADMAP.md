@@ -53,22 +53,22 @@
 
 ## Releases
 
-### v2.1 — User Personalization
+### v2.1 — User Personalization ✓
 
-- [ ] Shared / published saved filters
-- [ ] User-controlled default columns
-- [ ] Row drag & drop (opt-in)
-- [ ] Positive empty state (opt-in)
-- [ ] Multi-sort
+- [x] Shared / published saved filters
+- [x] User-controlled default columns
+- [x] Row drag & drop (opt-in)
+- [x] Positive empty state (opt-in)
+- [x] Multi-sort
+- [x] Relation count columns
 
 ### v2.2 — Filters, Export & Views
 
-- [ ] Relation count columns with HAVING filter
 - [ ] Saved views (opt-in)
 - [ ] Extended filter operators (`in`, `not in`, `starts with`, `contains`, custom)
 - [x] Relative date filters
-- [ ] CSV export
-- [ ] JSON export
+- [x] CSV export
+- [x] JSON export
 
 ### v2.3 — Kanban, Accessibility & DX
 

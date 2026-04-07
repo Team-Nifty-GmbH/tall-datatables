@@ -153,6 +153,37 @@ describe('SupportsExporting', function (): void {
 
             expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
         });
+
+        it('returns a CSV response when format is csv', function (): void {
+            createTestPost(['user_id' => $this->user->getKey()]);
+
+            $component = Livewire::test(PostDataTable::class)->call('loadData');
+            $response = $component->instance()->export(['title', 'content'], 'csv');
+
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class);
+            expect($response->headers->get('content-type'))->toContain('text/csv');
+            expect($response->headers->get('content-disposition'))->toContain('.csv');
+        });
+
+        it('returns a JSON response when format is json', function (): void {
+            createTestPost(['user_id' => $this->user->getKey()]);
+
+            $component = Livewire::test(PostDataTable::class)->call('loadData');
+            $response = $component->instance()->export(['title', 'content'], 'json');
+
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class);
+            expect($response->headers->get('content-type'))->toContain('application/json');
+            expect($response->headers->get('content-disposition'))->toContain('.json');
+        });
+
+        it('defaults to xlsx when no format given', function (): void {
+            createTestPost(['user_id' => $this->user->getKey()]);
+
+            $component = Livewire::test(PostDataTable::class)->call('loadData');
+            $response = $component->instance()->export(['title']);
+
+            expect($response->headers->get('content-disposition'))->toContain('.xlsx');
+        });
     });
 
     describe('isExportable in view data', function (): void {
