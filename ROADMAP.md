@@ -66,7 +66,7 @@
 - [ ] Relation count columns with HAVING filter
 - [ ] Saved views (opt-in)
 - [ ] Extended filter operators (`in`, `not in`, `starts with`, `contains`, custom)
-- [ ] Relative date filters
+- [x] Relative date filters
 - [ ] CSV export
 - [ ] JSON export
 
