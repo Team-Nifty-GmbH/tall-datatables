@@ -306,6 +306,9 @@ class DataTable extends Component
                 $column = Str::afterLast($key, '.');
                 $relation = array_map(fn ($part) => __(Str::headline($part)), $relation);
                 $value = implode(' -> ', $relation) . ' -> ' . __(Str::headline($column));
+            } elseif (str_ends_with($key, '_count') && ! ($this->columnLabels[$key] ?? false)) {
+                $relationPart = Str::headline(Str::beforeLast($key, '_count'));
+                $value = __($relationPart) . ' ' . __('count');
             } else {
                 $value = __(Str::headline($this->columnLabels[$key] ?? $key));
             }
