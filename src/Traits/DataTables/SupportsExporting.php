@@ -6,7 +6,10 @@ use Illuminate\Http\Response;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use TeamNiftyGmbH\DataTable\Exports\CsvExport;
 use TeamNiftyGmbH\DataTable\Exports\DataTableExport;
+use TeamNiftyGmbH\DataTable\Exports\JsonExport;
 
 trait SupportsExporting
 {
@@ -19,12 +22,17 @@ trait SupportsExporting
     public bool $isExportable = true;
 
     #[Renderless]
-    public function export(array $columns = []): Response|BinaryFileResponse
+    public function export(array $columns = [], string $format = 'xlsx'): Response|BinaryFileResponse|StreamedResponse
     {
         $query = $this->buildSearch();
+        $columns = array_filter($columns);
+        $basename = class_basename($this->getModel()) . '_' . now()->toDateTimeLocalString('minute');
 
-        return (new DataTableExport($query, array_filter($columns)))
-            ->download(class_basename($this->getModel()) . '_' . now()->toDateTimeLocalString('minute') . '.xlsx');
+        return match ($format) {
+            'csv' => (new CsvExport($query, $columns))->download($basename . '.csv'),
+            'json' => (new JsonExport($query, $columns))->download($basename . '.json'),
+            default => (new DataTableExport($query, $columns))->download($basename . '.xlsx'),
+        };
     }
 
     #[Renderless]
