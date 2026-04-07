@@ -165,12 +165,13 @@
                             })();
                         "
                     >
-                        <div x-on:click.stop>
+                        <div x-on:click.stop x-show="displayPath.length === 0" x-cloak>
                             <x-checkbox
                                 sm
                                 x-bind:value="relation.name + '_count'"
                                 x-bind:checked="$wire.enabledCols.includes(relation.name + '_count')"
                                 x-on:change="addCol(relation.name + '_count'); loadFilterable();"
+                                x-model="enabledCols"
                                 wire:loading.attr="disabled"
                             />
                         </div>
