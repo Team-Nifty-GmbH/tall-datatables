@@ -147,7 +147,7 @@ class DataTable extends Component
         }
 
         $this->colLabels = $this->getColLabels();
-        $this->loadData();
+        $this->loadData(forceRender: true);
     }
 
     public function render(): View|Factory|Application|null
@@ -490,7 +490,7 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    public function loadData(): void
+    public function loadData(bool $forceRender = false): void
     {
         $this->initialized = true;
         $this->dataLoadedThisRequest = true;
@@ -499,8 +499,9 @@ class DataTable extends Component
 
         // Islands handle the DOM update — skip the full component re-render
         // to avoid sending 600KB+ of unchanged sidebar/modal HTML.
-        // Full render is needed when non-island parts (like thead) must update.
-        if (request()->isMethod('POST')) {
+        // Full render is needed on initial mount (forceRender) or when
+        // non-island parts (like thead) must update.
+        if (request()->isMethod('POST') && ! $forceRender) {
             $this->skipRender();
         }
 
