@@ -46,6 +46,9 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
+      - name: Determine previous tag
+        run: echo "PREV_TAG=$(git describe --tags --abbrev=0 HEAD)" >> $GITHUB_ENV
+
       - name: Create release tag
         run: |
           git config user.name "github-actions[bot]"
@@ -58,4 +61,4 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create v${{ env.VERSION }} --title "v${{ env.VERSION }}" --generate-notes
+        run: gh release create v${{ env.VERSION }} --title "v${{ env.VERSION }}" --generate-notes --notes-start-tag "${{ env.PREV_TAG }}"
