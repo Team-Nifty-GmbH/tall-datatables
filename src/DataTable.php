@@ -148,13 +148,12 @@ class DataTable extends Component
         }
 
         $this->colLabels = $this->getColLabels();
-        $this->loadData(forceRender: true);
     }
 
     public function render(): View|Factory|Application|null
     {
         if (! $this->initialized) {
-            $this->loadData();
+            $this->loadData(forceRender: true);
         }
 
         return view($this->getView(), $this->getViewData());
