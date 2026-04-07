@@ -49,6 +49,7 @@ export default function datatable_options(wire) {
         relationFormatters: {},
         _ready: false,
         _sidebarLoaded: false,
+        datePresetLabel: '',
 
         getFilters() {
             const uf = wire.userFilters;
@@ -146,6 +147,13 @@ export default function datatable_options(wire) {
             ).find((item) => item.value == value);
             if (listItem) value = listItem.label;
             if (Array.isArray(value)) {
+                if (filter.operator === 'between' && value.length === 2 &&
+                    value[0]?.calculation && value[1]?.calculation) {
+                    const presetLabel = this.getDatePresetLabel(value[0].calculation, value[1].calculation);
+                    if (presetLabel) {
+                        return label + ' = ' + presetLabel;
+                    }
+                }
                 value = value
                     .map((item) => {
                         if (
@@ -173,6 +181,33 @@ export default function datatable_options(wire) {
                 ' ' +
                 value
             );
+        },
+
+        getDatePresetLabel(fromCalc, toCalc) {
+            const presets = {
+                'today': ['-', 0, 'days', 'day', '+', 0, 'days', 'day'],
+                'yesterday': ['-', 1, 'days', 'day', '-', 1, 'days', 'day'],
+                'this week': ['-', 0, 'weeks', 'week', '+', 0, 'weeks', 'week'],
+                'this month': ['-', 0, 'months', 'month', '+', 0, 'months', 'month'],
+                'this quarter': ['-', 0, 'months', 'quarter', '+', 0, 'months', 'quarter'],
+                'this year': ['-', 0, 'years', 'year', '+', 0, 'years', 'year'],
+                'last 7 days': ['-', 7, 'days', 'day', '+', 0, 'days', 'day'],
+                'last 30 days': ['-', 30, 'days', 'day', '+', 0, 'days', 'day'],
+                'last week': ['-', 1, 'weeks', 'week', '-', 1, 'weeks', 'week'],
+                'last month': ['-', 1, 'months', 'month', '-', 1, 'months', 'month'],
+                'last quarter': ['-', 3, 'months', 'quarter', '-', 0, 'months', 'quarter'],
+                'last year': ['-', 1, 'years', 'year', '-', 1, 'years', 'year'],
+            };
+
+            for (const [label, def] of Object.entries(presets)) {
+                const [fOp, fVal, fUnit, fSof, tOp, tVal, tUnit, tSof] = def;
+                const fromMatch = fromCalc.operator === fOp &&
+                    Number(fromCalc.value) === fVal && fromCalc.unit === fUnit && fromCalc.start_of === fSof;
+                const toMatch = toCalc.operator === tOp &&
+                    Number(toCalc.value) === tVal && toCalc.unit === tUnit && toCalc.start_of === tSof;
+                if (fromMatch && toMatch) return label;
+            }
+            return null;
         },
 
         addFilter() {
@@ -240,6 +275,91 @@ export default function datatable_options(wire) {
                 is_start_of: null,
                 start_of: null,
             };
+        },
+
+        applyDatePreset(key) {
+            const presets = {
+                today: {
+                    label: 'today',
+                    from: { operator: '-', value: 0, unit: 'days', is_start_of: '1', start_of: 'day' },
+                    to: { operator: '+', value: 0, unit: 'days', is_start_of: '0', start_of: 'day' },
+                },
+                yesterday: {
+                    label: 'yesterday',
+                    from: { operator: '-', value: 1, unit: 'days', is_start_of: '1', start_of: 'day' },
+                    to: { operator: '-', value: 1, unit: 'days', is_start_of: '0', start_of: 'day' },
+                },
+                this_week: {
+                    label: 'this week',
+                    from: { operator: '-', value: 0, unit: 'weeks', is_start_of: '1', start_of: 'week' },
+                    to: { operator: '+', value: 0, unit: 'weeks', is_start_of: '0', start_of: 'week' },
+                },
+                this_month: {
+                    label: 'this month',
+                    from: { operator: '-', value: 0, unit: 'months', is_start_of: '1', start_of: 'month' },
+                    to: { operator: '+', value: 0, unit: 'months', is_start_of: '0', start_of: 'month' },
+                },
+                this_quarter: {
+                    label: 'this quarter',
+                    from: { operator: '-', value: 0, unit: 'months', is_start_of: '1', start_of: 'quarter' },
+                    to: { operator: '+', value: 0, unit: 'months', is_start_of: '0', start_of: 'quarter' },
+                },
+                this_year: {
+                    label: 'this year',
+                    from: { operator: '-', value: 0, unit: 'years', is_start_of: '1', start_of: 'year' },
+                    to: { operator: '+', value: 0, unit: 'years', is_start_of: '0', start_of: 'year' },
+                },
+                last_7_days: {
+                    label: 'last 7 days',
+                    from: { operator: '-', value: 7, unit: 'days', is_start_of: '1', start_of: 'day' },
+                    to: { operator: '+', value: 0, unit: 'days', is_start_of: '0', start_of: 'day' },
+                },
+                last_30_days: {
+                    label: 'last 30 days',
+                    from: { operator: '-', value: 30, unit: 'days', is_start_of: '1', start_of: 'day' },
+                    to: { operator: '+', value: 0, unit: 'days', is_start_of: '0', start_of: 'day' },
+                },
+                last_week: {
+                    label: 'last week',
+                    from: { operator: '-', value: 1, unit: 'weeks', is_start_of: '1', start_of: 'week' },
+                    to: { operator: '-', value: 1, unit: 'weeks', is_start_of: '0', start_of: 'week' },
+                },
+                last_month: {
+                    label: 'last month',
+                    from: { operator: '-', value: 1, unit: 'months', is_start_of: '1', start_of: 'month' },
+                    to: { operator: '-', value: 1, unit: 'months', is_start_of: '0', start_of: 'month' },
+                },
+                last_quarter: {
+                    label: 'last quarter',
+                    from: { operator: '-', value: 3, unit: 'months', is_start_of: '1', start_of: 'quarter' },
+                    to: { operator: '-', value: 0, unit: 'months', is_start_of: '1', start_of: 'quarter' },
+                },
+                last_year: {
+                    label: 'last year',
+                    from: { operator: '-', value: 1, unit: 'years', is_start_of: '1', start_of: 'year' },
+                    to: { operator: '-', value: 1, unit: 'years', is_start_of: '0', start_of: 'year' },
+                },
+            };
+
+            if (key === 'custom') {
+                this.datePresetLabel = '';
+                this.newFilter.operator = 'between';
+                this.newFilter.value = [
+                    { calculation: { ...this.newFilterCalculation } },
+                    { calculation: { ...this.newFilterCalculation } },
+                ];
+                return;
+            }
+
+            const preset = presets[key];
+            if (!preset) return;
+
+            this.newFilter.operator = 'between';
+            this.newFilter.value = [
+                { calculation: { ...preset.from } },
+                { calculation: { ...preset.to } },
+            ];
+            this.datePresetLabel = preset.label;
         },
 
         columnSortHandle(item, position) {
