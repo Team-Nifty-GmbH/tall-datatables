@@ -168,8 +168,13 @@ describe('Multi-Row Filter Rows', function (): void {
         $page->assertPresent('button[title]');
 
         $result = $page->script('() => {
-            const btn = document.querySelector("button[title]");
-            return btn?.getAttribute("title") ?? null;
+            const buttons = document.querySelectorAll("button[title]");
+            for (const btn of buttons) {
+                if (btn.getAttribute("title").includes("OR")) {
+                    return btn.getAttribute("title");
+                }
+            }
+            return null;
         }');
         $title = is_array($result) && isset($result[0]) ? $result[0] : $result;
 

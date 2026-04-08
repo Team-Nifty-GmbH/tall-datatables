@@ -99,7 +99,7 @@
                             $displayValue = $filter['value'] ?? '';
                             $operator = $filter['operator'] ?? '=';
                             // Translate enum/state values
-                            if ($operator === '=' && isset($this->filterValueLists[$filter['column']])) {
+                            if (in_array($operator, ['=', '!=']) && isset($this->filterValueLists[$filter['column']])) {
                                 $label = collect($this->filterValueLists[$filter['column']])->firstWhere('value', $displayValue);
                                 $displayValue = $label['label'] ?? $displayValue;
                             }

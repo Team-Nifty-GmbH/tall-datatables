@@ -427,7 +427,7 @@ class DataTable extends Component
                 $displayValue = $filter['value'] ?? '';
 
                 // Translate enum/state values for display
-                if ($filter['operator'] === '=' && isset($this->filterValueLists[$filter['column']])) {
+                if (in_array($filter['operator'], ['=', '!=']) && isset($this->filterValueLists[$filter['column']])) {
                     $label = collect($this->filterValueLists[$filter['column']])
                         ->firstWhere('value', $displayValue);
                     $displayValue = $label['label'] ?? $displayValue;
