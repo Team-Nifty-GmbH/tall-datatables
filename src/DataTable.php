@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable;
 
+use BadMethodCallException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -496,6 +497,11 @@ class DataTable extends Component
         $this->page = $page;
         $this->cacheState();
         $this->loadData();
+    }
+
+    public function kanbanMoveItem(int|string $id, string $targetLane): void
+    {
+        throw new BadMethodCallException('Override kanbanMoveItem() to handle drag & drop.');
     }
 
     public function loadData(bool $forceRender = false): void
@@ -1095,9 +1101,50 @@ class DataTable extends Component
             'isSortable' => $this->isSortable(),
             'availableLayouts' => $this->availableLayouts(),
             'activeLayout' => $this->activeLayout,
+            'kanbanColumn' => in_array('kanban', $this->availableLayouts()) ? $this->kanbanColumn() : null,
+            'kanbanLanes' => in_array('kanban', $this->availableLayouts()) ? $this->resolveKanbanLanes() : null,
+            'kanbanCardView' => in_array('kanban', $this->availableLayouts()) ? $this->kanbanCardView() : null,
         ];
 
         return $this->cachedViewData;
+    }
+
+    protected function kanbanCardView(): ?string
+    {
+        return null;
+    }
+
+    protected function kanbanColumn(): ?string
+    {
+        return null;
+    }
+
+    protected function kanbanLanes(): ?array
+    {
+        return null;
+    }
+
+    protected function resolveKanbanLanes(): array
+    {
+        $lanes = $this->kanbanLanes();
+
+        if ($lanes !== null) {
+            return $lanes;
+        }
+
+        $column = $this->kanbanColumn();
+        $valueList = $this->filterValueLists[$column] ?? [];
+
+        $resolved = [];
+        foreach ($valueList as $item) {
+            $value = (string) ($item['value'] ?? '');
+            $resolved[$value] = [
+                'label' => $item['label'] ?? Str::headline($value),
+                'color' => 'gray',
+            ];
+        }
+
+        return $resolved;
     }
 
     protected function setData(array $data): void

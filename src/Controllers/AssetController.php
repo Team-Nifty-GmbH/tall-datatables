@@ -27,7 +27,9 @@ class AssetController extends Controller
 
         $path = $path && file_exists($assetPath . $path)
             ? $assetPath . $path
-            : File::glob($assetPath . 'tall-datatables*.js')[0];
+            : (File::glob($assetPath . 'tall-datatables*.js')[0] ?? null);
+
+        abort_unless($path, 404);
 
         return Utils::pretendResponseIsFile($path, 'text/javascript');
     }
@@ -52,7 +54,9 @@ class AssetController extends Controller
 
         $path = $path && file_exists($assetPath . $path)
             ? $assetPath . $path
-            : File::glob($assetPath . 'tall-datatables*.css')[0];
+            : (File::glob($assetPath . 'tall-datatables*.css')[0] ?? null);
+
+        abort_unless($path, 404);
 
         return Utils::pretendResponseIsFile($path, 'text/css');
     }

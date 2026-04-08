@@ -72,7 +72,7 @@
 ### v2.3 — Views, Kanban, Accessibility & DX
 
 - [x] View-mode switcher (table/grid/kanban per DataTable)
-- [ ] Kanban view layout
+- [x] Kanban view layout
 - [ ] ARIA attributes & semantic HTML
 - [ ] Keyboard navigation
 - [ ] Action builder DSL
