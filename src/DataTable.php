@@ -14,6 +14,7 @@ use Illuminate\View\ComponentAttributeBag;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
+use Livewire\Features\SupportIslands\Compiler\IslandCompiler;
 use Spatie\ModelInfo\Attributes\Attribute;
 use TallStackUi\Traits\Interactions;
 use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
@@ -147,13 +148,12 @@ class DataTable extends Component
         }
 
         $this->colLabels = $this->getColLabels();
-        $this->loadData(forceRender: true);
     }
 
     public function render(): View|Factory|Application|null
     {
         if (! $this->initialized) {
-            $this->loadData();
+            $this->loadData(forceRender: true);
         }
 
         return view($this->getView(), $this->getViewData());
@@ -499,9 +499,14 @@ class DataTable extends Component
 
         // Islands handle the DOM update — skip the full component re-render
         // to avoid sending 600KB+ of unchanged sidebar/modal HTML.
-        // Full render is needed on initial mount (forceRender) or when
+        // Full render is needed on initial mount (forceRender), when island
+        // cache files are missing (e.g. after view:clear / deploy), or when
         // non-island parts (like thead) must update.
-        if (request()->isMethod('POST') && ! $forceRender) {
+        $useIslands = request()->isMethod('POST')
+            && ! $forceRender
+            && $this->islandCacheValid();
+
+        if ($useIslands) {
             $this->skipRender();
         }
 
@@ -524,9 +529,11 @@ class DataTable extends Component
                     : [];
             }
 
-            $this->renderIsland('body');
-            $this->renderIsland('footer');
-            $this->renderIsland('badges');
+            if ($useIslands) {
+                $this->renderIsland('body');
+                $this->renderIsland('footer');
+                $this->renderIsland('badges');
+            }
 
             return;
         }
@@ -566,9 +573,11 @@ class DataTable extends Component
             array_shift($this->data['links']);
         }
 
-        $this->renderIsland('body');
-        $this->renderIsland('footer');
-        $this->renderIsland('badges');
+        if ($useIslands) {
+            $this->renderIsland('body');
+            $this->renderIsland('footer');
+            $this->renderIsland('badges');
+        }
     }
 
     #[Renderless]
@@ -805,7 +814,9 @@ class DataTable extends Component
     #[Renderless]
     public function updatedStickyCols(): void
     {
-        $this->renderIsland('body');
+        if ($this->islandCacheValid()) {
+            $this->renderIsland('body');
+        }
     }
 
     #[Renderless]
@@ -1062,6 +1073,29 @@ class DataTable extends Component
     protected function showRestoreButton(): bool
     {
         return method_exists(static::class, 'restore');
+    }
+
+    private function islandCacheValid(): bool
+    {
+        $islands = $this->getIslands();
+
+        if (empty($islands)) {
+            return false;
+        }
+
+        foreach ($islands as $island) {
+            if (empty($island['token'])) {
+                continue;
+            }
+
+            $path = IslandCompiler::getCachedPathFromToken($island['token']);
+
+            if (! file_exists($path)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function isValidSortColumn(string $col): bool
