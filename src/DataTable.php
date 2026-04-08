@@ -33,6 +33,8 @@ class DataTable extends Component
     use BuildsQueries, Interactions, StoresSettings, SupportsAggregation, SupportsExporting, SupportsGrouping,
         SupportsRelations, SupportsSelecting, SupportsSorting;
 
+    public string $activeLayout = '';
+
     public array $appends = [];
 
     #[Locked]
@@ -286,6 +288,12 @@ class DataTable extends Component
         return array_values(array_unique(array_merge(
             $this->enabledCols, $availableCols, [$this->modelKeyName]
         )));
+    }
+
+    #[Renderless]
+    public function getAvailableLayouts(): array
+    {
+        return $this->availableLayouts();
     }
 
     #[Renderless]
@@ -696,6 +704,19 @@ class DataTable extends Component
     }
 
     #[Renderless]
+    public function setLayout(string $layout): void
+    {
+        if (! in_array($layout, $this->availableLayouts())) {
+            return;
+        }
+
+        $this->activeLayout = $layout;
+        $this->cachedViewData = null;
+        $this->cacheState();
+        $this->loadData();
+    }
+
+    #[Renderless]
     public function setPerPage(int $perPage): void
     {
         if ($perPage <= 0) {
@@ -837,6 +858,11 @@ class DataTable extends Component
      */
     protected function augmentItemArray(array &$itemArray, Model $item): void {}
 
+    protected function availableLayouts(): array
+    {
+        return ['table'];
+    }
+
     protected function compileActions(string $type): array
     {
         if (isset($this->cachedActions[$type])) {
@@ -973,6 +999,14 @@ class DataTable extends Component
 
     protected function getLayout(): string
     {
+        if ($this->activeLayout && in_array($this->activeLayout, $this->availableLayouts())) {
+            return match ($this->activeLayout) {
+                'grid' => 'tall-datatables::layouts.grid',
+                'kanban' => 'tall-datatables::layouts.kanban',
+                default => 'tall-datatables::layouts.table',
+            };
+        }
+
         return 'tall-datatables::layouts.table';
     }
 
@@ -1031,6 +1065,10 @@ class DataTable extends Component
 
     protected function getViewData(): array
     {
+        if ($this->activeLayout === '') {
+            $this->activeLayout = $this->availableLayouts()[0] ?? 'table';
+        }
+
         if ($this->cachedViewData !== null) {
             return $this->cachedViewData;
         }
@@ -1060,6 +1098,8 @@ class DataTable extends Component
             'canSaveDefaultColumns' => $this->canSaveDefaultColumns(),
             'canShareFilters' => $this->canShareFilters(),
             'isSortable' => $this->isSortable(),
+            'availableLayouts' => $this->availableLayouts(),
+            'activeLayout' => $this->activeLayout,
         ];
 
         return $this->cachedViewData;
