@@ -207,6 +207,7 @@
                                                             class="min-w-0 flex-1 border-0 bg-transparent px-3 py-1 text-sm text-gray-600 placeholder-gray-300 outline-none focus:ring-0 dark:text-gray-300 dark:placeholder-gray-600"
                                                             x-bind:placeholder="vi === 0 ? '…' : '{{ __('and') }}…'"
                                                             x-init="$el.value = getTextFilterValue(rowIndex, col, vi)"
+                                                            x-effect="if (document.activeElement !== $el) $el.value = getTextFilterValue(rowIndex, col, vi)"
                                                             x-on:input.debounce.500ms="$wire.setTextFilter(col, $event.target.value, rowIndex, vi)"
                                                         />
                                                         <template x-if="getTextFilterValue(rowIndex, col, vi)">
