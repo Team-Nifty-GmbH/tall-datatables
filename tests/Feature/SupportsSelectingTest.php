@@ -70,14 +70,36 @@ describe('SupportsSelecting', function (): void {
             expect($component->get('selected'))->not->toContain($post->getKey());
         });
 
-        it('adds item to wildcardSelectExcluded when deselecting', function (): void {
+        it('adds item to wildcardSelectExcluded when deselecting in wildcard mode', function (): void {
+            $post = createTestPost(['user_id' => $this->user->getKey()]);
+
+            $component = Livewire::test(SelectablePostDataTable::class)
+                ->set('selected', ['*'])
+                ->call('toggleSelected', $post->getKey());
+
+            expect($component->get('wildcardSelectExcluded'))->toContain($post->getKey());
+        });
+
+        it('removes item from wildcardSelectExcluded when re-selecting in wildcard mode', function (): void {
+            $post = createTestPost(['user_id' => $this->user->getKey()]);
+
+            $component = Livewire::test(SelectablePostDataTable::class)
+                ->set('selected', ['*'])
+                ->call('toggleSelected', $post->getKey())
+                ->call('toggleSelected', $post->getKey());
+
+            expect($component->get('wildcardSelectExcluded'))->not->toContain($post->getKey());
+        });
+
+        it('removes item from selected when deselecting without wildcard', function (): void {
             $post = createTestPost(['user_id' => $this->user->getKey()]);
 
             $component = Livewire::test(SelectablePostDataTable::class)
                 ->call('toggleSelected', $post->getKey())
                 ->call('toggleSelected', $post->getKey());
 
-            expect($component->get('wildcardSelectExcluded'))->toContain($post->getKey());
+            expect($component->get('selected'))->not->toContain($post->getKey());
+            expect($component->get('wildcardSelectExcluded'))->toBeEmpty();
         });
 
         it('can select multiple items', function (): void {
@@ -270,9 +292,9 @@ describe('SupportsSelecting', function (): void {
     });
 
     describe('wildcard select behavior in loadData', function (): void {
-        it('expands wildcard to actual ids on loadData', function (): void {
-            $post1 = createTestPost(['user_id' => $this->user->getKey()]);
-            $post2 = createTestPost(['user_id' => $this->user->getKey()]);
+        it('keeps wildcard as-is on loadData without expanding IDs', function (): void {
+            createTestPost(['user_id' => $this->user->getKey()]);
+            createTestPost(['user_id' => $this->user->getKey()]);
 
             $component = Livewire::test(PostDataTable::class)
                 ->set('selected', ['*'])
@@ -280,13 +302,25 @@ describe('SupportsSelecting', function (): void {
 
             $selected = $component->get('selected');
 
-            // Should contain '*' plus the individual IDs
-            expect($selected)->toContain('*')
-                ->toContain($post1->getKey())
-                ->toContain($post2->getKey());
+            expect($selected)->toBe(['*']);
         });
 
-        it('excludes wildcardSelectExcluded from expanded wildcard', function (): void {
+        it('resolves wildcard to actual ids via getSelectedValues', function (): void {
+            $post1 = createTestPost(['user_id' => $this->user->getKey()]);
+            $post2 = createTestPost(['user_id' => $this->user->getKey()]);
+
+            $component = Livewire::test(PostDataTable::class)
+                ->set('selected', ['*'])
+                ->call('loadData');
+
+            $values = $component->instance()->getSelectedValues();
+
+            expect($values)->toContain($post1->getKey())
+                ->toContain($post2->getKey())
+                ->not->toContain('*');
+        });
+
+        it('excludes wildcardSelectExcluded via getSelectedValues', function (): void {
             $post1 = createTestPost(['user_id' => $this->user->getKey()]);
             $post2 = createTestPost(['user_id' => $this->user->getKey()]);
             $post3 = createTestPost(['user_id' => $this->user->getKey()]);
@@ -296,12 +330,33 @@ describe('SupportsSelecting', function (): void {
                 ->set('wildcardSelectExcluded', [$post2->getKey()])
                 ->call('loadData');
 
-            $selected = $component->get('selected');
+            $values = $component->instance()->getSelectedValues();
 
-            expect($selected)->toContain('*')
-                ->toContain($post1->getKey())
+            expect($values)->toContain($post1->getKey())
                 ->toContain($post3->getKey())
                 ->not->toContain($post2->getKey());
+        });
+    });
+
+    describe('wildcard select with pagination', function (): void {
+        it('wildcard stays compact regardless of record count', function (): void {
+            for ($i = 0; $i < 20; $i++) {
+                createTestPost(['user_id' => $this->user->getKey()]);
+            }
+
+            $component = Livewire::test(PostDataTable::class)
+                ->set('perPage', 5)
+                ->set('selected', ['*'])
+                ->call('loadData');
+
+            $selected = $component->get('selected');
+
+            // Wildcard stays as ['*'] — no ID expansion
+            expect($selected)->toBe(['*']);
+
+            // But getSelectedValues resolves all 20
+            $values = $component->instance()->getSelectedValues();
+            expect($values)->toHaveCount(20);
         });
     });
 

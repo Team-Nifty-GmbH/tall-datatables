@@ -33,9 +33,8 @@
                 {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}
             >
                 <x-checkbox
-                    x-on:click.stop
-                    value="{{ $record[$modelKeyName] ?? $index }}"
-                    wire:model.number="selected"
+                    x-on:click.stop="$wire.toggleSelected({{ json_encode($record[$modelKeyName] ?? $index) }})"
+                    x-bind:checked="$wire.selected.includes('*') ? !$wire.wildcardSelectExcluded.includes({{ json_encode($record[$modelKeyName] ?? $index) }}) : $wire.selected.includes({{ json_encode($record[$modelKeyName] ?? $index) }})"
                     sm
                 />
             </div>

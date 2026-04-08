@@ -38,6 +38,16 @@ trait SupportsSelecting
         return new ComponentAttributeBag();
     }
 
+    public function getSelectedValues(): array
+    {
+        return in_array('*', $this->selected)
+            ? $this->buildSearch(unpaginated: true)
+                ->whereKeyNot($this->wildcardSelectExcluded)
+                ->pluck($this->modelKeyName)
+                ->toArray()
+            : $this->selected;
+    }
+
     public function getSelectValue(): string
     {
         return $this->selectValue ?? 'record.' . $this->modelKeyName;
@@ -46,9 +56,14 @@ trait SupportsSelecting
     #[Renderless]
     public function toggleSelected(int|string $value): void
     {
-        if (in_array($value, $this->selected)) {
+        if (in_array('*', $this->selected)) {
+            if (in_array($value, $this->wildcardSelectExcluded)) {
+                $this->wildcardSelectExcluded = array_values(array_diff($this->wildcardSelectExcluded, [$value]));
+            } else {
+                $this->wildcardSelectExcluded[] = $value;
+            }
+        } elseif (in_array($value, $this->selected)) {
             $this->selected = array_values(array_diff($this->selected, [$value]));
-            $this->wildcardSelectExcluded[] = $value;
         } else {
             $this->selected[] = $value;
         }
@@ -62,15 +77,5 @@ trait SupportsSelecting
     protected function getSelectedModelsQuery(): Builder
     {
         return $this->getModel()::query()->whereIntegerInRaw($this->modelKeyName, $this->getSelectedValues());
-    }
-
-    protected function getSelectedValues(): array
-    {
-        return in_array('*', $this->selected)
-            ? $this->buildSearch(unpaginated: true)
-                ->whereKeyNot($this->wildcardSelectExcluded)
-                ->pluck($this->modelKeyName)
-                ->toArray()
-            : $this->selected;
     }
 }

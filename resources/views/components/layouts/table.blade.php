@@ -35,12 +35,8 @@
                                         value="*"
                                         x-on:change="
                                             if ($event.target.checked) {
-                                                $wire.selected = {{ json_encode(
-                                                    $selectValue === 'index'
-                                                        ? range(0, max(0, count($this->data['data'] ?? []) - 1))
-                                                        : array_column($this->data['data'] ?? [], $this->modelKeyName)
-                                                ) }};
-                                                $wire.selected.push('*');
+                                                $wire.selected = ['*'];
+                                                $wire.wildcardSelectExcluded = [];
                                             } else {
                                                 $wire.selected = [];
                                                 $wire.wildcardSelectExcluded = [];

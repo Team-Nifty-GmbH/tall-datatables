@@ -554,12 +554,7 @@ class DataTable extends Component
         $this->setData(is_array($result) ? $result : $result->toArray());
 
         if (in_array('*', $this->selected)) {
-            $this->selected = array_diff(
-                array_column($this->data['data'] ?? $this->data, $this->modelKeyName),
-                $this->wildcardSelectExcluded
-            );
-            $this->selected[] = '*';
-            $this->selected = array_values($this->selected);
+            $this->selected = ['*'];
         }
 
         if ($aggregates = $this->getAggregate($baseQuery)) {
