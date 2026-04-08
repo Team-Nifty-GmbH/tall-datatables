@@ -906,18 +906,17 @@ describe('getTableFields', function (): void {
 });
 
 describe('wildcard select handling', function (): void {
-    it('includes all selected items when wildcard is active', function (): void {
-        $post1 = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'P1']);
-        $post2 = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'P2']);
-        $post3 = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'P3']);
+    it('keeps wildcard compact on loadData', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'P1']);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'P2']);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'P3']);
 
         $component = Livewire::test(PostDataTable::class);
         $component->set('selected', ['*']);
         $component->call('loadData');
 
         $selected = $component->get('selected');
-        expect($selected)->toContain('*');
-        expect(count($selected))->toBeGreaterThanOrEqual(4); // 3 items + *
+        expect($selected)->toBe(['*']);
     });
 });
 
