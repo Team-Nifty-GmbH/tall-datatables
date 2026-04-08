@@ -274,6 +274,7 @@ trait StoresSettings
                     'userOrderAsc' => $this->userOrderAsc,
                     'userMultiSort' => $this->userMultiSort,
                     'perPage' => $this->perPage,
+                    'activeLayout' => $this->activeLayout,
                 ],
                 $withEnabledCols ? ['enabledCols' => $this->enabledCols] : []
             ),
@@ -372,6 +373,7 @@ trait StoresSettings
                 'enabledCols' => $this->enabledCols,
                 'aggregatableCols' => $this->aggregatableCols,
                 'perPage' => $this->perPage,
+                'activeLayout' => $this->activeLayout,
             ],
             'is_layout' => true,
         ];
