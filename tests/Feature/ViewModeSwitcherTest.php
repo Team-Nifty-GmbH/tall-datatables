@@ -65,4 +65,19 @@ describe('View Mode Switcher', function (): void {
             expect($viewData['activeLayout'])->toBe('table');
         });
     });
+
+    describe('persistence', function (): void {
+        it('includes activeLayout in compiled layout settings', function (): void {
+            $component = Livewire::test(Tests\Fixtures\Livewire\SwitchablePostDataTable::class)
+                ->call('setLayout', 'grid')
+                ->call('loadData');
+
+            $instance = $component->instance();
+
+            $reflection = new ReflectionMethod($instance, 'compileStoredLayout');
+            $layout = $reflection->invoke($instance);
+
+            expect($layout['settings'])->toHaveKey('activeLayout', 'grid');
+        });
+    });
 });
