@@ -992,10 +992,17 @@ trait BuildsQueries
         }
 
         // Columns with value lists (enums, states, booleans) use exact match
+        // Support ! prefix for negation (e.g. "!open" → operator != value "open")
         if (isset($this->filterValueLists[$column])) {
+            $operator = '=';
+            if (str_starts_with($trimmed, '!')) {
+                $operator = '!=';
+                $value = substr($trimmed, 1);
+            }
+
             return [
                 'column' => $column,
-                'operator' => '=',
+                'operator' => $operator,
                 'value' => $value,
             ];
         }

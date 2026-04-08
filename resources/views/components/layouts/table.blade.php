@@ -207,6 +207,7 @@
                                                             class="min-w-0 flex-1 border-0 bg-transparent px-3 py-1 text-sm text-gray-600 placeholder-gray-300 outline-none focus:ring-0 dark:text-gray-300 dark:placeholder-gray-600"
                                                             x-bind:placeholder="vi === 0 ? '…' : '{{ __('and') }}…'"
                                                             x-init="$el.value = getTextFilterValue(rowIndex, col, vi)"
+                                                            x-effect="if (document.activeElement !== $el) $el.value = getTextFilterValue(rowIndex, col, vi)"
                                                             x-on:input.debounce.500ms="$wire.setTextFilter(col, $event.target.value, rowIndex, vi)"
                                                         />
                                                         <template x-if="getTextFilterValue(rowIndex, col, vi)">
@@ -234,18 +235,41 @@
                                         </template>
                                         <template x-if="($wire.filterValueLists || {})[col]">
                                             <div
-                                                x-effect="if (!(($wire.textFilters || {})[rowIndex] || {})[col]) { const sel = $el.querySelector('select'); if (sel) sel.value = ''; }"
+                                                x-data="{
+                                                    negated: ((($wire.textFilters || {})[rowIndex] || {})[col] || '').toString().startsWith('!'),
+                                                    getStoredValue() {
+                                                        let v = (($wire.textFilters || {})[rowIndex] || {})[col] || '';
+                                                        return v.toString().startsWith('!') ? v.toString().substring(1) : v.toString();
+                                                    }
+                                                }"
+                                                x-effect="if (!(($wire.textFilters || {})[rowIndex] || {})[col]) { negated = false; const sel = $el.querySelector('select'); if (sel) sel.value = ''; }"
+                                                class="flex items-center"
                                             >
                                                 <select
-                                                    class="w-full border-0 bg-transparent px-3 py-1 text-sm text-gray-600 outline-none focus:ring-0 dark:text-gray-300"
-                                                    x-init="$nextTick(() => $el.value = (($wire.textFilters || {})[rowIndex] || {})[col] || '')"
-                                                    x-on:change="$wire.setTextFilter(col, $event.target.value, rowIndex)"
+                                                    class="min-w-0 flex-1 border-0 bg-transparent px-3 py-1 text-sm text-gray-600 outline-none focus:ring-0 dark:text-gray-300"
+                                                    x-init="$nextTick(() => $el.value = getStoredValue())"
+                                                    x-on:change="$wire.setTextFilter(col, $event.target.value ? (negated ? '!' : '') + $event.target.value : '', rowIndex)"
                                                 >
                                                     <option value=""></option>
                                                     <template x-for="item in ($wire.filterValueLists || {})[col]" x-bind:key="item.value">
                                                         <option x-bind:value="item.value" x-text="item.label"></option>
                                                     </template>
                                                 </select>
+                                                <button
+                                                    type="button"
+                                                    class="shrink-0 cursor-pointer px-1 text-xs font-bold transition-colors"
+                                                    x-bind:class="negated ? 'text-red-500' : 'text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400'"
+                                                    x-on:click="
+                                                        negated = !negated;
+                                                        let sel = $el.parentElement.querySelector('select');
+                                                        if (sel && sel.value) {
+                                                            $wire.setTextFilter(col, (negated ? '!' : '') + sel.value, rowIndex);
+                                                        }
+                                                    "
+                                                    title="{{ __('Negate filter') }}"
+                                                >
+                                                    !=
+                                                </button>
                                             </div>
                                         </template>
                                     </td>
