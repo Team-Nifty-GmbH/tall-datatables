@@ -28,7 +28,6 @@ class RelationFinder extends BaseRelationFinder
     {
         $class = new ReflectionClass($model);
         $relationResolvers = $class->getProperty('relationResolvers');
-        $relationResolvers->setAccessible(true);
 
         $relations = [];
         foreach (data_get($relationResolvers->getValue($model), get_class($model), []) as $relationName => $closure) {
