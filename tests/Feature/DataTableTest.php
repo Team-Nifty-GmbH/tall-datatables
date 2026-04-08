@@ -573,15 +573,14 @@ describe('Selection', function (): void {
             ->toContain($post->getKey());
     });
 
-    it('wildcard selection expands to all IDs on loadData', function (): void {
+    it('wildcard selection stays compact on loadData', function (): void {
         $component = Livewire::test(SelectablePostDataTable::class)
             ->set('selected', ['*'])
             ->call('loadData');
 
         $selected = $component->get('selected');
 
-        expect($selected)->toContain('*');
-        expect(count($selected))->toBe(6);
+        expect($selected)->toBe(['*']);
     });
 
     it('isSelectable property is respected', function (): void {
