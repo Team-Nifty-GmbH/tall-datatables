@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Cache;
 
-describe('ModelInfoCache Command', function (): void {
+describe('SchemaInfoCache Command', function (): void {
     it('runs successfully', function (): void {
         $this->artisan('model-info:cache')
             ->assertSuccessful();
@@ -27,7 +27,7 @@ describe('ModelInfoCache Command', function (): void {
     });
 });
 
-describe('ModelInfoCacheReset Command', function (): void {
+describe('SchemaInfoCacheReset Command', function (): void {
     it('runs successfully', function (): void {
         $this->artisan('model-info:cache-reset')
             ->assertSuccessful();

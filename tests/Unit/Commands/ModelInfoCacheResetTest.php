@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Cache;
 
-describe('ModelInfoCacheReset Command', function (): void {
+describe('SchemaInfoCacheReset Command', function (): void {
     test('model-info:cache-reset command can be called', function (): void {
         $this->artisan('model-info:cache-reset')
             ->assertSuccessful();

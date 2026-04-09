@@ -4,7 +4,7 @@ namespace TeamNiftyGmbH\DataTable\Support;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
+use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
 
 class ColumnResolver
 {
@@ -17,7 +17,7 @@ class ColumnResolver
      */
     public function getColumns(): array
     {
-        $modelInfo = ModelInfo::forModel($this->model);
+        $modelInfo = SchemaInfo::forModel($this->model);
 
         $columns = [];
         foreach ($modelInfo->attributes as $attribute) {
@@ -85,7 +85,7 @@ class ColumnResolver
             return 'text';
         }
 
-        $modelInfo = ModelInfo::forModel($modelClass);
+        $modelInfo = SchemaInfo::forModel($modelClass);
         $attribute = $modelInfo->attributes->firstWhere('name', $base);
 
         if ($attribute === null) {
@@ -146,7 +146,7 @@ class ColumnResolver
         $modelClass = is_string($this->model) ? $this->model : get_class($this->model);
 
         foreach ($parts as $relationName) {
-            $modelInfo = ModelInfo::forModel($modelClass);
+            $modelInfo = SchemaInfo::forModel($modelClass);
             $relation = $modelInfo->relation($relationName);
 
             if ($relation === null) {

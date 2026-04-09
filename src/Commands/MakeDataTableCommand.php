@@ -3,9 +3,9 @@
 namespace TeamNiftyGmbH\DataTable\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Spatie\ModelInfo\ModelFinder;
 
 class MakeDataTableCommand extends Command
 {
@@ -49,12 +49,11 @@ class MakeDataTableCommand extends Command
         if (class_exists($this->argument('model'))) {
             $this->model = $this->argument('model');
         } else {
-            $model = ModelFinder::all()
+            // Try to resolve from morph map
+            $model = collect(Relation::morphMap())
                 ->filter(
-                    function ($modelInfo) {
-                        return class_basename($modelInfo) === $this->argument('model')
-                            || $modelInfo === $this->argument('model');
-                    }
+                    fn (string $modelClass) => class_basename($modelClass) === $this->argument('model')
+                        || $modelClass === $this->argument('model')
                 )
                 ->first();
             $this->model = $model ?: $this->argument('model');
