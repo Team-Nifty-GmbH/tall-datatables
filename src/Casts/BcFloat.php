@@ -3,7 +3,6 @@
 namespace TeamNiftyGmbH\DataTable\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
-use Illuminate\Support\Number;
 use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
 
 class BcFloat implements CastsAttributes, HasFrontendFormatter
@@ -28,13 +27,11 @@ class BcFloat implements CastsAttributes, HasFrontendFormatter
             return $model->getAttributeValue($key);
         }
 
-        $value = Number::trim(is_numeric($value) ? $value : 0);
+        $value = is_numeric($value) ? (string) $value : '0';
 
-        return bccomp((string) fmod($value, 1), '0', 10) === 0
-            // not a decimal number, pad with 2 decimal places
-            ? round($value, 2)
-            // a decimal number, return as is
-            : $value;
+        return bccomp(bcmod($value, '1', 10), '0', 10) === 0
+            ? round((float) $value, 2)
+            : (float) $value;
     }
 
     /**

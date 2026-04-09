@@ -236,4 +236,16 @@ describe('Money Cast Direct Methods', function (): void {
 
         expect($result)->toBe(0.00)->toBeFloat();
     });
+
+    it('handles decimal string with tiny fractional artifact without throwing', function (): void {
+        $cast = new Money();
+        $model = new Product();
+
+        // DB decimal value where fmod would produce scientific notation like 9.4E-8
+        $model->setRawAttributes(['price' => '95.0000000940']);
+
+        $result = $cast->get($model, 'price', '95.0000000940', ['price' => '95.0000000940']);
+
+        expect($result)->toBeFloat();
+    });
 });
