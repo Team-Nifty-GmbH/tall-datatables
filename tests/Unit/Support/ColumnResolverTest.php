@@ -130,7 +130,7 @@ describe('ColumnResolver::getInputType cast mapping', function (): void {
         $resolver = new ColumnResolver(Post::class);
 
         // price has BcFloat cast which is not in the standard cast map
-        // so it falls through to inputTypeFromModelInfo
+        // so it falls through to inputTypeFromSchemaInfo
         expect($resolver->getInputType('price'))->toBeIn(['number', 'text']);
     });
 
@@ -209,15 +209,15 @@ describe('ColumnResolver::getLabel edge cases', function (): void {
     });
 });
 
-describe('ColumnResolver::getInputType fallback to modelInfo', function (): void {
-    it('falls back to inputTypeFromModelInfo for unknown casts', function (): void {
+describe('ColumnResolver::getInputType fallback to schemaInfo', function (): void {
+    it('falls back to inputTypeFromSchemaInfo for unknown casts', function (): void {
         // User model has 'email' which has no cast, should fall back to DB type
         $resolver = new ColumnResolver(User::class);
 
         expect($resolver->getInputType('email'))->toBe('text');
     });
 
-    it('returns number for integer database type via modelInfo', function (): void {
+    it('returns number for integer database type via schemaInfo', function (): void {
         // id is typically an integer column
         $resolver = new ColumnResolver(Post::class);
 
@@ -262,8 +262,8 @@ describe('ColumnResolver::getInputType with cast containing colon', function ():
     });
 });
 
-describe('ColumnResolver::getInputType for non-existent attribute in modelInfo', function (): void {
-    it('returns text when attribute is not found in modelInfo', function (): void {
+describe('ColumnResolver::getInputType for non-existent attribute in schemaInfo', function (): void {
+    it('returns text when attribute is not found in schemaInfo', function (): void {
         $resolver = new ColumnResolver(Post::class);
 
         // A column that does not exist in the model at all
