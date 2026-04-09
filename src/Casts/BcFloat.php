@@ -28,7 +28,7 @@ class BcFloat implements CastsAttributes, HasFrontendFormatter
             return $model->getAttributeValue($key);
         }
 
-        $value = Number::trim($value ?? 0);
+        $value = Number::trim(is_numeric($value) ? $value : 0);
 
         return bccomp((string) fmod($value, 1), '0', 10) === 0
             // not a decimal number, pad with 2 decimal places

@@ -216,4 +216,24 @@ describe('Money Cast Direct Methods', function (): void {
 
         expect($result)->toBe(100.0);
     });
+
+    it('handles empty string without throwing ValueError', function (): void {
+        $cast = new Money();
+        $model = new Product();
+        $model->setRawAttributes(['price' => '']);
+
+        $result = $cast->get($model, 'price', '', ['price' => '']);
+
+        expect($result)->toBe(0.00)->toBeFloat();
+    });
+
+    it('handles non-numeric string without throwing ValueError', function (): void {
+        $cast = new Money();
+        $model = new Product();
+        $model->setRawAttributes(['price' => 'abc']);
+
+        $result = $cast->get($model, 'price', 'abc', ['price' => 'abc']);
+
+        expect($result)->toBe(0.00)->toBeFloat();
+    });
 });

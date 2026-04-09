@@ -9,6 +9,18 @@ describe('MoneyFormatter', function (): void {
         expect($formatter->format(null))->toBe('');
     });
 
+    it('returns empty string for empty string', function (): void {
+        $formatter = new MoneyFormatter();
+
+        expect($formatter->format(''))->toBe('');
+    });
+
+    it('returns empty string for non-numeric string', function (): void {
+        $formatter = new MoneyFormatter();
+
+        expect($formatter->format('abc'))->toBe('');
+    });
+
     it('formats a basic monetary value', function (): void {
         $formatter = new MoneyFormatter();
         $result = $formatter->format(100.00);

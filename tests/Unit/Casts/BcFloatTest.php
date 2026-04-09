@@ -195,6 +195,26 @@ describe('BcFloat Cast Direct Methods', function (): void {
         expect(BcFloat::getFrontendFormatter('arg1', 'arg2'))->toBe('float');
     });
 
+    test('handles empty string without throwing ValueError', function (): void {
+        $cast = new BcFloat();
+        $model = new Product();
+        $model->setRawAttributes(['quantity' => '']);
+
+        $result = $cast->get($model, 'quantity', '', ['quantity' => '']);
+
+        expect($result)->toBe(0.00)->toBeFloat();
+    });
+
+    test('handles non-numeric string without throwing ValueError', function (): void {
+        $cast = new BcFloat();
+        $model = new Product();
+        $model->setRawAttributes(['quantity' => 'abc']);
+
+        $result = $cast->get($model, 'quantity', 'abc', ['quantity' => 'abc']);
+
+        expect($result)->toBe(0.00)->toBeFloat();
+    });
+
     test('delegates to attribute mutator when model has one', function (): void {
         $cast = new BcFloat();
 
