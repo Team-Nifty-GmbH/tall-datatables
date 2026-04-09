@@ -215,6 +215,17 @@ describe('BcFloat Cast Direct Methods', function (): void {
         expect($result)->toBe(0.00)->toBeFloat();
     });
 
+    test('handles decimal string with tiny fractional artifact without throwing', function (): void {
+        $cast = new BcFloat();
+        $model = new Product();
+
+        $model->setRawAttributes(['quantity' => '95.0000000940']);
+
+        $result = $cast->get($model, 'quantity', '95.0000000940', ['quantity' => '95.0000000940']);
+
+        expect($result)->toBeFloat();
+    });
+
     test('delegates to attribute mutator when model has one', function (): void {
         $cast = new BcFloat();
 
