@@ -296,7 +296,7 @@ describe('MakeDataTableCommand execution', function (): void {
         }
     });
 
-    it('resolves model by class basename', function (): void {
+    it('resolves model by class basename via ModelFinder', function (): void {
         $outputPath = app_path('Livewire/FinderTestDataTable.php');
 
         if (File::exists($outputPath)) {

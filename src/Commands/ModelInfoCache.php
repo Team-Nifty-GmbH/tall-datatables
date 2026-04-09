@@ -3,7 +3,7 @@
 namespace TeamNiftyGmbH\DataTable\Commands;
 
 use Illuminate\Console\Command;
-use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
+use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 
 class ModelInfoCache extends Command
 {
@@ -13,8 +13,12 @@ class ModelInfoCache extends Command
 
     public function handle(): void
     {
-        SchemaInfo::flush();
+        $this->call(ModelInfoCacheReset::class);
 
-        $this->info('Model info cache flushed.');
+        if (ModelInfo::forAllModels()->count()) {
+            $this->info('Model info cached.');
+        } else {
+            $this->error('Unable to cache Model info.');
+        }
     }
 }

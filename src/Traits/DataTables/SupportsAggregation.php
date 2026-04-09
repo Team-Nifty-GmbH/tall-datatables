@@ -7,7 +7,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use TeamNiftyGmbH\DataTable\ModelInfo\Attribute;
+use Spatie\ModelInfo\Attributes\Attribute;
 
 trait SupportsAggregation
 {

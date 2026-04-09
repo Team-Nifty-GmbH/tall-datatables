@@ -4,7 +4,7 @@ namespace TeamNiftyGmbH\DataTable\Traits\DataTables;
 
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Renderless;
-use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
+use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 
 trait SupportsGrouping
 {
@@ -23,7 +23,7 @@ trait SupportsGrouping
     #[Renderless]
     public function getGroupableCols(): array
     {
-        $modelInfo = SchemaInfo::forModel($this->getModel());
+        $modelInfo = ModelInfo::forModel($this->getModel());
 
         return $modelInfo->attributes
             ->filter(fn ($attribute) => ! $attribute->virtual)

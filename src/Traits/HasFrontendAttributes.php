@@ -4,7 +4,7 @@ namespace TeamNiftyGmbH\DataTable\Traits;
 
 use Exception;
 use TeamNiftyGmbH\DataTable\Helpers\Icon;
-use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
+use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 
 trait HasFrontendAttributes
 {
@@ -22,7 +22,7 @@ trait HasFrontendAttributes
 
     public static function typeScriptAttributes(): array
     {
-        return SchemaInfo::forModel(static::class)
+        return ModelInfo::forModel(static::class)
             ->attributes
             ->pluck('formatter', 'name')
             ->toArray();

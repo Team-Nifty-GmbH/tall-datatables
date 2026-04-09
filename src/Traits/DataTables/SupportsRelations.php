@@ -21,9 +21,10 @@ use Livewire\Attributes\Renderless;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
+use Spatie\ModelInfo\Attributes\Attribute;
+use Spatie\ModelInfo\Relations\Relation;
 use Spatie\ModelStates\State;
-use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
-use TeamNiftyGmbH\DataTable\ModelInfo\Attribute;
+use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use Throwable;
 
 trait SupportsRelations
@@ -49,10 +50,10 @@ trait SupportsRelations
 
     public function getRelationTableCols(?string $relationName = null): array
     {
-        $modelInfo = SchemaInfo::forModel($this->getModel());
+        $modelInfo = ModelInfo::forModel($this->getModel());
 
         if ($relationName && $modelInfo->relation($relationName)?->related) {
-            $modelInfo = SchemaInfo::forModel($modelInfo->relation($relationName)->related);
+            $modelInfo = ModelInfo::forModel($modelInfo->relation($relationName)->related);
         }
 
         return $modelInfo
@@ -109,21 +110,21 @@ trait SupportsRelations
 
         $this->displayPath = $path;
 
-        $schemaInfo = SchemaInfo::forModel($model);
-        $this->selectedRelations = $this->getModelRelations($schemaInfo);
+        $modelInfo = ModelInfo::forModel($model);
+        $this->selectedRelations = $this->getModelRelations($modelInfo);
         if ($this->availableRelations !== ['*']) {
             $this->selectedRelations = array_intersect_key($this->selectedRelations, array_flip($this->availableRelations));
         }
 
-        $selectedCols = $schemaInfo->attributes->pluck('name')->toArray();
+        $selectedCols = $modelInfo->attributes->pluck('name')->toArray();
 
         if ($this->availableCols !== ['*']) {
             $selectedCols = array_intersect($selectedCols, $this->availableCols);
         }
 
-        $this->selectedCols = array_map(function ($item) use ($schemaInfo) {
+        $this->selectedCols = array_map(function ($item) use ($modelInfo) {
             $slug = $this->loadedPath ? $this->loadedPath . '.' . $item : $item;
-            $attributeInfo = $schemaInfo->attribute($item);
+            $attributeInfo = $modelInfo->attribute($item);
 
             return [
                 'label' => __(Str::headline($item)),
@@ -238,14 +239,7 @@ trait SupportsRelations
     {
         // cache key for the enabled cols
         $cacheKey = md5(json_encode($this->enabledCols) . $this->getCacheKey());
-        $withCacheKey = config('tall-datatables.cache_key') . '.with';
-        $cached = Cache::get($withCacheKey);
-
-        // Clear stale cache from pre-SchemaInfo era that may contain unserializable objects
-        if ($cached && ! is_array(data_get($cached, $cacheKey . '.0'))) {
-            Cache::forget($withCacheKey);
-            $cached = null;
-        }
+        $cached = Cache::get(config('tall-datatables.cache_key') . '.with');
 
         if ($cached && data_get($cached, $cacheKey, false)) {
             $result = $cached[$cacheKey];
@@ -289,7 +283,7 @@ trait SupportsRelations
                 }
 
                 if (! isset($modelInfos[$modelClass])) {
-                    $modelInfos[$modelClass] = SchemaInfo::forModel($modelClass);
+                    $modelInfos[$modelClass] = ModelInfo::forModel($modelClass);
                 }
 
                 $attributeInfo = $modelInfos[$modelClass]->attribute($fieldName);
@@ -385,7 +379,7 @@ trait SupportsRelations
             if ($modelInfos[$model ? $model::class : $this->getModel()] ?? false) {
                 $modelInfo = $modelInfos[$model ? $model::class : $this->getModel()];
             } else {
-                $modelInfo = SchemaInfo::forModel($model ? $model::class : $this->getModel());
+                $modelInfo = ModelInfo::forModel($model ? $model::class : $this->getModel());
                 $modelInfos[$model ? $model::class : $this->getModel()] = $modelInfo;
             }
 
@@ -513,13 +507,13 @@ trait SupportsRelations
         }
     }
 
-    protected function getModelRelations(SchemaInfo $schemaInfo): array
+    protected function getModelRelations(\Spatie\ModelInfo\ModelInfo $modelInfo): array
     {
-        $modelQuery = app($schemaInfo->class);
+        $modelQuery = app($modelInfo->class);
         $modelRelations = [];
-        foreach ($schemaInfo->relations as $relation) {
+        foreach ($modelInfo->relations as $relation) {
             try {
-                if (! $modelQuery->relationResolver($schemaInfo->class, $relation->name)) {
+                if (! $modelQuery->relationResolver($modelInfo->class, $relation->name)) {
                     $reflection = new ReflectionMethod($modelQuery, $relation->name);
 
                     if ($reflection->getModifiers() !== ReflectionMethod::IS_PUBLIC) {

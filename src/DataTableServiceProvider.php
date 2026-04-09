@@ -19,7 +19,7 @@ use TeamNiftyGmbH\DataTable\Components\DataTableOptions as DataTableOptionsV2;
 use TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableBladeDirectives;
 use TeamNiftyGmbH\DataTable\Helpers\DataTableTagCompiler;
-use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
+use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Livewire\Options;
 
 class DataTableServiceProvider extends ServiceProvider
@@ -35,7 +35,7 @@ class DataTableServiceProvider extends ServiceProvider
         $this->offerPublishing();
 
         $this->app['events']->listen('Laravel\Octane\Events\RequestTerminated', function (): void {
-            SchemaInfo::flush();
+            ModelInfo::flush();
         });
 
         $this->commands([

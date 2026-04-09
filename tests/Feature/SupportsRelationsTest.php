@@ -431,7 +431,7 @@ describe('SupportsRelations', function (): void {
         it('returns relations with model, label, name, and type', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class);
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
             $relations = $reflection->invoke($component->instance(), $modelInfo);
 
@@ -448,7 +448,7 @@ describe('SupportsRelations', function (): void {
         it('includes relation key information', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class);
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
             $relations = $reflection->invoke($component->instance(), $modelInfo);
 
@@ -528,7 +528,7 @@ describe('SupportsRelations', function (): void {
         it('excludes MorphTo relations', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class);
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
             $relations = $reflection->invoke($component->instance(), $modelInfo);
 
@@ -541,7 +541,7 @@ describe('SupportsRelations', function (): void {
         it('includes key information for HasMany relations', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class);
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
             $relations = $reflection->invoke($component->instance(), $modelInfo);
 
@@ -927,7 +927,7 @@ describe('SupportsRelations', function (): void {
         it('handles relation where relationResolver is null', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class);
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
             $relations = $reflection->invoke($component->instance(), $modelInfo);
 
@@ -943,7 +943,7 @@ describe('SupportsRelations', function (): void {
         it('includes key information for BelongsTo relations', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class);
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
             $relations = $reflection->invoke($component->instance(), $modelInfo);
 
@@ -1024,7 +1024,7 @@ describe('SupportsRelations', function (): void {
         it('includes foreign key for HasMany relations', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(
                 Tests\Fixtures\Models\User::class
             );
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
@@ -1039,7 +1039,7 @@ describe('SupportsRelations', function (): void {
         it('includes owner key for BelongsTo relations', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class);
+            $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
             $relations = $reflection->invoke($component->instance(), $modelInfo);
 
@@ -1212,7 +1212,7 @@ describe('getModelRelations key info', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class);
+        $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
 
         $method = new ReflectionMethod($instance, 'getModelRelations');
         $relations = $method->invoke($instance, $modelInfo);
@@ -1226,7 +1226,7 @@ describe('getModelRelations key info', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class);
+        $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
 
         $method = new ReflectionMethod($instance, 'getModelRelations');
         $relations = $method->invoke($instance, $modelInfo);
@@ -1239,7 +1239,7 @@ describe('getModelRelations key info', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class);
+        $modelInfo = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class);
 
         $method = new ReflectionMethod($instance, 'getModelRelations');
         $relations = $method->invoke($instance, $modelInfo);
@@ -1256,7 +1256,7 @@ describe('getFilterValueList', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        $attribute = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class)->attribute('is_published');
+        $attribute = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class)->attribute('is_published');
 
         $method = new ReflectionMethod($instance, 'getFilterValueList');
         $method->invoke($instance, 'is_published', $attribute);
@@ -1273,7 +1273,7 @@ describe('getFilterValueList', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        $attribute = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class)->attribute('title');
+        $attribute = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class)->attribute('title');
 
         $method = new ReflectionMethod($instance, 'getFilterValueList');
         $method->invoke($instance, 'title', $attribute);
@@ -1290,7 +1290,7 @@ describe('getFilterValueList', function (): void {
         $prop = new ReflectionProperty($instance, 'filterValueLists');
         $prop->setValue($instance, ['is_published' => [['value' => 'custom', 'label' => 'Custom']]]);
 
-        $attribute = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(Post::class)->attribute('is_published');
+        $attribute = TeamNiftyGmbH\DataTable\Helpers\ModelInfo::forModel(Post::class)->attribute('is_published');
 
         $method = new ReflectionMethod($instance, 'getFilterValueList');
         $method->invoke($instance, 'is_published', $attribute);

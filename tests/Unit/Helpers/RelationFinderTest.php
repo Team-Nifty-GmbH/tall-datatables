@@ -66,7 +66,7 @@ describe('RelationFinder', function (): void {
 
             expect($relations)->toBeInstanceOf(Collection::class);
             $relations->each(function ($relation): void {
-                expect($relation)->toBeInstanceOf(TeamNiftyGmbH\DataTable\DataTransferObjects\Relation::class);
+                expect($relation)->toBeInstanceOf(Spatie\ModelInfo\Relations\Relation::class);
             });
         });
 
@@ -158,7 +158,7 @@ describe('RelationFinder', function (): void {
             // All returned relations should be non-null Relation instances
             $relations->each(function ($relation): void {
                 expect($relation)->not->toBeNull()
-                    ->toBeInstanceOf(TeamNiftyGmbH\DataTable\DataTransferObjects\Relation::class);
+                    ->toBeInstanceOf(Spatie\ModelInfo\Relations\Relation::class);
             });
         });
     });

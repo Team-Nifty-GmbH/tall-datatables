@@ -16,9 +16,9 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
 use Livewire\Features\SupportIslands\Compiler\IslandCompiler;
+use Spatie\ModelInfo\Attributes\Attribute;
 use TallStackUi\Traits\Interactions;
-use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
-use TeamNiftyGmbH\DataTable\ModelInfo\Attribute;
+use TeamNiftyGmbH\DataTable\Helpers\ModelInfo;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\BuildsQueries;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\StoresSettings;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\SupportsAggregation;
@@ -283,7 +283,7 @@ class DataTable extends Component
     public function getAvailableCols(): array
     {
         $availableCols = $this->availableCols === ['*']
-            ? SchemaInfo::forModel($this->getModel())->attributes->pluck('name')->toArray()
+            ? ModelInfo::forModel($this->getModel())->attributes->pluck('name')->toArray()
             : $this->availableCols;
 
         return array_values(array_unique(array_merge(
@@ -971,7 +971,7 @@ class DataTable extends Component
 
     protected function getIncludedRelations(): array
     {
-        $baseModelInfo = SchemaInfo::forModel($this->getModel());
+        $baseModelInfo = ModelInfo::forModel($this->getModel());
         $loadedRelations = [];
 
         foreach ($this->enabledCols as $enabledCol) {
@@ -1040,7 +1040,7 @@ class DataTable extends Component
 
     protected function getTableFields(): \Illuminate\Support\Collection
     {
-        return SchemaInfo::forModel($this->getModel())
+        return ModelInfo::forModel($this->getModel())
             ->attributes
             ->filter(fn (Attribute $attribute) => ! $attribute->virtual && ! $attribute->appended)
             ->when(
@@ -1190,7 +1190,7 @@ class DataTable extends Component
             }
 
             // Validate against the model's table columns
-            return in_array($col, SchemaInfo::forModel($this->getModel())
+            return in_array($col, ModelInfo::forModel($this->getModel())
                 ->attributes
                 ->pluck('name')
                 ->toArray());

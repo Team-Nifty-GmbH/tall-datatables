@@ -2,33 +2,36 @@
 
 namespace TeamNiftyGmbH\DataTable\ModelInfo;
 
-use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\ModelInfo\Attributes\Attribute as BaseAttribute;
 use TeamNiftyGmbH\DataTable\Contracts\HasFrontendFormatter;
 
-class Attribute implements Arrayable
+class Attribute extends BaseAttribute
 {
     public mixed $formatter;
 
-    public function __construct(
-        public string $name,
-        public ?string $phpType,
-        public ?string $type,
-        public bool $increments,
-        public ?bool $nullable,
-        public mixed $default,
-        public ?bool $primary,
-        public ?bool $unique,
-        public bool $fillable,
-        public ?bool $appended,
-        public ?string $cast,
-        public bool $virtual,
-        public bool $hidden,
-    ) {}
+    public static function fromBase(BaseAttribute $baseAttribute): self
+    {
+        return new self(
+            name: $baseAttribute->name,
+            phpType: $baseAttribute->phpType,
+            type: $baseAttribute->type,
+            increments: $baseAttribute->increments,
+            nullable: $baseAttribute->nullable,
+            default: $baseAttribute->default,
+            primary: $baseAttribute->primary,
+            unique: $baseAttribute->unique,
+            fillable: $baseAttribute->fillable,
+            appended: $baseAttribute->appended,
+            cast: $baseAttribute->cast,
+            virtual: $baseAttribute->virtual,
+            hidden: $baseAttribute->hidden,
+        );
+    }
 
     public function getFormatterType(Model|string $model): string|array
     {
-        $modelInstance = is_string($model) ? app($model) : $model;
+        $modelInstance = is_string($model) ? new $model() : $model;
 
         if (in_array($this->cast, ['accessor', 'attribute']) && $modelInstance->hasCast($this->name)) {
             $this->cast = $modelInstance->getCasts()[$this->name];
@@ -48,11 +51,5 @@ class Attribute implements Arrayable
         }
 
         return strtolower(class_basename($this->cast ?? $this->phpType));
-    }
-
-    /** @return array<string, mixed> */
-    public function toArray(): array
-    {
-        return get_object_vars($this);
     }
 }
