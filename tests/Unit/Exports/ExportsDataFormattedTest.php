@@ -4,7 +4,6 @@ use Illuminate\Database\Eloquent\Model;
 use TeamNiftyGmbH\DataTable\Exports\Concerns\ExportsData;
 use TeamNiftyGmbH\DataTable\Formatters\BooleanFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\Contracts\Formatter;
-use TeamNiftyGmbH\DataTable\Formatters\StringFormatter;
 
 class StubFormatter implements Formatter
 {
