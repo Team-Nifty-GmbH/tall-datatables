@@ -9,6 +9,15 @@ class FormatterRegistry
     /** @var array<string, Formatter> */
     protected array $registry = [];
 
+    public function isEnum(string $class): bool
+    {
+        if (enum_exists($class)) {
+            return true;
+        }
+
+        return class_exists($class) && method_exists($class, 'tryFrom') && method_exists($class, 'cases');
+    }
+
     public function register(string $castClass, Formatter $formatter): static
     {
         $this->registry[$castClass] = $formatter;
@@ -116,14 +125,5 @@ class FormatterRegistry
             'enum' => new EnumFormatter(),
             default => $this->isEnum($castClass) ? new EnumFormatter($castClass) : new StringFormatter(),
         };
-    }
-
-    public function isEnum(string $class): bool
-    {
-        if (enum_exists($class)) {
-            return true;
-        }
-
-        return class_exists($class) && method_exists($class, 'tryFrom') && method_exists($class, 'cases');
     }
 }

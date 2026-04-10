@@ -77,14 +77,14 @@ describe('FormatterRegistry enum detection', function (): void {
     it('isEnum returns true for class with tryFrom and cases methods', function (): void {
         $fakeEnum = new class()
         {
-            public static function tryFrom(int|string|null $value): ?object
-            {
-                return null;
-            }
-
             public static function cases(): array
             {
                 return [];
+            }
+
+            public static function tryFrom(int|string|null $value): ?object
+            {
+                return null;
             }
         };
 
