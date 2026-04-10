@@ -75,6 +75,14 @@ class FormatterRegistry
             return new BadgeFormatter(mapping: $mapping);
         }
 
+        if ($name === 'array' && ($elementFormatterKey = data_get($options, 'elementFormatter'))) {
+            $elementFormatter = is_string($elementFormatterKey)
+                ? $this->resolve($elementFormatterKey)
+                : null;
+
+            return new ArrayFormatter(elementFormatter: $elementFormatter);
+        }
+
         return $this->resolve($castClass);
     }
 
