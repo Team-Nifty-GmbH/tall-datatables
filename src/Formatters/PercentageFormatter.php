@@ -6,7 +6,10 @@ use TeamNiftyGmbH\DataTable\Formatters\Contracts\Formatter;
 
 class PercentageFormatter implements Formatter
 {
-    public function __construct(public readonly bool $progressBar = false) {}
+    public function __construct(
+        public readonly bool $progressBar = false,
+        public readonly float $multiplier = 1,
+    ) {}
 
     public function format(mixed $value, array $context = []): string
     {
@@ -14,7 +17,7 @@ class PercentageFormatter implements Formatter
             return '';
         }
 
-        $floatValue = (float) $value;
+        $floatValue = (float) bcmul((string) $value, (string) $this->multiplier, 10);
 
         if (! $this->progressBar) {
             $decimals = fmod($floatValue, 1) === 0.0 ? 0 : 2;

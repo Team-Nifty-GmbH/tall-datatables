@@ -70,4 +70,28 @@ describe('PercentageFormatter', function (): void {
 
         expect($result)->toContain('width: 100.00%');
     });
+
+    it('renders progress bar with multiplier for decimal 1.0 as 100%', function (): void {
+        $formatter = new PercentageFormatter(progressBar: true, multiplier: 100);
+
+        expect($formatter->format(1.0))->toContain('width: 100.00%');
+    });
+
+    it('renders progress bar with multiplier for decimal 0.5 as 50%', function (): void {
+        $formatter = new PercentageFormatter(progressBar: true, multiplier: 100);
+
+        expect($formatter->format(0.5))->toContain('width: 50.00%');
+    });
+
+    it('renders text percentage with multiplier for decimal 0.75', function (): void {
+        $formatter = new PercentageFormatter(multiplier: 100);
+
+        expect($formatter->format(0.75))->toBe('75 %');
+    });
+
+    it('renders progress bar with multiplier clamped to 100%', function (): void {
+        $formatter = new PercentageFormatter(progressBar: true, multiplier: 100);
+
+        expect($formatter->format(1.5))->toContain('width: 100.00%');
+    });
 });
