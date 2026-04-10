@@ -3,10 +3,13 @@
 namespace TeamNiftyGmbH\DataTable\Exports\Concerns;
 
 use Illuminate\Support\Str;
+use TeamNiftyGmbH\DataTable\Formatters\BooleanFormatter;
 
 trait ExportsData
 {
     protected array $exportColumns = [];
+
+    protected array $exportFormatters = [];
 
     public function headings(): array
     {
@@ -42,6 +45,16 @@ trait ExportsData
 
                 if (is_array($value)) {
                     $value = implode('; ', array_filter($value));
+                }
+            }
+
+            if (! is_null($value) && isset($this->exportFormatters[$column])) {
+                $formatter = $this->exportFormatters[$column];
+
+                if ($formatter instanceof BooleanFormatter) {
+                    $value = $value ? __('Yes') : __('No');
+                } else {
+                    $value = strip_tags($formatter->format($value, $rowArray));
                 }
             }
 

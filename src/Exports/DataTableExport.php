@@ -18,10 +18,11 @@ class DataTableExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMa
 
     private EloquentBuilder $builder;
 
-    public function __construct(EloquentBuilder $builder, array $exportColumns = [])
+    public function __construct(EloquentBuilder $builder, array $exportColumns = [], array $formatters = [])
     {
         $this->builder = $builder;
         $this->exportColumns = $exportColumns;
+        $this->exportFormatters = $formatters;
     }
 
     public function map($row): array

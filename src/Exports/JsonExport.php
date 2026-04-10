@@ -13,8 +13,10 @@ class JsonExport
     public function __construct(
         private EloquentBuilder $builder,
         array $exportColumns = [],
+        array $formatters = [],
     ) {
         $this->exportColumns = $exportColumns;
+        $this->exportFormatters = $formatters;
     }
 
     public function download(string $filename): StreamedResponse
