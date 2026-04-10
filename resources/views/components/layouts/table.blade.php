@@ -17,13 +17,16 @@
     'allowSoftDeletes' => false,
     'showRestoreButton' => false,
     'isSortable' => false,
+    'isResizable' => false,
 ])
 <div
     class="mt-3 flex flex-col"
     x-data="{ showSelectedActions: false }"
 >
     <div class="relative overflow-x-auto shadow-sm sm:rounded-lg">
-        <table class="dark:bg-secondary-800 min-w-full table-auto border-collapse bg-white text-sm text-gray-500 dark:text-gray-50">
+        <table class="dark:bg-secondary-800 min-w-full border-collapse bg-white text-sm text-gray-500 dark:text-gray-50"
+            x-bind:class="Object.keys($wire.colWidths || {}).length > 0 ? 'table-fixed' : 'table-auto'"
+        >
             <thead style="z-index: 9">
                 @if ($hasHead)
                     <tr>
@@ -52,7 +55,7 @@
                         <template x-for="col in $wire.enabledCols" x-bind:key="col">
                             <x-tall-datatables::table.head-cell
                                 x-bind:class="($wire.stickyCols || []).includes(col) ? 'left-0 z-10 border-r' : ''"
-                                x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : 'z-index: 1'"
+                                x-bind:style="[($wire.stickyCols || []).includes(col) ? 'z-index: 2' : 'z-index: 1', ($wire.colWidths || {})[col] ? 'width: ' + ($wire.colWidths || {})[col] + 'px' : ''].filter(Boolean).join('; ')"
                                 :attributes="$tableHeadColAttributes"
                             >
                                 <div class="group flex items-center gap-1">
@@ -123,6 +126,12 @@
                                         />
                                     @endif
                                 </div>
+                                @if ($isResizable)
+                                    <div
+                                        class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400 transition-colors"
+                                        x-on:mousedown="startResize($event, col)"
+                                    ></div>
+                                @endif
                             </x-tall-datatables::table.head-cell>
                         </template>
                         @if ($rowActions)
