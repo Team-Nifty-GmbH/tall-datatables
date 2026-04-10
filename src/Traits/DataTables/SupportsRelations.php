@@ -18,10 +18,10 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
-use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
 use Spatie\ModelStates\State;
+use TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry;
 use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
 use TeamNiftyGmbH\DataTable\ModelInfo\Attribute;
 use Throwable;
@@ -424,6 +424,8 @@ trait SupportsRelations
                     $relatedFormatters[$enabledCol] = $attributeInfo->formatter
                         ? ['array', ['elementFormatter' => $attributeInfo->formatter]]
                         : 'array';
+                } elseif ($attributeInfo->cast && app(FormatterRegistry::class)->isEnum($attributeInfo->cast)) {
+                    $relatedFormatters[$enabledCol] = $attributeInfo->cast;
                 } elseif ($attributeInfo->formatter) {
                     $relatedFormatters[$enabledCol] = $attributeInfo->formatter;
                 }
@@ -497,15 +499,11 @@ trait SupportsRelations
             return;
         }
 
-        $castReflection = new ReflectionClass($attributeInfo->cast);
-
-        if ($castReflection->isEnum()) {
-            $this->filterValueLists[$enabledCol] = array_map(function ($enum) {
-                return [
-                    'value' => $enum->value,
-                    'label' => __(Str::headline($enum->name)),
-                ];
-            }, $attributeInfo->cast::cases());
+        if (app(FormatterRegistry::class)->isEnum($attributeInfo->cast)) {
+            $this->filterValueLists[$enabledCol] = array_map(fn ($enum) => [
+                'value' => $enum->value,
+                'label' => __(Str::headline($enum->name)),
+            ], $attributeInfo->cast::cases());
         }
     }
 
