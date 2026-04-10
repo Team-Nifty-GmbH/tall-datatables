@@ -15,21 +15,29 @@ describe('ArrayFormatter', function (): void {
         expect($formatter->format([]))->toBe('');
     });
 
-    it('formats flat array of strings as comma separated', function (): void {
+    it('formats flat array of strings as badges', function (): void {
         $formatter = new ArrayFormatter();
+        $result = $formatter->format(['foo', 'bar', 'baz']);
 
-        expect($formatter->format(['foo', 'bar', 'baz']))->toBe('foo, bar, baz');
+        expect($result)
+            ->toContain('rounded-full')
+            ->toContain('>foo</span>')
+            ->toContain('>bar</span>')
+            ->toContain('>baz</span>');
     });
 
-    it('formats flat array of integers as comma separated', function (): void {
+    it('formats flat array of integers as badges', function (): void {
         $formatter = new ArrayFormatter();
+        $result = $formatter->format([1, 2, 3]);
 
-        expect($formatter->format([1, 2, 3]))->toBe('1, 2, 3');
+        expect($result)
+            ->toContain('>1</span>')
+            ->toContain('>2</span>')
+            ->toContain('>3</span>');
     });
 
     it('escapes HTML in scalar values', function (): void {
         $formatter = new ArrayFormatter();
-
         $result = $formatter->format(['<script>alert(1)</script>', 'safe']);
 
         expect($result)
@@ -73,26 +81,42 @@ describe('ArrayFormatter', function (): void {
 
     it('escapes HTML in non-array scalar values', function (): void {
         $formatter = new ArrayFormatter();
-
         $result = $formatter->format('<script>alert(1)</script>');
 
         expect($result)->not->toContain('<script>')
             ->toContain('&lt;script&gt;');
     });
 
-    it('formats flat array with mixed scalar types', function (): void {
+    it('formats flat array with mixed scalar types as badges', function (): void {
         $formatter = new ArrayFormatter();
-
         $result = $formatter->format([1, 'two', 3.0, true]);
 
-        expect($result)->toBe('1, two, 3, 1');
+        expect($result)
+            ->toContain('>1</span>')
+            ->toContain('>two</span>')
+            ->toContain('>3</span>');
     });
 
-    it('handles associative array with scalar values as flat', function (): void {
+    it('handles associative array with scalar values as badges', function (): void {
         $formatter = new ArrayFormatter();
         $result = $formatter->format(['key' => 'Gruesse']);
 
-        // Associative arrays with scalar values are treated as flat
-        expect($result)->toBe('Gruesse');
+        expect($result)->toContain('>Gruesse</span>');
+    });
+
+    it('filters null values from array', function (): void {
+        $formatter = new ArrayFormatter();
+        $result = $formatter->format(['2025-03-17', null, '2026-04-21']);
+
+        expect($result)
+            ->toContain('>2025-03-17</span>')
+            ->toContain('>2026-04-21</span>')
+            ->not->toContain('>null</span>');
+    });
+
+    it('returns empty string for array of only nulls', function (): void {
+        $formatter = new ArrayFormatter();
+
+        expect($formatter->format([null, null]))->toBe('');
     });
 });
