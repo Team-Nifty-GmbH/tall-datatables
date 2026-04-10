@@ -20,12 +20,7 @@ class ArrayFormatter implements Formatter
             return '';
         }
 
-        $value = array_filter($value, fn (mixed $item) => ! is_null($item));
-
-        if (empty($value)) {
-            return '';
-        }
-
+        // Check if it's a flat array of scalars
         $isFlat = array_reduce($value, fn (bool $carry, mixed $item) => $carry && is_scalar($item), true);
 
         if ($isFlat) {
