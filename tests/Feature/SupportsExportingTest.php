@@ -184,6 +184,24 @@ describe('SupportsExporting', function (): void {
 
             expect($response->headers->get('content-disposition'))->toContain('.xlsx');
         });
+
+        it('accepts formatted parameter', function (): void {
+            createTestPost(['user_id' => $this->user->getKey(), 'is_published' => true]);
+
+            $component = Livewire::test(PostDataTable::class)->call('loadData');
+            $response = $component->instance()->export(['title', 'is_published'], 'csv', true);
+
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class);
+        });
+
+        it('exports raw values when formatted is false', function (): void {
+            createTestPost(['user_id' => $this->user->getKey(), 'is_published' => true]);
+
+            $component = Livewire::test(PostDataTable::class)->call('loadData');
+            $response = $component->instance()->export(['title', 'is_published'], 'csv', false);
+
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class);
+        });
     });
 
     describe('isExportable in view data', function (): void {
