@@ -532,9 +532,9 @@ describe('SupportsRelations', function (): void {
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
             $relations = $reflection->invoke($component->instance(), $modelInfo);
 
-            // MorphTo relations should be excluded
+            // Pure MorphTo relations should be excluded (MorphToMany is allowed)
             foreach ($relations as $relation) {
-                expect($relation['type'])->not->toContain('MorphTo');
+                expect($relation['type'])->not->toBe('Illuminate\Database\Eloquent\Relations\MorphTo');
             }
         });
 
@@ -581,16 +581,16 @@ describe('SupportsRelations', function (): void {
     });
 
     describe('addDynamicJoin with unsupported relation types', function (): void {
-        it('throws exception for hasMany which lacks getForeignKey method', function (): void {
+        it('skips join for hasMany which lacks getForeignKey method', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
             $query = Tests\Fixtures\Models\User::query();
             $reflection = new ReflectionMethod($component->instance(), 'addDynamicJoin');
 
             // HasMany does not have getOwnerKeyName nor getForeignKey (only getForeignKeyName)
-            // so addDynamicJoin throws for unsupported relation types
-            expect(fn () => $reflection->invoke($component->instance(), $query, 'posts'))
-                ->toThrow(Exception::class, "Unsupported relation type for 'posts'");
+            // so addDynamicJoin returns the parent table name without joining
+            $result = $reflection->invoke($component->instance(), $query, 'posts');
+            expect($result)->toBe('users');
         });
 
         it('throws exception for non-relation method', function (): void {
@@ -869,7 +869,7 @@ describe('SupportsRelations', function (): void {
     });
 
     describe('addDynamicJoin with HasMany relation', function (): void {
-        it('joins via getForeignKey and getLocalKeyName for HasMany', function (): void {
+        it('skips join for HasMany and returns parent table', function (): void {
             createTestComment(['user_id' => $this->user->getKey()]);
 
             $component = Livewire::test(PostDataTable::class);
@@ -877,18 +877,10 @@ describe('SupportsRelations', function (): void {
             $query = Post::query();
             $reflection = new ReflectionMethod($component->instance(), 'addDynamicJoin');
 
-            // HasMany has getForeignKey but NOT getOwnerKeyName — it has getLocalKeyName
-            // However, it does have getForeignKeyName (not getForeignKey)
-            // The addDynamicJoin checks getForeignKeyName first (BelongsTo), then getForeignKey (HasOne/HasMany)
-            // For HasMany, getForeignKey exists and getLocalKeyName exists — this is the second branch
-            // This may throw depending on exact relation methods
-            try {
-                $relatedTable = $reflection->invoke($component->instance(), $query, 'comments');
-                expect($relatedTable)->toBe('comments');
-            } catch (Exception $e) {
-                // HasMany uses getForeignKey and getLocalKeyName path
-                expect($e->getMessage())->toContain('Unsupported relation type');
-            }
+            // HasMany lacks getForeignKey in Laravel 13 — unsupported for joining
+            // addDynamicJoin returns the parent table name without joining
+            $relatedTable = $reflection->invoke($component->instance(), $query, 'comments');
+            expect($relatedTable)->toBe('posts');
         });
     });
 
@@ -975,17 +967,15 @@ describe('SupportsRelations', function (): void {
     });
 
     describe('addDynamicJoin with unsupported HasMany relation', function (): void {
-        it('throws exception for HasMany relation type', function (): void {
-            // This covers the else branch in addDynamicJoin (line 216-218)
-            // HasMany doesn't have the required method pairs for joining
+        it('skips join for HasMany relation type', function (): void {
             $component = Livewire::test(PostDataTable::class);
             $instance = $component->instance();
 
             $query = Post::query();
             $reflection = new ReflectionMethod($instance, 'addDynamicJoin');
 
-            expect(fn () => $reflection->invoke($instance, $query, 'comments'))
-                ->toThrow(Exception::class, "Unsupported relation type for 'comments'");
+            $result = $reflection->invoke($instance, $query, 'comments');
+            expect($result)->toBe('posts');
         });
     });
 
@@ -1118,15 +1108,15 @@ describe('addDynamicJoin', function (): void {
             ->and($results->first()->name)->toBe($this->user->name);
     });
 
-    it('throws exception for HasMany relation (unsupported join type)', function (): void {
+    it('skips join for HasMany relation (unsupported join type)', function (): void {
         $component = Livewire::test(PostWithCommentsDataTable::class);
         $instance = $component->instance();
 
         $query = Post::query();
         $method = new ReflectionMethod($instance, 'addDynamicJoin');
 
-        expect(fn () => $method->invoke($instance, $query, 'comments'))
-            ->toThrow(Exception::class, "Unsupported relation type for 'comments'");
+        $result = $method->invoke($instance, $query, 'comments');
+        expect($result)->toBe('posts');
     });
 
     it('throws exception for non-relation method', function (): void {
@@ -1244,9 +1234,9 @@ describe('getModelRelations key info', function (): void {
         $method = new ReflectionMethod($instance, 'getModelRelations');
         $relations = $method->invoke($instance, $modelInfo);
 
-        // None of the Post relations are MorphTo, so all should be present
+        // Post has no pure MorphTo relations (MorphToMany is allowed)
         foreach ($relations as $relation) {
-            expect($relation['type'])->not->toContain('MorphTo');
+            expect($relation['type'])->not->toBe('Illuminate\Database\Eloquent\Relations\MorphTo');
         }
     });
 });

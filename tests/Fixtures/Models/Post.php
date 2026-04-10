@@ -5,6 +5,7 @@ namespace Tests\Fixtures\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use TeamNiftyGmbH\DataTable\Casts\BcFloat;
 use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
@@ -46,6 +47,11 @@ class Post extends Model implements InteractsWithDataTables
     public function getUrl(): ?string
     {
         return '/posts/' . $this->getKey();
+    }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'taggable');
     }
 
     public function user(): BelongsTo
