@@ -9,6 +9,10 @@
     </div>
 @endforeach
 <div class="pt-3 border-t border-gray-200 dark:border-secondary-700 flex flex-col gap-3">
+    <x-toggle
+        x-model="exportFormatted"
+        :label="__('Formatted values')"
+    />
     <x-select.native
         x-model="exportFormat"
         :label="__('Format')"
@@ -20,7 +24,7 @@
     />
     <x-button
         loading
-        x-on:click="$wire.export(exportColumns, exportFormat); $tsui.close.slide('data-table-sidebar-' + $wire.id.toLowerCase());"
+        x-on:click="$wire.export(exportColumns, exportFormat, exportFormatted); $tsui.close.slide('data-table-sidebar-' + $wire.id.toLowerCase());"
         color="indigo"
         class="w-full"
         :text="__('Export')"
