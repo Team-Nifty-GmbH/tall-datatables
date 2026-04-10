@@ -45,6 +45,51 @@
             if (Array.isArray(val)) return val[valueIndex] || '';
             return valueIndex === 0 ? (val || '') : '';
         },
+        startResize(event, col) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            let th = event.target.closest('th');
+            let startX = event.clientX;
+            let startWidth = th.offsetWidth;
+            let table = th.closest('table');
+
+            table.classList.remove('table-auto');
+            table.classList.add('table-fixed');
+
+            let onMouseMove = (e) => {
+                let newWidth = Math.max(50, startWidth + (e.clientX - startX));
+                th.style.width = newWidth + 'px';
+            };
+
+            let onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+
+                let colWidths = {};
+                let cols = $wire.enabledCols || [];
+                let ths = table.querySelectorAll('thead > tr:first-child > th');
+                let offset = 1;
+                cols.forEach((c, i) => {
+                    let t = ths[i + offset];
+                    if (t && t.style.width) {
+                        colWidths[c] = parseInt(t.style.width, 10);
+                    }
+                });
+
+                if (Object.keys(colWidths).length > 0) {
+                    $wire.colWidths = colWidths;
+                    $wire.storeColWidths(colWidths);
+                }
+            };
+
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        },
         init() {
             this.$watch(() => JSON.stringify($wire.textFilters), () => {
                 const tf = $wire.textFilters || {};
