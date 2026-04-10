@@ -311,12 +311,6 @@ trait SupportsRelations
         $relatedFormatters = [];
         $this->withCountRelations = [];
 
-        foreach ($this->getRequiredCols() as $requiredCol) {
-            if (! in_array($requiredCol, $this->enabledCols)) {
-                array_unshift($this->enabledCols, $requiredCol);
-            }
-        }
-
         foreach (array_merge($this->enabledCols, $this->getReturnKeys()) as $enabledCol) {
             // Handle _count columns: e.g. 'posts_count' → withCount('posts')
             if (str_ends_with($enabledCol, '_count')) {
@@ -396,14 +390,6 @@ trait SupportsRelations
             }
 
             $attributeInfo = $modelInfo->attribute($fieldName);
-
-            if (is_null($attributeInfo)) {
-                if (! in_array($enabledCol, $this->getRequiredCols())) {
-                    $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
-                }
-
-                continue;
-            }
 
             $isManyRelation = $relationInstance instanceof HasMany
                 || $relationInstance instanceof HasManyThrough

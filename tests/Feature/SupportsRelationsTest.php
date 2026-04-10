@@ -1325,20 +1325,19 @@ describe('getFilterValueList', function (): void {
 });
 
 describe('constructWith null attributeInfo', function (): void {
-    it('skips non-existent columns without causing SELECT * fallback', function (): void {
+    it('treats unknown columns as virtual without stripping them', function (): void {
         $component = Livewire::test(PostWithRelationsDataTable::class);
         $instance = $component->instance();
 
-        // Add a column that does not exist on the model
-        $instance->enabledCols = array_merge($instance->enabledCols, ['nonexistent_column']);
+        // Add a column that does not exist on the model (computed/virtual)
+        $instance->enabledCols = array_merge($instance->enabledCols, ['computed_column']);
 
-        // constructWith is called via getFilterableColumns - should skip unknown columns cleanly
         $filterable = $instance->getFilterableColumns();
 
-        expect($filterable)->toBeArray();
-        expect($filterable)->not->toContain('nonexistent_column');
+        // Virtual columns are not filterable
+        expect($filterable)->not->toContain('computed_column');
 
-        // The non-existent column should have been removed from enabledCols
-        expect($instance->enabledCols)->not->toContain('nonexistent_column');
+        // But they stay in enabledCols (v1 behavior — computed columns are kept)
+        expect($instance->enabledCols)->toContain('computed_column');
     });
 });
