@@ -230,6 +230,11 @@ class DataTable extends Component
         $this->groupBy = null;
         $this->loadedFilterId = null;
         $this->startSearch();
+
+        $this->js(<<<'JS'
+            $el.querySelectorAll("thead input[type=search]").forEach(i => i.value = "");
+            $el.querySelectorAll("thead select").forEach(s => s.value = "");
+        JS);
     }
 
     /**
