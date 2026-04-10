@@ -9,6 +9,15 @@ class FormatterRegistry
     /** @var array<string, Formatter> */
     protected array $registry = [];
 
+    public function isEnum(string $class): bool
+    {
+        if (enum_exists($class)) {
+            return true;
+        }
+
+        return class_exists($class) && method_exists($class, 'tryFrom') && method_exists($class, 'cases');
+    }
+
     public function register(string $castClass, Formatter $formatter): static
     {
         $this->registry[$castClass] = $formatter;
@@ -27,6 +36,10 @@ class FormatterRegistry
             $baseName = class_basename($castClass);
             if (isset($this->registry[$baseName])) {
                 return $this->registry[$baseName];
+            }
+
+            if ($this->isEnum($castClass)) {
+                return new EnumFormatter($castClass);
             }
 
             return $this->autoDetect($baseName);
@@ -109,7 +122,8 @@ class FormatterRegistry
             'url', 'link' => new LinkFormatter(),
             'relativetime' => new DateFormatter(mode: 'relative'),
             'time' => new DateFormatter(mode: 'time'),
-            default => new StringFormatter(),
+            'enum' => new EnumFormatter(),
+            default => $this->isEnum($castClass) ? new EnumFormatter($castClass) : new StringFormatter(),
         };
     }
 }
