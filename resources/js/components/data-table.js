@@ -3,6 +3,7 @@ export default function data_table() {
         stickyCols: [],
         showSelectedActions: false,
         _echoChannels: [],
+        _resizing: null,
 
         init() {
             this.stickyCols = this.$wire.stickyCols || [];
@@ -75,6 +76,58 @@ export default function data_table() {
             }
             this.stickyCols = cols;
             this.$wire.stickyCols = cols;
+        },
+
+        startResize(event, col) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            let th = event.target.closest('th');
+            let startX = event.clientX;
+            let startWidth = th.offsetWidth;
+            let table = th.closest('table');
+
+            table.classList.remove('table-auto');
+            table.classList.add('table-fixed');
+
+            let onMouseMove = (e) => {
+                let newWidth = Math.max(50, startWidth + (e.clientX - startX));
+                th.style.width = newWidth + 'px';
+            };
+
+            let onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+
+                this._persistColWidths(table);
+            };
+
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        },
+
+        _persistColWidths(table) {
+            let colWidths = {};
+            let cols = this.$wire.enabledCols || [];
+            let ths = table.querySelectorAll('thead > tr:first-child > th');
+
+            // Skip first th (checkbox/spacer column)
+            let offset = 1;
+            cols.forEach((col, i) => {
+                let th = ths[i + offset];
+                if (th && th.style.width) {
+                    colWidths[col] = parseInt(th.style.width, 10);
+                }
+            });
+
+            if (Object.keys(colWidths).length > 0) {
+                this.$wire.colWidths = colWidths;
+                this.$wire.storeColWidths(colWidths);
+            }
         },
     };
 }
