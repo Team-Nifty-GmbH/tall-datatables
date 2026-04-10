@@ -14,6 +14,12 @@ trait HasEloquentListeners
 
     public function echoCreated(array $eventData): void
     {
+        if (empty($this->data)) {
+            $this->loadData();
+
+            return;
+        }
+
         $model = $this->buildSearch()->whereKey($this->getKeyFromEventData($eventData))->first();
         if (is_null($model)) {
             return;
@@ -31,12 +37,16 @@ trait HasEloquentListeners
         }
 
         $this->broadcastChannels[$model->getKey()] = $model->broadcastChannel();
-
-        // v2: removed skipRender - Blade needs re-render to show changes
     }
 
     public function echoDeleted(array $eventData): void
     {
+        if (empty($this->data)) {
+            $this->loadData();
+
+            return;
+        }
+
         $data = Arr::keyBy($this->data['data'], $this->modelKeyName);
         unset(
             $data[$eventData['model'][$this->modelKeyName]],
@@ -46,8 +56,6 @@ trait HasEloquentListeners
         $this->data['data'] = array_values($data);
         $this->data['total']--;
         $this->data['to']--;
-
-        // v2: removed skipRender - Blade needs re-render to show changes
     }
 
     public function echoRestored(array $eventData): void
@@ -62,6 +70,12 @@ trait HasEloquentListeners
 
     public function echoUpdated(array $eventData): void
     {
+        if (empty($this->data)) {
+            $this->loadData();
+
+            return;
+        }
+
         $model = $this->buildSearch()->whereKey($this->getKeyFromEventData($eventData))->first();
         if (is_null($model)) {
             $this->echoDeleted($eventData);
@@ -73,8 +87,6 @@ trait HasEloquentListeners
         $data = Arr::keyBy($this->data['data'], $this->modelKeyName);
         $data[$model->getKey()] = $item;
         $this->data['data'] = array_values($data);
-
-        // v2: removed skipRender - Blade needs re-render to show changes
     }
 
     public function eloquentEventOccurred(string $event, array $data): void
@@ -147,6 +159,12 @@ trait HasEloquentListeners
      */
     public function refreshRow(array $eventData): void
     {
+        if (empty($this->data)) {
+            $this->loadData();
+
+            return;
+        }
+
         $key = $this->getKeyFromEventData($eventData);
         if (is_null($key)) {
             return;
