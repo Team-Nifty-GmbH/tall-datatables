@@ -895,9 +895,10 @@ describe('SupportsRelations', function (): void {
 
             $formatters = $result[5];
 
-            // comments.body is a HasMany relation column, should get 'array' formatter
+            // comments.body is a HasMany relation column, should get array formatter with element formatter
             expect($formatters)->toHaveKey('comments.body');
-            expect($formatters['comments.body'])->toBe('array');
+            expect($formatters['comments.body'])->toBeArray()
+                ->and($formatters['comments.body'][0])->toBe('array');
         });
     });
 
@@ -990,9 +991,10 @@ describe('SupportsRelations', function (): void {
 
             $relatedFormatters = $result[5];
 
-            // comments.body is a HasMany relation column, should have 'array' formatter
+            // comments.body is a HasMany relation column, should have array formatter with element formatter
             expect($relatedFormatters)->toHaveKey('comments.body');
-            expect($relatedFormatters['comments.body'])->toBe('array');
+            expect($relatedFormatters['comments.body'])->toBeArray()
+                ->and($relatedFormatters['comments.body'][0])->toBe('array');
         });
 
         it('excludes HasMany columns from sortable', function (): void {
@@ -1168,7 +1170,8 @@ describe('constructWith with HasMany columns', function (): void {
         $relatedFormatters = $result[5];
 
         expect($relatedFormatters)->toHaveKey('comments.body')
-            ->and($relatedFormatters['comments.body'])->toBe('array');
+            ->and($relatedFormatters['comments.body'])->toBeArray()
+            ->and($relatedFormatters['comments.body'][0])->toBe('array');
     });
 
     it('excludes HasMany relation columns from sortable', function (): void {

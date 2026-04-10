@@ -119,4 +119,38 @@ describe('ArrayFormatter', function (): void {
 
         expect($formatter->format([null, null]))->toBe('');
     });
+
+    it('applies element formatter to each value', function (): void {
+        $percentageFormatter = new TeamNiftyGmbH\DataTable\Formatters\PercentageFormatter();
+        $formatter = new ArrayFormatter(elementFormatter: $percentageFormatter);
+
+        $result = $formatter->format([42, 85]);
+
+        expect($result)
+            ->toContain('rounded-full')
+            ->toContain('>42 %</span>')
+            ->toContain('>85 %</span>');
+    });
+
+    it('element formatter with null values are filtered', function (): void {
+        $percentageFormatter = new TeamNiftyGmbH\DataTable\Formatters\PercentageFormatter();
+        $formatter = new ArrayFormatter(elementFormatter: $percentageFormatter);
+
+        $result = $formatter->format([42, null, 85]);
+
+        expect($result)
+            ->toContain('>42 %</span>')
+            ->toContain('>85 %</span>')
+            ->not->toContain('>null</span>');
+    });
+
+    it('without element formatter renders raw values in badges', function (): void {
+        $formatter = new ArrayFormatter();
+
+        $result = $formatter->format(['2025-03-17', '2026-04-21']);
+
+        expect($result)
+            ->toContain('>2025-03-17</span>')
+            ->toContain('>2026-04-21</span>');
+    });
 });

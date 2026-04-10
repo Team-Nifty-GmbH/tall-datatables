@@ -6,6 +6,10 @@ use TeamNiftyGmbH\DataTable\Formatters\Contracts\Formatter;
 
 class ArrayFormatter implements Formatter
 {
+    public function __construct(
+        protected ?Formatter $elementFormatter = null,
+    ) {}
+
     public function format(mixed $value, array $context = []): string
     {
         if (is_null($value)) {
@@ -30,8 +34,14 @@ class ArrayFormatter implements Formatter
 
         if ($isFlat) {
             return implode(' ', array_map(
-                fn (mixed $item) => '<span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">'
-                    . e((string) $item) . '</span>',
+                function (mixed $item) use ($context): string {
+                    $display = $this->elementFormatter
+                        ? $this->elementFormatter->format($item, $context)
+                        : e((string) $item);
+
+                    return '<span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">'
+                        . $display . '</span>';
+                },
                 $value
             ));
         }

@@ -427,7 +427,9 @@ trait SupportsRelations
                 }
 
                 if ($isManyRelation) {
-                    $relatedFormatters[$enabledCol] = 'array';
+                    $relatedFormatters[$enabledCol] = $attributeInfo->formatter
+                        ? ['array', ['elementFormatter' => $attributeInfo->formatter]]
+                        : 'array';
                 } elseif ($attributeInfo->formatter) {
                     $relatedFormatters[$enabledCol] = $attributeInfo->formatter;
                 }
