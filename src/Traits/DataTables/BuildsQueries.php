@@ -430,6 +430,11 @@ trait BuildsQueries
         return $result;
     }
 
+    protected function getRequiredCols(): array
+    {
+        return [];
+    }
+
     protected function getReturnKeys(): array
     {
         return array_filter(array_merge(
