@@ -919,6 +919,7 @@ describe('cacheState (via SupportsCache)', function (): void {
             'search',
             'selected',
             'groupBy',
+            'colWidths',
         ]);
     });
 

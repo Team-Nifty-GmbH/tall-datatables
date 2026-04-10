@@ -59,6 +59,8 @@ class DataTable extends Component
 
     public array $formatters = [];
 
+    public array $colWidths = [];
+
     #[Locked]
     public bool $hasHead = true;
 
@@ -1118,6 +1120,7 @@ class DataTable extends Component
             'canSaveDefaultColumns' => $this->canSaveDefaultColumns(),
             'canShareFilters' => $this->canShareFilters(),
             'isSortable' => $this->isSortable(),
+            'isResizable' => $this->isResizable(),
             'availableLayouts' => $this->availableLayouts(),
             'activeLayout' => $this->activeLayout,
             'kanbanColumn' => in_array('kanban', $this->availableLayouts()) ? $this->kanbanColumn() : null,
@@ -1169,6 +1172,18 @@ class DataTable extends Component
         }
 
         return $resolved;
+    }
+
+    protected function isResizable(): bool
+    {
+        return config('tall-datatables.resizable_columns', false);
+    }
+
+    #[Renderless]
+    public function storeColWidths(array $colWidths): void
+    {
+        $this->colWidths = $colWidths;
+        $this->cacheState();
     }
 
     protected function setData(array $data): void

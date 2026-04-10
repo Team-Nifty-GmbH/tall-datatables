@@ -43,4 +43,6 @@ return [
     'models' => [
         'datatable_user_setting' => TeamNiftyGmbH\DataTable\Models\DatatableUserSetting::class,
     ],
+
+    'resizable_columns' => false,
 ];
