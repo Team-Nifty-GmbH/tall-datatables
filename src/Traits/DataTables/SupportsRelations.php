@@ -391,12 +391,6 @@ trait SupportsRelations
 
             $attributeInfo = $modelInfo->attribute($fieldName);
 
-            if (is_null($attributeInfo)) {
-                $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
-
-                continue;
-            }
-
             $isManyRelation = $relationInstance instanceof HasMany
                 || $relationInstance instanceof HasManyThrough
                 || $relationInstance instanceof BelongsToMany
