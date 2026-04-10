@@ -273,6 +273,11 @@ trait BuildsQueries
         return $paginator;
     }
 
+    protected function getRequiredCols(): array
+    {
+        return [];
+    }
+
     /**
      * Build the formatter map once, then reuse for all rows.
      */
@@ -428,11 +433,6 @@ trait BuildsQueries
         $result->setCollection($mapped);
 
         return $result;
-    }
-
-    protected function getRequiredCols(): array
-    {
-        return [];
     }
 
     protected function getReturnKeys(): array
