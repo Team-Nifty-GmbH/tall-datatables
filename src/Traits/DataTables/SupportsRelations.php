@@ -215,7 +215,7 @@ trait SupportsRelations
                 $localKey = $relation->getLocalKeyName();
                 $query->join($relatedTable, "$relatedTable.$foreignKey", '=', "$parentTable.$localKey");
             } else {
-                throw new Exception("Unsupported relation type for '{$relationName}' on " . $model::class);
+                return $model->getTable();
             }
 
             $selects[] = "$relatedTable.*";
