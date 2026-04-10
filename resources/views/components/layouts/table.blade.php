@@ -20,8 +20,7 @@
 ])
 <div
     class="mt-3 flex flex-col"
-    x-data="{ showSelectedActions: false, hasSelected: false }"
-    x-on:change="hasSelected = $el.querySelectorAll('tbody input[type=checkbox]:checked, tbody input[type=hidden][value=true]').length > 0"
+    x-data="{ showSelectedActions: false }"
 >
     <div class="relative overflow-x-auto shadow-sm sm:rounded-lg">
         <table class="dark:bg-secondary-800 min-w-full table-auto border-collapse bg-white text-sm text-gray-500 dark:text-gray-50">
@@ -152,7 +151,7 @@
                             <tr>
                                 <td class="dark:bg-secondary-700/30 border-b border-gray-100 bg-gray-50/50 px-1 py-0 dark:border-secondary-700/50">
                                     <template x-if="i === 0">
-                                        <div class="relative flex items-center justify-center" x-show="hasSelected" x-cloak>
+                                        <div class="relative flex items-center justify-center" x-cloak x-show="$wire.selected.length > 0">
                                             <x-button
                                                 color="secondary"
                                                 flat
