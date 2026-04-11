@@ -345,6 +345,14 @@ trait BuildsQueries
                     $limit,
                     ceil(data_get($query->scout_pagination, 'offset') / $limit) + 1,
                 );
+            } elseif ($this->activeLayout === 'kanban') {
+                $items = $query->get();
+                $result = new LengthAwarePaginator(
+                    $items,
+                    $items->count(),
+                    $items->count() ?: 1,
+                    1,
+                );
             } else {
                 $result = $query->paginate(
                     perPage: $this->perPage,

@@ -23,6 +23,7 @@
             :table-actions="$tableActions"
             :headline="$headline"
             :allow-soft-deletes="$allowSoftDeletes"
+            :available-layouts="$availableLayouts"
         />
         @if ($actions ?? false)
             <x-dropdown icon="ellipsis-vertical" static>

@@ -50,6 +50,31 @@
             @endforeach
         </div>
     @endif
+
+    @if (count($availableLayouts) > 1)
+        <div class="flex rounded-lg border border-gray-200 dark:border-secondary-700">
+            @foreach ($availableLayouts as $layout)
+                <button
+                    type="button"
+                    wire:click="setLayout('{{ $layout }}')"
+                    class="px-2.5 py-1.5 text-sm transition-colors {{ $this->activeLayout === $layout ? 'bg-primary-500 text-white' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-secondary-700' }} {{ $loop->first ? 'rounded-l-lg' : '' }} {{ $loop->last ? 'rounded-r-lg' : '' }}"
+                    title="{{ __(ucfirst($layout)) }}"
+                >
+                    @switch($layout)
+                        @case('table')
+                            <x-icon name="table-cells" class="h-4 w-4" />
+                            @break
+                        @case('kanban')
+                            <x-icon name="view-columns" class="h-4 w-4" />
+                            @break
+                        @case('grid')
+                            <x-icon name="squares-2x2" class="h-4 w-4" />
+                            @break
+                    @endswitch
+                </button>
+            @endforeach
+        </div>
+    @endif
 </div>
 @island(name: 'badges')
     @if ($this->search

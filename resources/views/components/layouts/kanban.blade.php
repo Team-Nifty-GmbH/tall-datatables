@@ -72,6 +72,14 @@
         </div>
     @endif
 
+    @if (! $hasHead && ($tableActions ?? false))
+        <div class="flex justify-end gap-1.5 pb-3">
+            @foreach ($tableActions as $tableAction)
+                {{ $tableAction }}
+            @endforeach
+        </div>
+    @endif
+
     @island(name: 'content')
     @php
         extract($this->getIslandData());
@@ -97,15 +105,34 @@
                 @php
                     $laneRecords = $grouped->get((string) $laneValue, collect());
                     $laneColor = $laneConfig['color'] ?? 'gray';
+                    $laneColorClass = str_starts_with($laneColor, 'bg-') ? $laneColor : match ($laneColor) {
+                        'red' => 'bg-red-500',
+                        'orange' => 'bg-orange-500',
+                        'amber' => 'bg-amber-500',
+                        'yellow' => 'bg-yellow-500',
+                        'lime' => 'bg-lime-500',
+                        'green' => 'bg-green-500',
+                        'emerald' => 'bg-emerald-500',
+                        'teal' => 'bg-teal-500',
+                        'cyan' => 'bg-cyan-500',
+                        'sky' => 'bg-sky-500',
+                        'blue' => 'bg-blue-500',
+                        'indigo' => 'bg-indigo-500',
+                        'violet' => 'bg-violet-500',
+                        'purple' => 'bg-purple-500',
+                        'fuchsia' => 'bg-fuchsia-500',
+                        'pink' => 'bg-pink-500',
+                        'rose' => 'bg-rose-500',
+                        'neutral' => 'bg-neutral-500',
+                        default => 'bg-gray-500',
+                    };
                 @endphp
-                <div class="flex w-72 shrink-0 flex-col rounded-lg border border-gray-200 bg-white dark:border-secondary-700 dark:bg-secondary-800">
-                    <div class="flex items-center justify-between border-b border-gray-200 px-3 py-2.5 dark:border-secondary-700">
-                        <div class="flex items-center gap-2">
-                            <div class="h-2 w-2 rounded-full bg-{{ $laneColor }}-500"></div>
-                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <div class="flex min-w-48 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-secondary-700 dark:bg-secondary-800">
+                    <div class="h-1 {{ $laneColorClass }}"></div>
+                    <div class="flex items-center justify-between px-3 py-2.5">
+                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">
                                 {{ $laneConfig['label'] ?? \Illuminate\Support\Str::headline($laneValue) }}
-                            </span>
-                        </div>
+                        </span>
                         <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-secondary-700 dark:text-gray-400">
                             {{ $laneRecords->count() }}
                         </span>
@@ -113,37 +140,75 @@
 
                     <div
                         class="flex flex-1 flex-col gap-2 overflow-y-auto p-2"
-                        x-sort="$wire.kanbanMoveItem($item, '{{ $laneValue }}')"
+                        x-sort="$wire.kanbanMoveItem($item, '{{ $laneValue }}')@if ($isSortable); $wire.sortRows($item, $position)@endif"
                         x-sort:group="kanban"
                     >
                         @foreach ($laneRecords as $index => $record)
                             <div
                                 wire:key="kanban-{{ $record[$modelKeyName] ?? $index }}"
                                 x-sort:item="{{ $record[$modelKeyName] ?? $index }}"
-                                x-data="{ record: {{ json_encode($record) }} }"
+                                x-data="{ record: {{ json_encode($record) }}, actionsOpen: false }"
                                 x-on:click="$dispatch('data-table-row-clicked', {record})"
                                 @if($allowSoftDeletes && ($record['deleted_at'] ?? null)) class="opacity-50" @endif
-                                {{ $rowAttributes->merge(['class' => 'cursor-grab rounded-md border border-gray-200 bg-white p-3 transition-shadow hover:shadow-md dark:border-secondary-600 dark:bg-secondary-900']) }}
+                                {{ $rowAttributes->merge(['class' => 'group relative cursor-move rounded-md border border-gray-200 bg-white p-3 transition-shadow hover:shadow-md dark:border-secondary-600 dark:bg-secondary-900']) }}
                             >
+                                @if ($rowActions)
+                                    <div
+                                        x-on:click.stop
+                                        class="absolute top-1 z-10 opacity-0 transition-opacity group-hover:opacity-100"
+                                        style="right: 4px;"
+                                        x-bind:class="actionsOpen && 'opacity-100!'"
+                                    >
+                                        <button
+                                            type="button"
+                                            class="cursor-pointer rounded-full bg-white/80 p-0.5 text-gray-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-gray-900 dark:bg-secondary-800/80 dark:text-gray-400 dark:hover:bg-secondary-800 dark:hover:text-gray-200"
+                                            x-on:click="actionsOpen = !actionsOpen"
+                                        >
+                                            <x-icon name="ellipsis-vertical" class="h-4 w-4" />
+                                        </button>
+                                        <div
+                                            x-show="actionsOpen"
+                                            x-cloak
+                                            x-on:click.outside="actionsOpen = false"
+                                            x-transition
+                                            class="absolute top-full right-0 z-50 mt-1 min-w-36"
+                                        >
+                                            <x-card>
+                                                <div class="flex flex-col gap-1.5" x-on:click="actionsOpen = false">
+                                                    @foreach ($rowActions as $rowAction)
+                                                        {{ $rowAction }}
+                                                    @endforeach
+                                                </div>
+                                            </x-card>
+                                        </div>
+                                    </div>
+                                @endif
                                 @if ($kanbanCardView)
                                     @include($kanbanCardView, ['record' => $record, 'enabledCols' => $enabledCols, 'colLabels' => $colLabels, 'formatters' => $formatters])
                                 @else
-                                    @foreach ($enabledCols as $colIndex => $col)
-                                        @if ($col === $kanbanColumn)
-                                            @continue
-                                        @endif
-                                        <div class="{{ $colIndex === 0 ? '' : 'mt-1' }}">
-                                            <div class="text-sm {{ $colIndex === 0 ? 'font-semibold text-gray-900 dark:text-gray-50' : 'text-gray-500 dark:text-gray-400' }}">
-                                                @if (is_array($record[$col] ?? null) && isset($record[$col]['display']))
-                                                    {!! $record[$col]['display'] !!}
-                                                @elseif (is_array($record[$col] ?? null) && isset($record[$col]['raw']))
-                                                    {{ $record[$col]['raw'] }}
-                                                @else
-                                                    {{ $record[$col] ?? '' }}
+                                    <div class="flex flex-col gap-3">
+                                        @foreach ($enabledCols as $colIndex => $col)
+                                            @if ($col === $kanbanColumn)
+                                                @continue
+                                            @endif
+                                            <div>
+                                                @if ($colIndex > 0)
+                                                    <div class="mb-0.5 text-xs leading-none text-gray-400 dark:text-gray-500">
+                                                        {{ $colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}
+                                                    </div>
                                                 @endif
+                                                <div class="text-sm {{ $colIndex === 0 ? 'font-semibold text-gray-900 dark:text-gray-50' : 'text-gray-500 dark:text-gray-400' }}">
+                                                    @if (is_array($record[$col] ?? null) && isset($record[$col]['display']))
+                                                        {!! $record[$col]['display'] !!}
+                                                    @elseif (is_array($record[$col] ?? null) && isset($record[$col]['raw']))
+                                                        {{ $record[$col]['raw'] }}
+                                                    @else
+                                                        {{ $record[$col] ?? '' }}
+                                                    @endif
+                                                </div>
                                             </div>
-                                        </div>
-                                    @endforeach
+                                        @endforeach
+                                    </div>
                                 @endif
                             </div>
                         @endforeach
@@ -156,19 +221,5 @@
 
     @island(name: 'footer')
     @php extract($this->getIslandData()); @endphp
-    @if (! $hasInfiniteScroll)
-        @if (isset($this->data['current_page']))
-            <div class="w-full pt-3">
-                <x-tall-datatables::pagination />
-            </div>
-        @endif
-    @else
-        <div
-            x-intersect:enter="$wire.initialized && $wire.loadMore()"
-            class="w-full pt-3"
-        >
-            <x-button color="secondary" flat loading="loadMore" delay="longer" class="w-full" :text="__('Loading...')" />
-        </div>
-    @endif
     @endisland
 </div>

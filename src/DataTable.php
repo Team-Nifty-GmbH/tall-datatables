@@ -709,8 +709,7 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    #[Renderless]
-    public function setLayout(string $layout): void
+        public function setLayout(string $layout): void
     {
         if (! in_array($layout, $this->availableLayouts())) {
             return;
@@ -718,8 +717,9 @@ class DataTable extends Component
 
         $this->activeLayout = $layout;
         $this->cachedViewData = null;
+        $this->islandsHaveMounted = false;
         $this->cacheState();
-        $this->loadData();
+        $this->loadData(forceRender: true);
     }
 
     #[Renderless]
