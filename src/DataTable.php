@@ -709,7 +709,7 @@ class DataTable extends Component
         $this->loadData();
     }
 
-        public function setLayout(string $layout): void
+    public function setLayout(string $layout): void
     {
         if (! in_array($layout, $this->availableLayouts())) {
             return;
