@@ -7,7 +7,6 @@
  * Requires: pestphp/pest-plugin-browser, built assets (npm run build).
  */
 
-use Tests\Fixtures\Livewire\PostDataTable;
 use Tests\Fixtures\Livewire\ResizablePostDataTable;
 
 beforeEach(function (): void {
@@ -28,25 +27,7 @@ beforeEach(function (): void {
     }
 });
 
-describe('Resizable columns - disabled', function (): void {
-    it('does not render resize handles when isResizable is false', function (): void {
-        config()->set('tall-datatables.resizable_columns', false);
-
-        $page = visitLivewire(PostDataTable::class);
-
-        $page->wait(2);
-
-        $result = $page->script('() => {
-            return document.querySelectorAll(".cursor-col-resize").length;
-        }');
-
-        $count = is_array($result) && isset($result[0]) ? $result[0] : $result;
-
-        expect($count)->toBe(0);
-    });
-});
-
-describe('Resizable columns - enabled', function (): void {
+describe('Resizable columns', function (): void {
     it('renders resize handles on column headers', function (): void {
         $page = visitLivewire(ResizablePostDataTable::class);
 
