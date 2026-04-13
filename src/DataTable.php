@@ -229,6 +229,7 @@ class DataTable extends Component
         $this->search = '';
         $this->groupBy = null;
         $this->loadedFilterId = null;
+        $this->forgetSessionFilter();
         $this->startSearch();
 
         $this->js(<<<'JS'
