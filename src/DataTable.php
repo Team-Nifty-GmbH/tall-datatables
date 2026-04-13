@@ -48,6 +48,8 @@ class DataTable extends Component
 
     public array $columnLabels = [];
 
+    public array $colWidths = [];
+
     public array $data = [];
 
     public array $enabledCols = [];
@@ -847,6 +849,13 @@ class DataTable extends Component
         $this->loadData();
     }
 
+    #[Renderless]
+    public function storeColWidths(array $colWidths): void
+    {
+        $this->colWidths = $colWidths;
+        $this->cacheState();
+    }
+
     public function updatedSearch(): void
     {
         $this->startSearch();
@@ -1118,6 +1127,7 @@ class DataTable extends Component
             'canSaveDefaultColumns' => $this->canSaveDefaultColumns(),
             'canShareFilters' => $this->canShareFilters(),
             'isSortable' => $this->isSortable(),
+            'isResizable' => $this->isResizable(),
             'availableLayouts' => $this->availableLayouts(),
             'activeLayout' => $this->activeLayout,
             'kanbanColumn' => in_array('kanban', $this->availableLayouts()) ? $this->kanbanColumn() : null,
@@ -1126,6 +1136,11 @@ class DataTable extends Component
         ];
 
         return $this->cachedViewData;
+    }
+
+    protected function isResizable(): bool
+    {
+        return true;
     }
 
     protected function kanbanCardView(): ?string

@@ -329,6 +329,7 @@ trait StoresSettings
             'search' => $this->search,
             'selected' => $this->selected,
             'groupBy' => $this->groupBy,
+            'colWidths' => $this->colWidths,
         ];
 
         if (config('tall-datatables.should_cache')) {
@@ -374,6 +375,7 @@ trait StoresSettings
                 'aggregatableCols' => $this->aggregatableCols,
                 'perPage' => $this->perPage,
                 'activeLayout' => $this->activeLayout,
+                'colWidths' => $this->colWidths,
             ],
             'is_layout' => true,
         ];

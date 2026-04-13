@@ -76,5 +76,6 @@ export default function data_table() {
             this.stickyCols = cols;
             this.$wire.stickyCols = cols;
         },
+
     };
 }
