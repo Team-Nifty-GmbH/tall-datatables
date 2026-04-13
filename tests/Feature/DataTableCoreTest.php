@@ -1,6 +1,7 @@
 <?php
 
 use Livewire\Livewire;
+use TeamNiftyGmbH\DataTable\Helpers\SessionFilter;
 use Tests\Fixtures\Livewire\PostDataTable;
 use Tests\Fixtures\Livewire\PostWithRelationsDataTable;
 use Tests\Fixtures\Models\Post;
@@ -259,6 +260,22 @@ describe('clearFiltersAndSort', function (): void {
             ->call('clearFiltersAndSort');
 
         expect($component->get('textFilters'))->toBe([]);
+    });
+
+    it('clears session filter', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+        $cacheKey = $component->instance()->getCacheKey();
+
+        session()->put($cacheKey . '_query', SessionFilter::make(
+            $cacheKey,
+            fn ($q) => $q->where('is_published', true),
+            'Published Only'
+        ));
+
+        $component->call('clearFiltersAndSort');
+
+        expect(session()->has($cacheKey . '_query'))->toBeFalse()
+            ->and($component->get('sessionFilter'))->toBe([]);
     });
 });
 
