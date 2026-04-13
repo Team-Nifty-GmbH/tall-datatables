@@ -351,11 +351,12 @@ trait BuildsQueries
                 $lanes = array_keys($this->resolveKanbanLanes());
 
                 $allItems = collect();
-                $this->kanbanLaneMeta = [];
+                $existingMeta = $this->kanbanLaneMeta;
 
                 foreach ($lanes as $lane) {
+                    $laneLimit = $existingMeta[$lane]['loaded'] ?? $perLane;
                     $laneQuery = clone $query;
-                    $laneItems = $laneQuery->where($kanbanColumn, $lane)->limit($perLane)->get();
+                    $laneItems = $laneQuery->where($kanbanColumn, $lane)->limit($laneLimit)->get();
                     $laneTotal = (clone $query)->where($kanbanColumn, $lane)->count();
 
                     $allItems = $allItems->merge($laneItems);

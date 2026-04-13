@@ -508,27 +508,12 @@ class DataTable extends Component
 
     public function kanbanLoadMore(string $lane): void
     {
-        $column = $this->kanbanColumn();
-        if (is_null($column)) {
-            return;
-        }
-
-        $loaded = $this->kanbanLaneMeta[$lane]['loaded'] ?? 0;
         $perLane = $this->kanbanPerLane();
+        $loaded = $this->kanbanLaneMeta[$lane]['loaded'] ?? $perLane;
 
-        $query = $this->buildSearch()
-            ->where($column, $lane)
-            ->offset($loaded)
-            ->limit($perLane);
-
-        $items = $query->get();
-
-        foreach ($items as $item) {
-            $this->data['data'][] = $this->itemToArray($item);
-        }
-
-        $this->kanbanLaneMeta[$lane]['loaded'] = $loaded + $items->count();
-        $this->kanbanLaneMeta[$lane]['has_more'] = $items->count() >= $perLane;
+        $this->kanbanLaneMeta[$lane]['loaded'] = $loaded + $perLane;
+        $this->islandsHaveMounted = false;
+        $this->loadData(forceRender: true);
     }
 
     public function kanbanMoveItem(int|string $id, string $targetLane): void
