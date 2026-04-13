@@ -12,6 +12,6 @@ class StringFormatter implements Formatter
             return '';
         }
 
-        return e((string) $value);
+        return e(strip_tags((string) $value));
     }
 }
