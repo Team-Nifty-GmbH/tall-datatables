@@ -212,6 +212,33 @@
                                 @endif
                             </div>
                         @endforeach
+
+                        @if ($this->kanbanLaneMeta[$laneValue]['has_more'] ?? false)
+                            <div
+                                x-intersect:enter.margin.200px="$wire.kanbanLoadMore('{{ $laneValue }}')"
+                                class="flex items-center justify-center py-2"
+                            >
+                                <span
+                                    class="text-xs text-gray-400 dark:text-gray-500"
+                                    wire:loading.remove
+                                    wire:target="kanbanLoadMore('{{ $laneValue }}')"
+                                >
+                                    {{ ($this->kanbanLaneMeta[$laneValue]['total'] ?? 0) - ($this->kanbanLaneMeta[$laneValue]['loaded'] ?? 0) }}
+                                    {{ __('more') }}
+                                </span>
+                                <svg
+                                    class="h-4 w-4 animate-spin text-gray-400"
+                                    wire:loading
+                                    wire:target="kanbanLoadMore('{{ $laneValue }}')"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        @endif
                     </div>
                 </div>
             @endforeach

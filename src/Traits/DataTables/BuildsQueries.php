@@ -346,11 +346,30 @@ trait BuildsQueries
                     ceil(data_get($query->scout_pagination, 'offset') / $limit) + 1,
                 );
             } elseif ($this->activeLayout === 'kanban') {
-                $items = $query->get();
+                $kanbanColumn = $this->kanbanColumn();
+                $perLane = $this->kanbanPerLane();
+                $lanes = array_keys($this->resolveKanbanLanes());
+
+                $allItems = collect();
+                $this->kanbanLaneMeta = [];
+
+                foreach ($lanes as $lane) {
+                    $laneQuery = clone $query;
+                    $laneItems = $laneQuery->where($kanbanColumn, $lane)->limit($perLane)->get();
+                    $laneTotal = (clone $query)->where($kanbanColumn, $lane)->count();
+
+                    $allItems = $allItems->merge($laneItems);
+                    $this->kanbanLaneMeta[$lane] = [
+                        'loaded' => $laneItems->count(),
+                        'total' => $laneTotal,
+                        'has_more' => $laneItems->count() < $laneTotal,
+                    ];
+                }
+
                 $result = new LengthAwarePaginator(
-                    $items,
-                    $items->count(),
-                    $items->count() ?: 1,
+                    $allItems,
+                    $allItems->count(),
+                    $allItems->count() ?: 1,
                     1,
                 );
             } else {

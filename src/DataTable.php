@@ -38,6 +38,8 @@ class DataTable extends Component
 
     public array $appends = [];
 
+    public array $kanbanLaneMeta = [];
+
     #[Locked]
     public array $availableCols = ['*'];
 
@@ -502,6 +504,31 @@ class DataTable extends Component
         $this->page = $page;
         $this->cacheState();
         $this->loadData();
+    }
+
+    public function kanbanLoadMore(string $lane): void
+    {
+        $column = $this->kanbanColumn();
+        if (is_null($column)) {
+            return;
+        }
+
+        $loaded = $this->kanbanLaneMeta[$lane]['loaded'] ?? 0;
+        $perLane = $this->kanbanPerLane();
+
+        $query = $this->buildSearch()
+            ->where($column, $lane)
+            ->offset($loaded)
+            ->limit($perLane);
+
+        $items = $query->get();
+
+        foreach ($items as $item) {
+            $this->data['data'][] = $this->itemToArray($item);
+        }
+
+        $this->kanbanLaneMeta[$lane]['loaded'] = $loaded + $items->count();
+        $this->kanbanLaneMeta[$lane]['has_more'] = $items->count() >= $perLane;
     }
 
     public function kanbanMoveItem(int|string $id, string $targetLane): void
@@ -1127,6 +1154,11 @@ class DataTable extends Component
     protected function kanbanLanes(): ?array
     {
         return null;
+    }
+
+    protected function kanbanPerLane(): int
+    {
+        return 50;
     }
 
     protected function resolveKanbanLanes(): array
