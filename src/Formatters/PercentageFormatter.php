@@ -27,9 +27,14 @@ class PercentageFormatter implements Formatter
 
         $clamped = max(0, min(100, $floatValue));
         $widthPercent = number_format($clamped, 2, '.', '');
+        $decimals = fmod($floatValue, 1) === 0.0 ? 0 : 2;
+        $label = number_format($floatValue, $decimals, ',', '.') . ' %';
 
-        return '<div class="w-full bg-gray-200 rounded-full h-2">'
-            . '<div class="bg-blue-600 h-2 rounded-full" style="width: ' . $widthPercent . '%"></div>'
+        return '<div>'
+            . '<div class="overflow-hidden rounded-full bg-gray-200 h-2 dark:bg-gray-700">'
+            . '<div class="h-2 rounded-full bg-indigo-500 dark:bg-indigo-700" style="width: ' . $widthPercent . '%"></div>'
+            . '</div>'
+            . '<span class="text-xs text-gray-500 dark:text-gray-400">' . $label . '</span>'
             . '</div>';
     }
 }

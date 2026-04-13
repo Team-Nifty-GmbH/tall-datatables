@@ -33,14 +33,15 @@ describe('PercentageFormatter', function (): void {
         expect($formatter->format(100))->toBe('100 %');
     });
 
-    it('renders progress bar HTML', function (): void {
+    it('renders progress bar with label and indigo color', function (): void {
         $formatter = new PercentageFormatter(progressBar: true);
         $result = $formatter->format(50);
 
         expect($result)
             ->toContain('<div')
             ->toContain('width: 50.00%')
-            ->toContain('bg-blue-600');
+            ->toContain('bg-indigo-500')
+            ->toContain('50 %');
     });
 
     it('clamps progress bar to 0 for negative values', function (): void {
