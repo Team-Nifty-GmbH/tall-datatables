@@ -160,7 +160,7 @@ describe('RowTransformer::transform', function (): void {
         expect($row)->toHaveKey('post.user.name');
     });
 
-    it('omits display key when formatter escapes same as e(raw)', function (): void {
+    it('wraps HTML string with stripped display value', function (): void {
         $registry = new FormatterRegistry();
         $transformer = new RowTransformer($registry);
 
@@ -168,9 +168,10 @@ describe('RowTransformer::transform', function (): void {
 
         $row = $transformer->transform($post, ['title']);
 
-        // StringFormatter calls e() which matches e(rawString), so display is omitted
-        expect($row['title'])->not->toHaveKey('display');
-        expect($row['title']['raw'])->toBe('<b>Bold</b>');
+        // StringFormatter strips tags and escapes, producing a different display value
+        expect($row['title'])->toHaveKeys(['raw', 'display'])
+            ->and($row['title']['raw'])->toBe('<b>Bold</b>')
+            ->and($row['title']['display'])->toBe('Bold');
     });
 
     it('uses correct base column for dot-notation casts resolution', function (): void {

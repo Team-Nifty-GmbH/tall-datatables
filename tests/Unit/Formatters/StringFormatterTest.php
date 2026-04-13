@@ -27,11 +27,18 @@ describe('StringFormatter', function (): void {
         expect($formatter->format(3.14))->toBe('3.14');
     });
 
-    it('escapes HTML entities', function (): void {
+    it('strips HTML tags and escapes remaining content', function (): void {
         $formatter = new StringFormatter();
 
         expect($formatter->format('<script>alert("xss")</script>'))
-            ->toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+            ->toBe('alert(&quot;xss&quot;)');
+    });
+
+    it('strips rich text HTML to plain text', function (): void {
+        $formatter = new StringFormatter();
+
+        expect($formatter->format('<p>Hello <b>World</b></p>'))
+            ->toBe('Hello World');
     });
 
     it('escapes ampersands', function (): void {
