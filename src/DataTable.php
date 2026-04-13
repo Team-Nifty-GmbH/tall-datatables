@@ -38,8 +38,6 @@ class DataTable extends Component
 
     public array $appends = [];
 
-    public array $kanbanLaneMeta = [];
-
     #[Locked]
     public array $availableCols = ['*'];
 
@@ -81,6 +79,8 @@ class DataTable extends Component
     public bool $isFilterable = true;
 
     public ?bool $isSearchable = null;
+
+    public array $kanbanLaneMeta = [];
 
     public ?int $loadedFilterId = null;
 
