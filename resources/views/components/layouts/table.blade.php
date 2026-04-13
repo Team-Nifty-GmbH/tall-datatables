@@ -153,32 +153,38 @@
                                     <template x-if="i === 0">
                                         <div class="relative flex items-center justify-center" x-cloak x-show="$wire.selected.length > 0">
                                             <x-button
+                                                x-ref="selectedActionsButton"
                                                 color="secondary"
                                                 flat
                                                 sm
                                                 icon="chevron-down"
                                                 x-on:click="showSelectedActions = !showSelectedActions"
                                             />
-                                            <div
-                                                x-on:click.outside="showSelectedActions = false"
-                                                x-transition:enter="transition duration-200 ease-out"
-                                                x-transition:enter-start="scale-95 opacity-0"
-                                                x-transition:enter-end="scale-100 opacity-100"
-                                                x-transition:leave="transition duration-75 ease-in"
-                                                x-transition:leave-start="scale-100 opacity-100"
-                                                x-transition:leave-end="scale-95 opacity-0"
-                                                class="absolute left-0 top-full z-50 mt-1 min-w-48"
-                                                x-cloak
-                                                x-show="showSelectedActions"
-                                            >
-                                                <x-card x-on:click="showSelectedActions = false;">
-                                                    <div class="flex flex-col gap-1.5">
-                                                        @foreach ($selectedActions as $action)
-                                                            {{ $action }}
-                                                        @endforeach
-                                                    </div>
-                                                </x-card>
-                                            </div>
+
+                                            <template x-teleport="body">
+                                                <div
+                                                    x-show="showSelectedActions"
+                                                    x-anchor.bottom-start="$refs.selectedActionsButton"
+                                                    x-on:click.outside="showSelectedActions = false"
+                                                    x-transition:enter="transition duration-200 ease-out"
+                                                    x-transition:enter-start="scale-95 opacity-0"
+                                                    x-transition:enter-end="scale-100 opacity-100"
+                                                    x-transition:leave="transition duration-75 ease-in"
+                                                    x-transition:leave-start="scale-100 opacity-100"
+                                                    x-transition:leave-end="scale-95 opacity-0"
+                                                    style="z-index: 3 "
+                                                    class="mt-1 min-w-48"
+                                                    x-cloak
+                                                >
+                                                    <x-card x-on:click="showSelectedActions = false;">
+                                                        <div class="flex flex-col gap-1.5">
+                                                            @foreach ($selectedActions as $action)
+                                                                {{ $action }}
+                                                            @endforeach
+                                                        </div>
+                                                    </x-card>
+                                                </div>
+                                            </template>
                                         </div>
                                     </template>
                                     <template x-if="i > 0">
