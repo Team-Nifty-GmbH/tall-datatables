@@ -9,18 +9,7 @@ beforeEach(function (): void {
 });
 
 describe('Resizable columns', function (): void {
-    test('isResizable defaults to config value', function (): void {
-        config()->set('tall-datatables.resizable_columns', false);
-
-        $component = Livewire::test(PostDataTable::class);
-        $viewData = $component->instance()->getIslandData();
-
-        expect($viewData['isResizable'])->toBeFalse();
-    });
-
-    test('isResizable returns true when config enabled', function (): void {
-        config()->set('tall-datatables.resizable_columns', true);
-
+    test('isResizable is always true', function (): void {
         $component = Livewire::test(PostDataTable::class);
         $viewData = $component->instance()->getIslandData();
 

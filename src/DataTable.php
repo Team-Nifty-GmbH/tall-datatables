@@ -1140,7 +1140,7 @@ class DataTable extends Component
 
     protected function isResizable(): bool
     {
-        return config('tall-datatables.resizable_columns', false);
+        return true;
     }
 
     protected function kanbanCardView(): ?string
