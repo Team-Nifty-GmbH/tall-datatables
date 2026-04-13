@@ -80,6 +80,8 @@ class DataTable extends Component
 
     public ?bool $isSearchable = null;
 
+    public array $kanbanLaneMeta = [];
+
     public ?int $loadedFilterId = null;
 
     public bool $loadingFilter = false;
@@ -505,6 +507,16 @@ class DataTable extends Component
         $this->loadData();
     }
 
+    public function kanbanLoadMore(string $lane): void
+    {
+        $perLane = $this->kanbanPerLane();
+        $loaded = $this->kanbanLaneMeta[$lane]['loaded'] ?? $perLane;
+
+        $this->kanbanLaneMeta[$lane]['loaded'] = $loaded + $perLane;
+        $this->islandsHaveMounted = false;
+        $this->loadData(forceRender: true);
+    }
+
     public function kanbanMoveItem(int|string $id, string $targetLane): void
     {
         throw new BadMethodCallException('Override kanbanMoveItem() to handle drag & drop.');
@@ -524,6 +536,7 @@ class DataTable extends Component
         // non-island parts (like thead) must update.
         $useIslands = request()->isMethod('POST')
             && ! $forceRender
+            && $this->activeLayout !== 'kanban'
             && $this->islandCacheValid();
 
         if ($useIslands) {
@@ -710,7 +723,6 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    #[Renderless]
     public function setLayout(string $layout): void
     {
         if (! in_array($layout, $this->availableLayouts())) {
@@ -719,8 +731,9 @@ class DataTable extends Component
 
         $this->activeLayout = $layout;
         $this->cachedViewData = null;
+        $this->islandsHaveMounted = false;
         $this->cacheState();
-        $this->loadData();
+        $this->loadData(forceRender: true);
     }
 
     #[Renderless]
@@ -824,16 +837,16 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    #[Renderless]
     public function startSearch(): void
     {
         $this->reset('selected');
         $this->page = 1;
+        $this->kanbanLaneMeta = [];
+        $this->islandsHaveMounted = false;
         $this->cacheState();
         $this->loadData();
     }
 
-    #[Renderless]
     public function updatedSearch(): void
     {
         $this->startSearch();
@@ -1128,6 +1141,11 @@ class DataTable extends Component
     protected function kanbanLanes(): ?array
     {
         return null;
+    }
+
+    protected function kanbanPerLane(): int
+    {
+        return 50;
     }
 
     protected function resolveKanbanLanes(): array

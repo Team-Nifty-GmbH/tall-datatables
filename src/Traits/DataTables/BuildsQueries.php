@@ -326,7 +326,35 @@ trait BuildsQueries
     protected function getResultFromQuery(Builder $query): LengthAwarePaginator|Collection|array
     {
         try {
-            if (property_exists($query, 'scout_pagination')) {
+            if ($this->activeLayout === 'kanban') {
+                $kanbanColumn = $this->kanbanColumn();
+                $perLane = $this->kanbanPerLane();
+                $lanes = array_keys($this->resolveKanbanLanes());
+
+                $allItems = collect();
+                $existingMeta = $this->kanbanLaneMeta;
+
+                foreach ($lanes as $lane) {
+                    $laneLimit = $existingMeta[$lane]['loaded'] ?? $perLane;
+                    $laneQuery = clone $query;
+                    $laneItems = $laneQuery->where($kanbanColumn, $lane)->limit($laneLimit)->get();
+                    $laneTotal = (clone $query)->where($kanbanColumn, $lane)->count();
+
+                    $allItems = $allItems->merge($laneItems);
+                    $this->kanbanLaneMeta[$lane] = [
+                        'loaded' => $laneItems->count(),
+                        'total' => $laneTotal,
+                        'has_more' => $laneItems->count() < $laneTotal,
+                    ];
+                }
+
+                $result = new LengthAwarePaginator(
+                    $allItems,
+                    $allItems->count(),
+                    $allItems->count() ?: 1,
+                    1,
+                );
+            } elseif (property_exists($query, 'scout_pagination')) {
                 $items = $query->get();
                 $hasAdditionalFilters = ! empty($this->userFilters);
 

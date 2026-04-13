@@ -446,9 +446,9 @@ trait SupportsRelations
             array_values($with),
             $select,
             $filterable,
-            $this->filterValueLists ?? [],
+            json_decode(json_encode($this->filterValueLists ?? []), true),
             array_values(array_unique($sortable ?? [])),
-            $relatedFormatters,
+            json_decode(json_encode($relatedFormatters), true),
             $this->enabledCols,
         ];
 

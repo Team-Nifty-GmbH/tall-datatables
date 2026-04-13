@@ -57,12 +57,90 @@ describe('Kanban View', function (): void {
     });
 
     describe('layout selection', function (): void {
-        it('returns kanban layout view name', function (): void {
+        test('returns kanban layout view name', function (): void {
             $component = Livewire::test(KanbanPostDataTable::class)
                 ->call('setLayout', 'kanban');
 
             $viewData = $component->instance()->getIslandData();
             expect($viewData['layout'])->toBe('tall-datatables::layouts.kanban');
+        });
+
+        test('switches from table to kanban and back', function (): void {
+            createTestPost(['user_id' => $this->user->getKey(), 'is_published' => true]);
+
+            $component = Livewire::test(KanbanPostDataTable::class);
+
+            expect($component->instance()->activeLayout)->toBe('table');
+
+            $component->call('setLayout', 'kanban');
+            expect($component->instance()->activeLayout)->toBe('kanban');
+
+            $component->call('setLayout', 'table');
+            expect($component->instance()->activeLayout)->toBe('table');
+        });
+    });
+
+    describe('kanban data loading', function (): void {
+        test('loads data split by lanes', function (): void {
+            createTestPost(['user_id' => $this->user->getKey(), 'is_published' => true, 'title' => 'Published']);
+            createTestPost(['user_id' => $this->user->getKey(), 'is_published' => false, 'title' => 'Draft']);
+
+            $component = Livewire::test(KanbanPostDataTable::class)
+                ->call('setLayout', 'kanban');
+
+            $data = $component->instance()->getDataForTesting();
+            expect($data['data'])->toHaveCount(2);
+
+            $laneMeta = $component->instance()->kanbanLaneMeta;
+            expect($laneMeta)->toHaveKeys(['1', '0'])
+                ->and($laneMeta['1']['loaded'])->toBe(1)
+                ->and($laneMeta['0']['loaded'])->toBe(1);
+        });
+
+        test('tracks lane totals and has_more correctly', function (): void {
+            for ($i = 0; $i < 3; $i++) {
+                createTestPost(['user_id' => $this->user->getKey(), 'is_published' => true]);
+            }
+
+            createTestPost(['user_id' => $this->user->getKey(), 'is_published' => false]);
+
+            $component = Livewire::test(KanbanPostDataTable::class)
+                ->call('setLayout', 'kanban');
+
+            $laneMeta = $component->instance()->kanbanLaneMeta;
+            expect($laneMeta['1']['total'])->toBe(3)
+                ->and($laneMeta['0']['total'])->toBe(1);
+        });
+
+        test('kanbanLoadMore increases loaded count', function (): void {
+            for ($i = 0; $i < 60; $i++) {
+                createTestPost(['user_id' => $this->user->getKey(), 'is_published' => true]);
+            }
+
+            $component = Livewire::test(KanbanPostDataTable::class)
+                ->call('setLayout', 'kanban');
+
+            $initialLoaded = $component->instance()->kanbanLaneMeta['1']['loaded'];
+
+            $component->call('kanbanLoadMore', '1');
+
+            $newLoaded = $component->instance()->kanbanLaneMeta['1']['loaded'];
+            expect($newLoaded)->toBeGreaterThan($initialLoaded);
+        });
+
+        test('search resets kanbanLaneMeta', function (): void {
+            createTestPost(['user_id' => $this->user->getKey(), 'is_published' => true, 'title' => 'Findable']);
+            createTestPost(['user_id' => $this->user->getKey(), 'is_published' => false, 'title' => 'Other']);
+
+            $component = Livewire::test(KanbanPostDataTable::class)
+                ->call('setLayout', 'kanban');
+
+            expect($component->instance()->kanbanLaneMeta)->not->toBeEmpty();
+
+            $component->set('search', 'Findable');
+
+            $laneMeta = $component->instance()->kanbanLaneMeta;
+            expect($laneMeta['1']['total'])->toBeLessThanOrEqual(1);
         });
     });
 });
