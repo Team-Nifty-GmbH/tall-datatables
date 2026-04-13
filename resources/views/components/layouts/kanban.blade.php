@@ -40,13 +40,18 @@
                     >
                         <x-card>
                             <div class="flex flex-col gap-0.5">
-                                @foreach (($this->sortable === ['*'] ? $this->enabledCols : $this->sortable) as $sortableItem)
+                                @foreach ($this->sortable === ['*'] ? $this->enabledCols : $this->sortable as $sortableItem)
                                     <button
                                         type="button"
-                                        class="flex cursor-pointer items-center justify-between rounded-md px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-secondary-700"
-                                        x-on:click="open = false; $wire.sortTable('{{ $sortableItem }}')"
+                                        class="dark:hover:bg-secondary-700 flex cursor-pointer items-center justify-between rounded-md px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400"
+                                        x-on:click="
+                                            open = false
+                                            $wire.sortTable('{{ $sortableItem }}')
+                                        "
                                     >
-                                        <span>{{ $this->colLabels[$sortableItem] ?? \Illuminate\Support\Str::headline($sortableItem) }}</span>
+                                        <span>
+                                            {{ $this->colLabels[$sortableItem] ?? \Illuminate\Support\Str::headline($sortableItem) }}
+                                        </span>
                                         @if ($this->userOrderBy === $sortableItem)
                                             <x-icon
                                                 name="chevron-down"
@@ -60,6 +65,7 @@
                     </div>
                 </div>
             @endif
+
             @if ($hasSidebar)
                 <x-button
                     color="secondary"
@@ -81,172 +87,214 @@
     @endif
 
     @island(name: 'content')
-    @php
-        extract($this->getIslandData());
-        $formatters = $this->getFormatters();
-        $modelKeyName = $this->modelKeyName;
-        $enabledCols = $this->enabledCols;
-        $records = $this->data['data'] ?? [];
-        $grouped = collect($records)->groupBy(fn ($record) => (string) (is_array($record[$kanbanColumn] ?? null) ? ($record[$kanbanColumn]['raw'] ?? '') : ($record[$kanbanColumn] ?? '')));
-    @endphp
-    @if (empty($records))
-        <div class="flex min-h-48 items-center justify-center py-12">
-            <div class="text-center">
-                <div class="text-5xl">{{ $this->positiveEmptyState ? '🎉' : '😔' }}</div>
-                <div class="text-center">{{ $this->positiveEmptyState ? __('All clear!') : __('No data found') }}</div>
-            </div>
-        </div>
-    @else
-        <div
-            class="flex gap-3 overflow-x-auto pb-3"
-            style="min-height: 300px;"
-        >
-            @foreach ($kanbanLanes as $laneValue => $laneConfig)
-                @php
-                    $laneRecords = $grouped->get((string) $laneValue, collect());
-                    $laneColor = $laneConfig['color'] ?? 'gray';
-                    $laneColorClass = str_starts_with($laneColor, 'bg-') ? $laneColor : match ($laneColor) {
-                        'red' => 'bg-red-500',
-                        'orange' => 'bg-orange-500',
-                        'amber' => 'bg-amber-500',
-                        'yellow' => 'bg-yellow-500',
-                        'lime' => 'bg-lime-500',
-                        'green' => 'bg-green-500',
-                        'emerald' => 'bg-emerald-500',
-                        'teal' => 'bg-teal-500',
-                        'cyan' => 'bg-cyan-500',
-                        'sky' => 'bg-sky-500',
-                        'blue' => 'bg-blue-500',
-                        'indigo' => 'bg-indigo-500',
-                        'violet' => 'bg-violet-500',
-                        'purple' => 'bg-purple-500',
-                        'fuchsia' => 'bg-fuchsia-500',
-                        'pink' => 'bg-pink-500',
-                        'rose' => 'bg-rose-500',
-                        'neutral' => 'bg-neutral-500',
-                        default => 'bg-gray-500',
-                    };
-                @endphp
-                <div class="flex min-w-48 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-secondary-700 dark:bg-secondary-800">
-                    <div class="h-1 {{ $laneColorClass }}"></div>
-                    <div class="flex items-center justify-between px-3 py-2.5">
-                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                                {{ $laneConfig['label'] ?? \Illuminate\Support\Str::headline($laneValue) }}
-                        </span>
-                        <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-secondary-700 dark:text-gray-400">
-                            {{ $laneRecords->count() }}
-                        </span>
+        @php
+            extract($this->getIslandData());
+            $formatters = $this->getFormatters();
+            $modelKeyName = $this->modelKeyName;
+            $enabledCols = $this->enabledCols;
+            $records = $this->data['data'] ?? [];
+            $grouped = collect($records)->groupBy(fn ($record) => (string) (is_array($record[$kanbanColumn] ?? null) ? $record[$kanbanColumn]['raw'] ?? '' : $record[$kanbanColumn] ?? ''));
+        @endphp
+
+        @if (empty($records))
+            <div class="flex min-h-48 items-center justify-center py-12">
+                <div class="text-center">
+                    <div class="text-5xl">
+                        {{ $this->positiveEmptyState ? '🎉' : '😔' }}
                     </div>
-
-                    <div
-                        class="flex flex-1 flex-col gap-2 overflow-y-auto p-2"
-                        x-sort="$wire.kanbanMoveItem($item, '{{ $laneValue }}')@if ($isSortable); $wire.sortRows($item, $position)@endif"
-                        x-sort:group="kanban"
-                    >
-                        @foreach ($laneRecords as $index => $record)
-                            <div
-                                wire:key="kanban-{{ $record[$modelKeyName] ?? $index }}"
-                                x-sort:item="{{ $record[$modelKeyName] ?? $index }}"
-                                x-data="{ record: {{ json_encode($record) }}, actionsOpen: false }"
-                                x-on:click="$dispatch('data-table-row-clicked', {record})"
-                                @if($allowSoftDeletes && ($record['deleted_at'] ?? null)) class="opacity-50" @endif
-                                {{ $rowAttributes->merge(['class' => 'group relative cursor-move rounded-md border border-gray-200 bg-white p-3 transition-shadow hover:shadow-md dark:border-secondary-600 dark:bg-secondary-900']) }}
-                            >
-                                @if ($rowActions)
-                                    <div
-                                        x-on:click.stop
-                                        class="absolute top-1 z-10 opacity-0 transition-opacity group-hover:opacity-100"
-                                        style="right: 4px;"
-                                        x-bind:class="actionsOpen && 'opacity-100!'"
-                                    >
-                                        <button
-                                            type="button"
-                                            class="cursor-pointer rounded-full bg-white/80 p-0.5 text-gray-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-gray-900 dark:bg-secondary-800/80 dark:text-gray-400 dark:hover:bg-secondary-800 dark:hover:text-gray-200"
-                                            x-on:click="actionsOpen = !actionsOpen"
-                                        >
-                                            <x-icon name="ellipsis-vertical" class="h-4 w-4" />
-                                        </button>
-                                        <div
-                                            x-show="actionsOpen"
-                                            x-cloak
-                                            x-on:click.outside="actionsOpen = false"
-                                            x-transition
-                                            class="absolute top-full right-0 z-50 mt-1 min-w-36"
-                                        >
-                                            <x-card>
-                                                <div class="flex flex-col gap-1.5" x-on:click="actionsOpen = false">
-                                                    @foreach ($rowActions as $rowAction)
-                                                        {{ $rowAction }}
-                                                    @endforeach
-                                                </div>
-                                            </x-card>
-                                        </div>
-                                    </div>
-                                @endif
-                                @if ($kanbanCardView)
-                                    @include($kanbanCardView, ['record' => $record, 'enabledCols' => $enabledCols, 'colLabels' => $colLabels, 'formatters' => $formatters])
-                                @else
-                                    <div class="flex flex-col gap-3">
-                                        @foreach ($enabledCols as $colIndex => $col)
-                                            @if ($col === $kanbanColumn)
-                                                @continue
-                                            @endif
-                                            <div>
-                                                @if ($colIndex > 0)
-                                                    <div class="mb-0.5 text-xs leading-none text-gray-400 dark:text-gray-500">
-                                                        {{ $colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}
-                                                    </div>
-                                                @endif
-                                                <div class="text-sm {{ $colIndex === 0 ? 'font-semibold text-gray-900 dark:text-gray-50' : 'text-gray-500 dark:text-gray-400' }}">
-                                                    @if (is_array($record[$col] ?? null) && isset($record[$col]['display']))
-                                                        {!! $record[$col]['display'] !!}
-                                                    @elseif (is_array($record[$col] ?? null) && isset($record[$col]['raw']))
-                                                        {{ $record[$col]['raw'] }}
-                                                    @else
-                                                        {{ $record[$col] ?? '' }}
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
-                            </div>
-                        @endforeach
-
-                        @if ($this->kanbanLaneMeta[$laneValue]['has_more'] ?? false)
-                            <div
-                                x-intersect:enter.margin.200px="$wire.kanbanLoadMore('{{ $laneValue }}')"
-                                class="flex items-center justify-center py-2"
-                            >
-                                <span
-                                    class="text-xs text-gray-400 dark:text-gray-500"
-                                    wire:loading.remove
-                                    wire:target="kanbanLoadMore('{{ $laneValue }}')"
-                                >
-                                    {{ ($this->kanbanLaneMeta[$laneValue]['total'] ?? 0) - ($this->kanbanLaneMeta[$laneValue]['loaded'] ?? 0) }}
-                                    {{ __('more') }}
-                                </span>
-                                <svg
-                                    class="h-4 w-4 animate-spin text-gray-400"
-                                    wire:loading
-                                    wire:target="kanbanLoadMore('{{ $laneValue }}')"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </div>
-                        @endif
+                    <div class="text-center">
+                        {{ $this->positiveEmptyState ? __('All clear!') : __('No data found') }}
                     </div>
                 </div>
-            @endforeach
-        </div>
-    @endif
+            </div>
+        @else
+            <div
+                class="flex gap-3 overflow-x-auto pb-3"
+                style="min-height: 300px"
+            >
+                @foreach ($kanbanLanes as $laneValue => $laneConfig)
+                    @php
+                        $laneRecords = $grouped->get((string) $laneValue, collect());
+                        $laneColor = $laneConfig['color'] ?? 'gray';
+                        $laneColorClass = str_starts_with($laneColor, 'bg-')
+                            ? $laneColor
+                            : match ($laneColor) {
+                                'red' => 'bg-red-500',
+                                'orange' => 'bg-orange-500',
+                                'amber' => 'bg-amber-500',
+                                'yellow' => 'bg-yellow-500',
+                                'lime' => 'bg-lime-500',
+                                'green' => 'bg-green-500',
+                                'emerald' => 'bg-emerald-500',
+                                'teal' => 'bg-teal-500',
+                                'cyan' => 'bg-cyan-500',
+                                'sky' => 'bg-sky-500',
+                                'blue' => 'bg-blue-500',
+                                'indigo' => 'bg-indigo-500',
+                                'violet' => 'bg-violet-500',
+                                'purple' => 'bg-purple-500',
+                                'fuchsia' => 'bg-fuchsia-500',
+                                'pink' => 'bg-pink-500',
+                                'rose' => 'bg-rose-500',
+                                'neutral' => 'bg-neutral-500',
+                                default => 'bg-gray-500',
+                            };
+                    @endphp
+
+                    <div
+                        class="dark:border-secondary-700 dark:bg-secondary-800 flex min-w-48 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white"
+                    >
+                        <div class="{{ $laneColorClass }} h-1"></div>
+                        <div
+                            class="flex items-center justify-between px-3 py-2.5"
+                        >
+                            <span
+                                class="text-sm font-semibold text-gray-700 dark:text-gray-200"
+                            >
+                                {{ $laneConfig['label'] ?? \Illuminate\Support\Str::headline($laneValue) }}
+                            </span>
+                            <span
+                                class="dark:bg-secondary-700 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400"
+                            >
+                                {{ $laneRecords->count() }}
+                            </span>
+                        </div>
+
+                        <div
+                            class="flex flex-1 flex-col gap-2 overflow-y-auto p-2"
+                            x-sort="$wire.kanbanMoveItem($item, '{{ $laneValue }}')@if ($isSortable); $wire.sortRows($item, $position)@endif"
+                            x-sort:group="kanban"
+                        >
+                            @foreach ($laneRecords as $index => $record)
+                                <div
+                                    wire:key="kanban-{{ $record[$modelKeyName] ?? $index }}"
+                                    x-sort:item="{{ $record[$modelKeyName] ?? $index }}"
+                                    x-data="{ record: {{ json_encode($record) }}, actionsOpen: false }"
+                                    x-on:click="$dispatch('data-table-row-clicked', { record })"
+                                    @if($allowSoftDeletes && ($record['deleted_at'] ?? null)) class="opacity-50" @endif
+                                    {{ $rowAttributes->merge(['class' => 'group relative cursor-move rounded-md border border-gray-200 bg-white p-3 transition-shadow hover:shadow-md dark:border-secondary-600 dark:bg-secondary-900']) }}
+                                >
+                                    @if ($rowActions)
+                                        <div
+                                            x-on:click.stop
+                                            class="absolute top-1 z-10 opacity-0 transition-opacity group-hover:opacity-100"
+                                            style="right: 4px"
+                                            x-bind:class="actionsOpen && 'opacity-100!'"
+                                        >
+                                            <button
+                                                type="button"
+                                                class="dark:bg-secondary-800/80 dark:hover:bg-secondary-800 cursor-pointer rounded-full bg-white/80 p-0.5 text-gray-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                                                x-on:click="actionsOpen = !actionsOpen"
+                                            >
+                                                <x-icon
+                                                    name="ellipsis-vertical"
+                                                    class="h-4 w-4"
+                                                />
+                                            </button>
+                                            <div
+                                                x-show="actionsOpen"
+                                                x-cloak
+                                                x-on:click.outside="actionsOpen = false"
+                                                x-transition
+                                                class="absolute right-0 top-full z-50 mt-1 min-w-36"
+                                            >
+                                                <x-card>
+                                                    <div
+                                                        class="flex flex-col gap-1.5"
+                                                        x-on:click="actionsOpen = false"
+                                                    >
+                                                        @foreach ($rowActions as $rowAction)
+                                                            {{ $rowAction }}
+                                                        @endforeach
+                                                    </div>
+                                                </x-card>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    @if ($kanbanCardView)
+                                        @include($kanbanCardView, ['record' => $record, 'enabledCols' => $enabledCols, 'colLabels' => $colLabels, 'formatters' => $formatters])
+                                    @else
+                                        <div class="flex flex-col gap-3">
+                                            @foreach ($enabledCols as $colIndex => $col)
+                                                @if ($col === $kanbanColumn)
+                                                    @continue
+                                                @endif
+
+                                                <div>
+                                                    @if ($colIndex > 0)
+                                                        <div
+                                                            class="mb-0.5 text-xs leading-none text-gray-400 dark:text-gray-500"
+                                                        >
+                                                            {{ $colLabels[$col] ?? \Illuminate\Support\Str::headline($col) }}
+                                                        </div>
+                                                    @endif
+
+                                                    <div
+                                                        class="{{ $colIndex === 0 ? 'font-semibold text-gray-900 dark:text-gray-50' : 'text-gray-500 dark:text-gray-400' }} text-sm"
+                                                    >
+                                                        @if (is_array($record[$col] ?? null) && isset($record[$col]['display']))
+                                                            {!! $record[$col]['display'] !!}
+                                                        @elseif (is_array($record[$col] ?? null) && isset($record[$col]['raw']))
+                                                            {{ $record[$col]['raw'] }}
+                                                        @else
+                                                            {{ $record[$col] ?? '' }}
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+
+                            @if ($this->kanbanLaneMeta[$laneValue]['has_more'] ?? false)
+                                <div
+                                    x-intersect:enter.margin.200px="$wire.kanbanLoadMore('{{ $laneValue }}')"
+                                    class="flex items-center justify-center py-2"
+                                >
+                                    <span
+                                        class="text-xs text-gray-400 dark:text-gray-500"
+                                        wire:loading.remove
+                                        wire:target="kanbanLoadMore('{{ $laneValue }}')"
+                                    >
+                                        {{ ($this->kanbanLaneMeta[$laneValue]['total'] ?? 0) - ($this->kanbanLaneMeta[$laneValue]['loaded'] ?? 0) }}
+                                        {{ __('more') }}
+                                    </span>
+                                    <svg
+                                        class="h-4 w-4 animate-spin text-gray-400"
+                                        wire:loading
+                                        wire:target="kanbanLoadMore('{{ $laneValue }}')"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            class="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                        ></circle>
+                                        <path
+                                            class="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
+                                    </svg>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
     @endisland
 
     @island(name: 'footer')
-    @php extract($this->getIslandData()); @endphp
+        @php
+            extract($this->getIslandData());
+        @endphp
     @endisland
 </div>

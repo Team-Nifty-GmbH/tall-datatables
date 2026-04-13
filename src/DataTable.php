@@ -535,6 +535,7 @@ class DataTable extends Component
         // non-island parts (like thead) must update.
         $useIslands = request()->isMethod('POST')
             && ! $forceRender
+            && $this->activeLayout !== 'kanban'
             && $this->islandCacheValid();
 
         if ($useIslands) {
@@ -835,16 +836,16 @@ class DataTable extends Component
         $this->loadData();
     }
 
-    #[Renderless]
     public function startSearch(): void
     {
         $this->reset('selected');
         $this->page = 1;
+        $this->kanbanLaneMeta = [];
+        $this->islandsHaveMounted = false;
         $this->cacheState();
         $this->loadData();
     }
 
-    #[Renderless]
     public function updatedSearch(): void
     {
         $this->startSearch();

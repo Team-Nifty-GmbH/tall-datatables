@@ -326,26 +326,7 @@ trait BuildsQueries
     protected function getResultFromQuery(Builder $query): LengthAwarePaginator|Collection|array
     {
         try {
-            if (property_exists($query, 'scout_pagination')) {
-                $items = $query->get();
-                $hasAdditionalFilters = ! empty($this->userFilters);
-
-                if ($hasAdditionalFilters) {
-                    // When additional filters are applied on top of Scout results,
-                    // the Meilisearch estimatedTotalHits is inaccurate — use actual count
-                    $total = $query->toBase()->getCountForPagination();
-                } else {
-                    $total = max(data_get($query->scout_pagination, 'estimatedTotalHits'), $query->count());
-                }
-
-                $limit = data_get($query->scout_pagination, 'limit');
-                $result = new LengthAwarePaginator(
-                    $items,
-                    $total,
-                    $limit,
-                    ceil(data_get($query->scout_pagination, 'offset') / $limit) + 1,
-                );
-            } elseif ($this->activeLayout === 'kanban') {
+            if ($this->activeLayout === 'kanban') {
                 $kanbanColumn = $this->kanbanColumn();
                 $perLane = $this->kanbanPerLane();
                 $lanes = array_keys($this->resolveKanbanLanes());
@@ -372,6 +353,25 @@ trait BuildsQueries
                     $allItems->count(),
                     $allItems->count() ?: 1,
                     1,
+                );
+            } elseif (property_exists($query, 'scout_pagination')) {
+                $items = $query->get();
+                $hasAdditionalFilters = ! empty($this->userFilters);
+
+                if ($hasAdditionalFilters) {
+                    // When additional filters are applied on top of Scout results,
+                    // the Meilisearch estimatedTotalHits is inaccurate — use actual count
+                    $total = $query->toBase()->getCountForPagination();
+                } else {
+                    $total = max(data_get($query->scout_pagination, 'estimatedTotalHits'), $query->count());
+                }
+
+                $limit = data_get($query->scout_pagination, 'limit');
+                $result = new LengthAwarePaginator(
+                    $items,
+                    $total,
+                    $limit,
+                    ceil(data_get($query->scout_pagination, 'offset') / $limit) + 1,
                 );
             } else {
                 $result = $query->paginate(
