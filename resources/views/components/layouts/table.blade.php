@@ -389,6 +389,10 @@
                             :show-restore-button="$showRestoreButton"
                             :has-sidebar="$hasSidebar"
                             :is-sortable="$isSortable"
+                            :left-append="$leftAppend ?? []"
+                            :right-append="$rightAppend ?? []"
+                            :top-append="$topAppend ?? []"
+                            :bottom-append="$bottomAppend ?? []"
                         />
                     @endforeach
                 @endif

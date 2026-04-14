@@ -1133,6 +1133,10 @@ class DataTable extends Component
             'kanbanColumn' => in_array('kanban', $this->availableLayouts()) ? $this->kanbanColumn() : null,
             'kanbanLanes' => in_array('kanban', $this->availableLayouts()) ? $this->resolveKanbanLanes() : null,
             'kanbanCardView' => in_array('kanban', $this->availableLayouts()) ? $this->kanbanCardView() : null,
+            'leftAppend' => $this->getLeftAppends(),
+            'rightAppend' => $this->getRightAppends(),
+            'topAppend' => $this->getTopAppends(),
+            'bottomAppend' => $this->getBottomAppends(),
         ];
 
         return $this->cachedViewData;

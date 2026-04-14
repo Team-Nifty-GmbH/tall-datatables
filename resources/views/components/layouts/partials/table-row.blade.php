@@ -12,6 +12,10 @@
     'showRestoreButton' => false,
     'hasSidebar' => true,
     'isSortable' => false,
+    'leftAppend' => [],
+    'rightAppend' => [],
+    'topAppend' => [],
+    'bottomAppend' => [],
 ])
 @php
     $modelKeyName = $this->modelKeyName;
@@ -51,12 +55,26 @@
             :style="in_array($col, $this->stickyCols) ? 'z-index: 2' : ''"
             :href="(($allowSoftDeletes && ($record['deleted_at'] ?? null)) ? null : ($record['href'] ?? null))"
         >
-            @if (is_array($record[$col] ?? null) && isset($record[$col]['display']))
-                {!! $record[$col]['display'] !!}
-            @elseif (is_array($record[$col] ?? null) && isset($record[$col]['raw']))
-                {{ $record[$col]['raw'] }}
-            @else
-                {{ $record[$col] ?? '' }}
+            @if (isset($topAppend[$col]) && is_string($record[$topAppend[$col]] ?? null))
+                <div>{!! $record[$topAppend[$col]] !!}</div>
+            @endif
+            <div class="flex items-center">
+                @if (isset($leftAppend[$col]) && is_string($record[$leftAppend[$col]] ?? null))
+                    {!! $record[$leftAppend[$col]] !!}
+                @endif
+                @if (is_array($record[$col] ?? null) && isset($record[$col]['display']))
+                    {!! $record[$col]['display'] !!}
+                @elseif (is_array($record[$col] ?? null) && isset($record[$col]['raw']))
+                    {{ $record[$col]['raw'] }}
+                @else
+                    {{ $record[$col] ?? '' }}
+                @endif
+                @if (isset($rightAppend[$col]) && is_string($record[$rightAppend[$col]] ?? null))
+                    {!! $record[$rightAppend[$col]] !!}
+                @endif
+            </div>
+            @if (isset($bottomAppend[$col]) && is_string($record[$bottomAppend[$col]] ?? null))
+                <div>{!! $record[$bottomAppend[$col]] !!}</div>
             @endif
         </x-tall-datatables::table.cell>
     @endforeach
