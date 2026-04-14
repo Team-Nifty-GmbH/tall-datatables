@@ -168,7 +168,21 @@ trait BuildsQueries
         $context['_dbTimezone'] = $this->getDatabaseTimezone();
         $context['_displayTimezone'] = $this->getDisplayTimezone();
 
-        foreach ($this->enabledCols as $col) {
+        $appendKeys = collect([
+            $this->getLeftAppends(),
+            $this->getRightAppends(),
+            $this->getTopAppends(),
+            $this->getBottomAppends(),
+        ])
+            ->flatMap(fn (array $appends) => collect($appends)->flatMap(
+                fn ($keys) => \Illuminate\Support\Arr::wrap($keys)
+            ))
+            ->unique()
+            ->all();
+
+        $colsToFormat = array_unique(array_merge($this->enabledCols, $appendKeys));
+
+        foreach ($colsToFormat as $col) {
             if (! array_key_exists($col, $itemArray)) {
                 continue;
             }
@@ -292,7 +306,21 @@ trait BuildsQueries
         $modelCasts = $item->getCasts();
         $this->resolvedFormatters = [];
 
-        foreach ($this->enabledCols as $col) {
+        $appendKeys = collect([
+            $this->getLeftAppends(),
+            $this->getRightAppends(),
+            $this->getTopAppends(),
+            $this->getBottomAppends(),
+        ])
+            ->flatMap(fn (array $appends) => collect($appends)->flatMap(
+                fn ($keys) => \Illuminate\Support\Arr::wrap($keys)
+            ))
+            ->unique()
+            ->all();
+
+        $colsToResolve = array_unique(array_merge($this->enabledCols, $appendKeys));
+
+        foreach ($colsToResolve as $col) {
             $baseCol = str_contains($col, '.') ? last(explode('.', $col)) : $col;
 
             if (isset($customFormatters[$col]) && is_string($customFormatters[$col])) {
