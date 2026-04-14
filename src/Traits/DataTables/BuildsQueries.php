@@ -175,7 +175,7 @@ trait BuildsQueries
             $this->getBottomAppends(),
         ])
             ->flatMap(fn (array $appends) => collect($appends)->flatMap(
-                fn ($keys) => \Illuminate\Support\Arr::wrap($keys)
+                fn ($keys) => Arr::wrap($keys)
             ))
             ->unique()
             ->all();
@@ -313,7 +313,7 @@ trait BuildsQueries
             $this->getBottomAppends(),
         ])
             ->flatMap(fn (array $appends) => collect($appends)->flatMap(
-                fn ($keys) => \Illuminate\Support\Arr::wrap($keys)
+                fn ($keys) => Arr::wrap($keys)
             ))
             ->unique()
             ->all();
