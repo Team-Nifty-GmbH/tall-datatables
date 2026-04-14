@@ -55,26 +55,56 @@
             :style="in_array($col, $this->stickyCols) ? 'z-index: 2' : ''"
             :href="(($allowSoftDeletes && ($record['deleted_at'] ?? null)) ? null : ($record['href'] ?? null))"
         >
-            @if (isset($topAppend[$col]) && is_string($record[$topAppend[$col]] ?? null))
-                <div>{!! $record[$topAppend[$col]] !!}</div>
+            @php
+                $hasLeftAppend = isset($leftAppend[$col]);
+                $hasRightAppend = isset($rightAppend[$col]);
+                $hasTopAppend = isset($topAppend[$col]);
+                $hasBottomAppend = isset($bottomAppend[$col]);
+            @endphp
+            @if ($hasTopAppend)
+                @foreach (\Illuminate\Support\Arr::wrap($topAppend[$col]) as $appendKey)
+                    @if (is_array($record[$appendKey] ?? null) && isset($record[$appendKey]['display']))
+                        <div>{!! $record[$appendKey]['display'] !!}</div>
+                    @elseif (is_string($record[$appendKey] ?? null))
+                        <div>{!! $record[$appendKey] !!}</div>
+                    @endif
+                @endforeach
             @endif
-            <div class="flex items-center">
-                @if (isset($leftAppend[$col]) && is_string($record[$leftAppend[$col]] ?? null))
-                    {!! $record[$leftAppend[$col]] !!}
-                @endif
-                @if (is_array($record[$col] ?? null) && isset($record[$col]['display']))
-                    {!! $record[$col]['display'] !!}
-                @elseif (is_array($record[$col] ?? null) && isset($record[$col]['raw']))
-                    {{ $record[$col]['raw'] }}
-                @else
-                    {{ $record[$col] ?? '' }}
-                @endif
-                @if (isset($rightAppend[$col]) && is_string($record[$rightAppend[$col]] ?? null))
-                    {!! $record[$rightAppend[$col]] !!}
-                @endif
-            </div>
-            @if (isset($bottomAppend[$col]) && is_string($record[$bottomAppend[$col]] ?? null))
-                <div>{!! $record[$bottomAppend[$col]] !!}</div>
+            @if ($hasLeftAppend || $hasRightAppend)
+                <div class="flex items-center gap-2">
+                    @foreach (\Illuminate\Support\Arr::wrap($leftAppend[$col] ?? []) as $appendKey)
+                        @if (is_array($record[$appendKey] ?? null) && isset($record[$appendKey]['display']))
+                            {!! $record[$appendKey]['display'] !!}
+                        @elseif (is_string($record[$appendKey] ?? null))
+                            {!! $record[$appendKey] !!}
+                        @endif
+                    @endforeach
+            @endif
+            @if (is_array($record[$col] ?? null) && isset($record[$col]['display']))
+                {!! $record[$col]['display'] !!}
+            @elseif (is_array($record[$col] ?? null) && isset($record[$col]['raw']))
+                {{ $record[$col]['raw'] }}
+            @else
+                {{ $record[$col] ?? '' }}
+            @endif
+            @if ($hasLeftAppend || $hasRightAppend)
+                    @foreach (\Illuminate\Support\Arr::wrap($rightAppend[$col] ?? []) as $appendKey)
+                        @if (is_array($record[$appendKey] ?? null) && isset($record[$appendKey]['display']))
+                            {!! $record[$appendKey]['display'] !!}
+                        @elseif (is_string($record[$appendKey] ?? null))
+                            {!! $record[$appendKey] !!}
+                        @endif
+                    @endforeach
+                </div>
+            @endif
+            @if ($hasBottomAppend)
+                @foreach (\Illuminate\Support\Arr::wrap($bottomAppend[$col]) as $appendKey)
+                    @if (is_array($record[$appendKey] ?? null) && isset($record[$appendKey]['display']))
+                        <div>{!! $record[$appendKey]['display'] !!}</div>
+                    @elseif (is_string($record[$appendKey] ?? null))
+                        <div>{!! $record[$appendKey] !!}</div>
+                    @endif
+                @endforeach
             @endif
         </x-tall-datatables::table.cell>
     @endforeach
