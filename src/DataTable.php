@@ -803,6 +803,16 @@ class DataTable extends Component
     #[Renderless]
     public function sortTable(string $col, bool $append = false): void
     {
+        if ($col === '') {
+            $this->userOrderBy = '';
+            $this->userOrderAsc = true;
+            $this->userMultiSort = [];
+            $this->cacheState();
+            $this->loadData();
+
+            return;
+        }
+
         if (! $this->isValidSortColumn($col)) {
             return;
         }

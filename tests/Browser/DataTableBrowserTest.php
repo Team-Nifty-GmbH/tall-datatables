@@ -470,11 +470,11 @@ describe('DataTable Browser Sorting', function (): void {
             });
         }');
 
-        // Clear sort via clearFiltersAndSort (sortTable("") is rejected by validation)
+        // Clear sort via sortTable("") — now accepted as "clear sort"
         $page->script('() => {
             const comp = document.querySelector("[wire\\\\:id]");
             const wireId = comp?.getAttribute("wire:id");
-            window.Livewire?.find(wireId)?.call("clearFiltersAndSort");
+            window.Livewire?.find(wireId)?.call("sortTable", "");
         }');
 
         // Wait for sort to be cleared

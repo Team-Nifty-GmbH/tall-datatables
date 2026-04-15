@@ -16,6 +16,20 @@ beforeEach(function (): void {
 });
 
 describe('Multi-Sort', function (): void {
+    describe('sortTable with empty string', function (): void {
+        it('clears sort when called with empty string', function (): void {
+            $component = Livewire::test(PostDataTable::class)
+                ->call('sortTable', 'title', false);
+
+            expect($component->get('userOrderBy'))->toBe('title');
+
+            $component->call('sortTable', '', false);
+
+            expect($component->get('userOrderBy'))->toBe('')
+                ->and($component->get('userMultiSort'))->toBe([]);
+        });
+    });
+
     describe('sortTable with append', function (): void {
         it('sets primary sort when append is false', function (): void {
             $component = Livewire::test(PostDataTable::class)
