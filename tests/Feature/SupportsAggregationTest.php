@@ -84,6 +84,29 @@ describe('SupportsAggregation', function (): void {
     });
 
     describe('getAggregate', function (): void {
+        it('qualifies column names to avoid ambiguity when query has joins', function (): void {
+            createTestPost(['user_id' => $this->user->getKey(), 'title' => 'A', 'price' => 100]);
+            createTestPost(['user_id' => $this->user->getKey(), 'title' => 'B', 'price' => 200]);
+            createTestProduct(['user_id' => $this->user->getKey(), 'name' => 'P1', 'price' => 999]);
+
+            $component = Livewire::test(PostDataTable::class);
+            $instance = $component->instance();
+            $instance->aggregatableCols = ['sum' => ['price'], 'avg' => [], 'min' => [], 'max' => [], 'count' => []];
+
+            $reflection = new ReflectionMethod($instance, 'getAggregate');
+
+            // With join to a table that also has a 'price' column,
+            // getAggregate must qualify with the base table to return
+            // the correct sum (posts.price = 300, not products.price = 1998).
+            $builder = Tests\Fixtures\Models\Post::query()
+                ->join('products', 'posts.user_id', '=', 'products.user_id');
+            $result = $reflection->invoke($instance, $builder);
+
+            expect($result)->toHaveKey('sum')
+                ->and($result['sum'])->toHaveKey('price')
+                ->and((float) $result['sum']['price'])->toBe(300.0);
+        });
+
         it('calculates sum aggregate', function (): void {
             createTestPost(['user_id' => $this->user->getKey(), 'title' => 'A', 'price' => 100]);
             createTestPost(['user_id' => $this->user->getKey(), 'title' => 'B', 'price' => 200]);

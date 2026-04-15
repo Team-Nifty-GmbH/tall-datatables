@@ -89,7 +89,10 @@ trait SupportsAggregation
                 }
 
                 try {
-                    $aggregates[$type][$column] = $builder->{$type}($column);
+                    $qualifiedColumn = str_contains($column, '.')
+                        ? $column
+                        : $this->modelTable . '.' . $column;
+                    $aggregates[$type][$column] = $builder->{$type}($qualifiedColumn);
                 } catch (QueryException $e) {
                     $this->toast()->error($e->getMessage());
 
