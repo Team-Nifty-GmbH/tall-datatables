@@ -8,7 +8,7 @@ class PercentageFormatter implements Formatter
 {
     public function __construct(
         public readonly bool $progressBar = false,
-        public readonly float $multiplier = 1,
+        public readonly float $multiplier = 100,
     ) {}
 
     public function format(mixed $value, array $context = []): string

@@ -114,7 +114,7 @@ class FormatterRegistry
             'money' => new MoneyFormatter(),
             'coloredmoney' => new MoneyFormatter(colored: true),
             'percentage' => new PercentageFormatter(),
-            'progresspercentage' => new PercentageFormatter(progressBar: true, multiplier: 100),
+            'progresspercentage' => new PercentageFormatter(progressBar: true),
             'coloredfloat' => new FloatFormatter(colored: true),
             'state', 'badge' => new BadgeFormatter(),
             'email' => new LinkFormatter(type: 'email'),
