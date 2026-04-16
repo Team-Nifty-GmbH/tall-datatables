@@ -124,7 +124,7 @@ describe('ArrayFormatter', function (): void {
         $percentageFormatter = new TeamNiftyGmbH\DataTable\Formatters\PercentageFormatter();
         $formatter = new ArrayFormatter(elementFormatter: $percentageFormatter);
 
-        $result = $formatter->format([42, 85]);
+        $result = $formatter->format([0.42, 0.85]);
 
         expect($result)
             ->toContain('rounded-full')
@@ -136,7 +136,7 @@ describe('ArrayFormatter', function (): void {
         $percentageFormatter = new TeamNiftyGmbH\DataTable\Formatters\PercentageFormatter();
         $formatter = new ArrayFormatter(elementFormatter: $percentageFormatter);
 
-        $result = $formatter->format([42, null, 85]);
+        $result = $formatter->format([0.42, null, 0.85]);
 
         expect($result)
             ->toContain('>42 %</span>')
