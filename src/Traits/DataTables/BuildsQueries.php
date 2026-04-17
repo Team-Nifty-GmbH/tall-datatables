@@ -805,22 +805,24 @@ trait BuildsQueries
      */
     private function applySessionFilter(Builder $query): void
     {
-        if (session()->has($this->getCacheKey() . '_query')) {
-            $sessionFilter = session()->get($this->getCacheKey() . '_query');
+        $sessionFilter = $this->sessionFilterInstance
+            ?? (session()->has($this->getCacheKey() . '_query')
+                ? session()->get($this->getCacheKey() . '_query')
+                : null);
 
-            if ($sessionFilter instanceof SessionFilter) {
-                $sessionFilter->getClosure()($query, $this);
+        if ($sessionFilter instanceof SessionFilter) {
+            $sessionFilter->getClosure()($query, $this);
 
-                $this->sessionFilter = [
-                    'name' => $sessionFilter->name,
-                ];
+            $this->sessionFilter = [
+                'name' => $sessionFilter->name,
+            ];
+            $this->sessionFilterInstance = $sessionFilter;
 
-                if (! $sessionFilter->loaded) {
-                    $this->userFilters = [];
-                    $sessionFilter->loaded = true;
+            if (! $sessionFilter->loaded) {
+                $this->userFilters = [];
+                $sessionFilter->loaded = true;
 
-                    session()->put($this->getCacheKey() . '_query', $sessionFilter);
-                }
+                session()->put($this->getCacheKey() . '_query', $sessionFilter);
             }
         }
     }
