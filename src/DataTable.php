@@ -18,6 +18,7 @@ use Livewire\Component;
 use Livewire\Features\SupportIslands\Compiler\IslandCompiler;
 use TallStackUi\Traits\Interactions;
 use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
+use TeamNiftyGmbH\DataTable\Helpers\SessionFilter;
 use TeamNiftyGmbH\DataTable\ModelInfo\Attribute;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\BuildsQueries;
 use TeamNiftyGmbH\DataTable\Traits\DataTables\StoresSettings;
@@ -134,6 +135,8 @@ class DataTable extends Component
     protected $listeners = ['dataTableReload' => 'reloadData'];
 
     protected string $model;
+
+    protected ?SessionFilter $sessionFilterInstance = null;
 
     protected bool $useWireNavigate = true;
 
@@ -254,6 +257,7 @@ class DataTable extends Component
     {
         session()->forget($this->getCacheKey() . '_query');
         $this->sessionFilter = [];
+        $this->sessionFilterInstance = null;
 
         if ($loadData) {
             $this->loadData();
