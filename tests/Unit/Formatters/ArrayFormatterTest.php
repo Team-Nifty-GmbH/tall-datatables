@@ -144,6 +144,23 @@ describe('ArrayFormatter', function (): void {
             ->not->toContain('>null</span>');
     });
 
+    it('applies element formatter to scalar (non-array) value', function (): void {
+        $dateFormatter = new TeamNiftyGmbH\DataTable\Formatters\DateFormatter(mode: 'datetime');
+        $formatter = new ArrayFormatter(elementFormatter: $dateFormatter);
+
+        $result = $formatter->format('2026-04-28T00:00:00.000000Z');
+
+        expect($result)
+            ->not->toContain('2026-04-28T00:00:00')
+            ->toContain('28');
+    });
+
+    it('returns escaped string for scalar without element formatter', function (): void {
+        $formatter = new ArrayFormatter();
+
+        expect($formatter->format('plain string'))->toBe('plain string');
+    });
+
     it('without element formatter renders raw values in badges', function (): void {
         $formatter = new ArrayFormatter();
 
