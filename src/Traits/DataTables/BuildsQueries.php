@@ -188,6 +188,12 @@ trait BuildsQueries
             }
 
             $raw = $itemArray[$col];
+
+            // Skip columns that already have a display value (e.g. from trait augmentation hooks)
+            if (is_array($raw) && isset($raw['display'])) {
+                continue;
+            }
+
             $formatter = $formatters[$col] ?? null;
 
             if (! $formatter) {
@@ -548,6 +554,14 @@ trait BuildsQueries
             : null;
 
         $this->augmentItemArray($itemArray, $item);
+
+        foreach (class_uses_recursive(static::class) as $trait) {
+            $method = 'augmentItemArray' . class_basename($trait);
+            if (method_exists($this, $method)) {
+                $this->$method($itemArray, $item);
+            }
+        }
+
         $this->applyFormatters($itemArray, $item, $rawArray);
 
         return $itemArray;
