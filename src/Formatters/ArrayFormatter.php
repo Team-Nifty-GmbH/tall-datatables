@@ -17,7 +17,9 @@ class ArrayFormatter implements Formatter
         }
 
         if (! is_array($value)) {
-            return e((string) $value);
+            return $this->elementFormatter
+                ? $this->elementFormatter->format($value, $context)
+                : e((string) $value);
         }
 
         if (empty($value)) {
