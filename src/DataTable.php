@@ -253,6 +253,20 @@ class DataTable extends Component
         // v2: kept for backwards compatibility but no-ops
     }
 
+    public function __serialize(): array
+    {
+        if (! $this->sessionFilterInstance) {
+            $sessionKey = $this->getCacheKey() . '_query';
+            $sessionFilter = session()->get($sessionKey);
+
+            if ($sessionFilter instanceof SessionFilter) {
+                $this->sessionFilterInstance = $sessionFilter;
+            }
+        }
+
+        return (array) $this;
+    }
+
     public function forgetSessionFilter(bool $loadData = false): void
     {
         session()->forget($this->getCacheKey() . '_query');
