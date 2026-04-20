@@ -548,6 +548,14 @@ trait BuildsQueries
             : null;
 
         $this->augmentItemArray($itemArray, $item);
+
+        foreach (class_uses_recursive(static::class) as $trait) {
+            $method = 'augmentItemArray' . class_basename($trait);
+            if (method_exists($this, $method)) {
+                $this->$method($itemArray, $item);
+            }
+        }
+
         $this->applyFormatters($itemArray, $item, $rawArray);
 
         return $itemArray;
