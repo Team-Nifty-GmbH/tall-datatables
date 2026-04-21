@@ -149,6 +149,15 @@ class DataTable extends Component
 
     private bool $dataLoadedThisRequest = false;
 
+    public function __serialize(): array
+    {
+        if (! $this->sessionFilterInstance) {
+            $this->sessionFilterInstance = SessionFilter::retrieve($this->getCacheKey());
+        }
+
+        return (array) $this;
+    }
+
     public function mount(): void
     {
         if (! $this->modelKeyName || ! $this->modelTable) {
@@ -255,7 +264,7 @@ class DataTable extends Component
 
     public function forgetSessionFilter(bool $loadData = false): void
     {
-        session()->forget($this->getCacheKey() . '_query');
+        SessionFilter::forget($this->getCacheKey());
         $this->sessionFilter = [];
         $this->sessionFilterInstance = null;
 

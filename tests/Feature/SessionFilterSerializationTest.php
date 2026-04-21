@@ -45,6 +45,36 @@ describe('SessionFilter survives serialization for queued exports', function ():
             ->and($results->first()->title)->toBe('Published');
     });
 
+    it('captures session filter during serialize even when instance property is null', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Published', 'is_published' => true]);
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Draft', 'is_published' => false]);
+
+        $component = Livewire::test(PostDataTable::class);
+        $instance = $component->instance();
+
+        // Store filter in session but do NOT call loadData — simulates
+        // Livewire rehydration where sessionFilterInstance is null
+        SessionFilter::make(
+            $instance->getCacheKey(),
+            fn (Builder $query) => $query->where('is_published', true),
+            'Published Only',
+        )->store();
+
+        // sessionFilterInstance is null (not populated by applySessionFilter)
+        expect(invade($instance)->sessionFilterInstance)->toBeNull();
+
+        // __serialize grabs it from the session
+        $serialized = serialize($instance);
+        session()->flush();
+
+        $unserialized = unserialize($serialized);
+        $query = invade($unserialized)->buildSearch();
+        $results = $query->get();
+
+        expect($results)->toHaveCount(1)
+            ->and($results->first()->title)->toBe('Published');
+    });
+
     it('preserves session filter name after unserialization', function (): void {
         $component = Livewire::test(PostDataTable::class);
         $instance = $component->instance();

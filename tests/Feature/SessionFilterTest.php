@@ -19,8 +19,10 @@ describe('SessionFilter Construction', function (): void {
             ->and($filter->dataTableCacheKey)->toBe('test-key');
     });
 
-    it('implements the Serializable interface', function (): void {
-        expect(SessionFilter::class)->toImplement(Serializable::class);
+    it('is a plain class without Serializable interface', function (): void {
+        $filter = SessionFilter::make('test', fn (Builder $query) => $query, 'Test');
+
+        expect($filter)->toBeInstanceOf(SessionFilter::class);
     });
 
     it('wraps closure in SerializableClosure on construction', function (): void {
@@ -117,62 +119,40 @@ describe('SessionFilter Serialization', function (): void {
         expect($serialized)->toBeString()->not->toBeEmpty();
     });
 
-    //    it('can be unserialized back to SessionFilter', function (): void {
-    //        $filter = SessionFilter::make(
-    //            'round-trip-key',
-    //            fn (Builder $q) => $q->where('active', true),
-    //            'RoundTrip'
-    //        );
-    //
-    //        $unserialized = unserialize(serialize($filter));
-    //
-    //        expect($unserialized)
-    //            ->toBeInstanceOf(SessionFilter::class)
-    //            ->and($unserialized->name)->toBe('RoundTrip');
-    //    });
+    it('can be unserialized back to SessionFilter', function (): void {
+        $filter = SessionFilter::make(
+            'round-trip-key',
+            fn (Builder $q) => $q->where('active', true),
+            'RoundTrip'
+        );
 
-    //    it('preserves closure after round-trip serialization', function (): void {
-    //        $filter = SessionFilter::make(
-    //            'closure-key',
-    //            fn (Builder $q) => $q->where('status', 'draft'),
-    //            'Draft'
-    //        );
-    //
-    //        $unserialized = unserialize(serialize($filter));
-    //
-    //        expect($unserialized->getClosure())->toBeInstanceOf(Closure::class);
-    //    });
+        $unserialized = unserialize(serialize($filter));
 
-    //    it('preserves loaded state after serialization', function (): void {
-    //        $filter = SessionFilter::make('key', fn (Builder $q) => $q, 'Test');
-    //        $filter->loaded = true;
-    //
-    //        $unserialized = unserialize(serialize($filter));
-    //
-    //        expect($unserialized->loaded)->toBeTrue();
-    //    });
-
-    // Skipped: SessionFilter::unserialize() has a null-type bug in setDataTableCacheKey
-
-    it('supports the serialize method directly', function (): void {
-        $filter = SessionFilter::make('direct-key', fn (Builder $q) => $q, 'Direct');
-
-        $serialized = $filter->serialize();
-
-        expect($serialized)->toBeString()->not->toBeEmpty();
+        expect($unserialized)
+            ->toBeInstanceOf(SessionFilter::class)
+            ->and($unserialized->name)->toBe('RoundTrip');
     });
 
-    //    it('supports the unserialize method directly', function (): void {
-    //        $filter = SessionFilter::make('unsrz-key', fn (Builder $q) => $q, 'Unserialize');
-    //
-    //        $serialized = $filter->serialize();
-    //
-    //        $newFilter = new SessionFilter();
-    //        $newFilter->unserialize($serialized);
-    //
-    //        expect($newFilter->name)->toBe('Unserialize')
-    //            ->and($newFilter->dataTableCacheKey)->toBe('unsrz-key');
-    //    });
+    it('preserves closure after round-trip serialization', function (): void {
+        $filter = SessionFilter::make(
+            'closure-key',
+            fn (Builder $q) => $q->where('status', 'draft'),
+            'Draft'
+        );
+
+        $unserialized = unserialize(serialize($filter));
+
+        expect($unserialized->getClosure())->toBeInstanceOf(Closure::class);
+    });
+
+    it('preserves loaded state after serialization', function (): void {
+        $filter = SessionFilter::make('key', fn (Builder $q) => $q, 'Test');
+        $filter->loaded = true;
+
+        $unserialized = unserialize(serialize($filter));
+
+        expect($unserialized->loaded)->toBeTrue();
+    });
 });
 
 describe('SessionFilter Session Storage', function (): void {
@@ -188,19 +168,21 @@ describe('SessionFilter Session Storage', function (): void {
         expect(session()->has('store-key_query'))->toBeTrue();
     });
 
-    it('stores itself as the session value', function (): void {
+    it('stores itself in cache and sets session marker', function (): void {
         $filter = SessionFilter::make('value-key', fn (Builder $q) => $q, 'Value');
 
         $filter->store();
 
-        $stored = session()->get('value-key_query');
+        expect(session()->get('value-key_query'))->toBeTrue();
+
+        $stored = SessionFilter::retrieve('value-key');
 
         expect($stored)
             ->toBeInstanceOf(SessionFilter::class)
             ->and($stored->name)->toBe('Value');
     });
 
-    it('can be retrieved from session after storing', function (): void {
+    it('can be retrieved from cache after storing', function (): void {
         $filter = SessionFilter::make(
             'retrieve-key',
             fn (Builder $q) => $q->where('active', true),
@@ -208,7 +190,7 @@ describe('SessionFilter Session Storage', function (): void {
         );
         $filter->store();
 
-        $retrieved = session()->get('retrieve-key_query');
+        $retrieved = SessionFilter::retrieve('retrieve-key');
 
         expect($retrieved->name)->toBe('Retrievable')
             ->and($retrieved->dataTableCacheKey)->toBe('retrieve-key');
@@ -247,21 +229,21 @@ describe('SessionFilter with Real Query Execution', function (): void {
             ->and($results->first()->title)->toBe('Visible Post');
     });
 
-    //    it('closure survives serialization and still filters correctly', function (): void {
-    //        $filter = SessionFilter::make(
-    //            'serial-query',
-    //            fn (Builder $q) => $q->where('is_published', false),
-    //            'Drafts'
-    //        );
-    //
-    //        $unserialized = unserialize(serialize($filter));
-    //        $closure = $unserialized->getClosure();
-    //        $query = Post::query();
-    //        $closure($query);
-    //
-    //        $results = $query->get();
-    //
-    //        expect($results)->toHaveCount(1)
-    //            ->and($results->first()->title)->toBe('Hidden Post');
-    //    });
+    it('closure survives serialization and still filters correctly', function (): void {
+        $filter = SessionFilter::make(
+            'serial-query',
+            fn (Builder $q) => $q->where('is_published', false),
+            'Drafts'
+        );
+
+        $unserialized = unserialize(serialize($filter));
+        $closure = $unserialized->getClosure();
+        $query = Post::query();
+        $closure($query);
+
+        $results = $query->get();
+
+        expect($results)->toHaveCount(1)
+            ->and($results->first()->title)->toBe('Hidden Post');
+    });
 });

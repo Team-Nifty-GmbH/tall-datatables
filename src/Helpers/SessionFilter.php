@@ -3,11 +3,12 @@
 namespace TeamNiftyGmbH\DataTable\Helpers;
 
 use Closure;
+use Illuminate\Support\Facades\Cache;
 use Laravel\SerializableClosure\SerializableClosure;
-use Serializable;
 use TeamNiftyGmbH\DataTable\DataTable;
+use Throwable;
 
-class SessionFilter implements Serializable
+class SessionFilter
 {
     public function __construct(
         public string|DataTable|null $dataTableCacheKey = null,
@@ -19,22 +20,10 @@ class SessionFilter implements Serializable
         $this->setClosure($this->closure);
     }
 
-    public function __serialize(): array
+    public static function forget(string $dataTableCacheKey): void
     {
-        return [
-            'dataTableCacheKey' => data_get($this, 'dataTableCacheKey'),
-            'closure' => data_get($this, 'closure'),
-            'name' => data_get($this, 'name'),
-            'loaded' => data_get($this, 'loaded'),
-        ];
-    }
-
-    public function __unserialize(array $data): void
-    {
-        $this->dataTableCacheKey = data_get($data, 'dataTableCacheKey');
-        $this->closure = data_get($data, 'closure');
-        $this->name = data_get($data, 'name');
-        $this->loaded = data_get($data, 'loaded', false);
+        Cache::forget(static::cacheKey($dataTableCacheKey));
+        session()->forget($dataTableCacheKey . '_query');
     }
 
     public static function make(string|DataTable $dataTableCacheKey, Closure $closure, string $name): static
@@ -42,14 +31,37 @@ class SessionFilter implements Serializable
         return new static($dataTableCacheKey, $closure, $name);
     }
 
+    public static function retrieve(string $dataTableCacheKey): ?static
+    {
+        $cacheKey = static::cacheKey($dataTableCacheKey);
+
+        $raw = Cache::get($cacheKey);
+
+        if (! is_string($raw)) {
+            return null;
+        }
+
+        try {
+            $filter = unserialize($raw);
+
+            return $filter instanceof static ? $filter : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private static function cacheKey(string $dataTableCacheKey): string
+    {
+        $userKey = auth()->check()
+            ? auth()->user()->getMorphClass() . ':' . auth()->id()
+            : session()->getId();
+
+        return 'session_filter:' . $userKey . ':' . $dataTableCacheKey;
+    }
+
     public function getClosure(): Closure
     {
         return $this->closure->getClosure();
-    }
-
-    public function serialize(): string
-    {
-        return serialize($this->__serialize());
     }
 
     public function setClosure(callable $closure): static
@@ -79,15 +91,10 @@ class SessionFilter implements Serializable
 
     public function store(): void
     {
-        session()
-            ->put(
-                $this->dataTableCacheKey . '_query',
-                $this
-            );
-    }
+        $cacheKey = static::cacheKey($this->dataTableCacheKey);
 
-    public function unserialize(string $data): void
-    {
-        $this->__unserialize(unserialize($data));
+        Cache::put($cacheKey, serialize($this), now()->addHours(2));
+
+        session()->put($this->dataTableCacheKey . '_query', true);
     }
 }
