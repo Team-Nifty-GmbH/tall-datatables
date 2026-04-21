@@ -162,7 +162,18 @@ trait SupportsRelations
         $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
 
         if (is_null($data)) {
-            $this->loadRelation($path ?? $this->getModel());
+            if ($path) {
+                $this->loadedPath = null;
+                $currentModel = $this->getModel();
+
+                foreach (explode('.', $path) as $segment) {
+                    $currentModel = get_class(app($currentModel)->{$segment}()->getRelated());
+                    $this->loadRelation($currentModel, $segment);
+                }
+            } else {
+                $this->loadRelation($this->getModel());
+            }
+
             $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
         }
 
