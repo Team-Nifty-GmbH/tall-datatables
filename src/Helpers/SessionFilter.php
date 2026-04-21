@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Support\Facades\Cache;
 use Laravel\SerializableClosure\SerializableClosure;
 use TeamNiftyGmbH\DataTable\DataTable;
+use Throwable;
 
 class SessionFilter
 {
@@ -19,9 +20,43 @@ class SessionFilter
         $this->setClosure($this->closure);
     }
 
+    public static function forget(string $dataTableCacheKey): void
+    {
+        Cache::forget(static::cacheKey($dataTableCacheKey));
+        session()->forget($dataTableCacheKey . '_query');
+    }
+
     public static function make(string|DataTable $dataTableCacheKey, Closure $closure, string $name): static
     {
         return new static($dataTableCacheKey, $closure, $name);
+    }
+
+    public static function retrieve(string $dataTableCacheKey): ?static
+    {
+        $cacheKey = static::cacheKey($dataTableCacheKey);
+
+        $raw = Cache::get($cacheKey);
+
+        if (! is_string($raw)) {
+            return null;
+        }
+
+        try {
+            $filter = unserialize($raw);
+
+            return $filter instanceof static ? $filter : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private static function cacheKey(string $dataTableCacheKey): string
+    {
+        $userKey = auth()->check()
+            ? auth()->user()->getMorphClass() . ':' . auth()->id()
+            : session()->getId();
+
+        return 'session_filter:' . $userKey . ':' . $dataTableCacheKey;
     }
 
     public function getClosure(): Closure
@@ -61,39 +96,5 @@ class SessionFilter
         Cache::put($cacheKey, serialize($this), now()->addHours(2));
 
         session()->put($this->dataTableCacheKey . '_query', true);
-    }
-
-    public static function retrieve(string $dataTableCacheKey): ?static
-    {
-        $cacheKey = static::cacheKey($dataTableCacheKey);
-
-        $raw = Cache::get($cacheKey);
-
-        if (! is_string($raw)) {
-            return null;
-        }
-
-        try {
-            $filter = unserialize($raw);
-
-            return $filter instanceof static ? $filter : null;
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    public static function forget(string $dataTableCacheKey): void
-    {
-        Cache::forget(static::cacheKey($dataTableCacheKey));
-        session()->forget($dataTableCacheKey . '_query');
-    }
-
-    private static function cacheKey(string $dataTableCacheKey): string
-    {
-        $userKey = auth()->check()
-            ? auth()->user()->getMorphClass() . ':' . auth()->id()
-            : session()->getId();
-
-        return 'session_filter:' . $userKey . ':' . $dataTableCacheKey;
     }
 }
