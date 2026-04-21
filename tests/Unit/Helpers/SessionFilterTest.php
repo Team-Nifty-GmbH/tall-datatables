@@ -19,8 +19,10 @@ describe('SessionFilter', function (): void {
             ->and($filter->dataTableCacheKey)->toBe('test-datatable');
     });
 
-    it('implements Serializable interface', function (): void {
-        expect(SessionFilter::class)->toImplement(Serializable::class);
+    it('is a plain class without Serializable interface', function (): void {
+        $filter = SessionFilter::make('test', fn (Builder $query) => $query, 'Test');
+
+        expect($filter)->toBeInstanceOf(SessionFilter::class);
     });
 
     it('can set datatable cache key from string', function (): void {
@@ -154,7 +156,7 @@ describe('SessionFilter Session Storage', function (): void {
         expect(session()->has('post-datatable_query'))->toBeTrue();
     });
 
-    it('stores with correct session key', function (): void {
+    it('stores with correct session marker key', function (): void {
         $filter = SessionFilter::make(
             'custom-key',
             fn (Builder $query) => $query,
@@ -163,10 +165,10 @@ describe('SessionFilter Session Storage', function (): void {
 
         $filter->store();
 
-        expect(session()->get('custom-key_query'))->toBeInstanceOf(SessionFilter::class);
+        expect(session()->get('custom-key_query'))->toBeTrue();
     });
 
-    it('can retrieve stored filter from session', function (): void {
+    it('can retrieve stored filter from cache', function (): void {
         $filter = SessionFilter::make(
             'retrievable-key',
             fn (Builder $query) => $query->where('active', true),
@@ -175,7 +177,7 @@ describe('SessionFilter Session Storage', function (): void {
 
         $filter->store();
 
-        $retrieved = session()->get('retrievable-key_query');
+        $retrieved = SessionFilter::retrieve('retrievable-key');
 
         expect($retrieved)
             ->toBeInstanceOf(SessionFilter::class)
@@ -219,20 +221,21 @@ describe('SessionFilter with Real Query', function (): void {
     });
 });
 
-describe('SessionFilter __serialize and __unserialize', function (): void {
-    it('__serialize returns array with all properties', function (): void {
+describe('SessionFilter native serialize and unserialize', function (): void {
+    it('serialize preserves all properties', function (): void {
         $filter = SessionFilter::make('test-key', fn (Builder $query) => $query, 'Test Name');
-        $data = $filter->__serialize();
 
-        expect($data)
-            ->toBeArray()
-            ->toHaveKeys(['dataTableCacheKey', 'closure', 'name', 'loaded']);
-        expect($data['dataTableCacheKey'])->toBe('test-key');
-        expect($data['name'])->toBe('Test Name');
-        expect($data['loaded'])->toBeFalse();
+        $serialized = serialize($filter);
+        $restored = unserialize($serialized);
+
+        expect($restored)
+            ->toBeInstanceOf(SessionFilter::class);
+        expect($restored->dataTableCacheKey)->toBe('test-key');
+        expect($restored->name)->toBe('Test Name');
+        expect($restored->loaded)->toBeFalse();
     });
 
-    it('__unserialize restores all properties from array', function (): void {
+    it('unserialize restores all properties', function (): void {
         $filter = SessionFilter::make('original', fn (Builder $query) => $query, 'Original');
         $filter->loaded = true;
 
@@ -244,19 +247,19 @@ describe('SessionFilter __serialize and __unserialize', function (): void {
         expect($restored->loaded)->toBeTrue();
     });
 
-    it('serialize method returns string representation', function (): void {
+    it('serialize returns a string representation', function (): void {
         $filter = SessionFilter::make('test', fn (Builder $query) => $query, 'Filter');
 
-        $serialized = $filter->serialize();
+        $serialized = serialize($filter);
 
         expect($serialized)->toBeString();
-        $unserialized = unserialize($serialized);
-        expect($unserialized)->toBeArray()
-            ->toHaveKey('name')
-            ->toHaveKey('dataTableCacheKey');
+        $restored = unserialize($serialized);
+        expect($restored)->toBeInstanceOf(SessionFilter::class)
+            ->and($restored->name)->toBe('Filter')
+            ->and($restored->dataTableCacheKey)->toBe('test');
     });
 
-    it('unserialize method restores from string', function (): void {
+    it('unserialize restores from serialized string', function (): void {
         $filter = SessionFilter::make('from-str', fn (Builder $query) => $query, 'StringFilter');
 
         $serialized = serialize($filter);
@@ -266,7 +269,7 @@ describe('SessionFilter __serialize and __unserialize', function (): void {
         expect($restored->dataTableCacheKey)->toBe('from-str');
     });
 
-    it('loaded defaults to false in unserialized data without loaded key', function (): void {
+    it('loaded defaults to false after round-trip', function (): void {
         $filter = SessionFilter::make('key', fn (Builder $query) => $query, 'test');
         $filter->loaded = false;
 
@@ -299,24 +302,18 @@ describe('SessionFilter constructor edge cases', function (): void {
     });
 });
 
-describe('SessionFilter unserialize method', function (): void {
-    it('restores from string via unserialize method', function (): void {
+describe('SessionFilter round-trip via store and retrieve', function (): void {
+    it('restores from cache via retrieve method', function (): void {
         $filter = SessionFilter::make('test-key', fn (Builder $query) => $query, 'MyFilter');
         $filter->loaded = true;
 
-        $serializedInner = $filter->serialize();
+        $filter->store();
 
-        $newFilter = new SessionFilter(
-            dataTableCacheKey: 'placeholder',
-            closure: fn () => null,
-            name: 'placeholder'
-        );
+        $restored = SessionFilter::retrieve('test-key');
 
-        $newFilter->unserialize($serializedInner);
-
-        expect($newFilter->dataTableCacheKey)->toBe('test-key');
-        expect($newFilter->name)->toBe('MyFilter');
-        expect($newFilter->loaded)->toBeTrue();
+        expect($restored->dataTableCacheKey)->toBe('test-key');
+        expect($restored->name)->toBe('MyFilter');
+        expect($restored->loaded)->toBeTrue();
     });
 });
 

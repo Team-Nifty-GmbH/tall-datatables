@@ -1418,15 +1418,14 @@ describe('applySessionFilter', function (): void {
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Session Match', 'price' => 10]);
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Session Skip', 'price' => 999]);
 
-        // Set session filter BEFORE mounting the component
-        $cacheKey = PostDataTable::class . '_query';
-        $sessionFilter = new TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
-            'test-filter',
+        // Store session filter via cache BEFORE mounting the component
+        TeamNiftyGmbH\DataTable\Helpers\SessionFilter::make(
+            PostDataTable::class,
             function ($query): void {
                 $query->where('title', 'Session Match');
-            }
-        );
-        session()->put($cacheKey, $sessionFilter);
+            },
+            'test-filter'
+        )->store();
 
         $component = Livewire::test(PostDataTable::class);
 
@@ -1434,7 +1433,7 @@ describe('applySessionFilter', function (): void {
         expect($data['total'])->toBe(1);
         expect($data['data'][0]['title'])->toBe('Session Match');
 
-        session()->forget($cacheKey);
+        TeamNiftyGmbH\DataTable\Helpers\SessionFilter::forget(PostDataTable::class);
     });
 
     it('does not crash when no session filter is present', function (): void {
@@ -1450,21 +1449,20 @@ describe('applySessionFilter', function (): void {
     it('clears userFilters on first load of session filter', function (): void {
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Session Post']);
 
-        $cacheKey = PostDataTable::class . '_query';
-        $sessionFilter = new TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
-            'clearing-filter',
+        TeamNiftyGmbH\DataTable\Helpers\SessionFilter::make(
+            PostDataTable::class,
             function ($query): void {
                 $query->where('title', 'like', '%Session%');
-            }
-        );
-        session()->put($cacheKey, $sessionFilter);
+            },
+            'clearing-filter'
+        )->store();
 
         $component = Livewire::test(PostDataTable::class);
 
         // After initial load, userFilters should be empty (cleared by session filter)
         expect($component->get('userFilters'))->toBe([]);
 
-        session()->forget($cacheKey);
+        TeamNiftyGmbH\DataTable\Helpers\SessionFilter::forget(PostDataTable::class);
     });
 });
 
@@ -1867,57 +1865,54 @@ describe('applySessionFilter additional coverage', function (): void {
     it('sets sessionFilter name from SessionFilter object', function (): void {
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Session Named']);
 
-        $cacheKey = PostDataTable::class . '_query';
-        $sessionFilter = new TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
-            'named-filter',
+        TeamNiftyGmbH\DataTable\Helpers\SessionFilter::make(
+            PostDataTable::class,
             function ($query): void {
                 $query->where('title', 'like', '%Session%');
-            }
-        );
-        $sessionFilter->setName('My Named Filter');
-        session()->put($cacheKey, $sessionFilter);
+            },
+            'My Named Filter'
+        )->store();
 
         $component = Livewire::test(PostDataTable::class);
 
         expect($component->get('sessionFilter'))->toBe(['name' => 'My Named Filter']);
 
-        session()->forget($cacheKey);
+        TeamNiftyGmbH\DataTable\Helpers\SessionFilter::forget(PostDataTable::class);
     });
 
     it('marks session filter as loaded after first use', function (): void {
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Loaded Check']);
 
-        $cacheKey = PostDataTable::class . '_query';
-        $sessionFilter = new TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
-            'loaded-check',
+        TeamNiftyGmbH\DataTable\Helpers\SessionFilter::make(
+            PostDataTable::class,
             function ($query): void {
                 $query->where('title', 'like', '%Loaded%');
-            }
-        );
-        session()->put($cacheKey, $sessionFilter);
+            },
+            'loaded-check'
+        )->store();
 
         $component = Livewire::test(PostDataTable::class);
 
-        // After first load, the session filter should be marked as loaded
-        $storedFilter = session()->get($cacheKey);
+        // After first load, the session filter should be marked as loaded in cache
+        $storedFilter = TeamNiftyGmbH\DataTable\Helpers\SessionFilter::retrieve(PostDataTable::class);
         expect($storedFilter->loaded)->toBeTrue();
 
-        session()->forget($cacheKey);
+        TeamNiftyGmbH\DataTable\Helpers\SessionFilter::forget(PostDataTable::class);
     });
 
     it('does not clear userFilters on second load of session filter', function (): void {
         createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Second Load']);
 
-        $cacheKey = PostDataTable::class . '_query';
-        $sessionFilter = new TeamNiftyGmbH\DataTable\Helpers\SessionFilter(
-            'second-load',
+        $sessionFilter = TeamNiftyGmbH\DataTable\Helpers\SessionFilter::make(
+            PostDataTable::class,
             function ($query): void {
                 $query->where('title', 'like', '%Second%');
-            }
+            },
+            'second-load'
         );
         // Pre-mark as loaded
         $sessionFilter->loaded = true;
-        session()->put($cacheKey, $sessionFilter);
+        $sessionFilter->store();
 
         $component = Livewire::test(PostDataTable::class);
 
@@ -1926,7 +1921,7 @@ describe('applySessionFilter additional coverage', function (): void {
         $data = $component->instance()->getDataForTesting();
         expect($data)->toBeArray();
 
-        session()->forget($cacheKey);
+        TeamNiftyGmbH\DataTable\Helpers\SessionFilter::forget(PostDataTable::class);
     });
 });
 

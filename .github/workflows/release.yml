@@ -47,7 +47,7 @@ jobs:
         run: npm run build
 
       - name: Determine previous tag
-        run: echo "PREV_TAG=$(git describe --tags --abbrev=0 HEAD)" >> $GITHUB_ENV
+        run: echo "PREV_TAG=$(git tag --sort=-version:refname | head -1)" >> $GITHUB_ENV
 
       - name: Create release tag
         run: |

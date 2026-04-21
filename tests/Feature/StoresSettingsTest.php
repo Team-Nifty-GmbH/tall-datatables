@@ -36,7 +36,9 @@ describe('ensureAuthHasTrait', function (): void {
             'password' => bcrypt('password'),
         ]);
 
+        Auth::shouldReceive('check')->andReturn(true);
         Auth::shouldReceive('user')->andReturn($plainUser);
+        Auth::shouldReceive('id')->andReturn(9999);
 
         $component = Livewire::test(PostDataTable::class);
 

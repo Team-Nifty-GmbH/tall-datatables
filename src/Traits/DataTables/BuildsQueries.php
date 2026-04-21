@@ -820,9 +820,7 @@ trait BuildsQueries
     private function applySessionFilter(Builder $query): void
     {
         $sessionFilter = $this->sessionFilterInstance
-            ?? (session()->has($this->getCacheKey() . '_query')
-                ? session()->get($this->getCacheKey() . '_query')
-                : null);
+            ?? SessionFilter::retrieve($this->getCacheKey());
 
         if ($sessionFilter instanceof SessionFilter) {
             $sessionFilter->getClosure()($query, $this);
@@ -836,7 +834,7 @@ trait BuildsQueries
                 $this->userFilters = [];
                 $sessionFilter->loaded = true;
 
-                session()->put($this->getCacheKey() . '_query', $sessionFilter);
+                $sessionFilter->store();
             }
         }
     }

@@ -79,7 +79,7 @@ describe('SessionFilter', function (): void {
             ->and($unserialized->loaded)->toBeFalse();
     });
 
-    it('can store to session', function (): void {
+    it('can store to cache and sets session marker', function (): void {
         $filter = SessionFilter::make(
             dataTableCacheKey: 'session-test',
             closure: fn (Builder $query) => $query,
@@ -89,7 +89,13 @@ describe('SessionFilter', function (): void {
         $filter->store();
 
         expect(session()->has('session-test_query'))->toBeTrue();
-        expect(session()->get('session-test_query'))->toBeInstanceOf(SessionFilter::class);
+        expect(session()->get('session-test_query'))->toBeTrue();
+
+        $retrieved = SessionFilter::retrieve('session-test');
+
+        expect($retrieved)
+            ->toBeInstanceOf(SessionFilter::class)
+            ->and($retrieved->name)->toBe('Session Test');
     });
 
     it('can set closure', function (): void {
