@@ -866,6 +866,36 @@ describe('SupportsRelations', function (): void {
             expect($result['cols'])->toBeArray()->not->toBeEmpty();
             expect($result['relations'])->toBeArray();
         });
+
+        it('resolves relation path to model class on cache miss', function (): void {
+            Cache::flush();
+
+            $component = Livewire::test(PostDataTable::class);
+
+            // loadSlug with a relation name should resolve the relation
+            // to its model class, not pass the relation name as a class name
+            $result = $component->instance()->loadSlug('user');
+
+            expect($result['cols'])->toBeArray()->not->toBeEmpty();
+            expect($result['relations'])->toBeArray();
+            expect($result['displayPath'])->toBeArray()->not->toBeEmpty();
+            expect($result['displayPath'][0]['value'])->toBe('user');
+        });
+
+        it('resolves nested relation path on cache miss', function (): void {
+            Cache::flush();
+
+            $component = Livewire::test(PostDataTable::class);
+
+            // loadSlug with a nested relation path should walk each segment
+            $result = $component->instance()->loadSlug('user.posts');
+
+            expect($result['cols'])->toBeArray()->not->toBeEmpty();
+            expect($result['relations'])->toBeArray();
+            expect($result['displayPath'])->toHaveCount(2);
+            expect($result['displayPath'][0]['value'])->toBe('user');
+            expect($result['displayPath'][1]['value'])->toBe('user.posts');
+        });
     });
 
     describe('addDynamicJoin with HasMany relation', function (): void {
