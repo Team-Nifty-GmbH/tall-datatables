@@ -122,6 +122,8 @@ class FormatterRegistry
             'url', 'link' => new LinkFormatter(),
             'relativetime' => new DateFormatter(mode: 'relative'),
             'time' => new DateFormatter(mode: 'time'),
+            'duration' => new DurationFormatter(),
+            'duration:seconds' => new DurationFormatter(showSeconds: true),
             'enum' => new EnumFormatter(),
             default => $this->isEnum($castClass) ? new EnumFormatter($castClass) : new StringFormatter(),
         };
