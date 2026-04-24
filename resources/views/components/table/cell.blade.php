@@ -6,9 +6,14 @@
     $hasStaticHref = $href !== null;
     $hasDynamicHref = $attributes->has('x-bind:href');
     $dynamicHrefExpr = $hasDynamicHref ? $attributes->get('x-bind:href') : 'false';
+    $hasWhitespaceOverride = str_contains($attributes->get('class', ''), 'whitespace-') || str_contains($attributes->get('x-bind:class', ''), 'whitespace-');
+    $defaultClasses = 'border-b border-gray-100 dark:border-secondary-700/50 text-sm p-0';
+    if (! $hasWhitespaceOverride) {
+        $defaultClasses .= ' whitespace-nowrap max-w-xs overflow-hidden text-ellipsis';
+    }
 @endphp
 <td
-    {{ $attributes->only(['class', 'x-bind:class', 'x-bind:style'])->merge(['class' => 'border-b border-gray-100 dark:border-secondary-700/50 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis text-sm p-0']) }}
+    {{ $attributes->only(['class', 'x-bind:class', 'x-bind:style'])->merge(['class' => $defaultClasses]) }}
 >
     @if($hasStaticHref)
         <a
