@@ -49,9 +49,15 @@
         ></td>
     @endif
     @foreach ($enabledCols as $col)
+        @php
+            $cellAttrClasses = trim(
+                $cellAttributes->get('class', '') . ' '
+                . (preg_match("/^'([^']*)'$/", $cellAttributes->get('x-bind:class', ''), $m) ? $m[1] : '')
+            );
+        @endphp
         <x-tall-datatables::table.cell
             :use-wire-navigate="$useWireNavigate"
-            :class="in_array($col, $this->stickyCols) ? 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50' : ''"
+            :class="implode(' ', array_filter([in_array($col, $this->stickyCols) ? 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50' : '', $cellAttrClasses]))"
             :style="in_array($col, $this->stickyCols) ? 'z-index: 2' : ''"
             :href="(($allowSoftDeletes && ($record['deleted_at'] ?? null)) ? null : ($record['href'] ?? null))"
         >

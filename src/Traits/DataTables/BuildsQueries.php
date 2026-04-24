@@ -13,6 +13,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Laravel\Scout\Searchable;
 use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
@@ -191,6 +192,13 @@ trait BuildsQueries
 
             // Skip columns that already have a display value (e.g. from trait augmentation hooks)
             if (is_array($raw) && isset($raw['display'])) {
+                continue;
+            }
+
+            // Preserve HtmlString values — they contain intentional, safe HTML
+            if ($raw instanceof HtmlString) {
+                $itemArray[$col] = ['raw' => strip_tags($raw->toHtml()), 'display' => $raw->toHtml()];
+
                 continue;
             }
 
@@ -468,6 +476,13 @@ trait BuildsQueries
 
                         // Skip already formatted values
                         if (is_array($itemArray[$col]) && isset($itemArray[$col]['display'])) {
+                            continue;
+                        }
+
+                        // Preserve HtmlString values — they contain intentional, safe HTML
+                        if ($itemArray[$col] instanceof HtmlString) {
+                            $itemArray[$col] = ['raw' => strip_tags($itemArray[$col]->toHtml()), 'display' => $itemArray[$col]->toHtml()];
+
                             continue;
                         }
 
