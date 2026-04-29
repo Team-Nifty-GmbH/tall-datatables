@@ -19,7 +19,7 @@
         "php": "^8.4",
         "laravel/framework": "^12.0|^13.0",
         "livewire/livewire": "^4.0",
-        "maatwebsite/excel": "^3.1",
+        "phpoffice/phpspreadsheet": "^5.3",
         "spatie/laravel-model-info": "^1.0|^2.0",
         "tallstackui/tallstackui": "^3.0"
     },

@@ -1,7 +1,6 @@
 <?php
 
 use Livewire\Livewire;
-use Maatwebsite\Excel\ExcelServiceProvider;
 use Tests\Fixtures\Livewire\NonExportablePostDataTable;
 use Tests\Fixtures\Livewire\PostDataTable;
 use Tests\Fixtures\Livewire\PostWithRelationsDataTable;
@@ -92,11 +91,6 @@ describe('SupportsExporting', function (): void {
     });
 
     describe('export', function (): void {
-        beforeEach(function (): void {
-            // Register the Excel service provider for export tests
-            app()->register(ExcelServiceProvider::class);
-        });
-
         it('returns a download response', function (): void {
             createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Export Test']);
 
@@ -105,7 +99,7 @@ describe('SupportsExporting', function (): void {
 
             $response = $component->instance()->export(['title', 'content']);
 
-            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class);
         });
 
         it('generates filename with model name and timestamp', function (): void {
@@ -131,7 +125,7 @@ describe('SupportsExporting', function (): void {
             // Passing columns with some falsy values - array_filter removes empties
             $response = $component->instance()->export(['title', '', 'content']);
 
-            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class);
         });
 
         it('exports with no data returns valid response', function (): void {
@@ -140,7 +134,7 @@ describe('SupportsExporting', function (): void {
 
             $response = $component->instance()->export(['title', 'content']);
 
-            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class);
         });
 
         it('can be called directly on the component instance', function (): void {
@@ -151,7 +145,7 @@ describe('SupportsExporting', function (): void {
 
             $response = $component->instance()->export(['title', 'content']);
 
-            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+            expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class);
         });
 
         it('returns a CSV response when format is csv', function (): void {
