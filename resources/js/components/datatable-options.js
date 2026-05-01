@@ -1,5 +1,6 @@
 export default function datatable_options(wire) {
     return {
+        wire,
         searchRelations: null,
         searchColumns: null,
         searchAggregatable: null,

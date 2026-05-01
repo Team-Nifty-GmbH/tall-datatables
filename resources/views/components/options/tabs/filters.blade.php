@@ -1,6 +1,6 @@
 <div
     x-cloak
-    x-show="filterIndex > 0 && filterIndex >= ($wire.userFilters || []).length"
+    x-show="filterIndex > 0 && filterIndex >= (wire.userFilters || []).length"
     class="mb-2 rounded-md border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400"
 >
     {{ __('Adding to new OR group') }}
@@ -11,7 +11,7 @@
 >
     @if (auth()->user() && method_exists(auth()->user(), 'datatableUserSettings'))
         <template
-            x-if="$wire.savedFilters?.length > 0"
+            x-if="wire.savedFilters?.length > 0"
         >
             <div>
                 <div
@@ -38,7 +38,7 @@
                         x-data="{ detail: null }"
                     >
                         <template
-                            x-for="(filter, index) in $wire.savedFilters"
+                            x-for="(filter, index) in wire.savedFilters"
                         >
                             <div>
                                 <x-card>
@@ -47,7 +47,7 @@
                                             <div class="flex gap-2 w-full">
                                                 <x-input sm
                                                     x-model="filter.name"
-                                                    x-on:input.debounce="$wire.updateSavedFilter(filter.id, filter)"
+                                                    x-on:input.debounce="wire.updateSavedFilter(filter.id, filter)"
                                                 />
                                                 <x-button.circle
                                                     color="red"
@@ -55,7 +55,7 @@
                                                     icon="x-mark"
                                                     x-on:click="
                                                         savedFilters.splice(index, 1);
-                                                        $wire.deleteSavedFilter(filter.id)
+                                                        wire.deleteSavedFilter(filter.id)
                                                     "
                                                 />
                                             </div>
@@ -103,7 +103,7 @@
                                             <x-button
                                                 :text="__('Apply')"
                                                 color="indigo"
-                                                x-on:click="$wire.loadFilter(filter.settings), detail = null, showSavedFilters = false"
+                                                x-on:click="wire.loadFilter(filter.settings), detail = null, showSavedFilters = false"
                                             />
                                             <x-icon
                                                 name="chevron-left"
@@ -504,8 +504,8 @@
     </div>
     <div class="py-1">
         <x-checkbox
-            x-model="$wire.withSoftDeletes"
-            x-on:change="$wire.startSearch()"
+            x-model="wire.withSoftDeletes"
+            x-on:change="wire.startSearch()"
             :label="__('Include deleted')"
         />
     </div>
@@ -523,10 +523,10 @@
 <div
     class="border-t border-gray-100 pt-3 dark:border-secondary-700/50"
     x-cloak
-    x-show="($wire.userFilters || []).length > 0 || orderByCol || groupBy"
+    x-show="(wire.userFilters || []).length > 0 || orderByCol || groupBy"
 >
 <div class="flex flex-col gap-1.5">
-    <template x-for="(orFilters, orIndex) in ($wire.userFilters || [])">
+    <template x-for="(orFilters, orIndex) in (wire.userFilters || [])">
         <div>
             <div
                 class="group/fg flex flex-wrap items-center gap-1.5 rounded px-2 py-1.5 transition-colors"
@@ -573,7 +573,7 @@
                     <x-icon name="x-mark" class="h-5 w-5" />
                 </button>
             </div>
-            <template x-if="($wire.userFilters || []).length - 1 !== orIndex">
+            <template x-if="(wire.userFilters || []).length - 1 !== orIndex">
                 <div class="flex justify-center py-1">
                     <x-badge
                         flat
@@ -603,7 +603,7 @@
                     2xs
                     flat
                     icon="x-mark"
-                    x-on:click="$wire.sortTable('')"
+                    x-on:click="wire.sortTable('')"
                 />
             </x-slot>
         </x-badge>
@@ -623,7 +623,7 @@
                     2xs
                     flat
                     icon="x-mark"
-                    x-on:click="groupBy = null; $wire.setGroupBy(null)"
+                    x-on:click="groupBy = null; wire.setGroupBy(null)"
                 />
             </x-slot>
         </x-badge>
@@ -631,7 +631,7 @@
     <button
         type="button"
         x-cloak
-        x-show="($wire.userFilters || []).length > 0"
+        x-show="(wire.userFilters || []).length > 0"
         x-on:click="addOrFilter()"
         class="cursor-pointer text-sm text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
     >
