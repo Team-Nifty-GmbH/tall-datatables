@@ -12,7 +12,7 @@
                         color="secondary"
                         light
                         :text="__('Close')"
-                        x-on:click="$tsui.close.slide('data-table-sidebar-' + $wire.id.toLowerCase());"
+                        x-on:click="$tsui.close.slide('data-table-sidebar-{{ strtolower($this->getId()) }}');"
                     />
                 </x-slot>
             </x-slide>

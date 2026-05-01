@@ -1,6 +1,6 @@
 <div
     class="mt-2 px-1"
-    x-data="datatableOptions($wire)"
+    x-data="datatableOptions(window.Livewire.find('{{ $this->getId() }}'))"
     x-init="
         aggregatable = {{ Js::from($this->getAggregatable()) }};
         groupable = {{ Js::from($this->getGroupableCols()) }};
@@ -41,7 +41,7 @@
                 />
                 <x-button
                     :text="__('Save')"
-                    x-on:click="$wire.saveFilter(filterName, permanent, withEnabledCols, isShared).then(() => $tsui.close.modal('save-filter'));"
+                    x-on:click="wire.saveFilter(filterName, permanent, withEnabledCols, isShared).then(() => $tsui.close.modal('save-filter'));"
                 />
             </x-slot>
         </x-modal>

@@ -1,7 +1,7 @@
 <div
     x-data="{
         attributes: [],
-        availableCols: [...$wire.enabledCols, ...['__placeholder__']],
+        availableCols: [...wire.enabledCols, ...['__placeholder__']],
         addCol(colName) {
             if (this.availableCols.includes(colName))
                 this.availableCols.splice(this.availableCols.indexOf(colName), 1)
@@ -84,7 +84,7 @@
                             searchRelations = null;
                             searchColumns = null;
                             (async () => {
-                                const d = await $wire.loadSlug();
+                                const d = await wire.loadSlug();
                                 selectedCols = d?.cols || [];
                                 selectedRelations = d?.relations || [];
                                 displayPath = d?.displayPath || [];
@@ -103,7 +103,7 @@
                                 searchRelations = null;
                                 searchColumns = null;
                                 (async () => {
-                                    const d = await $wire.loadSlug(segment.value);
+                                    const d = await wire.loadSlug(segment.value);
                                     selectedCols = d?.cols || [];
                                     selectedRelations = d?.relations || [];
                                     displayPath = d?.displayPath || [];
@@ -134,7 +134,7 @@
                     <label class="flex min-w-0 cursor-pointer items-center gap-1.5 overflow-hidden py-1">
                         <x-checkbox
                             sm
-                            x-bind:checked="$wire.enabledCols.includes(col.attribute)"
+                            x-bind:checked="wire.enabledCols.includes(col.attribute)"
                             wire:loading.attr="disabled"
                             x-bind:id="col.attribute"
                             x-bind:value="col.attribute"
@@ -167,7 +167,7 @@
                             searchRelations = null;
                             searchColumns = null;
                             (async () => {
-                                const data = await $wire.loadRelation(relation.model, relation.name);
+                                const data = await wire.loadRelation(relation.model, relation.name);
                                 selectedCols = data?.cols || [];
                                 selectedRelations = data?.relations || [];
                                 displayPath = data?.displayPath || [];
@@ -178,7 +178,7 @@
                             <x-checkbox
                                 sm
                                 x-bind:value="relation.name + '_count'"
-                                x-bind:checked="$wire.enabledCols.includes(relation.name + '_count')"
+                                x-bind:checked="wire.enabledCols.includes(relation.name + '_count')"
                                 x-on:change="addCol(relation.name + '_count'); loadFilterable();"
                                 x-model="enabledCols"
                                 wire:loading.attr="disabled"

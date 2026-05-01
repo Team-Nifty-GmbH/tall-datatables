@@ -24,7 +24,7 @@
     />
     <x-button
         loading
-        x-on:click="$wire.export(exportColumns, exportFormat, exportFormatted); $tsui.close.slide('data-table-sidebar-' + $wire.id.toLowerCase());"
+        x-on:click="wire.export(exportColumns, exportFormat, exportFormatted); $tsui.close.slide('data-table-sidebar-{{ strtolower($this->getId()) }}');"
         color="indigo"
         class="w-full"
         :text="__('Export')"

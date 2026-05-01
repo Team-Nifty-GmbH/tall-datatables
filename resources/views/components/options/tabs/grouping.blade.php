@@ -2,8 +2,8 @@
     <span class="mb-2 block text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">{{ __('Rows per group') }}</span>
     <x-select.native
         sm
-        x-model="$wire.groupPerPage"
-        x-on:change="$wire.loadData()"
+        x-model="wire.groupPerPage"
+        x-on:change="wire.loadData()"
     >
         <option value="5">5</option>
         <option value="10">10</option>
@@ -30,7 +30,7 @@
             :label="__('No grouping')"
             value=""
             x-bind:checked="! groupBy"
-            x-on:change="groupBy = null; $wire.setGroupBy(null)"
+            x-on:change="groupBy = null; wire.setGroupBy(null)"
         />
         <x-icon
             name="view-columns"
@@ -43,7 +43,7 @@
             name="groupBy"
             x-bind:value="col"
             x-bind:checked="groupBy === col"
-            x-on:change="groupBy = col; $wire.setGroupBy(col)"
+            x-on:change="groupBy = col; wire.setGroupBy(col)"
         >
             <x-slot:label>
                 <span x-text="getLabel(col)"></span>
