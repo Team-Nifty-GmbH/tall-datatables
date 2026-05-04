@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Storage;
 use TeamNiftyGmbH\DataTable\Exports\JsonExport;
 use Tests\Fixtures\Models\Post;
 
@@ -72,5 +73,41 @@ describe('JsonExport', function (): void {
         $output = ob_get_clean();
 
         expect(json_decode($output, true))->toBe([]);
+    });
+});
+
+describe('JsonExport store', function (): void {
+    it('writes a json file to the given storage path', function (): void {
+        Storage::fake('local');
+
+        createTestPost([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Stored JSON',
+        ]);
+
+        $export = new JsonExport(Post::query()->with('user'), ['title', 'user.name']);
+        $result = $export->store('exports/test.json', 'local');
+
+        expect($result)->toBeTrue();
+        Storage::disk('local')->assertExists('exports/test.json');
+
+        $contents = Storage::disk('local')->get('exports/test.json');
+        $decoded = json_decode($contents, true);
+
+        expect($decoded)->toBeArray()
+            ->and($decoded[0])->toHaveKey('title', 'Stored JSON')
+            ->and($decoded[0]['user'])->toBeArray()
+            ->and($decoded[0]['user']['name'])->toBe('JSON User');
+    });
+
+    it('uses the default disk when none is passed', function (): void {
+        Storage::fake();
+
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Default Disk JSON']);
+
+        $export = new JsonExport(Post::query(), ['title']);
+        $export->store('exports/default.json');
+
+        Storage::assertExists('exports/default.json');
     });
 });
