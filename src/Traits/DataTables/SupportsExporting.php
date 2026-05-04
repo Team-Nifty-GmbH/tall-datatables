@@ -27,7 +27,7 @@ trait SupportsExporting
     public function export(array $columns = [], string $format = 'xlsx', bool $formatted = true): Response|BinaryFileResponse|StreamedResponse
     {
         $query = $this->buildSearch();
-        $columns = array_filter($columns);
+        $columns = array_filter($columns) ?: $this->enabledCols;
         $basename = class_basename($this->getModel()) . '_' . now()->toDateTimeLocalString('minute');
 
         $formatters = [];
