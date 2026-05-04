@@ -2361,6 +2361,39 @@ describe('buildSearch with Scout Searchable model', function (): void {
 
         expect($result)->toBeTrue();
     });
+
+    it('keeps modelKeyName scalar when Scout highlights the key column', function (): void {
+        config(['scout.driver' => 'collection']);
+
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Scout Highlight Post']);
+
+        $component = Livewire::test(Tests\Fixtures\Livewire\IdEnabledSearchableDataTable::class);
+        $component->set('search', 'Scout');
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['data'])->not->toBeEmpty();
+        expect($data['data'][0]['id'])->toBeScalar();
+    });
+
+    it('still applies Scout highlights to non-key columns', function (): void {
+        config(['scout.driver' => 'collection']);
+
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Scout Match Post']);
+
+        $component = Livewire::test(Tests\Fixtures\Livewire\IdEnabledSearchableDataTable::class);
+        $component->set('search', 'Scout');
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['data'][0]['title'])
+            ->toBeArray()
+            ->toHaveKey('display')
+            ->toHaveKey('raw');
+        expect($data['data'][0]['title']['display'])->toContain('<mark>');
+    });
 });
 
 // ---------------------------------------------------------------------------
