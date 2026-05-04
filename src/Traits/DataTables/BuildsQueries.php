@@ -436,6 +436,12 @@ trait BuildsQueries
 
                     // Apply Scout highlights without destroying formatters
                     foreach ($this->enabledCols as $key) {
+                        // Never wrap the modelKeyName — it's used as scalar (wire:key,
+                        // x-sort:item, JS identifiers) and array values break rendering.
+                        if ($key === $this->modelKeyName) {
+                            continue;
+                        }
+
                         $highlighted = data_get($query->hits, $item->getKey() . '._formatted.' . $key);
                         if ($highlighted === null) {
                             continue;
