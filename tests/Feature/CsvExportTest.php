@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Storage;
 use TeamNiftyGmbH\DataTable\Exports\CsvExport;
 use Tests\Fixtures\Models\Post;
 
@@ -76,5 +77,46 @@ describe('CsvExport', function (): void {
         $output = ob_get_clean();
 
         expect($output)->toContain('CSV User');
+    });
+});
+
+describe('CsvExport store', function (): void {
+    it('writes a csv file to the given storage path', function (): void {
+        Storage::fake('local');
+
+        createTestPost([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Stored CSV',
+            'content' => 'Stored Body',
+        ]);
+
+        $export = new CsvExport(Post::query(), ['title', 'content']);
+        $result = $export->store('exports/test.csv', 'local');
+
+        expect($result)->toBeTrue();
+        Storage::disk('local')->assertExists('exports/test.csv');
+
+        $contents = Storage::disk('local')->get('exports/test.csv');
+
+        $bom = "\xEF\xBB\xBF";
+        expect($contents)->toStartWith($bom);
+
+        $lines = explode("\n", trim(substr($contents, strlen($bom))));
+        expect($lines[0])->toContain(__('Title'))
+            ->toContain(';')
+            ->toContain(__('Content'));
+        expect($lines[1])->toContain('Stored CSV')
+            ->toContain('Stored Body');
+    });
+
+    it('uses the default disk when none is passed', function (): void {
+        Storage::fake();
+
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Default Disk CSV']);
+
+        $export = new CsvExport(Post::query(), ['title']);
+        $export->store('exports/default.csv');
+
+        Storage::assertExists('exports/default.csv');
     });
 });
