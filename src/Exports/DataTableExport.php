@@ -2,6 +2,7 @@
 
 namespace TeamNiftyGmbH\DataTable\Exports;
 
+use Closure;
 use Illuminate\Cache\FileStore;
 use Illuminate\Cache\Repository;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -21,7 +22,7 @@ class DataTableExport
 {
     use ExportsData;
 
-    private const CHUNK_SIZE = 1000;
+    private const CHUNK_SIZE = 250;
 
     private const XLSX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -29,6 +30,7 @@ class DataTableExport
         private EloquentBuilder $builder,
         array $exportColumns = [],
         array $formatters = [],
+        private ?Closure $onChunk = null,
     ) {
         $this->exportColumns = $exportColumns;
         $this->exportFormatters = $formatters;
@@ -100,11 +102,17 @@ class DataTableExport
     private function writeRows(Worksheet $sheet): void
     {
         $rowIndex = 2;
+        $processed = 0;
 
-        $this->builder->chunk(self::CHUNK_SIZE, function ($rows) use ($sheet, &$rowIndex): void {
+        $this->builder->chunk(self::CHUNK_SIZE, function ($rows) use ($sheet, &$rowIndex, &$processed): void {
             foreach ($rows as $row) {
                 $sheet->fromArray([array_values($this->mapRow($row))], null, 'A' . $rowIndex, true);
                 $rowIndex++;
+                $processed++;
+            }
+
+            if (! is_null($this->onChunk)) {
+                ($this->onChunk)($processed);
             }
         });
     }
