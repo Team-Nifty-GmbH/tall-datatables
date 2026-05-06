@@ -266,3 +266,54 @@ describe('DataTableExport store', function (): void {
         Illuminate\Support\Facades\Storage::assertExists('exports/default.xlsx');
     });
 });
+
+describe('DataTableExport cell cache', function (): void {
+    it('keeps memory growth bounded by spooling cells to disk and cleans up after itself', function (): void {
+        Illuminate\Support\Facades\Storage::fake('local');
+
+        $rowCount = 5000;
+        $now = now();
+        $rows = [];
+        for ($i = 0; $i < $rowCount; $i++) {
+            $rows[] = [
+                'user_id' => $this->user->getKey(),
+                'title' => str_repeat('T', 80),
+                'content' => str_repeat('C', 400),
+                'price' => 12.5,
+                'is_published' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        // Bulk insert in chunks to avoid hitting MySQL's max_allowed_packet.
+        foreach (array_chunk($rows, 500) as $chunk) {
+            Illuminate\Support\Facades\DB::table('posts')->insert($chunk);
+        }
+
+        $existingCacheDirs = glob(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'tdt-export-*') ?: [];
+
+        $export = new DataTableExport(
+            Post::query(),
+            ['title', 'content', 'price', 'is_published'],
+        );
+
+        memory_reset_peak_usage();
+        $startMem = memory_get_usage(true);
+
+        $export->store('exports/large.xlsx', 'local');
+
+        $peakDelta = memory_get_peak_usage(true) - $startMem;
+
+        // Without disk-spooling PhpSpreadsheet retains every Cell object in
+        // memory. Locally measured: 5000 rows × 4 columns produces a 40 MB
+        // peak delta without the fix and 28 MB with it. 30 MB therefore both
+        // catches a regression to the in-memory mode and leaves headroom for
+        // CI variance.
+        expect($peakDelta)->toBeLessThan(30 * 1024 * 1024);
+
+        Illuminate\Support\Facades\Storage::disk('local')->assertExists('exports/large.xlsx');
+
+        $afterCacheDirs = glob(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'tdt-export-*') ?: [];
+        expect($afterCacheDirs)->toBe($existingCacheDirs);
+    });
+});
