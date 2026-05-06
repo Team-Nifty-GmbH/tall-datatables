@@ -2,10 +2,14 @@
 
 namespace TeamNiftyGmbH\DataTable\Exports;
 
+use Illuminate\Cache\FileStore;
+use Illuminate\Cache\Repository;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Settings;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -82,13 +86,6 @@ class DataTableExport
         }
     }
 
-    private function autoSizeColumns(Worksheet $sheet): void
-    {
-        foreach ($sheet->getColumnIterator() as $column) {
-            $sheet->getColumnDimension($column->getColumnIndex())->setAutoSize(true);
-        }
-    }
-
     private function writeHeadings(Worksheet $sheet): void
     {
         $headings = $this->headings();
@@ -114,6 +111,13 @@ class DataTableExport
 
     private function writeXlsxTo(string $target): void
     {
+        // Spool PhpSpreadsheet's cell collection to disk so a multi-thousand
+        // row export does not have to fit every Cell object in PHP memory.
+        $previousCache = Settings::getCache();
+        $cacheDirectory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'tdt-export-' . bin2hex(random_bytes(8));
+        $cache = new Repository(new FileStore(new Filesystem(), $cacheDirectory));
+        Settings::setCache($cache);
+
         $spreadsheet = new Spreadsheet();
 
         try {
@@ -121,13 +125,16 @@ class DataTableExport
 
             $this->writeHeadings($sheet);
             $this->writeRows($sheet);
-            $this->autoSizeColumns($sheet);
 
             $writer = new Xlsx($spreadsheet);
             $writer->save($target);
         } finally {
             $spreadsheet->disconnectWorksheets();
             unset($spreadsheet);
+
+            $cache->clear();
+            Settings::setCache($previousCache);
+            @rmdir($cacheDirectory);
         }
     }
 }
