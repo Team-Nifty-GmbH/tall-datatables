@@ -13,7 +13,7 @@
             id="save-filter"
             :title="__('Save filter')"
             x-on:close="filterName = ''; permanent = false; isShared = false;"
-            x-on:open="$focusOn('filter-name')"
+            x-on:open="$tsui.focus('filter-name')"
         >
             <x-input sm
                 required
