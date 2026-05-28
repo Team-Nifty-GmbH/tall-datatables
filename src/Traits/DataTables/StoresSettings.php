@@ -147,7 +147,9 @@ trait StoresSettings
             ->first();
 
         if ($defaultColumns) {
-            $this->enabledCols = data_get($defaultColumns->settings, 'enabledCols', $this->enabledCols);
+            $this->enabledCols = array_values(
+                data_get($defaultColumns->settings, 'enabledCols', $this->enabledCols)
+            );
         }
 
         $this->savedFilters = $this->getSavedFilters(
@@ -210,7 +212,9 @@ trait StoresSettings
                 ->first();
 
             if ($defaultColumns) {
-                $this->enabledCols = data_get($defaultColumns->settings, 'enabledCols', $this->enabledCols);
+                $this->enabledCols = array_values(
+                    data_get($defaultColumns->settings, 'enabledCols', $this->enabledCols)
+                );
             }
 
             $this->colLabels = $this->getColLabels();
@@ -290,7 +294,7 @@ trait StoresSettings
     #[Renderless]
     public function storeColLayout(array $cols): void
     {
-        $this->enabledCols = $cols;
+        $this->enabledCols = array_values($cols);
         $this->colLabels = $this->getColLabels();
 
         $this->cacheState();

@@ -355,6 +355,23 @@ describe('loadSavedFilter', function (): void {
         expect($freshComponent->get('enabledCols'))->toBe(['title', 'content']);
     });
 
+    it('normalizes enabledCols loaded from a layout filter with non-sequential keys', function (): void {
+        $this->user->datatableUserSettings()->create([
+            'name' => 'layout',
+            'component' => PostDataTable::class,
+            'cache_key' => PostDataTable::class,
+            'settings' => ['enabledCols' => [0 => 'title', 2 => 'content', 4 => 'author_id']],
+            'is_layout' => true,
+        ]);
+
+        $component = Livewire::test(PostDataTable::class);
+
+        $enabledCols = $component->get('enabledCols');
+
+        expect(array_is_list($enabledCols))->toBeTrue()
+            ->and($enabledCols)->toBe(['title', 'content', 'author_id']);
+    });
+
     it('applies perPage from saved filter', function (): void {
         Livewire::test(PostDataTable::class)
             ->set('perPage', 50)
