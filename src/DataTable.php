@@ -634,6 +634,10 @@ class DataTable extends Component
             $this->userMultiSort = [];
         }
 
+        if (array_key_exists('enabledCols', $properties) && is_array($properties['enabledCols'])) {
+            $properties['enabledCols'] = array_values($properties['enabledCols']);
+        }
+
         foreach ($properties as $property => $value) {
             $this->{$property} = $value;
         }
