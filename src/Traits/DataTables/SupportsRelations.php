@@ -333,7 +333,7 @@ trait SupportsRelations
                     $filterable[] = $enabledCol;
                     $sortable[] = $enabledCol;
                 } catch (BadMethodCallException) {
-                    $this->enabledCols = array_diff($this->enabledCols, [$enabledCol]);
+                    $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
                 }
 
                 continue;
@@ -357,7 +357,7 @@ trait SupportsRelations
                         $relationInstance = $modelBase->{$relationName}();
                     }
                 } catch (BadMethodCallException) {
-                    $this->enabledCols = array_diff($this->enabledCols, [$enabledCol]);
+                    $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
 
                     continue 2;
                 }
