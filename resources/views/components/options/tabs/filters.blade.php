@@ -53,10 +53,7 @@
                                                     color="red"
                                                     2xs
                                                     icon="x-mark"
-                                                    x-on:click="
-                                                        savedFilters.splice(index, 1);
-                                                        wire.deleteSavedFilter(filter.id)
-                                                    "
+                                                    x-on:click="wire.deleteSavedFilter(filter.id)"
                                                 />
                                             </div>
                                         </template>
