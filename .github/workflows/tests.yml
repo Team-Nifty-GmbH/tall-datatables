@@ -99,6 +99,7 @@ jobs:
       - name: Install npm dependencies and build assets
         timeout-minutes: 5
         run: |
+          rm -rf node_modules package-lock.json
           npm install --no-audit --no-fund
           npm run build
 
