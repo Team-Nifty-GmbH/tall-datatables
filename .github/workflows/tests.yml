@@ -102,9 +102,13 @@ jobs:
           npm ci
           npm run build
 
-      - name: Install Playwright browser
-        timeout-minutes: 10
-        run: npx playwright install chromium --with-deps
+      - name: Install Playwright chromium binary
+        timeout-minutes: 5
+        run: npx playwright install chromium
+
+      - name: Install Playwright system deps
+        timeout-minutes: 5
+        run: sudo npx playwright install-deps chromium
 
       - name: Execute browser tests
         timeout-minutes: 15
