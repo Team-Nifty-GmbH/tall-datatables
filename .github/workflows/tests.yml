@@ -102,9 +102,29 @@ jobs:
           npm ci
           npm run build
 
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: |
+          version=$(node -p "require('./node_modules/playwright/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
       - name: Install Playwright chromium binary
-        timeout-minutes: 5
-        run: npx playwright install chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 8
+        run: |
+          for attempt in 1 2 3; do
+            npx playwright install chromium && exit 0
+            echo "playwright install attempt $attempt failed, retrying in 10s"
+            sleep 10
+          done
+          exit 1
 
       - name: Install Playwright system deps
         timeout-minutes: 5
