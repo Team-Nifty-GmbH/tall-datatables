@@ -63,7 +63,7 @@ jobs:
     needs: unit-feature
     timeout-minutes: 25
     container:
-      image: mcr.microsoft.com/playwright:latest
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
       options: --user root
 
     strategy:
