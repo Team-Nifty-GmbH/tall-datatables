@@ -189,7 +189,8 @@ trait StoresSettings
             $this->ensureAuthHasTrait();
             $layout = Auth::user()
                 ->datatableUserSettings()
-                ->where('component', $this->getCacheKey())
+                ->where('component', static::class)
+                ->where('cache_key', $this->getCacheKey())
                 ->where('is_layout', true)
                 ->first();
             $cached = Session::get(config('tall-datatables.cache_key') . '.filter:' . $this->getCacheKey());

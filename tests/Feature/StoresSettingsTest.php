@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Session;
 use Livewire\Livewire;
 use TeamNiftyGmbH\DataTable\Exceptions\MissingTraitException;
 use TeamNiftyGmbH\DataTable\Models\DatatableUserSetting;
+use Tests\Fixtures\Livewire\CustomCacheKeyPostDataTable;
 use Tests\Fixtures\Livewire\PostDataTable;
 
 beforeEach(function (): void {
@@ -757,6 +758,26 @@ describe('resetLayout', function (): void {
 
         expect($component->get('perPage'))->toBe(15);
         expect($component->get('search'))->toBe('');
+    });
+
+    it('deletes layout filter from database when cacheKey differs from component class', function (): void {
+        $this->user->datatableUserSettings()->create([
+            'name' => 'layout',
+            'component' => CustomCacheKeyPostDataTable::class,
+            'cache_key' => 'custom-cache-key',
+            'settings' => ['perPage' => 40, 'enabledCols' => ['title']],
+            'is_layout' => true,
+        ]);
+
+        expect(DatatableUserSetting::where('is_layout', true)->exists())->toBeTrue();
+
+        $component = Livewire::test(CustomCacheKeyPostDataTable::class);
+
+        expect($component->instance()->getCacheKey())->toBe('custom-cache-key');
+
+        $component->call('resetLayout');
+
+        expect(DatatableUserSetting::where('is_layout', true)->exists())->toBeFalse();
     });
 });
 
