@@ -132,7 +132,7 @@ describe('Filter Input Sync on Badge Removal', function (): void {
 
         // Click the "Clear" button
         $page->script('() => {
-            const buttons = document.querySelectorAll("[wire\\\\:click=\\"clearFiltersAndSort\\"]");
+            const buttons = document.querySelectorAll("[wire\\\\:click=\\"clearFiltersAndSort()\\"]");
             if (buttons.length > 0) buttons[0].click();
         }');
 
