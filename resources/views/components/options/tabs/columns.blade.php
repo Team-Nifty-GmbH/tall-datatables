@@ -63,7 +63,18 @@
                 color="primary"
                 light
                 loading="saveDefaultColumns"
-                wire:click="saveDefaultColumns()"
+                x-on:click="
+                    $tsui.interaction('dialog')
+                        .wireable($wire.__instance.id)
+                        .warning(
+                            '{{ __('Set as Default') }}',
+                            '{{ __('Should personal layouts of other users for this table be reset? Their saved filters remain.') }}',
+                            'amber',
+                        )
+                        .confirm('{{ __('Save default and reset others') }}', () => $wire.saveDefaultColumns(true))
+                        .cancel('{{ __('Save default only') }}', () => $wire.saveDefaultColumns(false))
+                        .send()
+                "
                 :text="__('Set as Default')"
             />
         @endif

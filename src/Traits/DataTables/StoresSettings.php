@@ -225,7 +225,7 @@ trait StoresSettings
     }
 
     #[Renderless]
-    public function saveDefaultColumns(): void
+    public function saveDefaultColumns(bool $resetOtherUserLayouts = false): void
     {
         if (! $this->canSaveDefaultColumns()) {
             return;
@@ -250,6 +250,14 @@ trait StoresSettings
                 'authenticatable_type' => Auth::user()->getMorphClass(),
             ]
         );
+
+        if ($resetOtherUserLayouts) {
+            $settingModel::query()
+                ->where('component', static::class)
+                ->where('cache_key', $this->getCacheKey())
+                ->where('is_layout', true)
+                ->delete();
+        }
     }
 
     /**

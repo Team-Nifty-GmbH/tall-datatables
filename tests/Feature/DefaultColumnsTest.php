@@ -29,10 +29,11 @@ describe('Global Default Columns', function (): void {
                 ->assertSee(__('Set as Default'));
         });
 
-        it('renders Set as Default button with wire:click parentheses (Livewire v4)', function (): void {
+        it('renders Set as Default button with dialog invoking saveDefaultColumns with bool flag (Livewire v4)', function (): void {
             $html = Livewire::test(DefaultColumnsPostDataTable::class)->html();
 
-            expect($html)->toContain('wire:click="saveDefaultColumns()"')
+            expect($html)->toContain('$wire.saveDefaultColumns(true)')
+                ->and($html)->toContain('$wire.saveDefaultColumns(false)')
                 ->and($html)->not->toContain('wire:click="saveDefaultColumns"');
         });
 
@@ -75,6 +76,114 @@ describe('Global Default Columns', function (): void {
             expect(DatatableUserSetting::where('is_default_columns', true)->count())->toBe(1);
             $setting = DatatableUserSetting::where('is_default_columns', true)->first();
             expect($setting->settings['enabledCols'])->toBe(['id', 'title', 'created_at']);
+        });
+
+        describe('with resetOtherUserLayouts flag', function (): void {
+            it('deletes all is_layout rows for the same component when true', function (): void {
+                DatatableUserSetting::create([
+                    'name' => 'OtherUserLayout',
+                    'component' => DefaultColumnsPostDataTable::class,
+                    'cache_key' => DefaultColumnsPostDataTable::class,
+                    'settings' => ['enabledCols' => ['id']],
+                    'is_layout' => true,
+                    'is_default_columns' => false,
+                    'is_permanent' => false,
+                    'authenticatable_id' => $this->otherUser->getKey(),
+                    'authenticatable_type' => get_class($this->otherUser),
+                ]);
+
+                Livewire::test(DefaultColumnsPostDataTable::class)
+                    ->call('loadData')
+                    ->set('enabledCols', ['id', 'title'])
+                    ->call('saveDefaultColumns', true);
+
+                expect(DatatableUserSetting::where('component', DefaultColumnsPostDataTable::class)->where('is_layout', true)->count())->toBe(0)
+                    ->and(DatatableUserSetting::where('is_default_columns', true)->count())->toBe(1);
+            });
+
+            it('keeps is_layout rows when flag is false (default)', function (): void {
+                DatatableUserSetting::create([
+                    'name' => 'OtherUserLayout',
+                    'component' => DefaultColumnsPostDataTable::class,
+                    'cache_key' => DefaultColumnsPostDataTable::class,
+                    'settings' => ['enabledCols' => ['id']],
+                    'is_layout' => true,
+                    'is_default_columns' => false,
+                    'is_permanent' => false,
+                    'authenticatable_id' => $this->otherUser->getKey(),
+                    'authenticatable_type' => get_class($this->otherUser),
+                ]);
+
+                Livewire::test(DefaultColumnsPostDataTable::class)
+                    ->call('loadData')
+                    ->set('enabledCols', ['id', 'title'])
+                    ->call('saveDefaultColumns');
+
+                expect(DatatableUserSetting::where('component', DefaultColumnsPostDataTable::class)->where('is_layout', true)->count())->toBe(1);
+            });
+
+            it('does not delete saved filter rows (is_layout=false) when flag is true', function (): void {
+                DatatableUserSetting::create([
+                    'name' => 'My filter',
+                    'component' => DefaultColumnsPostDataTable::class,
+                    'cache_key' => DefaultColumnsPostDataTable::class,
+                    'settings' => ['userFilters' => []],
+                    'is_layout' => false,
+                    'is_default_columns' => false,
+                    'is_permanent' => false,
+                    'authenticatable_id' => $this->otherUser->getKey(),
+                    'authenticatable_type' => get_class($this->otherUser),
+                ]);
+
+                Livewire::test(DefaultColumnsPostDataTable::class)
+                    ->call('loadData')
+                    ->set('enabledCols', ['id', 'title'])
+                    ->call('saveDefaultColumns', true);
+
+                expect(DatatableUserSetting::where('name', 'My filter')->count())->toBe(1);
+            });
+
+            it('does not touch layouts of unrelated components when flag is true', function (): void {
+                DatatableUserSetting::create([
+                    'name' => 'UnrelatedLayout',
+                    'component' => PostDataTable::class,
+                    'cache_key' => PostDataTable::class,
+                    'settings' => ['enabledCols' => ['id']],
+                    'is_layout' => true,
+                    'is_default_columns' => false,
+                    'is_permanent' => false,
+                    'authenticatable_id' => $this->otherUser->getKey(),
+                    'authenticatable_type' => get_class($this->otherUser),
+                ]);
+
+                Livewire::test(DefaultColumnsPostDataTable::class)
+                    ->call('loadData')
+                    ->set('enabledCols', ['id', 'title'])
+                    ->call('saveDefaultColumns', true);
+
+                expect(DatatableUserSetting::where('component', PostDataTable::class)->where('is_layout', true)->count())->toBe(1);
+            });
+
+            it('silently no-ops when gate is false even with reset flag', function (): void {
+                DatatableUserSetting::create([
+                    'name' => 'OtherUserLayout',
+                    'component' => PostDataTable::class,
+                    'cache_key' => PostDataTable::class,
+                    'settings' => ['enabledCols' => ['id']],
+                    'is_layout' => true,
+                    'is_default_columns' => false,
+                    'is_permanent' => false,
+                    'authenticatable_id' => $this->otherUser->getKey(),
+                    'authenticatable_type' => get_class($this->otherUser),
+                ]);
+
+                Livewire::test(PostDataTable::class)
+                    ->call('loadData')
+                    ->call('saveDefaultColumns', true);
+
+                expect(DatatableUserSetting::where('component', PostDataTable::class)->where('is_layout', true)->count())->toBe(1)
+                    ->and(DatatableUserSetting::where('is_default_columns', true)->count())->toBe(0);
+            });
         });
 
         it('overwrites default set by another user', function (): void {
