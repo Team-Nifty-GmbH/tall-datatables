@@ -29,6 +29,20 @@ describe('Global Default Columns', function (): void {
                 ->assertSee(__('Set as Default'));
         });
 
+        it('renders Set as Default button with wire:click parentheses (Livewire v4)', function (): void {
+            $html = Livewire::test(DefaultColumnsPostDataTable::class)->html();
+
+            expect($html)->toContain('wire:click="saveDefaultColumns()"')
+                ->and($html)->not->toContain('wire:click="saveDefaultColumns"');
+        });
+
+        it('renders Reset Layout button with $wire-prefixed method call (Livewire v4)', function (): void {
+            $html = Livewire::test(DefaultColumnsPostDataTable::class)->html();
+
+            expect($html)->toContain('x-on:click="$wire.resetLayout()"')
+                ->and($html)->not->toContain('x-on:click="resetLayout"');
+        });
+
         it('silently no-ops saveDefaultColumns when gate is false', function (): void {
             Livewire::test(PostDataTable::class)
                 ->call('loadData')

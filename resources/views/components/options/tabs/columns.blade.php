@@ -55,7 +55,7 @@
             color="secondary"
             light
             loading="resetLayout"
-            x-on:click="resetLayout"
+            x-on:click="$wire.resetLayout()"
             :text="__('Reset Layout')"
         />
         @if($this->canSaveDefaultColumns())
@@ -63,7 +63,7 @@
                 color="primary"
                 light
                 loading="saveDefaultColumns"
-                wire:click="saveDefaultColumns"
+                wire:click="saveDefaultColumns()"
                 :text="__('Set as Default')"
             />
         @endif

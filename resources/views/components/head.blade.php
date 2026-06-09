@@ -259,7 +259,7 @@
                 rounded
                 color="red"
                 :text="__('Clear')"
-                wire:click="clearFiltersAndSort"
+                wire:click="clearFiltersAndSort()"
                 class="h-8"
             />
         </div>

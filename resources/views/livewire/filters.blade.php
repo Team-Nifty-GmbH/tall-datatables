@@ -11,7 +11,7 @@
                     color="red"
                     flat
                     sm
-                    wire:click="clearFilters"
+                    wire:click="clearFilters()"
                 />
             </div>
 
