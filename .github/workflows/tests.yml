@@ -106,6 +106,7 @@ jobs:
         run: |
           rm -rf node_modules package-lock.json
           npm install --no-audit --no-fund
+          npx playwright install chromium
           npm run build
 
       - name: Execute browser tests
