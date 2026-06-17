@@ -260,6 +260,30 @@ describe('HasEloquentListeners – echoDeleted', function (): void {
 
         expect($instance->broadcastChannels)->not->toHaveKey($post->getKey());
     });
+
+    it('clamps total and to to zero when they are null instead of decrementing null', function (): void {
+        $post = BroadcastablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Null Counters',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+
+        $testable = mountAndLoadData();
+        $instance = $testable->instance();
+
+        // Pagination counters can be null in some payloads; decrementing null
+        // raises an error on PHP 8.5.
+        $data = $instance->data;
+        $data['total'] = null;
+        $data['to'] = null;
+        $instance->data = $data;
+
+        $instance->echoDeleted(['model' => ['id' => $post->getKey()]]);
+
+        expect($instance->data['total'])->toBe(0)
+            ->and($instance->data['to'])->toBe(0);
+    });
 });
 
 describe('HasEloquentListeners – echoTrashed and echoRestored', function (): void {

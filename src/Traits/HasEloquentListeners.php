@@ -54,8 +54,8 @@ trait HasEloquentListeners
         );
 
         $this->data['data'] = array_values($data);
-        $this->data['total']--;
-        $this->data['to']--;
+        $this->data['total'] = max(0, (int) ($this->data['total'] ?? 0) - 1);
+        $this->data['to'] = max(0, (int) ($this->data['to'] ?? 0) - 1);
     }
 
     public function echoRestored(array $eventData): void
