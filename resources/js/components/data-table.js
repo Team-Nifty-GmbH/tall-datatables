@@ -14,12 +14,15 @@ export default function data_table() {
             this.textFilterRows = this._computeTextFilterRows();
 
             this._disposers.push(
-                this.$watch(() => JSON.stringify(this.$wire.textFilters), () => {
-                    const serverRows = this._computeTextFilterRows();
-                    if (serverRows.length < this.textFilterRows.length) {
-                        this.textFilterRows = serverRows;
-                    }
-                }),
+                this.$watch(
+                    () => JSON.stringify(this.$wire.textFilters),
+                    () => {
+                        const serverRows = this._computeTextFilterRows();
+                        if (serverRows.length < this.textFilterRows.length) {
+                            this.textFilterRows = serverRows;
+                        }
+                    },
+                ),
             );
 
             this._setupEchoListeners();
@@ -148,24 +151,35 @@ export default function data_table() {
                 return;
             }
 
+            // Components without HasEloquentListeners have no
+            // broadcastChannels property; accessing it through $wire would
+            // make Livewire treat the access as a server-side method call.
+            const componentData = this.$wire.__instance?.ephemeral;
+            if (!componentData || !('broadcastChannels' in componentData)) {
+                return;
+            }
+
             const initial = this.$wire.broadcastChannels || {};
             Object.values(initial).forEach((channel) =>
                 this._subscribeChannel(channel),
             );
 
             this._disposers.push(
-                this.$watch('$wire.broadcastChannels', (newChannels, oldChannels) => {
-                    const newValues = Object.values(newChannels || {});
-                    const oldValues = Object.values(oldChannels || {});
+                this.$watch(
+                    '$wire.broadcastChannels',
+                    (newChannels, oldChannels) => {
+                        const newValues = Object.values(newChannels || {});
+                        const oldValues = Object.values(oldChannels || {});
 
-                    oldValues
-                        .filter((ch) => !newValues.includes(ch))
-                        .forEach((ch) => this._leaveChannel(ch));
+                        oldValues
+                            .filter((ch) => !newValues.includes(ch))
+                            .forEach((ch) => this._leaveChannel(ch));
 
-                    newValues
-                        .filter((ch) => !oldValues.includes(ch))
-                        .forEach((ch) => this._subscribeChannel(ch));
-                }),
+                        newValues
+                            .filter((ch) => !oldValues.includes(ch))
+                            .forEach((ch) => this._subscribeChannel(ch));
+                    },
+                ),
             );
         },
 
@@ -193,9 +207,7 @@ export default function data_table() {
                 return;
             }
 
-            this._echoChannels.forEach((channel) =>
-                window.Echo.leave(channel),
-            );
+            this._echoChannels.forEach((channel) => window.Echo.leave(channel));
             this._echoChannels = [];
         },
     };
