@@ -88,10 +88,30 @@ trait BuildsQueries
                 $filter['column'] = $column;
                 $filter['relation'] = Str::camel($relation);
 
+                $negatedRelationOperators = [
+                    '!=' => '=',
+                    'not like' => 'like',
+                    'not in' => 'in',
+                    'does not contain' => 'contains',
+                ];
+
                 if ($filter['value'] === '%*%') {
                     $this->applyFilterWhereHas($query, $filter['relation']);
                 } elseif ($filter['value'] === '%!*%') {
                     $this->applyFilterWhereDoesntHave($query, $filter['relation']);
+                } elseif (array_key_exists($filter['operator'] ?? '', $negatedRelationOperators)) {
+                    $filter['operator'] = $negatedRelationOperators[$filter['operator']];
+
+                    try {
+                        $query->whereDoesntHave($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
+                            unset($filter['relation']);
+                            $this->addFilter($subQuery, $type, $filter);
+
+                            return $subQuery;
+                        });
+                    } catch (BadMethodCallException) {
+                        // Relation does not exist on model — skip this filter
+                    }
                 } else {
                     try {
                         $query->whereHas($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
