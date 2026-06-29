@@ -98,12 +98,13 @@ trait StoresSettings
                         ->where('authenticatable_type', $user->getMorphClass());
                 });
 
-                if ($this->canShareFilters()) {
-                    $q->orWhere(function ($shared) use ($user): void {
-                        $shared->where('is_shared', true)
-                            ->where('authenticatable_type', $user->getMorphClass());
-                    });
-                }
+                // Shared filters are visible to everyone who can see the table. The
+                // canShareFilters() permission only governs *creating* a shared filter
+                // (see compileLayoutSettings / the allowed fields), not viewing one.
+                $q->orWhere(function ($shared) use ($user): void {
+                    $shared->where('is_shared', true)
+                        ->where('authenticatable_type', $user->getMorphClass());
+                });
             });
 
         if ($filter) {
