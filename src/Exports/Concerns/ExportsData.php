@@ -37,14 +37,13 @@ trait ExportsData
             $value = data_get($rowArray, $column);
 
             if (is_null($value) && str_contains($column, '.')) {
-                $parts = explode('.', $column);
-                $lastPart = array_pop($parts);
-
-                $wildcardKey = implode('.*.', $parts) . '.*.' . $lastPart;
-                $value = data_get($rowArray, $wildcardKey);
+                $value = $this->extractNestedValue($rowArray, explode('.', $column));
 
                 if (is_array($value)) {
-                    $value = implode('; ', array_filter($value));
+                    $value = implode('; ', array_filter(
+                        $value,
+                        fn ($item) => $item !== null && $item !== ''
+                    ));
                 }
             }
 
@@ -62,5 +61,39 @@ trait ExportsData
         }
 
         return $result;
+    }
+
+    /**
+     * Resolve a dotted column path against a row array, descending through to-one segments
+     * and mapping over to-many (list) segments at any position. This handles mixed paths such
+     * as contact.contactTopics.name (a to-one relation followed by a to-many relation), which a
+     * uniform wildcard cannot express.
+     *
+     * @param  array<int, string>  $segments
+     */
+    protected function extractNestedValue(mixed $data, array $segments): mixed
+    {
+        if ($segments === []) {
+            return $data;
+        }
+
+        if (is_array($data) && array_is_list($data)) {
+            $values = [];
+            foreach ($data as $item) {
+                $resolved = $this->extractNestedValue($item, $segments);
+
+                if (is_array($resolved)) {
+                    $values = array_merge($values, $resolved);
+                } elseif (! is_null($resolved)) {
+                    $values[] = $resolved;
+                }
+            }
+
+            return $values;
+        }
+
+        $segment = array_shift($segments);
+
+        return $this->extractNestedValue(data_get($data, $segment), $segments);
     }
 }
