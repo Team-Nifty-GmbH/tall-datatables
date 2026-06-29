@@ -522,6 +522,28 @@ describe('DataTableServiceProvider', function (): void {
                 ->toHaveKey('ids')
                 ->toHaveKey('searchResult');
         });
+
+        it('getScoutResults macro retrieves only keys when highlight is empty', function (): void {
+            if (! class_exists(Laravel\Scout\Builder::class)) {
+                $this->markTestSkipped('Scout not installed');
+            }
+
+            config(['scout.driver' => 'collection']);
+
+            Tests\Fixtures\Models\SearchablePost::create([
+                'user_id' => createTestUser()->getKey(),
+                'title' => 'Ids Only Post',
+                'content' => 'Some content',
+                'is_published' => true,
+            ]);
+
+            $result = Tests\Fixtures\Models\SearchablePost::search('Ids')->getScoutResults(highlight: []);
+
+            expect($result)->toBeArray()
+                ->toHaveKey('hits')
+                ->toHaveKey('ids')
+                ->toHaveKey('searchResult');
+        });
     });
 
     describe('Blade directive rendering via Blade::compileString', function (): void {

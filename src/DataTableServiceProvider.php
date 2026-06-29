@@ -115,20 +115,30 @@ class DataTableServiceProvider extends ServiceProvider
             Builder::macro('getScoutResults',
                 function (array $highlight = ['*'], int $perPage = 20, int $page = 0) {
                     /** @var Builder $this */
-                    $searchResult = $this->options(
-                        [
-                            'attributesToHighlight' => array_values($highlight),
-                            'highlightPreTag' => '<mark>',
-                            'highlightPostTag' => '</mark>',
-                            'limit' => $perPage,
-                            'offset' => max(($page - 1) * $perPage, 0),
-                        ])
-                        ->raw();
+                    $keyName = $this->model->getKeyName();
 
-                    $hits = Arr::keyBy(data_get($searchResult, 'hits'), $this->model->getKeyName());
+                    $options = [
+                        'limit' => $perPage,
+                        'offset' => max(($page - 1) * $perPage, 0),
+                    ];
+
+                    if ($highlight === []) {
+                        // No highlighting requested (e.g. an over-fetch that only needs the
+                        // ids): retrieve just the primary key so large limits don't pull full
+                        // highlighted documents into memory.
+                        $options['attributesToRetrieve'] = [$keyName];
+                    } else {
+                        $options['attributesToHighlight'] = array_values($highlight);
+                        $options['highlightPreTag'] = '<mark>';
+                        $options['highlightPostTag'] = '</mark>';
+                    }
+
+                    $searchResult = $this->options($options)->raw();
+
+                    $hits = Arr::keyBy(data_get($searchResult, 'hits'), $keyName);
                     unset($searchResult['hits']);
 
-                    $ids = collect($hits)->pluck($this->model->getKeyName())->all();
+                    $ids = collect($hits)->pluck($keyName)->all();
 
                     return [
                         'hits' => $hits,
