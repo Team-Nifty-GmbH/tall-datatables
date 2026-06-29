@@ -29,6 +29,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Max Relation Column Values
+    |--------------------------------------------------------------------------
+    |
+    | When a to-many relation attribute is enabled as a column (e.g. orders.total),
+    | the relation is eager loaded for every row. Without a bound a single row can
+    | pull thousands of related records into memory and exhaust the worker. This
+    | caps how many related records are loaded per parent for such columns.
+    | Set to 0 to disable the cap.
+    |
+    */
+
+    'max_relation_column_values' => env('TALL_DATATABLES_MAX_RELATION_COLUMN_VALUES', 50),
+
+    /*
+    |--------------------------------------------------------------------------
     | Search Route
     |--------------------------------------------------------------------------
     |

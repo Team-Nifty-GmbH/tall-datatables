@@ -7,6 +7,11 @@ use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -182,6 +187,40 @@ trait BuildsQueries
         );
     }
 
+    /**
+     * Apply the resolved eager loads, capping to-many relation columns to a configurable
+     * number of records per parent so a single row can never pull thousands of related
+     * records into memory and exhaust the worker.
+     *
+     * @param  array<int, string>  $with  list of "relation:col1,col2" eager-load strings
+     */
+    protected function applyEagerLoadsWithRelationLimit(Builder $query, array $with): void
+    {
+        $cap = (int) config('tall-datatables.max_relation_column_values', 50);
+
+        foreach ($with as $eagerLoad) {
+            [$path, $columns] = array_pad(explode(':', $eagerLoad, 2), 2, null);
+
+            if ($cap <= 0 || ! $this->relationPathIsToMany($path)) {
+                $query->with($eagerLoad);
+
+                continue;
+            }
+
+            $select = $columns !== null && $columns !== '*'
+                ? array_values(array_filter(explode(',', $columns)))
+                : null;
+
+            $query->with([$path => function ($relationQuery) use ($select, $cap): void {
+                if ($select) {
+                    $relationQuery->select($select);
+                }
+
+                $relationQuery->limit($cap);
+            }]);
+        }
+    }
+
     protected function applyFormatters(array &$itemArray, Model $item, array $context): void
     {
         $formatters = $this->getResolvedFormatters($item);
@@ -290,7 +329,7 @@ trait BuildsQueries
         $this->enabledCols = $enabledCols;
         $this->formatters = array_merge($formatters, $this->formatters);
 
-        $query->with($with);
+        $this->applyEagerLoadsWithRelationLimit($query, $with);
         $query->select(array_merge($select, [$this->modelTable . '.' . $this->modelKeyName]));
 
         if (! empty($this->withCountRelations)) {
@@ -709,6 +748,31 @@ trait BuildsQueries
             : $filter['value'];
 
         return $filter;
+    }
+
+    /**
+     * Determine whether the leaf relation of a (possibly nested) eager-load path is a
+     * to-many relation, i.e. one that can return an unbounded number of records per parent.
+     */
+    protected function relationPathIsToMany(string $path): bool
+    {
+        $model = app($this->getModel());
+        $relation = null;
+
+        foreach (explode('.', $path) as $segment) {
+            try {
+                $relation = $model->{Str::camel($segment)}();
+                $model = $relation->getRelated();
+            } catch (Throwable) {
+                return false;
+            }
+        }
+
+        return $relation instanceof HasMany
+            || $relation instanceof HasManyThrough
+            || $relation instanceof BelongsToMany
+            || $relation instanceof MorphMany
+            || $relation instanceof MorphToMany;
     }
 
     private function applyFallbackSearch(Builder $query, string $search): void
