@@ -89,7 +89,9 @@ describe('Shared Saved Filters', function (): void {
             expect($names)->not->toContain('Private Other');
         });
 
-        it('does not include shared filters when gate is false', function (): void {
+        it('includes shared filters from other users even when the share gate is false', function (): void {
+            // Seeing shared filters must not require the share permission; that gate
+            // only governs creating/sharing a filter, not viewing one.
             DatatableUserSetting::create([
                 'name' => 'Shared By Other',
                 'component' => PostDataTable::class,
@@ -104,7 +106,7 @@ describe('Shared Saved Filters', function (): void {
 
             $component = Livewire::test(PostDataTable::class);
             $names = collect($component->get('savedFilters'))->pluck('name')->toArray();
-            expect($names)->not->toContain('Shared By Other');
+            expect($names)->toContain('Shared By Other');
         });
     });
 
