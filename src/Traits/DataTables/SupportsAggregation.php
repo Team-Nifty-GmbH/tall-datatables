@@ -94,7 +94,7 @@ trait SupportsAggregation
                         : $this->modelTable . '.' . $column;
                     $aggregates[$type][$column] = $builder->{$type}($qualifiedColumn);
                 } catch (QueryException $e) {
-                    $this->toast()->error($e->getMessage());
+                    $this->toast()->error($e->getMessage())->send();
 
                     continue;
                 }
