@@ -9,15 +9,14 @@
 @endif
 
 <div class="flex w-full justify-end gap-2">
-    @if (count($this->savedFilters) > 0 && $this->showSavedFilters)
+    @if (count($this->quickSelectSavedFilters()) > 0 && $this->showSavedFilters)
         <div>
             <x-select.styled
                 x-on:select="$wire.loadSavedFilter()"
                 wire:model="loadedFilterId"
                 select="label:label|value:value"
                 :placeholder="__('Saved filters')"
-                :options="collect($this->savedFilters)
-                    ->filter(fn(array $savedFilter) => data_get($savedFilter, 'settings.userFilters', false))
+                :options="collect($this->quickSelectSavedFilters())
                     ->map(function(array $savedFilter) {
                         return [
                             'label' => $savedFilter['name'],
