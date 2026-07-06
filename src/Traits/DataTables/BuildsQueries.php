@@ -213,7 +213,11 @@ trait BuildsQueries
 
             $query->with([$path => function ($relationQuery) use ($select, $cap): void {
                 if ($select) {
-                    $relationQuery->select($select);
+                    $table = $relationQuery->getModel()->getTable();
+                    $relationQuery->select(array_map(
+                        fn (string $column): string => str_contains($column, '.') ? $column : $table . '.' . $column,
+                        $select
+                    ));
                 }
 
                 $relationQuery->limit($cap);
@@ -481,7 +485,7 @@ trait BuildsQueries
                 );
             }
         } catch (QueryException $e) {
-            $this->toast()->error($e->getMessage());
+            $this->toast()->error($e->getMessage())->send();
 
             return [];
         }
