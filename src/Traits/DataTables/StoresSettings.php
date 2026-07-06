@@ -184,6 +184,22 @@ trait StoresSettings
         $this->colLabels = $this->getColLabels();
     }
 
+    /**
+     * Saved filters that carry actual filter criteria (userFilters or textFilters).
+     * Used for the quick-select in the table head; layout/column-only saves are excluded.
+     *
+     * @return array<int, array>
+     */
+    #[Renderless]
+    public function quickSelectSavedFilters(): array
+    {
+        return collect($this->savedFilters)
+            ->filter(fn (array $savedFilter): bool => filled(data_get($savedFilter, 'settings.userFilters'))
+                || filled(data_get($savedFilter, 'settings.textFilters')))
+            ->values()
+            ->all();
+    }
+
     public function resetLayout(): void
     {
         try {

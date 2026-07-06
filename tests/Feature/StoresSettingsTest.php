@@ -1363,3 +1363,30 @@ describe('mountStoresSettings with session cache', function (): void {
             ->and($component->get('userOrderAsc'))->toBeFalse();
     });
 });
+
+describe('quickSelectSavedFilters', function (): void {
+    it('includes filters with userFilters or textFilters and excludes layout-only saves', function (): void {
+        $component = Livewire::test(PostDataTable::class);
+
+        $component->set('savedFilters', [
+            ['id' => 1, 'name' => 'UserFilter', 'settings' => [
+                'userFilters' => [[['column' => 'title', 'operator' => 'like', 'value' => '%a%', 'source' => 'text']]],
+                'textFilters' => [],
+            ]],
+            ['id' => 2, 'name' => 'TextOnly', 'settings' => [
+                'userFilters' => [],
+                'textFilters' => [['column' => 'title', 'value' => 'x']],
+            ]],
+            ['id' => 3, 'name' => 'LayoutOnly', 'settings' => [
+                'userFilters' => [],
+                'textFilters' => [],
+            ]],
+        ]);
+
+        $names = array_column($component->instance()->quickSelectSavedFilters(), 'name');
+
+        expect($names)->toContain('UserFilter')
+            ->toContain('TextOnly')
+            ->not->toContain('LayoutOnly');
+    });
+});
