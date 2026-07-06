@@ -213,11 +213,13 @@ trait BuildsQueries
 
             $query->with([$path => function ($relationQuery) use ($select, $cap): void {
                 if ($select) {
-                    $table = $relationQuery->getModel()->getTable();
-                    $relationQuery->select(array_map(
-                        fn (string $column): string => str_contains($column, '.') ? $column : $table . '.' . $column,
-                        $select
-                    ));
+                    // Only BelongsToMany joins a pivot table, so a bare column like `id`
+                    // becomes ambiguous there — qualify it exactly like Laravel does.
+                    $relationQuery->select(
+                        $relationQuery instanceof BelongsToMany
+                            ? $relationQuery->getRelated()->qualifyColumns($select)
+                            : $select
+                    );
                 }
 
                 $relationQuery->limit($cap);
