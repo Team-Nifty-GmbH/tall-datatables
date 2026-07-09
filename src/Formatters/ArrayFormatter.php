@@ -10,6 +10,11 @@ class ArrayFormatter implements Formatter
         protected ?Formatter $elementFormatter = null,
     ) {}
 
+    public function elementFormatter(): ?Formatter
+    {
+        return $this->elementFormatter;
+    }
+
     public function format(mixed $value, array $context = []): string
     {
         if (is_null($value)) {

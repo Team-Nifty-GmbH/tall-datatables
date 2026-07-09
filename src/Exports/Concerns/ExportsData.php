@@ -3,7 +3,9 @@
 namespace TeamNiftyGmbH\DataTable\Exports\Concerns;
 
 use Illuminate\Support\Str;
+use TeamNiftyGmbH\DataTable\Formatters\ArrayFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\BooleanFormatter;
+use TeamNiftyGmbH\DataTable\Formatters\Contracts\Formatter;
 
 trait ExportsData
 {
@@ -35,26 +37,32 @@ trait ExportsData
 
         foreach ($this->exportColumns as $column) {
             $value = data_get($rowArray, $column);
+            $formatter = $this->exportFormatters[$column] ?? null;
 
             if (is_null($value) && str_contains($column, '.')) {
                 $value = $this->extractNestedValue($rowArray, explode('.', $column));
 
                 if (is_array($value)) {
+                    // Format every related value on its own, otherwise an element formatter
+                    // (e.g. a boolean rendered as an icon) never sees the individual values.
                     $value = implode('; ', array_filter(
-                        $value,
+                        array_map(
+                            fn ($item) => $this->formatExportValue($item, $formatter, $rowArray),
+                            $value
+                        ),
                         fn ($item) => $item !== null && $item !== ''
                     ));
+
+                    $result[$column] = $value;
+
+                    continue;
                 }
             }
 
-            if (! is_null($value) && isset($this->exportFormatters[$column])) {
-                $formatter = $this->exportFormatters[$column];
-
-                if ($formatter instanceof BooleanFormatter) {
-                    $value = $value ? __('Yes') : __('No');
-                } else {
-                    $value = strip_tags($formatter->format($value, $rowArray));
-                }
+            if (! is_null($value) && $formatter) {
+                $value = is_array($value)
+                    ? strip_tags($formatter->format($value, $rowArray))
+                    : $this->formatExportValue($value, $formatter, $rowArray);
             }
 
             $result[$column] = $value;
@@ -95,5 +103,27 @@ trait ExportsData
         $segment = array_shift($segments);
 
         return $this->extractNestedValue(data_get($data, $segment), $segments);
+    }
+
+    /**
+     * Format a single scalar value for the export, unwrapping array formatters so their
+     * element formatter decides. Boolean values are exported as text because their
+     * formatter renders an icon, which strip_tags would reduce to an empty cell.
+     */
+    protected function formatExportValue(mixed $value, ?Formatter $formatter, array $context): mixed
+    {
+        if (is_null($value) || is_null($formatter)) {
+            return $value;
+        }
+
+        if ($formatter instanceof ArrayFormatter) {
+            $formatter = $formatter->elementFormatter() ?? $formatter;
+        }
+
+        if ($formatter instanceof BooleanFormatter) {
+            return $value ? __('Yes') : __('No');
+        }
+
+        return strip_tags($formatter->format($value, $context));
     }
 }
