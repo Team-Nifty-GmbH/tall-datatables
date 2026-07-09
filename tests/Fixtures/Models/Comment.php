@@ -9,6 +9,13 @@ class Comment extends Model
 {
     protected $guarded = ['id'];
 
+    protected function casts(): array
+    {
+        return [
+            'is_approved' => 'boolean',
+        ];
+    }
+
     public function post(): BelongsTo
     {
         return $this->belongsTo(Post::class);
