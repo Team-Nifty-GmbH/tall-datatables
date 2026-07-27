@@ -37,10 +37,14 @@ describe('Global Default Columns', function (): void {
                 ->and($html)->not->toContain('wire:click="saveDefaultColumns"');
         });
 
-        it('renders Reset Layout button with $wire-prefixed method call (Livewire v4)', function (): void {
+        it('renders Reset Layout button calling the alpine wrapper, not $wire directly', function (): void {
             $html = Livewire::test(DefaultColumnsPostDataTable::class)->html();
 
-            expect($html)->toContain('x-on:click="$wire.resetLayout()"')
+            // The alpine wrapper awaits $wire.resetLayout() and then pulls the
+            // reset columns back into the sidebar. Calling $wire directly leaves
+            // the sidebar on the columns from before the reset.
+            expect($html)->toContain('x-on:click="resetLayout()"')
+                ->and($html)->not->toContain('x-on:click="$wire.resetLayout()"')
                 ->and($html)->not->toContain('x-on:click="resetLayout"');
         });
 

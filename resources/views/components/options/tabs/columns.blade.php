@@ -1,16 +1,4 @@
-<div
-    x-data="{
-        attributes: [],
-        availableCols: [...wire.enabledCols, ...['__placeholder__']],
-        addCol(colName) {
-            if (this.availableCols.includes(colName))
-                this.availableCols.splice(this.availableCols.indexOf(colName), 1)
-            else {
-                this.availableCols.push(colName)
-            }
-        },
-    }"
->
+<div x-data="{ attributes: [] }">
     <div class="border-b border-gray-200 pb-2 dark:border-secondary-700">
     <div
         class="table-cols"
@@ -55,7 +43,7 @@
             color="secondary"
             light
             loading="resetLayout"
-            x-on:click="$wire.resetLayout()"
+            x-on:click="resetLayout()"
             :text="__('Reset Layout')"
         />
         @if($this->canSaveDefaultColumns())
