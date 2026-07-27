@@ -21,7 +21,14 @@ class EnumFormatter implements Formatter
             $enum = $this->enumClass::tryFrom($value);
 
             if ($enum) {
-                return e(__(Str::headline($enum->name)));
+                // An enum that brings its own label knows better than a headline
+                // of its case name, which cannot express a wording the case name
+                // does not already contain.
+                return e(
+                    method_exists($enum, 'label')
+                        ? $enum->label()
+                        : __(Str::headline($enum->name))
+                );
             }
         }
 
