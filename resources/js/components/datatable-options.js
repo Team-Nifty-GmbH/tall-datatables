@@ -25,6 +25,7 @@ export default function datatable_options(wire) {
             start_of: null,
         },
         enabledCols: wire.enabledCols || [],
+        availableCols: [...(wire.enabledCols || []), '__placeholder__'],
         filterValueLists: wire.filterValueLists || {},
         groupBy: wire.groupBy || null,
         orderByCol: wire.userOrderBy || '',
@@ -376,10 +377,26 @@ export default function datatable_options(wire) {
             wire.storeColLayout(cols);
         },
 
+        addCol(colName) {
+            if (this.availableCols.includes(colName))
+                this.availableCols.splice(
+                    this.availableCols.indexOf(colName),
+                    1,
+                );
+            else {
+                this.availableCols.push(colName);
+            }
+        },
+
+        syncAvailableCols() {
+            this.availableCols = [...this.enabledCols, '__placeholder__'];
+        },
+
         resetLayout() {
             this._ready = false;
             wire.resetLayout().then(() => {
                 this.enabledCols = wire.enabledCols || [];
+                this.syncAvailableCols();
                 this._sidebarLoaded = false;
                 this.loadSidebarData();
                 this.$nextTick(() => {
@@ -435,6 +452,7 @@ export default function datatable_options(wire) {
 
         async init() {
             this.enabledCols = wire.enabledCols || [];
+            this.syncAvailableCols();
             this.filterValueLists =
                 wire.filterValueLists || {};
             this.groupBy = wire.groupBy || null;
