@@ -10,6 +10,17 @@ enum TestStatusEnum: string
     case PendingReview = 'pending_review';
 }
 
+enum TestLabelledEnum: string
+{
+    public function label(): string
+    {
+        return match ($this) {
+            self::PendingReview => 'Awaiting <review>',
+        };
+    }
+    case PendingReview = 'pending_review';
+}
+
 describe('EnumFormatter', function (): void {
     it('returns empty string for null', function (): void {
         $formatter = new EnumFormatter();
@@ -40,6 +51,12 @@ describe('EnumFormatter', function (): void {
         $formatter = new EnumFormatter();
 
         expect($formatter->format('<b>bold</b>'))->toBe('&lt;B&gt;Bold&lt;/B&gt;');
+    });
+
+    it('prefers the label method over the case name', function (): void {
+        $formatter = new EnumFormatter(TestLabelledEnum::class);
+
+        expect($formatter->format('pending_review'))->toBe('Awaiting &lt;review&gt;');
     });
 
     it('falls back to Str::headline for unknown enum value', function (): void {
