@@ -249,7 +249,7 @@ trait SupportsRelations
     {
         // cache key for the enabled cols
         $cacheKey = md5(json_encode($this->enabledCols) . $this->getCacheKey());
-        $withCacheKey = config('tall-datatables.cache_key') . '.with';
+        $withCacheKey = config('tall-datatables.cache_key') . SchemaInfo::WITH_CACHE_KEY_SUFFIX;
         $cached = Cache::get($withCacheKey);
 
         // Clear stale cache from pre-SchemaInfo era that may contain unserializable objects
@@ -316,6 +316,7 @@ trait SupportsRelations
 
         $modelBase = app($this->getModel());
         $with = ['__root__' => []];
+        $relationTables = [];
         $modelInfos = [];
         $filterable = [];
         $sortable = [];
@@ -366,6 +367,11 @@ trait SupportsRelations
                     $model = $relationInstance->getRelated();
                 } catch (Throwable) {
                     $model = null;
+                }
+
+                // a MorphTo resolves to several related tables, so its columns must stay unqualified
+                if ($model && ! $relationInstance instanceof MorphTo) {
+                    $relationTables[$path] = $model->getTable();
                 }
 
                 if ($relationInstance instanceof BelongsTo) {
@@ -450,7 +456,16 @@ trait SupportsRelations
         $select = Arr::pull($with, '__root__');
         $select = array_map(fn ($field) => $modelBase->getTable() . '.' . $field, $select);
         foreach ($with as $name => $item) {
-            $with[$name] = $name . ':' . implode(',', array_values(array_unique($item)));
+            $columns = array_values(array_unique($item));
+            $table = $relationTables[$name] ?? null;
+
+            // relations that join (through, pivot) select from more than one table,
+            // so an unqualified column like "id" would be ambiguous
+            if ($table && $columns !== ['*']) {
+                $columns = array_map(fn ($field) => $table . '.' . $field, $columns);
+            }
+
+            $with[$name] = $name . ':' . implode(',', $columns);
         }
 
         $returnValue = [
@@ -464,7 +479,7 @@ trait SupportsRelations
         ];
 
         Cache::put(
-            config('tall-datatables.cache_key') . '.with',
+            $withCacheKey,
             array_merge($cached ?? [], [$cacheKey => $returnValue])
         );
 
