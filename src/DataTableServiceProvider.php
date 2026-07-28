@@ -133,7 +133,11 @@ class DataTableServiceProvider extends ServiceProvider
                         $options['highlightPostTag'] = '</mark>';
                     }
 
-                    $searchResult = $this->options($options)->raw();
+                    // Merge into any options already on the builder (e.g. the hybrid
+                    // semantic-search settings a model sets in its search() override).
+                    // Scout's options() replaces the whole array, so overwriting it here
+                    // would silently drop those and fall back to a keyword-only search.
+                    $searchResult = $this->options(array_merge($this->options, $options))->raw();
 
                     $hits = Arr::keyBy(data_get($searchResult, 'hits'), $keyName);
                     unset($searchResult['hits']);
