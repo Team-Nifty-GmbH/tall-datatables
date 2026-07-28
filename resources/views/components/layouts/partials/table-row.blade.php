@@ -34,19 +34,26 @@
             class="border-b border-gray-100 px-3 py-2.5 text-sm whitespace-nowrap dark:border-secondary-700/50/50"
         >
             <div
-                {{ $selectAttributes->merge(['class' => 'flex justify-center']) }}
+                {{ $selectAttributes->merge(['class' => 'flex items-center justify-center gap-1']) }}
             >
                 <x-checkbox
                     x-on:click.stop="$wire.toggleSelected({{ json_encode($record[$modelKeyName] ?? $index) }})"
                     x-bind:checked="$wire.selected.includes('*') ? !$wire.wildcardSelectExcluded.includes({{ json_encode($record[$modelKeyName] ?? $index) }}) : $wire.selected.includes({{ json_encode($record[$modelKeyName] ?? $index) }})"
                     sm
                 />
+                @isset($record['_relevance'])
+                    <x-badge flat light color="emerald" :text="$record['_relevance'] . '%'" />
+                @endisset
             </div>
         </td>
     @else
         <td
-            class="max-w-0 border-b border-gray-100 text-sm whitespace-nowrap dark:border-secondary-700/50"
-        ></td>
+            class="max-w-0 border-b border-gray-100 px-1 text-sm whitespace-nowrap dark:border-secondary-700/50"
+        >
+            @isset($record['_relevance'])
+                <x-badge flat light color="emerald" :text="$record['_relevance'] . '%'" />
+            @endisset
+        </td>
     @endif
     @foreach ($enabledCols as $col)
         @php

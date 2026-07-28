@@ -544,6 +544,36 @@ describe('DataTableServiceProvider', function (): void {
                 ->toHaveKey('ids')
                 ->toHaveKey('searchResult');
         });
+
+        it('getScoutResults macro requests the ranking score and omits the threshold by default', function (): void {
+            if (! class_exists(Laravel\Scout\Builder::class)) {
+                $this->markTestSkipped('Scout not installed');
+            }
+
+            config(['scout.driver' => 'collection', 'tall-datatables.scout.ranking_score_threshold' => null]);
+
+            $builder = Tests\Fixtures\Models\SearchablePost::search('Scout');
+            $builder->getScoutResults();
+
+            expect($builder->options)
+                ->toHaveKey('showRankingScore', true)
+                ->not->toHaveKey('rankingScoreThreshold');
+        });
+
+        it('getScoutResults macro applies the ranking score threshold from config', function (): void {
+            if (! class_exists(Laravel\Scout\Builder::class)) {
+                $this->markTestSkipped('Scout not installed');
+            }
+
+            config(['scout.driver' => 'collection', 'tall-datatables.scout.ranking_score_threshold' => 0.5]);
+
+            $builder = Tests\Fixtures\Models\SearchablePost::search('Scout');
+            $builder->getScoutResults();
+
+            expect($builder->options)
+                ->toHaveKey('showRankingScore', true)
+                ->toHaveKey('rankingScoreThreshold', 0.5);
+        });
     });
 
     describe('Blade directive rendering via Blade::compileString', function (): void {

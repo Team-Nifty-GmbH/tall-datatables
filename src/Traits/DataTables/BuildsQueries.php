@@ -522,6 +522,13 @@ trait BuildsQueries
                         $itemArray[$key] = ['raw' => $raw, 'display' => $highlighted];
                     }
 
+                    // Semantic (hybrid) search score, 0..1, only present when the model's
+                    // search() requested it. Expose it as a rounded percent for display.
+                    $score = data_get($query->hits, $item->getKey() . '._rankingScore');
+                    if ($score !== null) {
+                        $itemArray['_relevance'] = (int) round($score * 100);
+                    }
+
                     return $itemArray;
                 }
             );

@@ -2394,6 +2394,35 @@ describe('buildSearch with Scout Searchable model', function (): void {
             ->toHaveKey('raw');
         expect($data['data'][0]['title']['display'])->toContain('<mark>');
     });
+
+    it('exposes _relevance as a rounded percent when a hit carries a _rankingScore', function (): void {
+        config(['scout.driver' => 'collection']);
+
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Semantic Match Post']);
+
+        $component = Livewire::test(Tests\Fixtures\Livewire\RankingScoreSearchableDataTable::class);
+        $component->set('search', 'Semantic');
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['data'])->not->toBeEmpty();
+        expect($data['data'][0]['_relevance'])->toBe(88);
+    });
+
+    it('omits _relevance when no _rankingScore is present on the hit', function (): void {
+        config(['scout.driver' => 'collection']);
+
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Scout Match Post']);
+
+        $component = Livewire::test(Tests\Fixtures\Livewire\IdEnabledSearchableDataTable::class);
+        $component->set('search', 'Scout');
+        $component->call('loadData');
+
+        $data = $component->instance()->getDataForTesting();
+
+        expect($data['data'][0])->not->toHaveKey('_relevance');
+    });
 });
 
 // ---------------------------------------------------------------------------
