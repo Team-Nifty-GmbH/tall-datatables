@@ -55,10 +55,13 @@
                 . (preg_match("/^'([^']*)'$/", $cellAttributes->get('x-bind:class', ''), $m) ? $m[1] : '')
             );
         @endphp
+        {{-- bound through Alpine like the head and filter cells, so toggling a sticky column takes effect without a re-render --}}
         <x-tall-datatables::table.cell
             :use-wire-navigate="$useWireNavigate"
-            :class="implode(' ', array_filter([in_array($col, $this->stickyCols) ? 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50' : '', $cellAttrClasses]))"
-            :style="in_array($col, $this->stickyCols) ? 'z-index: 2' : ''"
+            :data-column="$col"
+            :class="$cellAttrClasses"
+            x-bind:class="($wire.stickyCols || []).includes({{ \Illuminate\Support\Js::from($col) }}) ? 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50' : ''"
+            x-bind:style="($wire.stickyCols || []).includes({{ \Illuminate\Support\Js::from($col) }}) ? 'z-index: 2' : ''"
             :href="(($allowSoftDeletes && ($record['deleted_at'] ?? null)) ? null : ($record['href'] ?? null))"
         >
             @php

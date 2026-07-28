@@ -13,7 +13,7 @@
     }
 @endphp
 <td
-    {{ $attributes->only(['class', 'x-bind:class', 'x-bind:style'])->merge(['class' => $defaultClasses]) }}
+    {{ $attributes->only(['class', 'x-bind:class', 'x-bind:style', 'data-column'])->merge(['class' => $defaultClasses]) }}
 >
     @if($hasStaticHref)
         <a
