@@ -120,7 +120,16 @@ class DataTableServiceProvider extends ServiceProvider
                     $options = [
                         'limit' => $perPage,
                         'offset' => max(($page - 1) * $perPage, 0),
+                        // Request the per-hit relevance score so semantic (hybrid) search
+                        // results can be surfaced in the UI. Cheap to request even when a
+                        // model only ever does keyword search.
+                        'showRankingScore' => true,
                     ];
+
+                    $rankingScoreThreshold = config('tall-datatables.scout.ranking_score_threshold');
+                    if (is_numeric($rankingScoreThreshold)) {
+                        $options['rankingScoreThreshold'] = (float) $rankingScoreThreshold;
+                    }
 
                     if ($highlight === []) {
                         // No highlighting requested (e.g. an over-fetch that only needs the

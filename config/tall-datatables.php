@@ -58,4 +58,20 @@ return [
     'models' => [
         'datatable_user_setting' => TeamNiftyGmbH\DataTable\Models\DatatableUserSetting::class,
     ],
+
+    'scout' => [
+        /*
+        |----------------------------------------------------------------------
+        | Ranking Score Threshold
+        |----------------------------------------------------------------------
+        |
+        | When a model uses Meilisearch hybrid (semantic) search, results carry
+        | a per-hit relevance score between 0 and 1. Set this to a float in that
+        | range to drop hits below the threshold from the results. Leave it
+        | null (default) to disable filtering and keep all hits.
+        |
+        */
+
+        'ranking_score_threshold' => env('TALL_DATATABLES_RANKING_SCORE_THRESHOLD'),
+    ],
 ];
