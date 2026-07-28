@@ -18,6 +18,12 @@ use UnitEnum;
 
 class SchemaInfo
 {
+    /**
+     * Bump the suffix whenever the cached "with" payload changes, so an upgrade
+     * does not keep serving entries built by an older version of the package.
+     */
+    public const WITH_CACHE_KEY_SUFFIX = '.with.v2';
+
     /** @var array<string, static> */
     protected static array $cache = [];
 
@@ -37,6 +43,8 @@ class SchemaInfo
         $cacheKey = config('tall-datatables.cache_key');
         Cache::forget($cacheKey . '.modelInfo');
         Cache::forget($cacheKey . '.modelFinder');
+        Cache::forget($cacheKey . static::WITH_CACHE_KEY_SUFFIX);
+        // drop the pre-v2 bucket as well so upgrades leave nothing behind
         Cache::forget($cacheKey . '.with');
     }
 
