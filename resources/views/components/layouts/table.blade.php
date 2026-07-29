@@ -27,6 +27,9 @@
         <table class="dark:bg-secondary-800 min-w-full border-collapse bg-white text-sm text-gray-500 dark:text-gray-50"
             x-bind:class="Object.keys($wire.colWidths || {}).length > 0 ? 'table-fixed' : 'table-auto'"
         >
+            @php
+                $hasRelevance = collect($this->data['data'] ?? [])->contains(fn ($r) => isset($r['_relevance']));
+            @endphp
             <thead style="z-index: 9">
                 @if ($hasHead)
                     <tr>
@@ -51,6 +54,9 @@
                             </x-tall-datatables::table.head-cell>
                         @else
                             <th class="max-w-0"></th>
+                        @endif
+                        @if ($hasRelevance)
+                            <x-tall-datatables::table.head-cell class="w-16 whitespace-nowrap">{{ __('Score') }}</x-tall-datatables::table.head-cell>
                         @endif
                         <template x-for="col in $wire.enabledCols" x-bind:key="col">
                             <x-tall-datatables::table.head-cell
@@ -202,6 +208,9 @@
                                         </div>
                                     </template>
                                 </td>
+                                @if ($hasRelevance)
+                                    <td class="dark:bg-secondary-700/30 border-b border-l border-gray-100 bg-gray-50/50 px-0 py-0 dark:border-secondary-700/50"></td>
+                                @endif
                                 <template x-for="col in $wire.enabledCols" x-bind:key="'filter-' + rowIndex + '-' + col">
                                     <td
                                         class="group/cell dark:bg-secondary-700/30 border-b border-l border-gray-100 bg-gray-50/50 px-0 py-0 dark:border-secondary-700/50"
@@ -336,6 +345,9 @@
                 </tr>
                 @island(name: 'body')
                 @php extract($this->getIslandData()); @endphp
+                @php
+                    $hasRelevance = collect($this->data['data'] ?? [])->contains(fn ($r) => isset($r['_relevance']));
+                @endphp
                 @if (! $this->initialized)
                     <tr>
                         <td colspan="100%" class="h-24 w-24 p-8"></td>
@@ -379,6 +391,7 @@
                             :record="$record"
                             :index="$index"
                             :is-selectable="$isSelectable"
+                            :has-relevance="$hasRelevance"
                             :select-value="$selectValue"
                             :select-attributes="$selectAttributes"
                             :row-attributes="$rowAttributes"
