@@ -2,6 +2,7 @@
     'record' => [],
     'index' => 0,
     'isSelectable' => false,
+    'hasRelevance' => false,
     'selectValue' => 'record.id',
     'selectAttributes' => new \Illuminate\View\ComponentAttributeBag(),
     'rowAttributes' => new \Illuminate\View\ComponentAttributeBag(),
@@ -41,17 +42,19 @@
                     x-bind:checked="$wire.selected.includes('*') ? !$wire.wildcardSelectExcluded.includes({{ json_encode($record[$modelKeyName] ?? $index) }}) : $wire.selected.includes({{ json_encode($record[$modelKeyName] ?? $index) }})"
                     sm
                 />
-                @isset($record['_relevance'])
-                    <x-badge flat light color="emerald" :text="$record['_relevance'] . '%'" />
-                @endisset
             </div>
         </td>
     @else
         <td
             class="max-w-0 border-b border-gray-100 px-1 text-sm whitespace-nowrap dark:border-secondary-700/50"
+        ></td>
+    @endif
+    @if ($hasRelevance)
+        <td
+            class="border-b border-gray-100 px-2 py-2.5 text-sm whitespace-nowrap dark:border-secondary-700/50"
         >
             @isset($record['_relevance'])
-                <x-badge flat light color="emerald" :text="$record['_relevance'] . '%'" />
+                <x-badge flat light color="emerald" :text="$record['_relevance'] . '%'" sm />
             @endisset
         </td>
     @endif
