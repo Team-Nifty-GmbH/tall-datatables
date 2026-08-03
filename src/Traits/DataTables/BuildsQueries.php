@@ -131,8 +131,12 @@ trait BuildsQueries
                     }
                 }
             } elseif (in_array($filter['operator'], ['is null', 'is not null'])) {
+                // Qualify so the column stays unambiguous inside relation subqueries that join
+                $filter['column'] = $query->qualifyColumn($filter['column']);
                 $this->applyFilterWhereNull($query, $filter);
             } else {
+                $filter['column'] = $query->qualifyColumn($filter['column']);
+
                 try {
                     if ($filter['operator'] === 'between') {
                         if (is_array($filter['value']) && count($filter['value']) === 2) {
@@ -1039,7 +1043,8 @@ trait BuildsQueries
 
     private function isStringColumn(Builder $query, string $column): bool
     {
-        return SchemaInfo::forModel($query->getModel())->attribute($column)?->phpType === 'string';
+        return SchemaInfo::forModel($query->getModel())
+            ->attribute(Str::afterLast($column, '.'))?->phpType === 'string';
     }
 
     /**
@@ -1175,8 +1180,8 @@ trait BuildsQueries
     {
         $trimmed = trim($value);
 
-        // Support "is null" / "is not null" (case insensitive)
-        if (preg_match('/^(is\s+null|is\s+not\s+null)$/i', $trimmed, $matches)) {
+        // Support "is null" / "is not null" (case insensitive, optionally quoted)
+        if (preg_match('/^["\']?(is\s+null|is\s+not\s+null)["\']?$/i', $trimmed, $matches)) {
             return [
                 'column' => $column,
                 'operator' => strtolower(preg_replace('/\s+/', ' ', $matches[1])),
