@@ -25,6 +25,7 @@ use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
 use TeamNiftyGmbH\DataTable\Formatters\ArrayFormatter;
 use TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry;
 use TeamNiftyGmbH\DataTable\Formatters\StringFormatter;
+use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
 use TeamNiftyGmbH\DataTable\Helpers\SessionFilter;
 use Throwable;
 
@@ -135,7 +136,18 @@ trait BuildsQueries
                 try {
                     if ($filter['operator'] === 'between') {
                         if (is_array($filter['value']) && count($filter['value']) === 2) {
-                            $query->whereBetween($filter['column'], $filter['value']);
+                            if (
+                                is_numeric($filter['value'][0])
+                                && is_numeric($filter['value'][1])
+                                && $this->isStringColumn($query, $filter['column'])
+                            ) {
+                                $query->whereRaw(
+                                    $this->numericColumnExpression($query, $filter['column']) . ' between ? and ?',
+                                    [$filter['value'][0], $filter['value'][1]]
+                                );
+                            } else {
+                                $query->whereBetween($filter['column'], $filter['value']);
+                            }
                         }
                     } elseif (in_array($filter['operator'], ['starts with', 'ends with', 'contains', 'does not contain'])) {
                         $value = $filter['value'] ?? '';
@@ -159,7 +171,18 @@ trait BuildsQueries
                         $value = $filter['value'] ?? null;
 
                         if ($column && $operator && ($value !== null && $value !== '')) {
-                            $query->where($column, $operator, $value);
+                            if (
+                                in_array($operator, ['<', '<=', '>', '>='])
+                                && is_numeric($value)
+                                && $this->isStringColumn($query, $column)
+                            ) {
+                                $query->whereRaw(
+                                    $this->numericColumnExpression($query, $column) . ' ' . $operator . ' ?',
+                                    [$value]
+                                );
+                            } else {
+                                $query->where($column, $operator, $value);
+                            }
                         }
                     }
                 } catch (Throwable) {
@@ -1014,6 +1037,11 @@ trait BuildsQueries
         return str_contains($col, 'date') || str_ends_with($col, '_at');
     }
 
+    private function isStringColumn(Builder $query, string $column): bool
+    {
+        return SchemaInfo::forModel($query->getModel())->attribute($column)?->phpType === 'string';
+    }
+
     /**
      * Migrate old userFilters format (with 'text' key) to unified format.
      */
@@ -1102,6 +1130,15 @@ trait BuildsQueries
         }
 
         return $trimmed;
+    }
+
+    /**
+     * Text columns compare lexicographically, so '80331' <= '9999' would be true.
+     * Cast them so a numeric filter value is compared as a number.
+     */
+    private function numericColumnExpression(Builder $query, string $column): string
+    {
+        return 'cast(' . $query->getGrammar()->wrap($query->qualifyColumn($column)) . ' as decimal(20,6))';
     }
 
     private function parseDateValue(string $value): ?string
