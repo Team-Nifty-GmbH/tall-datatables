@@ -58,9 +58,28 @@
                         @if ($hasRelevance)
                             <x-tall-datatables::table.head-cell class="w-16 whitespace-nowrap">{{ __('Score') }}</x-tall-datatables::table.head-cell>
                         @endif
+                        @php
+                            $stickyHeadClass = <<<'JS'
+                                ($wire.stickyCols || []).includes(col) ? 'left-0 z-10 border-r' : ''
+                            JS;
+
+                            // Dragging a column pins its width and switches the
+                            // table to the fixed layout, where the pinned number
+                            // decides and the content cannot widen the column. A
+                            // label too long for it would only make the heading
+                            // row taller, so it is cut off there instead.
+                            $pinnedHeadClass = <<<'JS'
+                                Object.keys($wire.colWidths || {}).length !== 0 ? 'overflow-hidden text-ellipsis whitespace-nowrap' : ''
+                            JS;
+
+                            $headColClass = $this::$wrapColumnLabels
+                                ? '[' . trim($stickyHeadClass) . ', ' . trim($pinnedHeadClass) . '].filter(Boolean).join(\' \')'
+                                : trim($stickyHeadClass);
+                        @endphp
                         <template x-for="col in $wire.enabledCols" x-bind:key="col">
                             <x-tall-datatables::table.head-cell
-                                x-bind:class="($wire.stickyCols || []).includes(col) ? 'left-0 z-10 border-r' : ''"
+                                :wrap="$this::$wrapColumnLabels"
+                                x-bind:class="{!! $headColClass !!}"
                                 x-bind:style="[($wire.stickyCols || []).includes(col) ? 'z-index: 2' : 'z-index: 1', ($wire.colWidths || {})[col] ? 'width: ' + ($wire.colWidths || {})[col] + 'px' : ''].filter(Boolean).join('; ')"
                                 :attributes="$tableHeadColAttributes"
                             >
@@ -70,7 +89,13 @@
                                         x-bind:class="($wire.sortable || []).includes(col) || ($wire.sortable || []).includes('*') ? 'cursor-pointer' : ''"
                                         x-on:click="(($wire.sortable || []).includes(col) || ($wire.sortable || []).includes('*')) && $wire.sortTable(col, $event.shiftKey)"
                                     >
-                                        <span x-text="($wire.colLabels || {})[col] || col.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')).join(' → ')"></span>
+                                        {{-- A cut off label has to stay readable somehow, so it names itself on hover. --}}
+                                        <span
+                                            @if ($this::$wrapColumnLabels)
+                                                x-bind:title="($wire.colLabels || {})[col] || col.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')).join(' → ')"
+                                            @endif
+                                            x-text="($wire.colLabels || {})[col] || col.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')).join(' → ')"
+                                        ></span>
                                         <template x-if="$wire.userOrderBy === col">
                                             <span class="flex items-center gap-0.5">
                                                 <x-icon
