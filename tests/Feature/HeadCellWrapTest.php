@@ -42,8 +42,10 @@ describe('Column label wrapping', function (): void {
         $component = Livewire::test(WrappedLabelsPostDataTable::class);
         $component->call('loadData');
 
+        // The static class list is what decides whether the label may wrap. The
+        // Alpine binding does mention nowrap, but only for a dragged column.
         expect(WrappedLabelsPostDataTable::$wrapColumnLabels)->toBeTrue()
-            ->and(columnHeadCell($component->html()))->not->toContain('whitespace-nowrap');
+            ->and(columnHeadCell($component->html()))->not->toContain('table-cell whitespace-nowrap px-3');
     });
 
     // Only the column headings are affected. The cells around them, the select
@@ -55,6 +57,34 @@ describe('Column label wrapping', function (): void {
         $component->call('loadData');
 
         expect($component->html())->toContain('relative table-cell whitespace-nowrap px-3');
+    });
+
+    // A dragged column pins its width, so a long label cannot widen it there and
+    // would only make the heading row taller. It is cut off instead, and names
+    // itself on hover so it stays readable.
+    it('cuts a label off rather than wrapping it once a width has been dragged', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(WrappedLabelsPostDataTable::class);
+        $component->call('loadData');
+
+        $html = $component->html();
+
+        expect(columnHeadCell($html))
+            ->toContain('colWidths')
+            ->toContain('overflow-hidden text-ellipsis whitespace-nowrap')
+            ->and($html)->toContain('x-bind:title=');
+    });
+
+    it('does not cut labels off on a table that did not opt in', function (): void {
+        createTestPost(['user_id' => $this->user->getKey()]);
+
+        $component = Livewire::test(PostDataTable::class);
+        $component->call('loadData');
+
+        expect(columnHeadCell($component->html()))
+            ->not->toContain('text-ellipsis')
+            ->and($component->html())->not->toContain('x-bind:title=');
     });
 
     it('renders a head cell on one line unless it is told to wrap', function (): void {
