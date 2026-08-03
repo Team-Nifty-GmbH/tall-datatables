@@ -35,6 +35,20 @@ class DataTable extends Component
     use BuildsQueries, Interactions, StoresSettings, SupportsAggregation, SupportsExporting, SupportsGrouping,
         SupportsRelations, SupportsSelecting, SupportsSorting;
 
+    /**
+     * Whether a column label may wrap over several lines.
+     *
+     * Off by default. With the automatic layout the widest thing in a column
+     * decides its width, and a label on a single line is unbreakable, so a
+     * column is never narrower than its own heading however short its values
+     * are. Turning this on lets the values decide the width again and fits more
+     * of a table on screen, at the cost of a taller heading row.
+     *
+     * Static on purpose: it describes the table rather than its state, so it
+     * stays out of the payload and cannot be set from the browser.
+     */
+    public static bool $wrapColumnLabels = false;
+
     public string $activeLayout = '';
 
     public array $appends = [];

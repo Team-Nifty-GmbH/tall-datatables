@@ -60,6 +60,7 @@
                         @endif
                         <template x-for="col in $wire.enabledCols" x-bind:key="col">
                             <x-tall-datatables::table.head-cell
+                                :wrap="$this::$wrapColumnLabels"
                                 x-bind:class="($wire.stickyCols || []).includes(col) ? 'left-0 z-10 border-r' : ''"
                                 x-bind:style="[($wire.stickyCols || []).includes(col) ? 'z-index: 2' : 'z-index: 1', ($wire.colWidths || {})[col] ? 'width: ' + ($wire.colWidths || {})[col] + 'px' : ''].filter(Boolean).join('; ')"
                                 :attributes="$tableHeadColAttributes"
