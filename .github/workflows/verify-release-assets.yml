@@ -1,0 +1,56 @@
+name: Verify Release Assets
+
+# The Release workflow builds the frontend and force-adds dist/ into the release
+# commit, because dist/ is git ignored on main. A tag or release created by hand
+# therefore ships without the built CSS and JS, and every project installing that
+# version gets a data table without styling or scripts.
+#
+# This guard runs on every version tag and every published release, and removes
+# the release and the tag again if the built assets are missing.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    name: Verify built assets are in the tag
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || github.ref_name }}
+
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref_name }}
+
+      - name: Verify built assets
+        id: verify
+        run: |
+          shopt -s nullglob
+          js=(dist/build/assets/*.js)
+          css=(dist/build/assets/*.css)
+
+          if [ ${#js[@]} -eq 0 ] || [ ${#css[@]} -eq 0 ]; then
+            echo "::error::$TAG does not contain built frontend assets in dist/build/assets."
+            exit 1
+          fi
+
+          echo "$TAG contains ${#js[@]} script and ${#css[@]} style asset(s)."
+
+      - name: Remove the incomplete release and tag
+        if: failure() && steps.verify.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete "$TAG" --yes --cleanup-tag \
+            || git push --delete origin "$TAG"
+
+          echo "::error::Removed $TAG. Releases must be created through the Release workflow (Actions, Release, Run workflow), never with git tag or gh release create."
