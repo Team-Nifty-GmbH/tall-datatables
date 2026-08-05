@@ -40,9 +40,17 @@ trait SupportsSelecting
 
     public function getSelectedValues(): array
     {
+        // Narrow the query down to the key column before plucking. buildSearch() leaves a full
+        // select list (and possibly withCount subselects) on the builder, and pluck() keeps an
+        // existing select list instead of replacing it, so every column of every matching row
+        // would be fetched. On large result sets that exhausts memory. Ordering is dropped for
+        // the same reason: it is meaningless for a list of keys and may reference a select alias
+        // that no longer exists.
         return in_array('*', $this->selected)
             ? $this->buildSearch(unpaginated: true)
                 ->whereKeyNot($this->wildcardSelectExcluded)
+                ->select($this->modelTable . '.' . $this->modelKeyName)
+                ->reorder()
                 ->pluck($this->modelKeyName)
                 ->toArray()
             : $this->selected;
