@@ -158,8 +158,25 @@
                                     @endif
                                 </div>
                                 @if ($isResizable)
+                                    {{--
+                                        A hand on a mouse does not land on a
+                                        hairline, and a list read at seventy
+                                        percent zoom gets less than one device
+                                        pixel per CSS pixel, so the four pixels
+                                        this used to be were not a small target
+                                        but an unreachable one, and the drag
+                                        read as a feature that was not there.
+
+                                        It stays inside the cell rather than
+                                        straddling the border: a column with a
+                                        pinned width has its cell clipped, and
+                                        anything hanging over the edge would be
+                                        cut off. Ten pixels still fall entirely
+                                        within the cell's right padding, so no
+                                        label is ever covered.
+                                    --}}
                                     <div
-                                        class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400 transition-colors"
+                                        class="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-primary-400 transition-colors"
                                         x-on:mousedown="startResize($event, col)"
                                     ></div>
                                 @endif
