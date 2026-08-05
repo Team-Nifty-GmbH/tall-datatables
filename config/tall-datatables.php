@@ -44,6 +44,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Max Relation Column To-Many Hops
+    |--------------------------------------------------------------------------
+    |
+    | Every to-many hop in a column path multiplies the loaded records by the cap
+    | above, so orders.positions.tags.name already pulls 50^3 records per row. A
+    | relation tree also lets a user walk a self referencing relation in a circle,
+    | which never terminates on its own. This caps how many to-many hops a single
+    | column path may contain, columns beyond it are dropped.
+    | Set to 0 to disable the cap.
+    |
+    */
+
+    'max_relation_column_to_many_hops' => env('TALL_DATATABLES_MAX_RELATION_COLUMN_TO_MANY_HOPS', 1),
+
+    /*
+    |--------------------------------------------------------------------------
     | Search Route
     |--------------------------------------------------------------------------
     |
