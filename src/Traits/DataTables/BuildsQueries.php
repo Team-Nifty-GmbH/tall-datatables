@@ -105,6 +105,24 @@ trait BuildsQueries
                     $this->applyFilterWhereHas($query, $filter['relation']);
                 } elseif ($filter['value'] === '%!*%') {
                     $this->applyFilterWhereDoesntHave($query, $filter['relation']);
+                } elseif (($filter['operator'] ?? null) === 'is null') {
+                    // A missing relation has no row to test, so a plain whereHas would drop
+                    // exactly the records this filter looks for.
+                    try {
+                        $query->where(function (Builder $subQuery) use ($type, $filter): void {
+                            $relation = $filter['relation'];
+                            unset($filter['relation']);
+
+                            $subQuery->whereDoesntHave($relation)
+                                ->orWhereHas($relation, function (Builder $relationQuery) use ($type, $filter) {
+                                    $this->addFilter($relationQuery, $type, $filter);
+
+                                    return $relationQuery;
+                                });
+                        });
+                    } catch (BadMethodCallException) {
+                        // Relation does not exist on model — skip this filter
+                    }
                 } elseif (array_key_exists($filter['operator'] ?? '', $negatedRelationOperators)) {
                     $filter['operator'] = $negatedRelationOperators[$filter['operator']];
 
