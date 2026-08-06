@@ -61,7 +61,7 @@ trait ExportsData
 
             if (! is_null($value) && $formatter) {
                 $value = is_array($value)
-                    ? strip_tags($formatter->format($value, $rowArray))
+                    ? $this->toPlainText($formatter->format($value, $rowArray))
                     : $this->formatExportValue($value, $formatter, $rowArray);
             }
 
@@ -124,6 +124,16 @@ trait ExportsData
             return $value ? __('Yes') : __('No');
         }
 
-        return strip_tags($formatter->format($value, $context));
+        return $this->toPlainText($formatter->format($value, $context));
+    }
+
+    /**
+     * Formatters escape their output for html. An exported cell is plain text, so the entities
+     * have to be turned back into the characters the user actually typed. Tags are stripped
+     * first, otherwise decoding would reintroduce markup that was deliberately escaped.
+     */
+    protected function toPlainText(string $value): string
+    {
+        return html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5);
     }
 }
