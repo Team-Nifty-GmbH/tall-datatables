@@ -11,6 +11,7 @@ return new class() extends Migration
         Schema::create('posts', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('parent_id')->nullable()->constrained('posts')->nullOnDelete();
             $table->string('title');
             $table->text('content')->nullable();
             $table->decimal('price', 10, 2)->nullable();

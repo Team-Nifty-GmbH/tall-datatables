@@ -197,7 +197,20 @@ trait SupportsRelations
         // Start with the columns from the main model
         $selects = [$model->getTable() . '.*'];
 
+        // every table the query already reaches, so a hop that lands on one of them
+        // gets an alias instead of joining the same name twice. Joins from earlier
+        // calls count too, a multi sort walks this method once per column
+        $usedTables = [$model->getTable()];
+        foreach ($query->getQuery()->joins ?? [] as $join) {
+            if (is_string($join->table)) {
+                $usedTables[] = Str::contains($join->table, ' as ')
+                    ? Str::afterLast($join->table, ' as ')
+                    : $join->table;
+            }
+        }
+
         $relatedTable = null;
+        $parentTable = $model->getTable();
         foreach ($relationParts as $relationName) {
             $relationName = Str::camel($relationName);
 
@@ -212,27 +225,31 @@ trait SupportsRelations
             }
 
             $relatedModel = $relation->getRelated();
-            $relatedTable = $relatedModel->getTable();
-            $parentTable = $model->getTable();
+            $relatedTable = $this->uniqueJoinAlias($relatedModel->getTable(), $usedTables);
+            $joinTarget = $relatedTable === $relatedModel->getTable()
+                ? $relatedTable
+                : $relatedModel->getTable() . ' as ' . $relatedTable;
 
             if (method_exists($relation, 'getForeignKeyName') && method_exists($relation, 'getOwnerKeyName')) {
                 // For belongsTo relationships
                 $foreignKey = $relation->getForeignKeyName();
                 $ownerKey = $relation->getOwnerKeyName();
-                $query->join($relatedTable, "$parentTable.$foreignKey", '=', "$relatedTable.$ownerKey");
+                $query->join($joinTarget, "$parentTable.$foreignKey", '=', "$relatedTable.$ownerKey");
             } elseif (method_exists($relation, 'getForeignKey') && method_exists($relation, 'getLocalKeyName')) {
                 // For hasOne and hasMany relationships
                 $foreignKey = $relation->getForeignKey();
                 $localKey = $relation->getLocalKeyName();
-                $query->join($relatedTable, "$relatedTable.$foreignKey", '=', "$parentTable.$localKey");
+                $query->join($joinTarget, "$relatedTable.$foreignKey", '=', "$parentTable.$localKey");
             } else {
                 return $model->getTable();
             }
 
             $selects[] = "$relatedTable.*";
+            $usedTables[] = $relatedTable;
 
             // Update the model to the next relation's model
             $model = $relatedModel;
+            $parentTable = $relatedTable;
         }
 
         // Add any additional selects specified by the user
@@ -617,5 +634,33 @@ trait SupportsRelations
         }
 
         return $modelRelations;
+    }
+
+    /**
+     * A relation hop that lands on a table the query already joined needs its own
+     * alias, otherwise the same name appears twice and the database rejects the
+     * statement. A self referencing relation such as a category pointing at its
+     * parent is the common case.
+     *
+     * @param  array<int, string>  $usedTables
+     */
+    protected function uniqueJoinAlias(string $table, array $usedTables): string
+    {
+        if (! in_array($table, $usedTables, true)) {
+            return $table;
+        }
+
+        $suffix = 2;
+        while (in_array($table . '_' . $suffix, $usedTables, true)) {
+            $suffix++;
+        }
+
+        $alias = $table . '_' . $suffix;
+
+        // identifiers are capped at 64 characters, a long relation path would be cut
+        // off and could collide with another hop
+        return strlen($alias) > 64
+            ? 'tdt_' . substr(md5($alias), 0, 16) . '_' . $suffix
+            : $alias;
     }
 }
