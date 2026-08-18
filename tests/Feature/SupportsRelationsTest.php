@@ -1173,6 +1173,81 @@ describe('addDynamicJoin', function (): void {
             ->toThrow(Exception::class, "Relation 'nonExistent' is not defined");
     });
 
+    it('aliases a self referencing relation instead of joining the same table twice', function (): void {
+        $parent = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Parent Post']);
+        createTestPost([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Child Post',
+            'parent_id' => $parent->getKey(),
+        ]);
+
+        $component = Livewire::test(PostWithRelationsDataTable::class);
+        $instance = $component->instance();
+
+        $query = Post::query();
+        $method = new ReflectionMethod($instance, 'addDynamicJoin');
+        // the joined table selects its own columns too, so the child title is read
+        // through a select of its own instead of the clobbered title column
+        $relatedTable = $method->invoke($instance, $query, 'parent', ['posts.title as child_title']);
+
+        // the hop lands on posts again, so it needs a name of its own
+        expect($relatedTable)->not->toBe('posts');
+
+        // without the alias the database rejects this with
+        // "1066 Not unique table/alias: 'posts'"
+        $results = $query->orderBy($relatedTable . '.title')->get();
+
+        expect($results)->toHaveCount(1)
+            ->and($results->first()->child_title)->toBe('Child Post');
+    });
+
+    it('aliases every hop of a path that walks the same table twice', function (): void {
+        $grandparent = createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Grandparent']);
+        $parent = createTestPost([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Parent',
+            'parent_id' => $grandparent->getKey(),
+        ]);
+        createTestPost([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Child',
+            'parent_id' => $parent->getKey(),
+        ]);
+
+        $component = Livewire::test(PostWithRelationsDataTable::class);
+        $instance = $component->instance();
+
+        $query = Post::query();
+        $method = new ReflectionMethod($instance, 'addDynamicJoin');
+        $relatedTable = $method->invoke($instance, $query, 'parent.parent', ['posts.title as child_title']);
+
+        $results = $query->orderBy($relatedTable . '.title')->get();
+
+        expect($results)->toHaveCount(1)
+            ->and($results->first()->child_title)->toBe('Child');
+    });
+
+    it('aliases a second join of the same table on one query, as a multi sort does', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'title' => 'Multi Sort Post']);
+
+        $component = Livewire::test(PostWithRelationsDataTable::class);
+        $instance = $component->instance();
+
+        $query = Post::query();
+        $method = new ReflectionMethod($instance, 'addDynamicJoin');
+
+        $first = $method->invoke($instance, $query, 'user');
+        $second = $method->invoke($instance, $query, 'user');
+
+        expect($first)->toBe('users')
+            ->and($second)->not->toBe('users');
+
+        // each sorted column walks addDynamicJoin once, so the second pass must not
+        // reuse the name the first pass already occupies
+        expect($query->orderBy($first . '.name')->orderBy($second . '.email')->get())
+            ->toHaveCount(1);
+    });
+
     it('adds additional selects when specified', function (): void {
         createTestPost(['user_id' => $this->user->getKey()]);
 

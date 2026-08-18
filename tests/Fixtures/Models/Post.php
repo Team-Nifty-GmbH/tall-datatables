@@ -49,6 +49,11 @@ class Post extends Model implements InteractsWithDataTables
         return '/posts/' . $this->getKey();
     }
 
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
     public function tags(): MorphToMany
     {
         return $this->morphToMany(Tag::class, 'taggable');
