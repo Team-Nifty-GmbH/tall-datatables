@@ -35,8 +35,21 @@ class RelationFinder
         $class = new ReflectionClass($model);
         $relationResolvers = $class->getProperty('relationResolvers');
 
+        // Eloquent resolves a dynamic relation up the parent chain, so a look up
+        // has to walk the same way: a package registers the relation on the core
+        // model while the container hands out a customised subclass. Whatever the
+        // child registers wins, an override must not be hidden by its parent.
+        $resolvers = $relationResolvers->getValue($model);
+        $resolved = [];
+
+        for ($current = get_class($model); $current; $current = get_parent_class($current)) {
+            foreach (data_get($resolvers, $current, []) as $relationName => $closure) {
+                $resolved[$relationName] ??= $closure;
+            }
+        }
+
         $relations = [];
-        foreach (data_get($relationResolvers->getValue($model), get_class($model), []) as $relationName => $closure) {
+        foreach ($resolved as $relationName => $closure) {
             try {
                 $relation = $closure($model);
                 $relations[] = new Relation(

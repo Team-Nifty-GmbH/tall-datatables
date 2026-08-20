@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Collection;
 use TeamNiftyGmbH\DataTable\Helpers\RelationFinder;
+use Tests\Fixtures\Models\Comment;
+use Tests\Fixtures\Models\ExtendedPost;
 use Tests\Fixtures\Models\Post;
 use Tests\Fixtures\Models\User;
 
@@ -80,7 +82,7 @@ describe('RelationFinder', function (): void {
         });
 
         it('includes relations on Comment model', function (): void {
-            $relations = RelationFinder::forModel(new Tests\Fixtures\Models\Comment());
+            $relations = RelationFinder::forModel(new Comment());
 
             expect($relations)->toBeInstanceOf(Collection::class);
             $names = $relations->pluck('name')->toArray();
@@ -114,7 +116,7 @@ describe('RelationFinder', function (): void {
         });
 
         it('handles model with no relation resolvers', function (): void {
-            $relations = RelationFinder::forModel(new Tests\Fixtures\Models\Comment());
+            $relations = RelationFinder::forModel(new Comment());
 
             expect($relations)->toBeInstanceOf(Collection::class)
                 ->not->toBeEmpty();
@@ -149,6 +151,34 @@ describe('RelationFinder', function (): void {
             $names = $relations->pluck('name')->toArray();
 
             expect($names)->toContain('dynamicRelation');
+        });
+
+        it('discovers a dynamic relation registered on a parent class', function (): void {
+            // A package registers on the core model, the container hands out the subclass.
+            Post::resolveRelationUsing('inheritedDynamicRelation', function ($model) {
+                return $model->belongsTo(User::class, 'user_id');
+            });
+
+            $relations = RelationFinder::forModel(new ExtendedPost());
+            $names = $relations->pluck('name')->toArray();
+
+            expect($names)->toContain('inheritedDynamicRelation');
+        });
+
+        it('lets the child class win over a relation of the same name on the parent', function (): void {
+            Post::resolveRelationUsing('overriddenDynamicRelation', function ($model) {
+                return $model->belongsTo(User::class, 'user_id');
+            });
+
+            ExtendedPost::resolveRelationUsing('overriddenDynamicRelation', function ($model) {
+                return $model->hasMany(Comment::class, 'post_id');
+            });
+
+            $relation = RelationFinder::forModel(new ExtendedPost())
+                ->firstWhere('name', 'overriddenDynamicRelation');
+
+            expect($relation)->not->toBeNull()
+                ->and($relation->related)->toBe(Comment::class);
         });
 
         it('filters out null results from methods that throw exceptions', function (): void {
