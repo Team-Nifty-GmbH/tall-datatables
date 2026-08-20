@@ -139,8 +139,22 @@ trait BuildsQueries
                 } else {
                     try {
                         $query->whereHas($filter['relation'], function (Builder $subQuery) use ($type, $filter) {
+                            $values = $this->foldedFilterValues($filter);
                             unset($filter['relation']);
-                            $this->addFilter($subQuery, $type, $filter);
+
+                            if ($values === null) {
+                                $this->addFilter($subQuery, $type, $filter);
+
+                                return $subQuery;
+                            }
+
+                            $subQuery->where(function (Builder $anyValue) use ($type, $filter, $values): void {
+                                foreach ($values as $value) {
+                                    $anyValue->orWhere(function (Builder $oneValue) use ($type, $filter, $value): void {
+                                        $this->addFilter($oneValue, $type, ['value' => $value] + $filter);
+                                    });
+                                }
+                            });
 
                             return $subQuery;
                         });
@@ -850,9 +864,6 @@ trait BuildsQueries
         });
     }
 
-    /**
-     * Apply fixed and user filters to the query.
-     */
     private function applyFilters(Builder $builder): Builder
     {
         // add fixed filters
@@ -877,7 +888,9 @@ trait BuildsQueries
         // Filters within a group are AND, groups are OR with each other
         if (! empty($this->userFilters)) {
             // Migrate old format if needed
-            $filters = $this->migrateFilterFormat($this->userFilters);
+            $filters = $this->collapseOrGroupsOnSameRelationColumn(
+                $this->migrateFilterFormat($this->userFilters)
+            );
 
             $builder->where(function ($query) use ($filters): void {
                 foreach (array_values($filters) as $index => $orFilter) {
@@ -1022,6 +1035,87 @@ trait BuildsQueries
                 $this->applyOrderBy($query, $sort['column'], $sort['asc']);
             }
         }
+    }
+
+    /**
+     * Apply fixed and user filters to the query.
+     */
+    /**
+     * A saved filter that asks for many values of the same relation column arrives as one
+     * OR group per value, and every group turns into its own EXISTS subquery over the whole
+     * table. Since they all test the same column the same way, one subquery accepting any
+     * of the values gives the same rows for a fraction of the work.
+     *
+     * Only positive tests may be folded. "not A" OR "not B" is not "not in (A, B)", and the
+     * relation wildcards have no value to collect, so those groups are left alone.
+     *
+     * @param  array<int, mixed>  $filters
+     * @return array<int, mixed>
+     */
+    private function collapseOrGroupsOnSameRelationColumn(array $filters): array
+    {
+        $collapsed = [];
+        $seen = [];
+
+        foreach (array_values($filters) as $group) {
+            $condition = is_array($group) && count($group) === 1 ? reset($group) : null;
+
+            if (
+                ! is_array($condition)
+                || ! is_string($condition['column'] ?? null)
+                || ! str_contains($condition['column'], '.')
+                || ! in_array($condition['operator'] ?? null, $this->foldableFilterOperators(), true)
+                || ! is_scalar($condition['value'] ?? null)
+                || in_array($condition['value'], ['%*%', '%!*%'], true)
+            ) {
+                $collapsed[] = $group;
+
+                continue;
+            }
+
+            $key = $condition['column'] . "\0" . $condition['operator'];
+
+            if (! isset($seen[$key])) {
+                $seen[$key] = count($collapsed);
+                $condition['value'] = [$condition['value']];
+                $collapsed[] = [$condition];
+
+                continue;
+            }
+
+            $existing = reset($collapsed[$seen[$key]]);
+            $existing['value'][] = $condition['value'];
+            $collapsed[$seen[$key]] = [$existing];
+        }
+
+        return $collapsed;
+    }
+
+    /**
+     * Operators whose OR conditions on one relation column may share a single subquery.
+     * Every one of them is a positive test, so "A or B" is the same as testing for both
+     * inside one subquery. A negated operator must not be folded: "not A" or "not B" is
+     * not "neither A nor B".
+     *
+     * @return array<int, string>
+     */
+    private function foldableFilterOperators(): array
+    {
+        return ['=', 'like', 'contains', 'starts with', 'ends with'];
+    }
+
+    /**
+     * The values a folded condition carries, or null for an ordinary single valued one.
+     *
+     * @param  array<string, mixed>  $filter
+     * @return array<int, mixed>|null
+     */
+    private function foldedFilterValues(array $filter): ?array
+    {
+        return in_array($filter['operator'] ?? null, $this->foldableFilterOperators(), true)
+            && is_array($filter['value'] ?? null)
+                ? array_values($filter['value'])
+                : null;
     }
 
     /**
