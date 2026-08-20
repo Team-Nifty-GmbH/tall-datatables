@@ -23,25 +23,7 @@
     class="mt-3 flex flex-col"
     x-data="{ showSelectedActions: false }"
 >
-    {{--
-        `overflow-x: auto` makes this div the scroll port for the sticky head
-        cells, and CSS forces `overflow-y` to `auto` along with it. The div is
-        never height bounded, so it has nothing to scroll vertically and
-        `top: 0` has nothing to stick to: the head scrolls off with the page.
-
-        A table that fits does not need the scroll port at all, so only take it
-        when the table is actually wider than the wrapper.
-    --}}
-    <div
-        class="relative shadow-sm sm:rounded-lg"
-        x-data="{ overflows: false }"
-        x-init="
-            const measure = () => overflows = $el.scrollWidth > $el.clientWidth;
-            measure();
-            new ResizeObserver(measure).observe($el);
-        "
-        x-bind:class="overflows && 'overflow-x-auto'"
-    >
+    <div class="relative overflow-x-auto shadow-sm sm:rounded-lg">
         <table class="dark:bg-secondary-800 min-w-full border-collapse bg-white text-sm text-gray-500 dark:text-gray-50"
             x-bind:class="Object.keys($wire.colWidths || {}).length > 0 ? 'table-fixed' : 'table-auto'"
         >
