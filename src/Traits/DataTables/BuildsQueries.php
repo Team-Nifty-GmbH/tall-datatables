@@ -663,13 +663,51 @@ trait BuildsQueries
         return $this->getModel()::search($this->search);
     }
 
+    /**
+     * Serializing a model walks every attribute and every loaded relation through the
+     * cast pipeline, and a table discards almost all of it again: ten columns out of a
+     * tree of several hundred attributes. Restricting visibility first leaves the same
+     * pipeline in charge of casts, accessors and date formatting, it just stops asking
+     * for values no column, formatter or append ever reads.
+     *
+     * Relations are serialized under their snake case name but filtered under the name
+     * they were loaded with, so both spellings belong in the set.
+     */
+    protected function getSerializableKeys(): array
+    {
+        $segments = array_map(
+            fn (string $key): string => Str::before($key, '.'),
+            array_merge(
+                $this->getReturnKeys(),
+                $this->enabledCols,
+                $this->getAppends(),
+                Arr::flatten($this->getLeftAppends()),
+                Arr::flatten($this->getRightAppends()),
+                Arr::flatten($this->getTopAppends()),
+                Arr::flatten($this->getBottomAppends()),
+            )
+        );
+
+        return array_values(
+            array_unique(
+                array_merge($segments, array_map(fn (string $key): string => Str::camel($key), $segments))
+            )
+        );
+    }
+
     protected function itemToArray($item): array
     {
         if ($appends = $this->getAppends()) {
             $item->append($appends);
         }
 
+        $visible = $item->getVisible();
+        $item->setVisible($this->getSerializableKeys());
+
         $rawArray = $item->toArray();
+
+        $item->setVisible($visible);
+
         $dotted = Arr::dot($rawArray);
         $itemArray = [];
         $returnKeys = $this->getReturnKeys();
