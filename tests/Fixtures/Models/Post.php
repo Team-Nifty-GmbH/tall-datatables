@@ -14,6 +14,8 @@ class Post extends Model implements InteractsWithDataTables
 {
     use SoftDeletes;
 
+    public static int $accessorCalls = 0;
+
     protected $guarded = ['id'];
 
     protected function casts(): array
@@ -37,6 +39,13 @@ class Post extends Model implements InteractsWithDataTables
     public function getDescription(): ?string
     {
         return substr($this->content, 0, 100);
+    }
+
+    public function getExpensiveAttribute(): string
+    {
+        static::$accessorCalls++;
+
+        return 'expensive';
     }
 
     public function getLabel(): ?string
