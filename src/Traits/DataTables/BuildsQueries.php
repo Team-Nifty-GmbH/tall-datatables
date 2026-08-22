@@ -672,8 +672,12 @@ trait BuildsQueries
      *
      * Relations are serialized under their snake case name but filtered under the name
      * they were loaded with, so both spellings belong in the set.
+     *
+     * A relation that was eager loaded belongs in it too, even when no column names
+     * it: getBuilder() pulling in ->with('currency') is a statement that the row needs
+     * that relation, and formatters read it off the serialized array.
      */
-    protected function getSerializableKeys(): array
+    protected function getSerializableKeys(Model $item): array
     {
         $segments = array_map(
             fn (string $key): string => Str::before($key, '.'),
@@ -681,6 +685,7 @@ trait BuildsQueries
                 $this->getReturnKeys(),
                 $this->enabledCols,
                 $this->getAppends(),
+                array_keys($item->getRelations()),
                 Arr::flatten($this->getLeftAppends()),
                 Arr::flatten($this->getRightAppends()),
                 Arr::flatten($this->getTopAppends()),
@@ -702,7 +707,7 @@ trait BuildsQueries
         }
 
         $visible = $item->getVisible();
-        $item->setVisible($this->getSerializableKeys());
+        $item->setVisible($this->getSerializableKeys($item));
 
         $rawArray = $item->toArray();
 
