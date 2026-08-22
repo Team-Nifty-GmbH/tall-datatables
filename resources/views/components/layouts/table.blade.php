@@ -153,7 +153,7 @@
                                         <x-icon
                                             name="funnel"
                                             class="h-4 w-4 cursor-pointer"
-                                            x-on:click="$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase())"
+                                            x-on:click="$wire.showSidebar().then(() => {$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase());})"
                                         />
                                     @endif
                                 </div>
@@ -197,7 +197,7 @@
                                         flat
                                         sm
                                         icon="cog-6-tooth"
-                                        x-on:click="$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase())"
+                                        x-on:click="$wire.showSidebar().then(() => {$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase());})"
                                     />
                                 </div>
                             </x-tall-datatables::table.head-cell>

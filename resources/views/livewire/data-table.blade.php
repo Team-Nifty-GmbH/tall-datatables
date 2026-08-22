@@ -1,6 +1,6 @@
 <x-tall-datatables::data-table-wrapper :attributes="$componentAttributes">
     @includeWhen($includeBefore, $includeBefore)
-    @if ($hasSidebar)
+    @if ($hasSidebar && $rendersSidebar)
         @teleport('body')
             <x-slide
                 id="data-table-sidebar-{{ strtolower($this->getId()) }}"
