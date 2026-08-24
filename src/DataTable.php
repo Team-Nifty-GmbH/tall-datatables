@@ -86,8 +86,6 @@ class DataTable extends Component
     #[Locked]
     public bool $hasSidebar = true;
 
-    public bool $rendersSidebar = false;
-
     public bool $hasStickyCols = true;
 
     public string $headline = '';
@@ -121,6 +119,8 @@ class DataTable extends Component
 
     #[Locked]
     public bool $positiveEmptyState = false;
+
+    public bool $rendersSidebar = false;
 
     public string $search = '';
 
@@ -209,11 +209,6 @@ class DataTable extends Component
     protected function getTableActions(): array
     {
         return [];
-    }
-
-    public function showSidebar(): void
-    {
-        $this->rendersSidebar = true;
     }
 
     #[Renderless]
@@ -836,6 +831,11 @@ class DataTable extends Component
         $this->rebuildTextFilterGroup();
         $this->cacheState();
         $this->loadData();
+    }
+
+    public function showSidebar(): void
+    {
+        $this->rendersSidebar = true;
     }
 
     #[Renderless]
