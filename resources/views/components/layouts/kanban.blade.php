@@ -71,6 +71,7 @@
                     color="secondary"
                     flat
                     sm
+                    loading="showSidebar"
                     icon="cog-6-tooth"
                     x-on:click="$wire.showSidebar().then(() => {$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase());})"
                 />

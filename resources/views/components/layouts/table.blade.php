@@ -153,6 +153,8 @@
                                         <x-icon
                                             name="funnel"
                                             class="h-4 w-4 cursor-pointer"
+                                            wire:target="showSidebar"
+                                            wire:loading.class="animate-spin"
                                             x-on:click="$wire.showSidebar().then(() => {$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase());})"
                                         />
                                     @endif
@@ -196,6 +198,7 @@
                                         color="secondary"
                                         flat
                                         sm
+                                        loading="showSidebar"
                                         icon="cog-6-tooth"
                                         x-on:click="$wire.showSidebar().then(() => {$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase());})"
                                     />

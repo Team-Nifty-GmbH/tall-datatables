@@ -26,11 +26,12 @@ describe('Global Default Columns', function (): void {
 
         it('renders button when gate is true', function (): void {
             Livewire::test(DefaultColumnsPostDataTable::class)
+                ->call('showSidebar')
                 ->assertSee(__('Set as Default'));
         });
 
         it('renders Set as Default button with dialog invoking saveDefaultColumns with bool flag (Livewire v4)', function (): void {
-            $html = Livewire::test(DefaultColumnsPostDataTable::class)->html();
+            $html = Livewire::test(DefaultColumnsPostDataTable::class)->call('showSidebar')->html();
 
             expect($html)->toContain('$wire.saveDefaultColumns(true)')
                 ->and($html)->toContain('$wire.saveDefaultColumns(false)')
@@ -38,7 +39,7 @@ describe('Global Default Columns', function (): void {
         });
 
         it('renders Reset Layout button calling the alpine wrapper, not $wire directly', function (): void {
-            $html = Livewire::test(DefaultColumnsPostDataTable::class)->html();
+            $html = Livewire::test(DefaultColumnsPostDataTable::class)->call('showSidebar')->html();
 
             // The alpine wrapper awaits $wire.resetLayout() and then pulls the
             // reset columns back into the sidebar. Calling $wire directly leaves

@@ -76,8 +76,8 @@
         <td
             class="{{ $cellClasses }}"
             data-column="{{ $col }}"
-            x-bind:class="{{ $cellSticky }} ? 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50' : ''"
-            x-bind:style="{{ $cellSticky }} ? 'z-index: 2' : ''"
+            x-bind:class="{!! $cellSticky !!} ? 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50' : ''"
+            x-bind:style="{!! $cellSticky !!} ? 'z-index: 2' : ''"
         >
             @if ($cellHref)
                 <a

@@ -33,6 +33,11 @@ describe('Reset layout', function (): void {
         $page->wait(2);
 
         $result = $page->script('async () => {
+            // The sidebar is rendered on first open, so it has to be requested
+            // before the options component exists at all.
+            await window.Livewire.all()[0].$wire.showSidebar();
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
             const el = document.querySelector(\'[x-data^="datatableOptions"]\');
 
             if (! el) {
