@@ -31,16 +31,24 @@
     {{ $rowAttributes->merge(['class' => 'group hover:bg-gray-50 dark:hover:bg-secondary-900/50 transition-colors']) }}
 >
     @if ($isSelectable)
+        @php
+            $recordKey = json_encode($record[$modelKeyName] ?? $index);
+        @endphp
         <td
             class="border-b border-gray-100 px-3 py-2.5 text-sm whitespace-nowrap dark:border-secondary-700/50/50"
         >
             <div
                 {{ $selectAttributes->merge(['class' => 'flex items-center justify-center gap-1']) }}
             >
-                <x-checkbox
-                    x-on:click.stop="$wire.toggleSelected({{ json_encode($record[$modelKeyName] ?? $index) }})"
-                    x-bind:checked="$wire.selected.includes('*') ? !$wire.wildcardSelectExcluded.includes({{ json_encode($record[$modelKeyName] ?? $index) }}) : $wire.selected.includes({{ json_encode($record[$modelKeyName] ?? $index) }})"
-                    sm
+                {{-- the tallstackui checkbox renders four views per row for a
+                     label, a position and an error slot this table never uses,
+                     so the input is emitted directly. RowCheckboxMarkupTest
+                     pins the classes against the component. --}}
+                <input
+                    type="checkbox"
+                    class="form-checkbox dark:border-dark-600 border-1 dark:bg-dark-800 rounded border-gray-300 bg-white ring-0 ring-offset-0 focus:ring-0 focus:ring-offset-0 h-4 w-4 text-primary-500 focus:ring-primary-500 dark:ring-offset-dark-900"
+                    x-on:click.stop="$wire.toggleSelected({{ $recordKey }})"
+                    x-bind:checked="$wire.selected.includes('*') ? !$wire.wildcardSelectExcluded.includes({{ $recordKey }}) : $wire.selected.includes({{ $recordKey }})"
                 />
             </div>
         </td>
