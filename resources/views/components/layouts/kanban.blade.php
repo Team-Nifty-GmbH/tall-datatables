@@ -71,8 +71,9 @@
                     color="secondary"
                     flat
                     sm
+                    loading="showSidebar"
                     icon="cog-6-tooth"
-                    x-on:click="$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase())"
+                    x-on:click="$wire.showSidebar().then(() => {$tsui.open.slide('data-table-sidebar-' + $wire.id.toLowerCase());})"
                 />
             @endif
         </div>
@@ -93,7 +94,14 @@
             $modelKeyName = $this->modelKeyName;
             $enabledCols = $this->enabledCols;
             $records = $this->data['data'] ?? [];
-            $grouped = collect($records)->groupBy(fn ($record) => (string) (is_array($record[$kanbanColumn] ?? null) ? $record[$kanbanColumn]['raw'] ?? '' : $record[$kanbanColumn] ?? ''));
+            $grouped = collect($records)->groupBy(function ($record) use ($kanbanColumn) {
+                $value = is_array($record[$kanbanColumn] ?? null)
+                    ? $record[$kanbanColumn]['raw'] ?? ''
+                    : $record[$kanbanColumn] ?? '';
+
+                // a bool lane column casts to '' for false, which matches no lane
+                return is_bool($value) ? (string) (int) $value : (string) $value;
+            });
         @endphp
 
         @if (empty($records))

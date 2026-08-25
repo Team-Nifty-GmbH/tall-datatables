@@ -120,6 +120,8 @@ class DataTable extends Component
     #[Locked]
     public bool $positiveEmptyState = false;
 
+    public bool $rendersSidebar = false;
+
     public string $search = '';
 
     public array $sessionFilter = [];
@@ -829,6 +831,11 @@ class DataTable extends Component
         $this->rebuildTextFilterGroup();
         $this->cacheState();
         $this->loadData();
+    }
+
+    public function showSidebar(): void
+    {
+        $this->rendersSidebar = true;
     }
 
     #[Renderless]

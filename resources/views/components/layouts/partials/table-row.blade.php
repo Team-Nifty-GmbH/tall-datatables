@@ -66,14 +66,28 @@
             );
         @endphp
         {{-- bound through Alpine like the head and filter cells, so toggling a sticky column takes effect without a re-render --}}
-        <x-tall-datatables::table.cell
-            :use-wire-navigate="$useWireNavigate"
-            :data-column="$col"
-            :class="$cellAttrClasses"
-            x-bind:class="($wire.stickyCols || []).includes({{ \Illuminate\Support\Js::from($col) }}) ? 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50' : ''"
-            x-bind:style="($wire.stickyCols || []).includes({{ \Illuminate\Support\Js::from($col) }}) ? 'z-index: 2' : ''"
-            :href="(($allowSoftDeletes && ($record['deleted_at'] ?? null)) ? null : ($record['href'] ?? null))"
+        @php
+            $cellHref = ($allowSoftDeletes && ($record['deleted_at'] ?? null)) ? null : ($record['href'] ?? null);
+            $cellClasses = \Illuminate\Support\Arr::toCssClasses([
+                'border-b border-gray-100 dark:border-secondary-700/50 text-sm p-0',
+                'whitespace-nowrap max-w-xs overflow-hidden text-ellipsis' => ! str_contains($cellAttrClasses, 'whitespace-'),
+                $cellAttrClasses => $cellAttrClasses !== '',
+            ]);
+            $cellSticky = '($wire.stickyCols || []).includes(' . \Illuminate\Support\Js::from($col) . ')';
+        @endphp
+        <td
+            class="{{ $cellClasses }}"
+            data-column="{{ $col }}"
+            x-bind:class="{!! $cellSticky !!} ? 'sticky left-0 border-r bg-white dark:bg-secondary-800 dark:text-gray-50' : ''"
+            x-bind:style="{!! $cellSticky !!} ? 'z-index: 2' : ''"
         >
+            {{-- always an anchor: without an href it is inert, and pairing the
+                 tag here keeps the closing tag in the same branch as the opening one --}}
+            <a
+                @if ($cellHref) href="{{ $cellHref }}" @endif
+                @if ($cellHref && $useWireNavigate) x-on:click.prevent="$el.href && Livewire.navigate($el.href)" @endif
+                class="block px-3 py-2.5"
+            >
             @php
                 $hasLeftAppend = isset($leftAppend[$col]);
                 $hasRightAppend = isset($rightAppend[$col]);
@@ -125,7 +139,8 @@
                     @endif
                 @endforeach
             @endif
-        </x-tall-datatables::table.cell>
+            </a>
+        </td>
     @endforeach
     @if ($rowActions || ($showRestoreButton && $allowSoftDeletes))
         <td

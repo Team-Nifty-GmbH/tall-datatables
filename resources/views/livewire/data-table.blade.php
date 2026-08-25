@@ -1,22 +1,21 @@
 <x-tall-datatables::data-table-wrapper :attributes="$componentAttributes">
     @includeWhen($includeBefore, $includeBefore)
-    @if ($hasSidebar)
-        @teleport('body')
-            <x-slide
-                id="data-table-sidebar-{{ strtolower($this->getId()) }}"
-                size="2xl"
-            >
-                <x-tall-datatables::options />
-                <x-slot:footer>
-                    <x-button
-                        color="secondary"
-                        light
-                        :text="__('Close')"
-                        x-on:click="$tsui.close.slide('data-table-sidebar-{{ strtolower($this->getId()) }}');"
-                    />
-                </x-slot>
-            </x-slide>
-        @endteleport
+    @if ($hasSidebar && $rendersSidebar)
+        {{-- the slide teleports itself to body since tallstackui v3.2.1 --}}
+        <x-slide
+            id="data-table-sidebar-{{ strtolower($this->getId()) }}"
+            size="2xl"
+        >
+            <x-tall-datatables::options />
+            <x-slot:footer>
+                <x-button
+                    color="secondary"
+                    light
+                    :text="__('Close')"
+                    x-on:click="$tsui.close.slide('data-table-sidebar-{{ strtolower($this->getId()) }}');"
+                />
+            </x-slot>
+        </x-slide>
     @endif
 
     @if ($hasHead)

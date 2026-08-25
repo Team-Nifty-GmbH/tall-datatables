@@ -63,9 +63,17 @@ describe('Kanban View', function (): void {
                     const start = Date.now();
                     const check = () => {
                         if (Date.now() - start > 15000) return resolve({ timeout: true });
-                        const cards = document.querySelectorAll("[x-sort\\:item]");
-                        if (cards.length >= 2) {
-                            return resolve({ timeout: false, cardCount: cards.length });
+                        // scoped to the lanes: the options sidebar has a
+                        // sortable column list of its own, and counting that
+                        // kept this green while a lane sat empty
+                        const lanes = [...document.querySelectorAll('[x-sort\\:group="kanban"]')];
+                        const perLane = lanes.map((l) => l.querySelectorAll("[x-sort\\:item]").length);
+                        if (lanes.length >= 2 && perLane.every((n) => n >= 1)) {
+                            return resolve({
+                                timeout: false,
+                                cardCount: perLane.reduce((a, b) => a + b, 0),
+                                perLane,
+                            });
                         }
                         setTimeout(check, 500);
                     };
@@ -77,6 +85,7 @@ describe('Kanban View', function (): void {
         $data = is_array($result) && isset($result[0]) ? $result[0] : $result;
         expect($data['timeout'])->toBeFalse('Timed out waiting for kanban cards');
         expect($data['cardCount'])->toBeGreaterThanOrEqual(2);
+        expect($data['perLane'])->toBe([1, 1]);
     });
 
     it('shows layout switcher buttons when multiple layouts available', function (): void {
