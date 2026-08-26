@@ -10,6 +10,10 @@ use Illuminate\View\ComponentAttributeBag;
 
 class DataTableButton implements Htmlable
 {
+    protected ?string $renderedHtml = null;
+
+    protected ?array $renderedState = null;
+
     protected bool $shouldRender = true;
 
     public function __construct(
@@ -258,6 +262,16 @@ class DataTableButton implements Htmlable
             return '';
         }
 
+        // A row action is compiled once per table and echoed once per row, so
+        // without this every row ran a full BladeCompiler::render of the button.
+        // The state is compared rather than cached blindly, because the setters
+        // and the public properties can still change after a first render.
+        $state = $this->renderState();
+
+        if ($this->renderedState === $state) {
+            return $this->renderedHtml;
+        }
+
         $attrs = $this->attributes;
         if ($this->full) {
             $attrs['class'] = trim(($attrs['class'] ?? '') . ' w-full');
@@ -280,10 +294,10 @@ class DataTableButton implements Htmlable
         if ($this->circle) {
             $props['icon'] = $this->icon ?? 'pencil';
 
-            return BladeCompiler::render(
+            return $this->remember($state, BladeCompiler::render(
                 '<x-button.circle :$icon :$color :$href :$loading :$delay :$outline :$flat :$light :$' . $size . ' ' . $attributes->toHtml() . ' />',
                 $props
-            );
+            ));
         }
 
         $props['text'] = $this->text ?? '';
@@ -292,10 +306,10 @@ class DataTableButton implements Htmlable
         $props['square'] = $this->square ? '' : null;
         $props['round'] = $this->round ? '' : null;
 
-        return BladeCompiler::render(
+        return $this->remember($state, BladeCompiler::render(
             '<x-button :$text :$icon :$position :$color :$square :$round :$href :$loading :$delay :$outline :$flat :$light :$' . $size . ' ' . $attributes->toHtml() . ' />',
             $props
-        );
+        ));
     }
 
     /**
@@ -320,5 +334,42 @@ class DataTableButton implements Htmlable
         $this->attributes['x-on:click'] = $js;
 
         return $this;
+    }
+
+    /**
+     * @param  array<int, mixed>  $state
+     */
+    protected function remember(array $state, string $html): string
+    {
+        $this->renderedState = $state;
+
+        return $this->renderedHtml = $html;
+    }
+
+    /**
+     * Everything toHtml() reads, so a change to any of it renders again.
+     *
+     * @return array<int, mixed>
+     */
+    protected function renderState(): array
+    {
+        return [
+            $this->round,
+            $this->square,
+            $this->outline,
+            $this->flat,
+            $this->full,
+            $this->circle,
+            $this->color,
+            $this->size,
+            $this->text,
+            $this->icon,
+            $this->position,
+            $this->loading,
+            $this->delay,
+            $this->href,
+            $this->light,
+            $this->attributes,
+        ];
     }
 }
