@@ -19,7 +19,7 @@ function constructWithOf(object $component): array
     return (fn () => $this->constructWith())->call($component);
 }
 
-it('drops a column that chains more than one to-many relation', function (): void {
+it('drops a column that chains more to-many relations than the cap allows', function (): void {
     $component = Livewire::test(ChainedToManyDataTable::class);
 
     expect($component->get('enabledCols'))
@@ -43,11 +43,26 @@ it('keeps columns with a single to-many hop and none at all', function (): void 
         ->toContain('comments.body');
 });
 
+it('keeps a column with two to-many hops through distinct models', function (): void {
+    $component = Livewire::test(ChainedToManyDataTable::class);
+
+    expect($component->get('enabledCols'))
+        ->toContain('comments.tags.name');
+});
+
+it('drops a column whose to-many hops return to a model the path already visited', function (): void {
+    $component = Livewire::test(ChainedToManyDataTable::class);
+
+    expect($component->get('enabledCols'))
+        ->not->toContain('comments.post.comments.body');
+});
+
 it('keeps the chained column when the cap is disabled', function (): void {
     config(['tall-datatables.max_relation_column_to_many_hops' => 0]);
 
     $component = Livewire::test(ChainedToManyDataTable::class);
 
     expect($component->get('enabledCols'))
-        ->toContain('comments.post.comments.user.posts.title');
+        ->toContain('comments.post.comments.user.posts.title')
+        ->toContain('comments.post.comments.body');
 });

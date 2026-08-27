@@ -5,6 +5,7 @@ namespace Tests\Fixtures\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Comment extends Model
 {
@@ -32,6 +33,11 @@ class Comment extends Model
             'post_id',
             'user_id'
         );
+    }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'taggable');
     }
 
     public function user(): BelongsTo
