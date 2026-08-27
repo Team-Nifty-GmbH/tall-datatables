@@ -402,25 +402,24 @@ trait SupportsRelations
                     || $relationInstance instanceof BelongsToMany
                     || $relationInstance instanceof MorphMany;
 
-                // Each to-many hop multiplies the hydrated object graph by
-                // max_relation_column_values, so a path that chains more of them than
-                // the cap allows exhausts the worker long before it renders. A hop back
-                // onto a model the path already passed is dropped whatever the cap says,
-                // that is the circle a relation tree lets a user click together
-                // (comments.post.comments.body, or a self referencing morph such as
-                // category.categorizables.categories).
-                if ($maxToManyHops > 0
-                    && $isToManyHop
-                    && (
-                        ++$toManyHops > $maxToManyHops
-                        || ($model && in_array($model::class, $visitedModels, true))
-                    )
-                ) {
-                    $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
-                    $with = $withBeforeCol;
-                    $relationTables = $relationTablesBeforeCol;
+                // The relation tree offers relations one level at a time and never notices
+                // when a path returns to a model it already visited, so a self referencing
+                // relation can be clicked into a circle (category.categorizables.categories)
+                // that keeps multiplying the hydrated object graph until the worker dies.
+                // A circle is never a column anybody wants, so it is dropped. Depth alone
+                // is the user's choice and only capped where an instance asks for it.
+                if ($isToManyHop) {
+                    $toManyHops++;
 
-                    continue 2;
+                    if (($model && in_array($model::class, $visitedModels, true))
+                        || ($maxToManyHops > 0 && $toManyHops > $maxToManyHops)
+                    ) {
+                        $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
+                        $with = $withBeforeCol;
+                        $relationTables = $relationTablesBeforeCol;
+
+                        continue 2;
+                    }
                 }
 
                 if ($model) {
