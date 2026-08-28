@@ -67,4 +67,56 @@ describe('Set as Default', function (): void {
         expect($raw)->toBe('clicked')
             ->and(DatatableUserSetting::where('is_default_columns', true)->count())->toBe(1);
     });
+
+    it('stores the global default and resets other layouts from the confirm button', function (): void {
+        DatatableUserSetting::create([
+            'name' => 'OtherUserLayout',
+            'component' => DefaultColumnsPostDataTable::class,
+            'cache_key' => DefaultColumnsPostDataTable::class,
+            'settings' => ['enabledCols' => ['id']],
+            'is_layout' => true,
+            'is_default_columns' => false,
+            'is_permanent' => false,
+            'authenticatable_id' => $this->user->getKey(),
+            'authenticatable_type' => $this->user->getMorphClass(),
+        ]);
+
+        $page = visitLivewire(DefaultColumnsPostDataTable::class);
+
+        $page->wait(2);
+
+        $result = $page->script('async () => {
+            const clickByText = (text) => {
+                const button = [...document.querySelectorAll("button")]
+                    .find((candidate) => candidate.textContent.trim() === text);
+
+                button?.click();
+
+                return !! button;
+            };
+
+            await window.Livewire.all()[0].$wire.showSidebar();
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
+            if (! clickByText("Set as Default")) {
+                return "no-set-as-default-button";
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
+            if (! clickByText("Save default and reset others")) {
+                return "no-dialog-button";
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+
+            return "clicked";
+        }');
+
+        $raw = is_array($result) && isset($result[0]) ? $result[0] : $result;
+
+        expect($raw)->toBe('clicked')
+            ->and(DatatableUserSetting::where('is_default_columns', true)->count())->toBe(1)
+            ->and(DatatableUserSetting::where('is_layout', true)->count())->toBe(0);
+    });
 });
