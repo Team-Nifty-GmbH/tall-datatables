@@ -12,6 +12,8 @@
 <body class="antialiased">
     {{ $slot }}
 
+    <x-dialog />
+
     @livewireScripts
     @tallStackUiScript
     @dataTablesScripts
