@@ -13,7 +13,7 @@ class PercentageFormatter implements Formatter
 
     public function format(mixed $value, array $context = []): string
     {
-        if (is_null($value)) {
+        if (! is_numeric($value)) {
             return '';
         }
 

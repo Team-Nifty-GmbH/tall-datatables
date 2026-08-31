@@ -99,6 +99,13 @@ trait ExportsData
         }
 
         if (is_array($value) && ! $formatter instanceof ArrayFormatter) {
+            // An associative array is a single structured value, not a set of values: a json
+            // column such as a frozen snapshot carries its fields under their own names, and
+            // handing each of them to a column formatter both fails and loses the names.
+            if (! array_is_list($value)) {
+                return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+
             // Format every element on its own. Only an ArrayFormatter reads an array; every
             // other formatter casts its input to string, which fails on one.
             return implode('; ', array_filter(
