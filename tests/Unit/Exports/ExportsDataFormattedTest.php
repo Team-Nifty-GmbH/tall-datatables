@@ -198,4 +198,30 @@ describe('ExportsData formatted export', function (): void {
 
         expect($exporter->testMapRow($row)['tags'])->toBe('first; second');
     });
+
+    test('mapRow exports a json object column as json instead of formatting its fields', function (): void {
+        $exporter = new ExportsDataTestClass(
+            ['commission_rate'],
+            ['commission_rate' => new PercentageFormatter()]
+        );
+
+        $row = new class() extends Model
+        {
+            protected $guarded = [];
+
+            public function __construct()
+            {
+                parent::__construct([
+                    'commission_rate' => [
+                        'id' => 5,
+                        'uuid' => '9b1c4f2e',
+                        'commission_rate' => 0.12,
+                    ],
+                ]);
+            }
+        };
+
+        expect($exporter->testMapRow($row)['commission_rate'])
+            ->toBe('{"id":5,"uuid":"9b1c4f2e","commission_rate":0.12}');
+    });
 });
