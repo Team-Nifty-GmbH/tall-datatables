@@ -41,31 +41,9 @@ trait ExportsData
 
             if (is_null($value) && str_contains($column, '.')) {
                 $value = $this->extractNestedValue($rowArray, explode('.', $column));
-
-                if (is_array($value)) {
-                    // Format every related value on its own, otherwise an element formatter
-                    // (e.g. a boolean rendered as an icon) never sees the individual values.
-                    $value = implode('; ', array_filter(
-                        array_map(
-                            fn ($item) => $this->formatExportValue($item, $formatter, $rowArray),
-                            $value
-                        ),
-                        fn ($item) => $item !== null && $item !== ''
-                    ));
-
-                    $result[$column] = $value;
-
-                    continue;
-                }
             }
 
-            if (! is_null($value) && $formatter) {
-                $value = is_array($value)
-                    ? $this->toPlainText($formatter->format($value, $rowArray))
-                    : $this->formatExportValue($value, $formatter, $rowArray);
-            }
-
-            $result[$column] = $value;
+            $result[$column] = $this->formatExportValue($value, $formatter, $rowArray);
         }
 
         return $result;
@@ -106,18 +84,34 @@ trait ExportsData
     }
 
     /**
-     * Format a single scalar value for the export, unwrapping array formatters so their
-     * element formatter decides. Boolean values are exported as text because their
-     * formatter renders an icon, which strip_tags would reduce to an empty cell.
+     * Format a value for the export, unwrapping array formatters so their element formatter
+     * decides. Boolean values are exported as text because their formatter renders an icon,
+     * which strip_tags would reduce to an empty cell.
      */
     protected function formatExportValue(mixed $value, ?Formatter $formatter, array $context): mixed
     {
-        if (is_null($value) || is_null($formatter)) {
+        if (is_null($value)) {
             return $value;
         }
 
         if ($formatter instanceof ArrayFormatter) {
             $formatter = $formatter->elementFormatter() ?? $formatter;
+        }
+
+        if (is_array($value) && ! $formatter instanceof ArrayFormatter) {
+            // Format every element on its own. Only an ArrayFormatter reads an array; every
+            // other formatter casts its input to string, which fails on one.
+            return implode('; ', array_filter(
+                array_map(
+                    fn (mixed $item) => $this->formatExportValue($item, $formatter, $context),
+                    $value
+                ),
+                fn (mixed $item) => $item !== null && $item !== ''
+            ));
+        }
+
+        if (is_null($formatter)) {
+            return $value;
         }
 
         if ($formatter instanceof BooleanFormatter) {
