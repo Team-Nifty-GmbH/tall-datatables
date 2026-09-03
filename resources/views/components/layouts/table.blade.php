@@ -25,7 +25,7 @@
 >
     <div class="relative overflow-x-auto shadow-sm sm:rounded-lg">
         <table class="dark:bg-secondary-800 min-w-full border-collapse bg-white text-sm text-gray-500 dark:text-gray-50"
-            x-bind:class="Object.keys($wire.colWidths || {}).length > 0 ? 'table-fixed' : 'table-auto'"
+            x-effect="syncColWidths($el)"
         >
             @php
                 $hasRelevance = collect($this->data['data'] ?? [])->contains(fn ($r) => isset($r['_relevance']));
@@ -80,7 +80,8 @@
                             <x-tall-datatables::table.head-cell
                                 :wrap="$this::$wrapColumnLabels"
                                 x-bind:class="{!! $headColClass !!}"
-                                x-bind:style="[($wire.stickyCols || []).includes(col) ? 'z-index: 2' : 'z-index: 1', ($wire.colWidths || {})[col] ? 'width: ' + ($wire.colWidths || {})[col] + 'px' : ''].filter(Boolean).join('; ')"
+                                x-bind:data-column="col"
+                                x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : 'z-index: 1'"
                                 :attributes="$tableHeadColAttributes"
                             >
                                 <div class="group flex items-center gap-1">

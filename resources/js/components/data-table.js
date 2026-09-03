@@ -91,18 +91,72 @@ export default function data_table() {
             return valueIndex === 0 ? val || '' : '';
         },
 
+        /**
+         * A column only obeys a width once the table itself has a definite one.
+         * While the table stays at `width: auto` the fixed layout keeps sizing
+         * on content, so a width set on a cell can widen a column and never
+         * narrow it. Every column therefore carries a width here and the table
+         * carries their sum.
+         */
+        applyColWidths(table, freezeAll = false) {
+            const stored = this.$wire.colWidths || {};
+            const ths = [
+                ...table.querySelectorAll('thead > tr:first-child > th'),
+            ];
+
+            if (ths.length === 0) {
+                return;
+            }
+
+            // Measuring runs on the automatic layout and with no width in the
+            // way: a stored width narrower than the column content reads back
+            // as the content width there, and that is the one number that must
+            // not be frozen.
+            table.classList.remove('table-fixed');
+            table.classList.add('table-auto');
+            table.style.width = '';
+            ths.forEach((th) => (th.style.width = ''));
+
+            if (!freezeAll && Object.keys(stored).length === 0) {
+                return;
+            }
+
+            const widths = ths.map(
+                (th) => stored[th.dataset.column] ?? th.offsetWidth,
+            );
+
+            ths.forEach((th, i) => (th.style.width = widths[i] + 'px'));
+            table.style.width =
+                widths.reduce((sum, width) => sum + width, 0) + 'px';
+            table.classList.remove('table-auto');
+            table.classList.add('table-fixed');
+        },
+
+        syncColWidths(table) {
+            // Reading both is what subscribes the effect to them. The layout
+            // work itself waits a tick, because on the first run the column
+            // cells still have to come out of the x-for above them.
+            void this.$wire.colWidths;
+            void this.$wire.enabledCols;
+
+            this.$nextTick(() => this.applyColWidths(table));
+        },
+
         startResize(event, col) {
             event.preventDefault();
             event.stopPropagation();
 
             const th = event.target.closest('th');
-            const startX = event.clientX;
-            const startWidth = th.offsetWidth;
             const table = th.closest('table');
             const wire = this.$wire;
 
-            table.classList.remove('table-auto');
-            table.classList.add('table-fixed');
+            // Nothing is pinned before the first drag, so the table is still
+            // sized by its content and would ignore a drag to the left.
+            this.applyColWidths(table, true);
+
+            const startX = event.clientX;
+            const startWidth = th.offsetWidth;
+            const startTableWidth = table.offsetWidth;
 
             const onMouseMove = (e) => {
                 const newWidth = Math.max(
@@ -110,6 +164,10 @@ export default function data_table() {
                     startWidth + (e.clientX - startX),
                 );
                 th.style.width = newWidth + 'px';
+                // The table follows, or the column takes its room from a
+                // neighbour instead of from the table's own width.
+                table.style.width =
+                    startTableWidth + (newWidth - startWidth) + 'px';
             };
 
             const onMouseUp = () => {
@@ -118,18 +176,23 @@ export default function data_table() {
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
 
+                // Read back off the cells themselves. Counting past the
+                // columns in front of the data went wrong as soon as a search
+                // added the relevance column and every width landed one column
+                // over.
                 const colWidths = {};
-                const cols = wire.enabledCols || [];
-                const ths = table.querySelectorAll(
-                    'thead > tr:first-child > th',
-                );
-                const offset = 1;
-                cols.forEach((c, i) => {
-                    const t = ths[i + offset];
-                    if (t && t.style.width) {
-                        colWidths[c] = parseInt(t.style.width, 10);
-                    }
-                });
+                table
+                    .querySelectorAll(
+                        'thead > tr:first-child > th[data-column]',
+                    )
+                    .forEach((t) => {
+                        if (t.style.width) {
+                            colWidths[t.dataset.column] = parseInt(
+                                t.style.width,
+                                10,
+                            );
+                        }
+                    });
 
                 if (Object.keys(colWidths).length > 0) {
                     wire.colWidths = colWidths;
@@ -154,18 +217,21 @@ export default function data_table() {
             );
 
             this._disposers.push(
-                this.$watch('$wire.broadcastChannels', (newChannels, oldChannels) => {
-                    const newValues = Object.values(newChannels || {});
-                    const oldValues = Object.values(oldChannels || {});
+                this.$watch(
+                    '$wire.broadcastChannels',
+                    (newChannels, oldChannels) => {
+                        const newValues = Object.values(newChannels || {});
+                        const oldValues = Object.values(oldChannels || {});
 
-                    oldValues
-                        .filter((ch) => !newValues.includes(ch))
-                        .forEach((ch) => this._leaveChannel(ch));
+                        oldValues
+                            .filter((ch) => !newValues.includes(ch))
+                            .forEach((ch) => this._leaveChannel(ch));
 
-                    newValues
-                        .filter((ch) => !oldValues.includes(ch))
-                        .forEach((ch) => this._subscribeChannel(ch));
-                }),
+                        newValues
+                            .filter((ch) => !oldValues.includes(ch))
+                            .forEach((ch) => this._subscribeChannel(ch));
+                    },
+                ),
             );
         },
 
@@ -193,9 +259,7 @@ export default function data_table() {
                 return;
             }
 
-            this._echoChannels.forEach((channel) =>
-                window.Echo.leave(channel),
-            );
+            this._echoChannels.forEach((channel) => window.Echo.leave(channel));
             this._echoChannels = [];
         },
     };
