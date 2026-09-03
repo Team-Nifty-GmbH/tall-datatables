@@ -1,0 +1,2 @@
+[      23ms] [LOG] REPRO ["fixed-100: set=100px actual=241 tableW=1510 layout=fixed","auto-100: set=100px actual=241 tableW=1510 layout=auto","fixed-nomin-100: set=100px actual=241 tableW=1510 layout=fixed","fixed-300: set=300px actual=241 tableW=1510 layout=fixed"] @ http://localhost:8791/repro.html:48
+[      28ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8791/favicon.ico:0
