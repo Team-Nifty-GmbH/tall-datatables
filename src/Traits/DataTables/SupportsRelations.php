@@ -136,7 +136,7 @@ trait SupportsRelations
         }, $selectedCols);
 
         Cache::put(
-            'relation-tree-widget.' . ($this->loadedPath ?? $this->getModel()),
+            $this->relationTreeCacheKey($this->loadedPath),
             [
                 'cols' => $this->selectedCols,
                 'relations' => $this->selectedRelations,
@@ -159,7 +159,7 @@ trait SupportsRelations
         }
 
         $this->loadedPath = $path;
-        $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
+        $data = Cache::get($this->relationTreeCacheKey($path));
 
         if (is_null($data)) {
             if ($path) {
@@ -174,7 +174,7 @@ trait SupportsRelations
                 $this->loadRelation($this->getModel());
             }
 
-            $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
+            $data = Cache::get($this->relationTreeCacheKey($path));
         }
 
         return [
@@ -265,7 +265,7 @@ trait SupportsRelations
     protected function constructWith(): array
     {
         // cache key for the enabled cols
-        $cacheKey = md5(json_encode($this->enabledCols) . $this->getCacheKey());
+        $cacheKey = md5(json_encode($this->enabledCols) . $this->getCacheKey() . app()->getLocale());
         $withCacheKey = config('tall-datatables.cache_key') . SchemaInfo::WITH_CACHE_KEY_SUFFIX;
         $cached = Cache::get($withCacheKey);
 
@@ -292,41 +292,6 @@ trait SupportsRelations
                     }
                 }
             }
-
-            // Recompute filterValueLists — cached values may have
-            // stale translated labels from a different locale/user
-            $this->filterValueLists = [];
-            $modelInfos = [];
-            foreach ($result[2] as $enabledCol) {
-                $segments = explode('.', $enabledCol);
-                $fieldName = array_pop($segments);
-                $modelClass = $this->getModel();
-
-                if ($segments) {
-                    $modelInstance = app($modelClass);
-                    foreach ($segments as $segment) {
-                        try {
-                            $modelInstance = $modelInstance->{Str::camel($segment)}()->getRelated();
-                            $modelClass = $modelInstance::class;
-                        } catch (Throwable) {
-                            $modelClass = $this->getModel();
-
-                            break;
-                        }
-                    }
-                }
-
-                if (! isset($modelInfos[$modelClass])) {
-                    $modelInfos[$modelClass] = SchemaInfo::forModel($modelClass);
-                }
-
-                $attributeInfo = $modelInfos[$modelClass]->attribute($fieldName);
-                if ($attributeInfo) {
-                    $this->getFilterValueList($enabledCol, $attributeInfo);
-                }
-            }
-
-            $result[3] = $this->filterValueLists;
 
             return $result;
         }
@@ -642,6 +607,16 @@ trait SupportsRelations
         }
 
         return $modelRelations;
+    }
+
+    /**
+     * The cached payload holds labels that were already translated when it was built,
+     * so the locale belongs in the key. Without it whoever opens the column menu first
+     * warms the cache with their own language and every later user reads it back.
+     */
+    protected function relationTreeCacheKey(?string $path): string
+    {
+        return 'relation-tree-widget.' . app()->getLocale() . '.' . ($path ?? $this->getModel());
     }
 
     /**
