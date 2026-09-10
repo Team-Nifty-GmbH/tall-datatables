@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 use Tests\Fixtures\Livewire\PostDataTable;
@@ -116,7 +117,7 @@ describe('SupportsRelations', function (): void {
 
             $result = $component->instance()->loadRelation(Post::class);
 
-            $cached = Cache::get('relation-tree-widget.' . Post::class);
+            $cached = Cache::get('relation-tree-widget.' . App::getLocale() . '.' . Post::class);
 
             expect($cached)->not->toBeNull()
                 ->toHaveKey('cols')
@@ -992,7 +993,7 @@ describe('SupportsRelations', function (): void {
                 ->toHaveKey('displayPath');
 
             // After fallback, cache should be populated
-            $cached = Cache::get('relation-tree-widget.' . Post::class);
+            $cached = Cache::get('relation-tree-widget.' . App::getLocale() . '.' . Post::class);
             expect($cached)->not->toBeNull();
         });
     });
