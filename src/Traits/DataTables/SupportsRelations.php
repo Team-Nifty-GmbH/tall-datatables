@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
@@ -136,7 +137,7 @@ trait SupportsRelations
         }, $selectedCols);
 
         Cache::put(
-            'relation-tree-widget.' . ($this->loadedPath ?? $this->getModel()),
+            $this->relationTreeCacheKey($this->loadedPath),
             [
                 'cols' => $this->selectedCols,
                 'relations' => $this->selectedRelations,
@@ -159,7 +160,7 @@ trait SupportsRelations
         }
 
         $this->loadedPath = $path;
-        $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
+        $data = Cache::get($this->relationTreeCacheKey($path));
 
         if (is_null($data)) {
             if ($path) {
@@ -174,7 +175,7 @@ trait SupportsRelations
                 $this->loadRelation($this->getModel());
             }
 
-            $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
+            $data = Cache::get($this->relationTreeCacheKey($path));
         }
 
         return [
@@ -642,6 +643,11 @@ trait SupportsRelations
         }
 
         return $modelRelations;
+    }
+
+    protected function relationTreeCacheKey(?string $path): string
+    {
+        return 'relation-tree-widget.' . App::getLocale() . '.' . ($path ?? $this->getModel());
     }
 
     /**
