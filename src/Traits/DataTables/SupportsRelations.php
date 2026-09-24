@@ -266,7 +266,7 @@ trait SupportsRelations
     protected function constructWith(): array
     {
         // cache key for the enabled cols
-        $cacheKey = md5(json_encode($this->enabledCols) . $this->getCacheKey());
+        $cacheKey = md5(json_encode($this->enabledCols) . $this->getCacheKey() . app()->getLocale());
         $withCacheKey = config('tall-datatables.cache_key') . SchemaInfo::WITH_CACHE_KEY_SUFFIX;
         $cached = Cache::get($withCacheKey);
 
@@ -293,41 +293,6 @@ trait SupportsRelations
                     }
                 }
             }
-
-            // Recompute filterValueLists — cached values may have
-            // stale translated labels from a different locale/user
-            $this->filterValueLists = [];
-            $modelInfos = [];
-            foreach ($result[2] as $enabledCol) {
-                $segments = explode('.', $enabledCol);
-                $fieldName = array_pop($segments);
-                $modelClass = $this->getModel();
-
-                if ($segments) {
-                    $modelInstance = app($modelClass);
-                    foreach ($segments as $segment) {
-                        try {
-                            $modelInstance = $modelInstance->{Str::camel($segment)}()->getRelated();
-                            $modelClass = $modelInstance::class;
-                        } catch (Throwable) {
-                            $modelClass = $this->getModel();
-
-                            break;
-                        }
-                    }
-                }
-
-                if (! isset($modelInfos[$modelClass])) {
-                    $modelInfos[$modelClass] = SchemaInfo::forModel($modelClass);
-                }
-
-                $attributeInfo = $modelInfos[$modelClass]->attribute($fieldName);
-                if ($attributeInfo) {
-                    $this->getFilterValueList($enabledCol, $attributeInfo);
-                }
-            }
-
-            $result[3] = $this->filterValueLists;
 
             return $result;
         }

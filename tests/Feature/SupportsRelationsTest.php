@@ -7,6 +7,7 @@ use Tests\Fixtures\Livewire\PostDataTable;
 use Tests\Fixtures\Livewire\PostWithCommentsDataTable;
 use Tests\Fixtures\Livewire\PostWithRelationsDataTable;
 use Tests\Fixtures\Models\Post;
+use Tests\Fixtures\Models\User;
 
 beforeEach(function (): void {
     $this->user = createTestUser();
@@ -82,7 +83,7 @@ describe('SupportsRelations', function (): void {
             // First load root
             $component->instance()->loadRelation(Post::class);
             // Then navigate into user relation
-            $result = $component->instance()->loadRelation(Tests\Fixtures\Models\User::class, 'user');
+            $result = $component->instance()->loadRelation(User::class, 'user');
 
             expect($result['displayPath'])->toHaveCount(1);
             expect($result['displayPath'][0])->toHaveKey('value')
@@ -95,7 +96,7 @@ describe('SupportsRelations', function (): void {
 
             // Navigate root -> user -> posts
             $component->instance()->loadRelation(Post::class);
-            $component->instance()->loadRelation(Tests\Fixtures\Models\User::class, 'user');
+            $component->instance()->loadRelation(User::class, 'user');
             $result = $component->instance()->loadRelation(Post::class, 'posts');
 
             expect($result['displayPath'])->toHaveCount(2);
@@ -130,7 +131,7 @@ describe('SupportsRelations', function (): void {
 
             // Navigate into user first
             $component->instance()->loadRelation(Post::class);
-            $component->instance()->loadRelation(Tests\Fixtures\Models\User::class, 'user');
+            $component->instance()->loadRelation(User::class, 'user');
 
             // Reset by loading without relation name
             $component->instance()->loadRelation(Post::class);
@@ -490,7 +491,7 @@ describe('SupportsRelations', function (): void {
 
             // First load the user relation to cache it
             $component->instance()->loadRelation(Post::class);
-            $component->instance()->loadRelation(Tests\Fixtures\Models\User::class, 'user');
+            $component->instance()->loadRelation(User::class, 'user');
 
             // Reset and load via slug
             $component->instance()->loadSlug('user');
@@ -585,7 +586,7 @@ describe('SupportsRelations', function (): void {
         it('skips join for hasMany which lacks getForeignKey method', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
-            $query = Tests\Fixtures\Models\User::query();
+            $query = User::query();
             $reflection = new ReflectionMethod($component->instance(), 'addDynamicJoin');
 
             // HasMany does not have getOwnerKeyName nor getForeignKey (only getForeignKeyName)
@@ -622,7 +623,7 @@ describe('SupportsRelations', function (): void {
 
             // Navigate root -> user -> posts (deep navigation)
             $component->instance()->loadRelation(Post::class);
-            $component->instance()->loadRelation(Tests\Fixtures\Models\User::class, 'user');
+            $component->instance()->loadRelation(User::class, 'user');
             $result = $component->instance()->loadRelation(Post::class, 'posts');
 
             // Display path should show the full navigation breadcrumb
@@ -752,7 +753,7 @@ describe('SupportsRelations', function (): void {
             // Load root
             $component->instance()->loadRelation(Post::class);
             // Navigate to user relation
-            $component->instance()->loadRelation(Tests\Fixtures\Models\User::class, 'user');
+            $component->instance()->loadRelation(User::class, 'user');
 
             // Load via slug
             $result = $component->instance()->loadSlug('user');
@@ -1048,7 +1049,7 @@ describe('SupportsRelations', function (): void {
             $component = Livewire::test(PostWithRelationsDataTable::class);
 
             $modelInfo = TeamNiftyGmbH\DataTable\Helpers\SchemaInfo::forModel(
-                Tests\Fixtures\Models\User::class
+                User::class
             );
             $reflection = new ReflectionMethod($component->instance(), 'getModelRelations');
             $relations = $reflection->invoke($component->instance(), $modelInfo);
@@ -1448,5 +1449,94 @@ describe('constructWith null attributeInfo', function (): void {
 
         // But they stay in enabledCols (v1 behavior — computed columns are kept)
         expect($instance->enabledCols)->toContain('computed_column');
+    });
+});
+
+function filterValueListsOf(object $instance): array
+{
+    // getFilterableColumns() runs constructWith(), which fills filterValueLists
+    $instance->getFilterableColumns();
+
+    return $instance->filterValueLists;
+}
+
+function relationTreeLabelOf(array $data, string $col): string
+{
+    return collect($data['cols'])->firstWhere('col', $col)['label'];
+}
+
+describe('cache keys are locale aware', function (): void {
+    beforeEach(function (): void {
+        Cache::flush();
+
+        // Both caches store already translated labels, so a German translation
+        // has to exist for an assertion to tell the two locales apart at all.
+        app('translator')->setLoaded([
+            '*' => [
+                '*' => [
+                    'de' => [
+                        'Email' => 'Mailadresse',
+                        'Yes' => 'Ja',
+                        'No' => 'Nein',
+                    ],
+                ],
+            ],
+        ]);
+    });
+
+    afterEach(function (): void {
+        app()->setLocale('en');
+    });
+
+    it('keeps the relation tree labels apart when German warms the cache first', function (): void {
+        app()->setLocale('de');
+        $german = Livewire::test(PostWithRelationsDataTable::class)
+            ->instance()
+            ->loadRelation(User::class, 'user');
+
+        app()->setLocale('en');
+        $english = Livewire::test(PostWithRelationsDataTable::class)
+            ->instance()
+            ->loadSlug('user');
+
+        expect(relationTreeLabelOf($german, 'email'))->toBe('Mailadresse')
+            ->and(relationTreeLabelOf($english, 'email'))->toBe('Email');
+    });
+
+    it('keeps the relation tree labels apart when English warms the cache first', function (): void {
+        app()->setLocale('en');
+        $english = Livewire::test(PostWithRelationsDataTable::class)
+            ->instance()
+            ->loadRelation(User::class, 'user');
+
+        app()->setLocale('de');
+        $german = Livewire::test(PostWithRelationsDataTable::class)
+            ->instance()
+            ->loadSlug('user');
+
+        expect(relationTreeLabelOf($english, 'email'))->toBe('Email')
+            ->and(relationTreeLabelOf($german, 'email'))->toBe('Mailadresse');
+    });
+
+    it('keeps the filter value lists apart when German warms the cache first', function (): void {
+        app()->setLocale('de');
+        $german = filterValueListsOf(Livewire::test(PostDataTable::class)->instance());
+
+        app()->setLocale('en');
+        $english = filterValueListsOf(Livewire::test(PostDataTable::class)->instance());
+
+        expect(array_column($german['is_published'], 'label'))->toBe(['Ja', 'Nein'])
+            ->and(array_column($english['is_published'], 'label'))->toBe(['Yes', 'No']);
+    });
+
+    it('keeps the filter value lists apart when English warms the cache first', function (): void {
+        app()->setLocale('en');
+        $english = filterValueListsOf(Livewire::test(PostDataTable::class)->instance());
+
+        app()->setLocale('de');
+        $german = filterValueListsOf(Livewire::test(PostDataTable::class)->instance());
+
+        expect(array_column($english['is_published'], 'label'))->toBe(['Yes', 'No'])
+            ->and(array_column($german['is_published'], 'label'))->toBe(['Ja', 'Nein']);
     });
 });
