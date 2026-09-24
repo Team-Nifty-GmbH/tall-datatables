@@ -398,13 +398,14 @@ trait BuildsQueries
         $query->select(array_merge($select, [$this->modelTable . '.' . $this->modelKeyName]));
 
         if (! empty($this->withCountRelations)) {
-            // The column is asked for as <relation>_count with the relation spelled the way it
-            // is declared, while withCount would name its result after Str::snake. Naming the
-            // aggregate keeps both ends on one key for relations of more than one word.
+            // The column may spell the relation the way it is declared or in snake case, while
+            // withCount would name its result after Str::snake. Naming the aggregate after the
+            // column keeps both ends on one key for relations of more than one word.
             $query->withCount(
                 array_map(
-                    fn (string $relation): string => $relation . ' as ' . $relation . '_count',
-                    $this->withCountRelations
+                    fn (string $relation, string $column): string => $relation . ' as ' . $column,
+                    $this->withCountRelations,
+                    array_keys($this->withCountRelations)
                 )
             );
         }

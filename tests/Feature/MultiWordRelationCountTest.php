@@ -32,6 +32,21 @@ describe('Count columns of a relation of more than one word', function (): void 
             ->and($row['publishedPosts_count'])->toBe(2);
     });
 
+    it('keeps the count on a column spelled in snake case', function (): void {
+        createTestPost(['user_id' => $this->user->getKey(), 'is_published' => true]);
+
+        $data = Livewire::test(UserDataTable::class)
+            ->set('enabledCols', ['name', 'published_posts_count'])
+            ->call('loadData')
+            ->instance()
+            ->getDataForTesting();
+
+        $row = collect($data['data'])->firstWhere('name', $this->user->name);
+
+        expect($row)->toHaveKey('published_posts_count')
+            ->and($row['published_posts_count'])->toBe(1);
+    });
+
     it('filters on the count of such a relation', function (): void {
         $withTwo = createTestUser();
         createTestPost(['user_id' => $withTwo->getKey(), 'is_published' => true]);
