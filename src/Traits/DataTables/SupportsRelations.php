@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
@@ -609,14 +610,9 @@ trait SupportsRelations
         return $modelRelations;
     }
 
-    /**
-     * The cached payload holds labels that were already translated when it was built,
-     * so the locale belongs in the key. Without it whoever opens the column menu first
-     * warms the cache with their own language and every later user reads it back.
-     */
     protected function relationTreeCacheKey(?string $path): string
     {
-        return 'relation-tree-widget.' . app()->getLocale() . '.' . ($path ?? $this->getModel());
+        return 'relation-tree-widget.' . App::getLocale() . '.' . ($path ?? $this->getModel());
     }
 
     /**
