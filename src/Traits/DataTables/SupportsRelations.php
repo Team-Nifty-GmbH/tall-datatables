@@ -287,7 +287,7 @@ trait SupportsRelations
 
                     try {
                         app($this->getModel())->{$relationName}();
-                        $this->withCountRelations[] = $relationName;
+                        $this->withCountRelations[$col] = $relationName;
                     } catch (BadMethodCallException) {
                         // Not a relation
                     }
@@ -314,7 +314,7 @@ trait SupportsRelations
 
                 try {
                     $modelBase->{$relationName}();
-                    $this->withCountRelations[] = $relationName;
+                    $this->withCountRelations[$enabledCol] = $relationName;
                     $filterable[] = $enabledCol;
                     $sortable[] = $enabledCol;
                 } catch (BadMethodCallException) {
