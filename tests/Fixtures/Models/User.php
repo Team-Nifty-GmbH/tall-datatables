@@ -45,4 +45,9 @@ class User extends Authenticatable implements InteractsWithDataTables
     {
         return $this->hasMany(Post::class);
     }
+
+    public function publishedPosts(): HasMany
+    {
+        return $this->posts()->where('is_published', true);
+    }
 }

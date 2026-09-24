@@ -398,7 +398,15 @@ trait BuildsQueries
         $query->select(array_merge($select, [$this->modelTable . '.' . $this->modelKeyName]));
 
         if (! empty($this->withCountRelations)) {
-            $query->withCount($this->withCountRelations);
+            // The column is asked for as <relation>_count with the relation spelled the way it
+            // is declared, while withCount would name its result after Str::snake. Naming the
+            // aggregate keeps both ends on one key for relations of more than one word.
+            $query->withCount(
+                array_map(
+                    fn (string $relation): string => $relation . ' as ' . $relation . '_count',
+                    $this->withCountRelations
+                )
+            );
         }
 
         $query = $this->getBuilder($query);
