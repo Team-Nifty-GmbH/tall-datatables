@@ -360,7 +360,7 @@ class DataTable extends Component
                 $value = implode(' -> ', $relation) . ' -> ' . __(Str::headline($column));
             } elseif (str_ends_with($key, '_count') && ! ($this->columnLabels[$key] ?? false)) {
                 $relationPart = Str::headline(Str::beforeLast($key, '_count'));
-                $value = __($relationPart) . ' ' . __('count');
+                $value = __($relationPart) . ' (' . __('Count') . ')';
             } else {
                 $value = __(Str::headline($this->columnLabels[$key] ?? $key));
             }

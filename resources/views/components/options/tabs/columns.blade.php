@@ -173,9 +173,15 @@
                             })();
                         "
                     >
-                        <div x-on:click.stop x-show="displayPath.length === 0" x-cloak>
+                        <div
+                            class="mr-0.5 border-r border-gray-300 pr-2 dark:border-gray-600"
+                            x-on:click.stop
+                            x-show="displayPath.length === 0"
+                            x-cloak
+                        >
                             <x-checkbox
                                 sm
+                                :label="__('Count')"
                                 x-bind:value="relation.name + '_count'"
                                 x-bind:checked="wire.enabledCols.includes(relation.name + '_count')"
                                 x-on:change="addCol(relation.name + '_count'); loadFilterable();"
