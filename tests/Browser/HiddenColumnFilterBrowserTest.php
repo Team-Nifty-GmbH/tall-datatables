@@ -1,6 +1,6 @@
 <?php
 
-use Tests\Fixtures\Livewire\DateFormatterPostDataTable;
+use Tests\Fixtures\Livewire\HiddenBooleanPostDataTable;
 
 beforeEach(function (): void {
     $manifestPath = dirname(__DIR__, 2) . '/dist/build/manifest.json';
@@ -18,7 +18,7 @@ beforeEach(function (): void {
 });
 
 it('offers yes and no for a boolean column that is not shown', function (): void {
-    $page = visitLivewire(DateFormatterPostDataTable::class);
+    $page = visitLivewire(HiddenBooleanPostDataTable::class);
 
     $page->wait(2);
 
