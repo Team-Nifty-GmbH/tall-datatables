@@ -63,7 +63,7 @@ trait SupportsRelations
                 $this->availableCols !== ['*'],
                 fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
             )
-            ->each(fn (Attribute $attribute) => $this->getFilterValueList($relationName . '.' . $attribute->name, $attribute))
+            ->each(fn (Attribute $attribute) => $this->getFilterValueList(ltrim($relationName . '.' . $attribute->name, '.'), $attribute))
             ->pluck('formatter', 'name')
             ->toArray();
     }
@@ -75,9 +75,12 @@ trait SupportsRelations
             $this->loadRelation($this->getModel());
         }
 
+        $this->getRelationTableCols();
+
         return [
             'selectedCols' => $this->selectedCols,
             'selectedRelations' => $this->selectedRelations,
+            'filterValueLists' => $this->filterValueLists,
         ];
     }
 

@@ -206,7 +206,11 @@ trait BuildsQueries
                         $operator = $filter['operator'] ?? null;
                         $value = $filter['value'] ?? null;
 
-                        if ($column && $operator && ($value !== null && $value !== '')) {
+                        if (
+                            $column
+                            && in_array(strtolower((string) $operator), $query->toBase()->operators, true)
+                            && ($value !== null && $value !== '')
+                        ) {
                             if (
                                 in_array($operator, ['<', '<=', '>', '>='])
                                 && is_numeric($value)
