@@ -395,6 +395,8 @@ trait BuildsQueries
             $enabledCols,
         ] = $this->constructWith();
 
+        $this->getRelationTableCols();
+
         $this->enabledCols = $enabledCols;
         $this->formatters = array_merge($formatters, $this->formatters);
 

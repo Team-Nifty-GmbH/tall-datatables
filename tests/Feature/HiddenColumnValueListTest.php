@@ -8,14 +8,14 @@ beforeEach(function (): void {
 });
 
 it('offers the value list of a boolean column that is not shown', function (): void {
-    $component = Livewire::test(PostDataTable::class, ['enabledCols' => ['title']]);
+    $component = Livewire::test(PostDataTable::class, ['enabledCols' => ['title']])
+        ->call('loadData');
 
-    expect($component->instance()->filterValueLists)->not->toHaveKey('is_published');
+    $lists = $component->get('filterValueLists');
 
-    $sidebar = $component->instance()->getSidebarData();
-
-    expect($sidebar['filterValueLists'])->toHaveKey('is_published')
-        ->and(array_column($sidebar['filterValueLists']['is_published'], 'value'))->toBe([1, 0]);
+    expect($component->get('enabledCols'))->not->toContain('is_published')
+        ->and($lists)->toHaveKey('is_published')
+        ->and(array_column($lists['is_published'], 'value'))->toBe([1, 0]);
 });
 
 it('does not read an unknown operator as the value to compare with', function (): void {
