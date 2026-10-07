@@ -1,5 +1,6 @@
-export default function data_table() {
+export default function data_table(eloquentEvents = []) {
     return {
+        _eloquentEvents: eloquentEvents,
         showSelectedActions: false,
         textFilterRows: [0],
         extraInputs: {},
@@ -240,9 +241,14 @@ export default function data_table() {
                 return;
             }
 
-            window.Echo.private(channel).listenToAll((event, data) => {
-                this.$wire.eloquentEventOccurred(event, data);
-            });
+            // Mercure channels have no listenToAll(), so every event is
+            // subscribed by its name.
+            const subscription = window.Echo.private(channel);
+            this._eloquentEvents.forEach((event) =>
+                subscription.listen(event, (data) =>
+                    this.$wire.eloquentEventOccurred(event, data),
+                ),
+            );
 
             this._echoChannels.push(channel);
         },
