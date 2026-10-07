@@ -418,6 +418,13 @@ trait BuildsQueries
 
         $query = $this->getBuilder($query);
 
+        // The rows of a sortable table are stored in the order its builder sorts by, so that
+        // order is shown unless the user picked a column. The newest first default only fills in
+        // when the builder does not sort at all.
+        if ($this->isSortable() && ! $query->getQuery()->orders) {
+            $this->applyOrderBy($query, '', false);
+        }
+
         $this->applySessionFilter($query);
 
         return $this->applyFilters($query);
@@ -1086,7 +1093,9 @@ trait BuildsQueries
             $orderAsc = $this->orderAsc;
         }
 
-        $this->applyOrderBy($query, $orderBy, $orderAsc);
+        if ($orderBy || ! $this->isSortable()) {
+            $this->applyOrderBy($query, $orderBy, $orderAsc);
+        }
 
         foreach ($this->userMultiSort as $sort) {
             if ($this->isValidSortColumn($sort['column'])) {

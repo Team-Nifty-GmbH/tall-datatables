@@ -373,7 +373,8 @@
                 @endif
             </thead>
             {{-- isSortable is a static value (set at class level via isSortable()), not reactive --}}
-            <tbody class="relative" @if($isSortable && !$this->isGrouped()) x-sort="$wire.sortRows($item, $position)" @endif>
+            {{-- The position counts the records only: Sortable's own $position includes the loading row and is one too high --}}
+            <tbody class="relative" @if($isSortable && !$this->isGrouped()) x-sort="$wire.sortRows($item, Array.from($el.querySelectorAll(':scope > [x-sort\\:item]')).findIndex(row => row.getAttribute('x-sort:item') == $item))" @endif>
                 <tr
                     wire:loading.delay.shorter
                     wire:target.except="storeColLayout"
