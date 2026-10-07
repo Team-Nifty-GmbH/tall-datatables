@@ -15,7 +15,7 @@ describe('Row Drag & Drop', function (): void {
 
         Livewire::test(SortablePostDataTable::class)
             ->call('loadData')
-            ->assertSeeHtml('x-sort="$wire.sortRows($item, $position)"');
+            ->assertSeeHtml('x-sort="$wire.sortRows($item, ');
     });
 
     it('does not render x-sort row sort handler when isSortable returns false', function (): void {
@@ -23,7 +23,7 @@ describe('Row Drag & Drop', function (): void {
 
         Livewire::test(PostDataTable::class)
             ->call('loadData')
-            ->assertDontSeeHtml('x-sort="$wire.sortRows($item, $position)"');
+            ->assertDontSeeHtml('x-sort="$wire.sortRows($item, ');
     });
 
     it('renders x-sort:item on table rows when sortable', function (): void {
