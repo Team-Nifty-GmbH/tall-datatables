@@ -304,7 +304,7 @@ class DataTableButton implements Htmlable
         $props['icon'] = $this->icon;
         $props['position'] = $this->position ?? 'left';
         $props['square'] = $this->square ? '' : null;
-        $props['round'] = $this->round ? '' : null;
+        $props['round'] = $this->round ?: null;
 
         return $this->remember($state, BladeCompiler::render(
             '<x-button :$text :$icon :$position :$color :$square :$round :$href :$loading :$delay :$outline :$flat :$light :$' . $size . ' ' . $attributes->toHtml() . ' />',
