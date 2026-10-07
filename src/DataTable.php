@@ -1166,6 +1166,9 @@ class DataTable extends Component
         $this->cachedViewData = [
             'searchable' => $this->getIsSearchable(),
             'componentAttributes' => $this->getComponentAttributes(),
+            'eloquentEvents' => method_exists($this, 'getEloquentListeners')
+                ? array_keys($this->getEloquentListeners())
+                : [],
             'tableHeadColAttributes' => $this->getTableHeadColAttributes(),
             'selectAttributes' => $this->getSelectAttributes(),
             'rowAttributes' => $this->getRowAttributes(),

@@ -2,10 +2,12 @@
 
 namespace Tests\Fixtures\Livewire;
 
+use Livewire\Attributes\Layout;
 use TeamNiftyGmbH\DataTable\DataTable;
 use TeamNiftyGmbH\DataTable\Traits\HasEloquentListeners;
 use Tests\Fixtures\Models\BroadcastablePost;
 
+#[Layout('components.layouts.app')]
 class BroadcastablePostDataTable extends DataTable
 {
     use HasEloquentListeners;
