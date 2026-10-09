@@ -35,7 +35,7 @@
             $recordKey = json_encode($record[$modelKeyName] ?? $index);
         @endphp
         <td
-            class="border-b border-gray-100 px-3 py-2.5 text-sm whitespace-nowrap dark:border-secondary-700/50/50"
+            class="border-b border-gray-100 px-3 py-2.5 text-sm whitespace-nowrap dark:border-secondary-700/50"
         >
             <div
                 {{ $selectAttributes->merge(['class' => 'flex items-center justify-center gap-1']) }}

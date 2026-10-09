@@ -25,7 +25,7 @@
 >
     <div class="relative overflow-x-auto shadow-sm sm:rounded-lg">
         <table class="dark:bg-secondary-800 min-w-full border-collapse bg-white text-sm text-gray-500 dark:text-gray-50"
-            x-bind:class="Object.keys($wire.colWidths || {}).length > 0 ? 'table-fixed' : 'table-auto'"
+            x-effect="syncColWidths($el)"
         >
             @php
                 $hasRelevance = collect($this->data['data'] ?? [])->contains(fn ($r) => isset($r['_relevance']));
@@ -80,7 +80,8 @@
                             <x-tall-datatables::table.head-cell
                                 :wrap="$this::$wrapColumnLabels"
                                 x-bind:class="{!! $headColClass !!}"
-                                x-bind:style="[($wire.stickyCols || []).includes(col) ? 'z-index: 2' : 'z-index: 1', ($wire.colWidths || {})[col] ? 'width: ' + ($wire.colWidths || {})[col] + 'px' : ''].filter(Boolean).join('; ')"
+                                x-bind:data-column="col"
+                                x-bind:style="($wire.stickyCols || []).includes(col) ? 'z-index: 2' : 'z-index: 1'"
                                 :attributes="$tableHeadColAttributes"
                             >
                                 <div class="group flex items-center gap-1">
@@ -372,7 +373,8 @@
                 @endif
             </thead>
             {{-- isSortable is a static value (set at class level via isSortable()), not reactive --}}
-            <tbody class="relative" @if($isSortable && !$this->isGrouped()) x-sort="$wire.sortRows($item, $position)" @endif>
+            {{-- The position counts the records only: Sortable's own $position includes the loading row and is one too high --}}
+            <tbody class="relative" @if($isSortable && !$this->isGrouped()) x-sort="$wire.sortRows($item, Array.from($el.querySelectorAll(':scope > [x-sort\\:item]')).findIndex(row => row.getAttribute('x-sort:item') == $item))" @endif>
                 <tr
                     wire:loading.delay.shorter
                     wire:target.except="storeColLayout"

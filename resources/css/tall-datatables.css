@@ -1,8 +1,18 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/forms';
+
+/* The host application compiles these classes as well, but the package ships a
+   stylesheet of its own for anyone who pulls it in through @dataTablesStyles. */
+@source '../../resources/js/**/*.js';
+@source '../../resources/views/**/*.blade.php';
+@source '../../src/**/*.php';
+
+/* Tailwind 4 switches the dark variant to prefers-color-scheme by default. The
+   package is driven by a class on the document, the way the applications using
+   it are. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 [x-cloak] {
     display: none !important;
 }
-

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
@@ -62,7 +63,7 @@ trait SupportsRelations
                 $this->availableCols !== ['*'],
                 fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
             )
-            ->each(fn (Attribute $attribute) => $this->getFilterValueList($relationName . '.' . $attribute->name, $attribute))
+            ->each(fn (Attribute $attribute) => $this->getFilterValueList(ltrim($relationName . '.' . $attribute->name, '.'), $attribute))
             ->pluck('formatter', 'name')
             ->toArray();
     }
@@ -74,9 +75,12 @@ trait SupportsRelations
             $this->loadRelation($this->getModel());
         }
 
+        $this->getRelationTableCols();
+
         return [
             'selectedCols' => $this->selectedCols,
             'selectedRelations' => $this->selectedRelations,
+            'filterValueLists' => $this->filterValueLists,
         ];
     }
 
@@ -136,7 +140,7 @@ trait SupportsRelations
         }, $selectedCols);
 
         Cache::put(
-            'relation-tree-widget.' . ($this->loadedPath ?? $this->getModel()),
+            $this->relationTreeCacheKey($this->loadedPath),
             [
                 'cols' => $this->selectedCols,
                 'relations' => $this->selectedRelations,
@@ -159,7 +163,7 @@ trait SupportsRelations
         }
 
         $this->loadedPath = $path;
-        $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
+        $data = Cache::get($this->relationTreeCacheKey($path));
 
         if (is_null($data)) {
             if ($path) {
@@ -174,7 +178,7 @@ trait SupportsRelations
                 $this->loadRelation($this->getModel());
             }
 
-            $data = Cache::get('relation-tree-widget.' . ($path ?? $this->getModel()));
+            $data = Cache::get($this->relationTreeCacheKey($path));
         }
 
         return [
@@ -265,7 +269,7 @@ trait SupportsRelations
     protected function constructWith(): array
     {
         // cache key for the enabled cols
-        $cacheKey = md5(json_encode($this->enabledCols) . $this->getCacheKey());
+        $cacheKey = md5(json_encode($this->enabledCols) . $this->getCacheKey() . app()->getLocale());
         $withCacheKey = config('tall-datatables.cache_key') . SchemaInfo::WITH_CACHE_KEY_SUFFIX;
         $cached = Cache::get($withCacheKey);
 
@@ -286,47 +290,12 @@ trait SupportsRelations
 
                     try {
                         app($this->getModel())->{$relationName}();
-                        $this->withCountRelations[] = $relationName;
+                        $this->withCountRelations[$col] = $relationName;
                     } catch (BadMethodCallException) {
                         // Not a relation
                     }
                 }
             }
-
-            // Recompute filterValueLists — cached values may have
-            // stale translated labels from a different locale/user
-            $this->filterValueLists = [];
-            $modelInfos = [];
-            foreach ($result[2] as $enabledCol) {
-                $segments = explode('.', $enabledCol);
-                $fieldName = array_pop($segments);
-                $modelClass = $this->getModel();
-
-                if ($segments) {
-                    $modelInstance = app($modelClass);
-                    foreach ($segments as $segment) {
-                        try {
-                            $modelInstance = $modelInstance->{Str::camel($segment)}()->getRelated();
-                            $modelClass = $modelInstance::class;
-                        } catch (Throwable) {
-                            $modelClass = $this->getModel();
-
-                            break;
-                        }
-                    }
-                }
-
-                if (! isset($modelInfos[$modelClass])) {
-                    $modelInfos[$modelClass] = SchemaInfo::forModel($modelClass);
-                }
-
-                $attributeInfo = $modelInfos[$modelClass]->attribute($fieldName);
-                if ($attributeInfo) {
-                    $this->getFilterValueList($enabledCol, $attributeInfo);
-                }
-            }
-
-            $result[3] = $this->filterValueLists;
 
             return $result;
         }
@@ -348,7 +317,7 @@ trait SupportsRelations
 
                 try {
                     $modelBase->{$relationName}();
-                    $this->withCountRelations[] = $relationName;
+                    $this->withCountRelations[$enabledCol] = $relationName;
                     $filterable[] = $enabledCol;
                     $sortable[] = $enabledCol;
                 } catch (BadMethodCallException) {
@@ -367,6 +336,7 @@ trait SupportsRelations
             $fieldName = array_pop($segments);
 
             $toManyHops = 0;
+            $visitedModels = [$modelBase::class];
 
             $path = null;
             $model = null;
@@ -390,32 +360,39 @@ trait SupportsRelations
                     continue 2;
                 }
 
-                // Each to-many hop multiplies the hydrated object graph by
-                // max_relation_column_values, so a path that chains several of them
-                // (comments.post.comments.body, or a self referencing morph such as
-                // category.categorizables.categories) exhausts the worker long before
-                // it renders. Relation trees let a user click such a path together, so
-                // the column is dropped rather than trusted.
-                if ($maxToManyHops > 0
-                    && (
-                        $relationInstance instanceof HasMany
-                        || $relationInstance instanceof HasManyThrough
-                        || $relationInstance instanceof BelongsToMany
-                        || $relationInstance instanceof MorphMany
-                    )
-                    && ++$toManyHops > $maxToManyHops
-                ) {
-                    $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
-                    $with = $withBeforeCol;
-                    $relationTables = $relationTablesBeforeCol;
-
-                    continue 2;
-                }
-
                 try {
                     $model = $relationInstance->getRelated();
                 } catch (Throwable) {
                     $model = null;
+                }
+
+                $isToManyHop = $relationInstance instanceof HasMany
+                    || $relationInstance instanceof HasManyThrough
+                    || $relationInstance instanceof BelongsToMany
+                    || $relationInstance instanceof MorphMany;
+
+                // The relation tree offers relations one level at a time and never notices
+                // when a path returns to a model it already visited, so a self referencing
+                // relation can be clicked into a circle (category.categorizables.categories)
+                // that keeps multiplying the hydrated object graph until the worker dies.
+                // A circle is never a column anybody wants, so it is dropped. Depth alone
+                // is the user's choice and only capped where an instance asks for it.
+                if ($isToManyHop) {
+                    $toManyHops++;
+
+                    if (($model && in_array($model::class, $visitedModels, true))
+                        || ($maxToManyHops > 0 && $toManyHops > $maxToManyHops)
+                    ) {
+                        $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
+                        $with = $withBeforeCol;
+                        $relationTables = $relationTablesBeforeCol;
+
+                        continue 2;
+                    }
+                }
+
+                if ($model) {
+                    $visitedModels[] = $model::class;
                 }
 
                 // a MorphTo resolves to several related tables, so its columns must stay unqualified
@@ -634,6 +611,11 @@ trait SupportsRelations
         }
 
         return $modelRelations;
+    }
+
+    protected function relationTreeCacheKey(?string $path): string
+    {
+        return 'relation-tree-widget.' . App::getLocale() . '.' . ($path ?? $this->getModel());
     }
 
     /**

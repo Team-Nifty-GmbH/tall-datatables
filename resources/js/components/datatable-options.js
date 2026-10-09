@@ -428,6 +428,10 @@ export default function datatable_options(wire) {
 
             this.selectedCols = cols;
             this.selectedRelations = data.selectedRelations || [];
+            this.filterValueLists = {
+                ...(data.filterValueLists || {}),
+                ...this.filterValueLists,
+            };
             wire.selectedCols = cols;
             wire.selectedRelations = this.selectedRelations;
         },

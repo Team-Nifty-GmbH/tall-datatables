@@ -48,15 +48,18 @@ return [
     |--------------------------------------------------------------------------
     |
     | Every to-many hop in a column path multiplies the loaded records by the cap
-    | above, so orders.positions.tags.name already pulls 50^3 records per row. A
-    | relation tree also lets a user walk a self referencing relation in a circle,
-    | which never terminates on its own. This caps how many to-many hops a single
-    | column path may contain, columns beyond it are dropped.
-    | Set to 0 to disable the cap.
+    | above, so orders.positions.tags.name already pulls 50^3 records per row.
+    | How deep a column reaches is the user's decision though, so nothing is
+    | capped by default. Set a number here to drop columns that chain more
+    | to-many hops than an instance is willing to load.
+    |
+    | Independent of this, a path whose to-many hop returns to a model it has
+    | already visited is always dropped. That circle is what a relation tree
+    | lets a user click together by accident, never a column anybody wants.
     |
     */
 
-    'max_relation_column_to_many_hops' => env('TALL_DATATABLES_MAX_RELATION_COLUMN_TO_MANY_HOPS', 1),
+    'max_relation_column_to_many_hops' => env('TALL_DATATABLES_MAX_RELATION_COLUMN_TO_MANY_HOPS', 0),
 
     /*
     |--------------------------------------------------------------------------

@@ -340,9 +340,7 @@ describe('DataTableButton toHtml Rendering', function (): void {
             ->text('Round')
             ->round();
 
-        $html = $button->toHtml();
-
-        expect($html)->not->toBeEmpty();
+        expect($button->toHtml())->toContain('rounded-full');
     });
 
     it('renders with position right', function (): void {

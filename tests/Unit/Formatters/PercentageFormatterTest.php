@@ -77,4 +77,16 @@ describe('PercentageFormatter', function (): void {
 
         expect($formatter->format(75))->toBe('75 %');
     });
+
+    it('returns empty string for a value that is not a number', function (): void {
+        $formatter = new PercentageFormatter();
+
+        expect($formatter->format('9b1c-4f2e-not-a-number'))->toBe('');
+    });
+
+    it('returns empty string for an array value', function (): void {
+        $formatter = new PercentageFormatter();
+
+        expect($formatter->format(['id' => 5, 'commission_rate' => 0.12]))->toBe('');
+    });
 });

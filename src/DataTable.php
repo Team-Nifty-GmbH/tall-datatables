@@ -360,7 +360,7 @@ class DataTable extends Component
                 $value = implode(' -> ', $relation) . ' -> ' . __(Str::headline($column));
             } elseif (str_ends_with($key, '_count') && ! ($this->columnLabels[$key] ?? false)) {
                 $relationPart = Str::headline(Str::beforeLast($key, '_count'));
-                $value = __($relationPart) . ' ' . __('count');
+                $value = __($relationPart) . ' (' . __('Count') . ')';
             } else {
                 $value = __(Str::headline($this->columnLabels[$key] ?? $key));
             }
@@ -902,6 +902,19 @@ class DataTable extends Component
     {
         $this->colWidths = $colWidths;
         $this->cacheState();
+    }
+
+    /**
+     * Livewire re-renders the island an action came from, and checks #[Renderless]
+     * against "__dispatch" instead of the listener for events dispatched from inside
+     * one. The rows are only loaded by loadData(), which renders its islands itself,
+     * so that implicit render would send an empty body or skip a forced full render.
+     */
+    public function triggerImplicitIslandRender($name, $mode = 'morph', $mount = false): void
+    {
+        if ($mount) {
+            parent::triggerImplicitIslandRender($name, $mode, $mount);
+        }
     }
 
     public function updatedSearch(): void

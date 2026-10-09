@@ -19,14 +19,24 @@ function constructWithOf(object $component): array
     return (fn () => $this->constructWith())->call($component);
 }
 
-it('drops a column that chains more than one to-many relation', function (): void {
+it('drops a column that walks a relation circle', function (): void {
     $component = Livewire::test(ChainedToManyDataTable::class);
 
     expect($component->get('enabledCols'))
+        ->not->toContain('comments.post.comments.body')
         ->not->toContain('comments.post.comments.user.posts.title');
 });
 
-it('does not eager load any hop of the chained to-many path', function (): void {
+it('drops the circle even with no cap configured', function (): void {
+    config(['tall-datatables.max_relation_column_to_many_hops' => 0]);
+
+    $component = Livewire::test(ChainedToManyDataTable::class);
+
+    expect($component->get('enabledCols'))
+        ->not->toContain('comments.post.comments.body');
+});
+
+it('does not eager load any hop of the dropped path', function (): void {
     $with = constructWithOf(Livewire::test(ChainedToManyDataTable::class)->instance())[0];
 
     // not even a partial hop of the dropped path may survive, each one multiplies
@@ -43,11 +53,19 @@ it('keeps columns with a single to-many hop and none at all', function (): void 
         ->toContain('comments.body');
 });
 
-it('keeps the chained column when the cap is disabled', function (): void {
-    config(['tall-datatables.max_relation_column_to_many_hops' => 0]);
+it('keeps a column with two to-many hops through distinct models', function (): void {
+    $component = Livewire::test(ChainedToManyDataTable::class);
+
+    expect($component->get('enabledCols'))
+        ->toContain('comments.tags.name');
+});
+
+it('drops a column beyond a cap an instance configures', function (): void {
+    config(['tall-datatables.max_relation_column_to_many_hops' => 1]);
 
     $component = Livewire::test(ChainedToManyDataTable::class);
 
     expect($component->get('enabledCols'))
-        ->toContain('comments.post.comments.user.posts.title');
+        ->toContain('comments.body')
+        ->not->toContain('comments.tags.name');
 });
