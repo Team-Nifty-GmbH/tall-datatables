@@ -36,8 +36,10 @@ it('keeps the row checkbox classes in step with the tallstackui component', func
     $component = preg_replace('/\s+/', ' ', Blade::render('<x-checkbox sm />'));
     preg_match($pattern, $component, $expected);
 
+    // anchor on toggleSelected, otherwise the select all box in the head,
+    // which is still the component, matches first and the test proves nothing
     $html = preg_replace('/\s+/', ' ', Livewire::test(PostDataTable::class)->call('loadData')->html());
-    preg_match($pattern, $html, $actual);
+    preg_match('/<input[^>]*type="checkbox"[^>]*class="([^"]*)"[^>]*toggleSelected\(/', $html, $actual);
 
     expect($expected[1] ?? 'component markup changed')
         ->not->toBe('component markup changed')
