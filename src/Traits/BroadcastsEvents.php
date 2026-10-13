@@ -54,7 +54,9 @@ trait BroadcastsEvents
 
     public function broadcastOn($event): array|Channel
     {
-        return [new PrivateChannel($this->broadcastChannel($event === 'created'))];
+        return $event === 'created'
+            ? [new PrivateChannel($this->broadcastChannel(true))]
+            : [new PrivateChannel($this->broadcastChannel()), new PrivateChannel($this->broadcastChannel(true))];
     }
 
     public function broadcastWith(): array

@@ -248,12 +248,30 @@ export default function data_table(eloquentEvents = []) {
             const subscription = window.Echo.private(channel);
             this._eloquentEvents.forEach((event) =>
                 subscription.listen(event, (data) => {
+                    if (
+                        /(Updated|Deleted|Trashed)$/.test(event) &&
+                        !this._isLoadedRow(data)
+                    ) {
+                        return;
+                    }
+
                     this._pendingEvents.push([event, data]);
                     this._sendEvents();
                 }),
             );
 
             this._echoChannels.push(channel);
+        },
+
+        _isLoadedRow(data) {
+            const key = data?.model?.[this.$wire.modelKeyName];
+
+            return (
+                key !== undefined &&
+                (this.$wire.broadcastRowKeys || []).some(
+                    (rowKey) => String(rowKey) === String(key),
+                )
+            );
         },
 
         async _sendEvents() {

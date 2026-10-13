@@ -29,13 +29,11 @@ function mountAndLoadData(): \Livewire\Features\SupportTesting\Testable
 }
 
 describe('HasEloquentListeners – mount', function (): void {
-    it('populates broadcastChannels with created key on mount when model uses BroadcastsEvents', function (): void {
+    it('subscribes only the channel of the model on mount when model uses BroadcastsEvents', function (): void {
         $component = Livewire::test(BroadcastablePostDataTable::class);
 
-        $channels = $component->get('broadcastChannels');
-        expect($channels)->toBeArray()
-            ->and($channels)->toHaveKey('created')
-            ->and($channels['created'])->toBeString();
+        expect($component->get('broadcastChannels'))
+            ->toBe(['model' => BroadcastablePost::getBroadcastChannel(true)]);
     });
 
     it('does not populate broadcastChannels when model does not use BroadcastsEvents', function (): void {
@@ -112,20 +110,34 @@ describe('HasEloquentListeners – echoCreated', function (): void {
         expect($instance->data['total'])->toBe(1);
     });
 
-    it('updates broadcastChannels for the created model', function (): void {
-        $post = BroadcastablePost::create([
+    it('does not add a created model when another page is shown', function (): void {
+        for ($i = 0; $i < 20; $i++) {
+            BroadcastablePost::create([
+                'user_id' => $this->user->getKey(),
+                'title' => "Post {$i}",
+                'content' => 'Content',
+                'is_published' => true,
+            ]);
+        }
+
+        $testable = Livewire::test(BroadcastablePostDataTable::class)
+            ->set('perPage', 10)
+            ->call('gotoPage', 2);
+        $instance = $testable->instance();
+        $instance->loadData();
+        $rows = $instance->data['data'];
+
+        $newPost = BroadcastablePost::create([
             'user_id' => $this->user->getKey(),
-            'title' => 'A Post',
+            'title' => 'Not on this page',
             'content' => 'Content',
             'is_published' => true,
         ]);
 
-        $testable = mountAndLoadData();
-        $instance = $testable->instance();
+        $instance->echoCreated(['model' => ['id' => $newPost->getKey()]]);
 
-        $instance->echoCreated(['model' => ['id' => $post->getKey()]]);
-
-        expect($instance->broadcastChannels)->toHaveKey($post->getKey());
+        expect($instance->data['data'])->toBe($rows)
+            ->and($instance->data['total'])->toBe(20);
     });
 
     it('pops the last element when data exceeds per_page', function (): void {
@@ -212,6 +224,23 @@ describe('HasEloquentListeners – echoUpdated', function (): void {
 
         expect($instance->data['total'])->toBe(0);
     });
+
+    it('ignores an updated model that is not shown', function (): void {
+        BroadcastablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Shown Post',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+
+        $testable = mountAndLoadData();
+        $instance = $testable->instance();
+
+        $instance->echoUpdated(['model' => ['id' => 99999]]);
+
+        expect($instance->data['total'])->toBe(1)
+            ->and($instance->data['data'])->toHaveCount(1);
+    });
 });
 
 describe('HasEloquentListeners – echoDeleted', function (): void {
@@ -244,21 +273,22 @@ describe('HasEloquentListeners – echoDeleted', function (): void {
             ->and($remaining)->toContain($post2->getKey());
     });
 
-    it('removes model from broadcastChannels on delete', function (): void {
-        $post = BroadcastablePost::create([
+    it('ignores a deleted model that is not shown', function (): void {
+        BroadcastablePost::create([
             'user_id' => $this->user->getKey(),
-            'title' => 'Post to Delete',
+            'title' => 'Shown Post',
             'content' => 'Content',
             'is_published' => true,
         ]);
 
         $testable = mountAndLoadData();
         $instance = $testable->instance();
-        expect($instance->broadcastChannels)->toHaveKey($post->getKey());
 
-        $instance->echoDeleted(['model' => ['id' => $post->getKey()]]);
+        $instance->echoDeleted(['model' => ['id' => 99999]]);
 
-        expect($instance->broadcastChannels)->not->toHaveKey($post->getKey());
+        expect($instance->data['total'])->toBe(1)
+            ->and($instance->data['to'])->toBe(1)
+            ->and($instance->data['data'])->toHaveCount(1);
     });
 
     it('clamps total and to to zero when they are null instead of decrementing null', function (): void {
@@ -485,28 +515,39 @@ describe('HasEloquentListeners – refreshRow', function (): void {
     });
 });
 
-describe('HasEloquentListeners – getPaginator', function (): void {
-    it('populates broadcastChannels from paginator items', function (): void {
-        $post1 = BroadcastablePost::create([
-            'user_id' => $this->user->getKey(),
-            'title' => 'Post 1',
-            'content' => 'Content',
-            'is_published' => true,
-        ]);
-
-        $post2 = BroadcastablePost::create([
-            'user_id' => $this->user->getKey(),
-            'title' => 'Post 2',
-            'content' => 'Content',
-            'is_published' => true,
-        ]);
+describe('HasEloquentListeners – broadcast channels', function (): void {
+    it('subscribes the channel of the model instead of one channel per row', function (): void {
+        for ($i = 0; $i < 3; $i++) {
+            BroadcastablePost::create([
+                'user_id' => $this->user->getKey(),
+                'title' => "Post {$i}",
+                'content' => 'Content',
+                'is_published' => true,
+            ]);
+        }
 
         $component = Livewire::test(BroadcastablePostDataTable::class);
 
-        $channels = $component->get('broadcastChannels');
-        expect($channels)->toHaveKey($post1->getKey())
-            ->and($channels)->toHaveKey($post2->getKey())
-            ->and($channels)->toHaveKey('created');
+        expect($component->get('broadcastChannels'))
+            ->toBe(['model' => BroadcastablePost::getBroadcastChannel(true)]);
+    });
+
+    it('keeps the channel of the model on later pages', function (): void {
+        for ($i = 0; $i < 20; $i++) {
+            BroadcastablePost::create([
+                'user_id' => $this->user->getKey(),
+                'title' => "Post {$i}",
+                'content' => 'Content',
+                'is_published' => true,
+            ]);
+        }
+
+        $component = Livewire::test(BroadcastablePostDataTable::class)
+            ->set('perPage', 10)
+            ->call('gotoPage', 2);
+
+        expect($component->get('broadcastChannels'))
+            ->toBe(['model' => BroadcastablePost::getBroadcastChannel(true)]);
     });
 
     it('does not populate broadcastChannels when model lacks BroadcastsEvents', function (): void {
@@ -514,76 +555,55 @@ describe('HasEloquentListeners – getPaginator', function (): void {
 
         $component = Livewire::test(NoListenersPostDataTable::class);
 
-        $channels = $component->get('broadcastChannels');
-        expect($channels)->toBe([]);
+        expect($component->get('broadcastChannels'))->toBe([]);
+    });
+
+    it('broadcasts updates on the record channel and the channel of the model', function (): void {
+        $post = BroadcastablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => 'Post',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+
+        expect(array_map(fn ($channel): string => $channel->name, $post->broadcastOn('updated')))
+            ->toBe([
+                'private-' . $post->broadcastChannel(),
+                'private-' . BroadcastablePost::getBroadcastChannel(true),
+            ])
+            ->and(array_map(fn ($channel): string => $channel->name, $post->broadcastOn('created')))
+            ->toBe(['private-' . BroadcastablePost::getBroadcastChannel(true)]);
     });
 });
 
-describe('HasEloquentListeners – mount fallback without getBroadcastChannel', function (): void {
-    it('falls back to broadcastChannel concat when model lacks getBroadcastChannel', function (): void {
-        // Use a custom datatable with a model that uses BroadcastsEvents but
-        // without the static getBroadcastChannel method
-        $modelClass = new class() extends Illuminate\Database\Eloquent\Model
-        {
-            use TeamNiftyGmbH\DataTable\Traits\BroadcastsEvents;
-
-            protected $guarded = ['id'];
-
-            protected $table = 'posts';
-        };
-
-        $dataTableClass = get_class($modelClass);
-
-        // We test via the trait method directly
-        $component = Livewire::test(BroadcastablePostDataTable::class);
-        $instance = $component->instance();
-
-        $channels = $instance->broadcastChannels;
-        // The created key should be set on mount
-        expect($channels)->toHaveKey('created');
-    });
-});
-
-describe('HasEloquentListeners – getPaginator not on page 1', function (): void {
-    it('sets created channel even when not on page 1', function (): void {
-        for ($i = 0; $i < 20; $i++) {
-            BroadcastablePost::create([
-                'user_id' => $this->user->getKey(),
-                'title' => "Post $i",
-                'content' => 'Content',
-                'is_published' => true,
-            ]);
-        }
+describe('HasEloquentListeners – broadcastRowKeys', function (): void {
+    it('exposes the keys of the shown rows for the browser filter', function (): void {
+        $posts = collect(range(1, 3))->map(fn (int $i): BroadcastablePost => BroadcastablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => "Post {$i}",
+            'content' => 'Content',
+            'is_published' => true,
+        ]));
 
         $component = Livewire::test(BroadcastablePostDataTable::class);
-        $component->set('perPage', 10);
-        $component->call('gotoPage', 2);
 
-        $channels = $component->get('broadcastChannels');
-        expect($channels)->toHaveKey('created');
+        expect($component->get('broadcastRowKeys'))
+            ->toEqualCanonicalizing($posts->map->getKey()->all());
     });
 
-    it('computes correct next ID for created broadcast channel on page 2', function (): void {
-        for ($i = 0; $i < 20; $i++) {
-            BroadcastablePost::create([
-                'user_id' => $this->user->getKey(),
-                'title' => "Post $i",
-                'content' => 'Content',
-                'is_published' => true,
-            ]);
-        }
+    it('collects the keys of rows inside groups', function (): void {
+        $testable = Livewire::test(BroadcastablePostDataTable::class);
+        $instance = $testable->instance();
 
-        $maxId = BroadcastablePost::max('id');
-        $expectedNextId = $maxId + 1;
+        (fn () => $this->setData([
+            'data' => [],
+            'groups' => [
+                ['data' => [['id' => 4], ['id' => 5]]],
+                ['data' => [['id' => 6]]],
+                ['count' => 2],
+            ],
+        ]))->call($instance);
 
-        $component = Livewire::test(BroadcastablePostDataTable::class);
-        $component->set('perPage', 10);
-        $component->call('gotoPage', 2);
-
-        $channels = $component->get('broadcastChannels');
-        $createdChannel = $channels['created'];
-
-        // The created channel should end with the next expected ID
-        expect($createdChannel)->toEndWith((string) $expectedNextId);
+        expect($instance->broadcastRowKeys)->toBe([4, 5, 6]);
     });
 });
