@@ -21,12 +21,12 @@ beforeEach(function (): void {
     $this->user = createTestUser(['name' => 'Test User', 'email' => 'echo-listeners@example.com']);
     $this->actingAs($this->user);
 
-    $this->post = BroadcastablePost::query()->create([
+    $this->post = BroadcastablePost::withoutBroadcasting(fn () => BroadcastablePost::query()->create([
         'user_id' => $this->user->getKey(),
         'title' => 'Before Echo',
         'content' => 'Content',
         'is_published' => true,
-    ]);
+    ]));
 });
 
 it('listens to the model events by name and refreshes the row', function (): void {
