@@ -7,14 +7,16 @@ use TeamNiftyGmbH\DataTable\Traits\BroadcastsEvents;
 use Tests\Fixtures\Models\BroadcastablePost;
 
 describe('BroadcastsEvents – broadcastOn', function (): void {
-    test('broadcastOn returns PrivateChannel for non-created events', function (): void {
+    test('broadcastOn returns the record and the generic PrivateChannel for non-created events', function (): void {
         $model = new BroadcastablePost();
         $model->id = 1;
 
         $channels = $model->broadcastOn('updated');
         expect($channels)->toBeArray()
-            ->and($channels)->toHaveCount(1)
-            ->and($channels[0])->toBeInstanceOf(PrivateChannel::class);
+            ->and($channels)->toHaveCount(2)
+            ->and($channels[0])->toBeInstanceOf(PrivateChannel::class)
+            ->and($channels[0]->name)->toBe('private-' . $model->broadcastChannel())
+            ->and($channels[1]->name)->toBe('private-' . $model->broadcastChannel(true));
     });
 
     test('broadcastOn returns generic channel for created event', function (): void {

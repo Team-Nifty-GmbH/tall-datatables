@@ -3,7 +3,6 @@
 namespace TeamNiftyGmbH\DataTable\Traits;
 
 use Illuminate\Database\Eloquent\BroadcastsEvents;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 
 trait HasEloquentListeners
@@ -17,6 +16,10 @@ trait HasEloquentListeners
         if (empty($this->data)) {
             $this->loadData();
 
+            return;
+        }
+
+        if ((int) data_get($this->data, 'current_page', 1) > 1) {
             return;
         }
 
@@ -35,8 +38,6 @@ trait HasEloquentListeners
         if (count($this->data['data']) > $this->data['per_page']) {
             array_pop($this->data['data']);
         }
-
-        $this->broadcastChannels[$model->getKey()] = $model->broadcastChannel();
     }
 
     public function echoDeleted(array $eventData): void
@@ -47,11 +48,12 @@ trait HasEloquentListeners
             return;
         }
 
+        if (! $this->isLoadedRow($eventData)) {
+            return;
+        }
+
         $data = Arr::keyBy($this->data['data'], $this->modelKeyName);
-        unset(
-            $data[$eventData['model'][$this->modelKeyName]],
-            $this->broadcastChannels[$eventData['model'][$this->modelKeyName]]
-        );
+        unset($data[$this->getKeyFromEventData($eventData)]);
 
         $this->data['data'] = array_values($data);
         $this->data['total'] = max(0, (int) ($this->data['total'] ?? 0) - 1);
@@ -73,6 +75,10 @@ trait HasEloquentListeners
         if (empty($this->data)) {
             $this->loadData();
 
+            return;
+        }
+
+        if (! $this->isLoadedRow($eventData)) {
             return;
         }
 
@@ -136,13 +142,8 @@ trait HasEloquentListeners
             return;
         }
 
-        // Pre-populate the created channel so Echo listeners
-        // can subscribe immediately after mount.
         if (method_exists($model, 'getBroadcastChannel')) {
-            $this->broadcastChannels['created'] = $model::getBroadcastChannel(true);
-        } else {
-            $newModel = new $model();
-            $this->broadcastChannels['created'] = $newModel->broadcastChannel() . '1';
+            $this->broadcastChannels = ['model' => $model::getBroadcastChannel(true)];
         }
     }
 
@@ -188,27 +189,15 @@ trait HasEloquentListeners
         return data_get($eventData, 'model.' . $this->modelKeyName);
     }
 
-    protected function getPaginator(LengthAwarePaginator $paginator): LengthAwarePaginator
+    protected function isLoadedRow(array $eventData): bool
     {
-        $model = $this->getModel();
-        if ($this->withoutEloquentListeners ||
-            ! in_array(BroadcastsEvents::class, class_uses_recursive($model))
-        ) {
-            return $paginator;
-        }
+        $key = $this->getKeyFromEventData($eventData);
 
-        $this->broadcastChannels = [];
-        foreach ($paginator->items() as $item) {
-            $this->broadcastChannels[$item->getKey()] = $item->broadcastChannel();
-        }
-
-        if ($paginator->currentPage() === 1 && method_exists($model, 'getBroadcastChannel')) {
-            $this->broadcastChannels['created'] = $model::getBroadcastChannel(true);
-        } else {
-            $newModel = new $model();
-            $this->broadcastChannels['created'] = $newModel->broadcastChannel() . ($model::max($newModel->getKeyName()) + 1);
-        }
-
-        return $paginator;
+        return ! is_null($key)
+            && in_array(
+                (string) $key,
+                array_map('strval', array_column(data_get($this->data, 'data') ?? [], $this->modelKeyName)),
+                true
+            );
     }
 }
