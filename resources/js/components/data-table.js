@@ -5,6 +5,8 @@ export default function data_table(eloquentEvents = []) {
         textFilterRows: [0],
         extraInputs: {},
         _echoChannels: [],
+        _pendingEvents: [],
+        _sendingEvents: false,
         _disposers: [],
 
         get stickyCols() {
@@ -245,12 +247,39 @@ export default function data_table(eloquentEvents = []) {
             // subscribed by its name.
             const subscription = window.Echo.private(channel);
             this._eloquentEvents.forEach((event) =>
-                subscription.listen(event, (data) =>
-                    this.$wire.eloquentEventOccurred(event, data),
-                ),
+                subscription.listen(event, (data) => {
+                    this._pendingEvents.push([event, data]);
+                    this._sendEvents();
+                }),
             );
 
             this._echoChannels.push(channel);
+        },
+
+        async _sendEvents() {
+            if (this._sendingEvents) {
+                return;
+            }
+
+            this._sendingEvents = true;
+
+            try {
+                while (this._pendingEvents.length > 0) {
+                    const events = this._pendingEvents.splice(0);
+
+                    try {
+                        if (events.length === 1) {
+                            await this.$wire.eloquentEventOccurred(
+                                ...events[0],
+                            );
+                        } else {
+                            await this.$wire.refreshData();
+                        }
+                    } catch {}
+                }
+            } finally {
+                this._sendingEvents = false;
+            }
         },
 
         _leaveChannel(channel) {
