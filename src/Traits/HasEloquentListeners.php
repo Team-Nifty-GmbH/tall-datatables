@@ -4,10 +4,14 @@ namespace TeamNiftyGmbH\DataTable\Traits;
 
 use Illuminate\Database\Eloquent\BroadcastsEvents;
 use Illuminate\Support\Arr;
+use Livewire\Attributes\Locked;
 
 trait HasEloquentListeners
 {
     public array $broadcastChannels = [];
+
+    #[Locked]
+    public array $broadcastRowKeys = [];
 
     protected bool $withoutEloquentListeners = false;
 
@@ -194,10 +198,27 @@ trait HasEloquentListeners
         $key = $this->getKeyFromEventData($eventData);
 
         return ! is_null($key)
-            && in_array(
-                (string) $key,
-                array_map('strval', array_column(data_get($this->data, 'data') ?? [], $this->modelKeyName)),
-                true
-            );
+            && in_array((string) $key, array_map('strval', $this->rowKeys($this->data)), true);
+    }
+
+    protected function rowKeys(array $data): array
+    {
+        return array_column(
+            array_merge(
+                data_get($data, 'data') ?? [],
+                ...array_map(
+                    fn (mixed $group): array => data_get($group, 'data') ?? [],
+                    data_get($data, 'groups') ?? []
+                )
+            ),
+            $this->modelKeyName
+        );
+    }
+
+    protected function setData(array $data): void
+    {
+        parent::setData($data);
+
+        $this->broadcastRowKeys = $this->rowKeys($data);
     }
 }

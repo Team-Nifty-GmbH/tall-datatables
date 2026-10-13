@@ -575,3 +575,35 @@ describe('HasEloquentListeners – broadcast channels', function (): void {
             ->toBe(['private-' . BroadcastablePost::getBroadcastChannel(true)]);
     });
 });
+
+describe('HasEloquentListeners – broadcastRowKeys', function (): void {
+    it('exposes the keys of the shown rows for the browser filter', function (): void {
+        $posts = collect(range(1, 3))->map(fn (int $i): BroadcastablePost => BroadcastablePost::create([
+            'user_id' => $this->user->getKey(),
+            'title' => "Post {$i}",
+            'content' => 'Content',
+            'is_published' => true,
+        ]));
+
+        $component = Livewire::test(BroadcastablePostDataTable::class);
+
+        expect($component->get('broadcastRowKeys'))
+            ->toEqualCanonicalizing($posts->map->getKey()->all());
+    });
+
+    it('collects the keys of rows inside groups', function (): void {
+        $testable = Livewire::test(BroadcastablePostDataTable::class);
+        $instance = $testable->instance();
+
+        (fn () => $this->setData([
+            'data' => [],
+            'groups' => [
+                ['data' => [['id' => 4], ['id' => 5]]],
+                ['data' => [['id' => 6]]],
+                ['count' => 2],
+            ],
+        ]))->call($instance);
+
+        expect($instance->broadcastRowKeys)->toBe([4, 5, 6]);
+    });
+});

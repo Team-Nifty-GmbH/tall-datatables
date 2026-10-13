@@ -60,7 +60,7 @@ it('listens to the model events by name and refreshes the row', function (): voi
         );
     }');
 
-    $channel = $this->post->broadcastChannel();
+    $channel = BroadcastablePost::getBroadcastChannel(true);
 
     expect($subscribed)->toHaveKey($channel)
         ->and($subscribed[$channel])->toContain(

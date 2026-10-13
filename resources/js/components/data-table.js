@@ -264,13 +264,12 @@ export default function data_table(eloquentEvents = []) {
         },
 
         _isLoadedRow(data) {
-            const keyName = this.$wire.modelKeyName;
-            const key = data?.model?.[keyName];
+            const key = data?.model?.[this.$wire.modelKeyName];
 
             return (
                 key !== undefined &&
-                (this.$wire.data?.data || []).some(
-                    (row) => String(row?.[keyName]) === String(key),
+                (this.$wire.broadcastRowKeys || []).some(
+                    (rowKey) => String(rowKey) === String(key),
                 )
             );
         },
