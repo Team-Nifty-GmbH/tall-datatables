@@ -75,7 +75,7 @@ it('stays below the call limit when many events arrive at once', function (): vo
                 return response;
             };
 
-            const callback = window.__echoCallbacks[0];
+            const callback = (name, data) => window.__echoCallbacks.forEach((cb) => cb(name, data));
             for (let i = 1; i < 80; i++) {
                 callback(".BroadcastablePostUpdated", { model: { id: 1000 + i } });
             }
