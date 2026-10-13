@@ -1,4 +1,7 @@
-<x-tall-datatables::data-table-wrapper :attributes="$componentAttributes">
+<x-tall-datatables::data-table-wrapper
+    :attributes="$componentAttributes"
+    :eloquent-events="$eloquentEvents"
+>
     @includeWhen($includeBefore, $includeBefore)
     @if ($hasSidebar && $rendersSidebar)
         {{-- the slide teleports itself to body since tallstackui v3.2.1 --}}
