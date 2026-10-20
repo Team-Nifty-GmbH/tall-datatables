@@ -48,6 +48,16 @@ trait SupportsRelations
         return $this->constructWith()[2];
     }
 
+    /**
+     * The filter offers the relations of the root model, whatever relation the
+     * column tree currently shows.
+     */
+    #[Renderless]
+    public function getFilterRelations(): array
+    {
+        return $this->getAvailableModelRelations($this->getModel());
+    }
+
     public function getRelationTableCols(?string $relationName = null): array
     {
         $modelInfo = SchemaInfo::forModel($this->getModel());
@@ -94,9 +104,16 @@ trait SupportsRelations
             return ['cols' => [], 'relations' => [], 'displayPath' => []];
         }
 
-        $model = $model ?: $this->getModel();
+        $loadedPath = $relationName ? ($this->loadedPath ? $this->loadedPath . '.' : '') . $relationName : null;
 
-        $this->loadedPath = $relationName ? ($this->loadedPath ? $this->loadedPath . '.' : '') . $relationName : null;
+        // the model comes from the client, so it is only accepted when the path leads to it
+        $pathModel = $this->relatedModelForTreePath($loadedPath);
+        if (! $pathModel || ($model && ! is_a($pathModel, $model, true))) {
+            return ['cols' => [], 'relations' => [], 'displayPath' => []];
+        }
+
+        $model = $pathModel;
+        $this->loadedPath = $loadedPath;
 
         $path = [];
         $previousPath = null;
@@ -114,10 +131,7 @@ trait SupportsRelations
         $this->displayPath = $path;
 
         $schemaInfo = SchemaInfo::forModel($model);
-        $this->selectedRelations = $this->getModelRelations($schemaInfo);
-        if ($this->availableRelations !== ['*']) {
-            $this->selectedRelations = array_intersect_key($this->selectedRelations, array_flip($this->availableRelations));
-        }
+        $this->selectedRelations = $this->getAvailableModelRelations($model);
 
         $selectedCols = $schemaInfo->attributes->pluck('name')->toArray();
 
@@ -162,17 +176,19 @@ trait SupportsRelations
             return ['cols' => [], 'relations' => []];
         }
 
+        if (! $this->relatedModelForTreePath($path)) {
+            return ['cols' => [], 'relations' => []];
+        }
+
         $this->loadedPath = $path;
         $data = Cache::get($this->relationTreeCacheKey($path));
 
         if (is_null($data)) {
             if ($path) {
                 $this->loadedPath = null;
-                $currentModel = $this->getModel();
 
                 foreach (explode('.', $path) as $segment) {
-                    $currentModel = get_class(app($currentModel)->{$segment}()->getRelated());
-                    $this->loadRelation($currentModel, $segment);
+                    $this->loadRelation(relationName: $segment);
                 }
             } else {
                 $this->loadRelation($this->getModel());
@@ -218,7 +234,7 @@ trait SupportsRelations
         foreach ($relationParts as $relationName) {
             $relationName = Str::camel($relationName);
 
-            if (! method_exists($model, $relationName)) {
+            if (! SchemaInfo::forModel($model)->relation($relationName)) {
                 throw new Exception("Relation '{$relationName}' is not defined on " . $model::class);
             }
 
@@ -288,11 +304,8 @@ trait SupportsRelations
                 if (str_ends_with($col, '_count')) {
                     $relationName = Str::camel(Str::beforeLast($col, '_count'));
 
-                    try {
-                        app($this->getModel())->{$relationName}();
+                    if (SchemaInfo::forModel($this->getModel())->relation($relationName)) {
                         $this->withCountRelations[$col] = $relationName;
-                    } catch (BadMethodCallException) {
-                        // Not a relation
                     }
                 }
             }
@@ -315,12 +328,11 @@ trait SupportsRelations
             if (str_ends_with($enabledCol, '_count')) {
                 $relationName = Str::camel(Str::beforeLast($enabledCol, '_count'));
 
-                try {
-                    $modelBase->{$relationName}();
+                if (SchemaInfo::forModel($modelBase)->relation($relationName)) {
                     $this->withCountRelations[$enabledCol] = $relationName;
                     $filterable[] = $enabledCol;
                     $sortable[] = $enabledCol;
-                } catch (BadMethodCallException) {
+                } else {
                     $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
                 }
 
@@ -347,11 +359,12 @@ trait SupportsRelations
                 $path = $path ? $path . '.' . $relationName : $relationName;
 
                 try {
-                    if ($model) {
-                        $relationInstance = $model->{$relationName}();
-                    } else {
-                        $relationInstance = $modelBase->{$relationName}();
+                    // a column comes from the client, a segment that is no relation must never be called
+                    if (! SchemaInfo::forModel($model ?? $modelBase)->relation($relationName)) {
+                        throw new BadMethodCallException();
                     }
+
+                    $relationInstance = ($model ?? $modelBase)->{$relationName}();
                 } catch (BadMethodCallException) {
                     $this->enabledCols = array_values(array_diff($this->enabledCols, [$enabledCol]));
                     $with = $withBeforeCol;
@@ -512,6 +525,15 @@ trait SupportsRelations
         return $returnValue;
     }
 
+    protected function getAvailableModelRelations(string $model): array
+    {
+        $relations = $this->getModelRelations(SchemaInfo::forModel($model));
+
+        return $this->availableRelations === ['*']
+            ? $relations
+            : array_intersect_key($relations, array_flip($this->availableRelations));
+    }
+
     protected function getFilterValueList(string $enabledCol, Attribute $attributeInfo): void
     {
         if ($this->filterValueLists[$enabledCol] ?? false) {
@@ -613,9 +635,26 @@ trait SupportsRelations
         return $modelRelations;
     }
 
+    protected function relatedModelForTreePath(?string $path): ?string
+    {
+        $model = $this->getModel();
+
+        foreach ($path ? explode('.', $path) : [] as $segment) {
+            $model = data_get($this->getAvailableModelRelations($model), [$segment, 'model']);
+
+            if (! is_string($model)) {
+                return null;
+            }
+        }
+
+        return $model;
+    }
+
     protected function relationTreeCacheKey(?string $path): string
     {
-        return 'relation-tree-widget.' . App::getLocale() . '.' . ($path ?? $this->getModel());
+        // the tree depends on the table too, available cols and relations differ per table
+        return 'relation-tree-widget.' . App::getLocale() . '.' . $this->getCacheKey() . '.'
+            . $this->getModel() . '.' . $path;
     }
 
     /**

@@ -4,6 +4,7 @@ namespace TeamNiftyGmbH\DataTable\Support;
 
 use Illuminate\Database\Eloquent\Model;
 use TeamNiftyGmbH\DataTable\Formatters\FormatterRegistry;
+use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
 use Throwable;
 
 class RowTransformer
@@ -64,12 +65,9 @@ class RowTransformer
         $relation = implode('.', $parts);
 
         try {
-            $related = $model;
-            foreach (explode('.', $relation) as $segment) {
-                $related = $related->{$segment}()->getRelated();
-            }
+            $related = SchemaInfo::relatedModelForPath($model, $relation);
 
-            return $related->getCasts();
+            return $related ? app($related)->getCasts() : [];
         } catch (Throwable) {
             return [];
         }

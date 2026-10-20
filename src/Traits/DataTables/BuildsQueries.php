@@ -1451,12 +1451,9 @@ trait BuildsQueries
         array_pop($parts);
 
         try {
-            $related = $item;
-            foreach ($parts as $segment) {
-                $related = $related->{$segment}()->getRelated();
-            }
+            $related = SchemaInfo::relatedModelForPath($item, implode('.', $parts));
 
-            return $related->getCasts();
+            return $related ? app($related)->getCasts() : [];
         } catch (Throwable) {
             return [];
         }

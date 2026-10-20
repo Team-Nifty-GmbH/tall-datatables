@@ -223,10 +223,11 @@
         wire:target="loadFields"
         wire:loading.attr="disabled"
         x-model="newFilter.relation"
+        x-init="loadFilterRelations()"
     >
         <option value="0">{{ __('This table') }}</option>
         <template
-            x-for="relation in selectedRelations"
+            x-for="relation in filterRelations || []"
         >
             <option
                 x-bind:value="relation.name"
