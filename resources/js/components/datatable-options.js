@@ -46,6 +46,7 @@ export default function datatable_options(wire) {
         exportableColumns: [],
         selectedCols: [],
         selectedRelations: [],
+        filterRelations: null,
         displayPath: [],
         aggregatable: [],
         groupable: [],
@@ -434,6 +435,14 @@ export default function datatable_options(wire) {
             };
             wire.selectedCols = cols;
             wire.selectedRelations = this.selectedRelations;
+        },
+
+        // the column tree moves selectedRelations along the path it shows, the
+        // filter always offers the relations of the root model
+        async loadFilterRelations() {
+            if (this.filterRelations !== null) return;
+            this.filterRelations = [];
+            this.filterRelations = await wire.getFilterRelations();
         },
 
         handleTabNavigate(tab) {

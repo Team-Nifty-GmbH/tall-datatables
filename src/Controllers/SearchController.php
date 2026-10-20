@@ -3,14 +3,13 @@
 namespace TeamNiftyGmbH\DataTable\Controllers;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Scout\Searchable;
 use TeamNiftyGmbH\DataTable\Contracts\InteractsWithDataTables;
-use Throwable;
+use TeamNiftyGmbH\DataTable\Helpers\SchemaInfo;
 
 class SearchController extends Controller
 {
@@ -42,23 +41,14 @@ class SearchController extends Controller
         }
 
         if ($request->has('with')) {
-            $modelInstance = app($model);
             $requestedWith = $request->get('with');
             $relations = is_array($requestedWith) ? $requestedWith : [$requestedWith];
 
-            $validRelations = array_filter($relations, function (string $relation) use ($modelInstance): bool {
-                $relationName = explode('.', $relation)[0];
-
-                if (! method_exists($modelInstance, $relationName)) {
-                    return false;
-                }
-
-                try {
-                    return $modelInstance->{$relationName}() instanceof Relation;
-                } catch (Throwable) {
-                    return false;
-                }
-            });
+            // eager loading calls every segment of the path, each one has to be a relation
+            $validRelations = array_filter(
+                $relations,
+                fn (string $relation): bool => (bool) SchemaInfo::relatedModelForPath($model, $relation)
+            );
 
             if (! empty($validRelations)) {
                 $query->with(is_array($requestedWith) ? $validRelations : $validRelations[0]);
@@ -146,31 +136,17 @@ class SearchController extends Controller
 
         if ($request->has('whereDoesntHave')) {
             $relation = $request->get('whereDoesntHave');
-            $modelInstance = app($model);
 
-            if (is_string($relation) && method_exists($modelInstance, $relation)) {
-                try {
-                    if ($modelInstance->{$relation}() instanceof Relation) {
-                        $query->whereDoesntHave($relation);
-                    }
-                } catch (Throwable) {
-                    // Invalid relation — skip silently
-                }
+            if (is_string($relation) && SchemaInfo::relatedModelForPath($model, $relation)) {
+                $query->whereDoesntHave($relation);
             }
         }
 
         if ($request->has('whereHas')) {
             $relation = $request->get('whereHas');
-            $modelInstance = app($model);
 
-            if (is_string($relation) && method_exists($modelInstance, $relation)) {
-                try {
-                    if ($modelInstance->{$relation}() instanceof Relation) {
-                        $query->whereHas($relation);
-                    }
-                } catch (Throwable) {
-                    // Invalid relation — skip silently
-                }
+            if (is_string($relation) && SchemaInfo::relatedModelForPath($model, $relation)) {
+                $query->whereHas($relation);
             }
         }
 

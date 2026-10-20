@@ -100,6 +100,31 @@ class SchemaInfo
         return $info;
     }
 
+    /**
+     * The model a dotted relation path leads to, or null as soon as a segment is no
+     * relation. A path usually comes from the client and every segment ends up called
+     * as a method on the model, where a name that is no relation falls through
+     * __call into the query builder (truncate, a save on a fresh instance). Only the
+     * methods the relation finder recognised as relations may ever be called.
+     *
+     * @param  class-string<Model>|Model  $model
+     * @return class-string<Model>|null
+     */
+    public static function relatedModelForPath(string|Model $model, string $path): ?string
+    {
+        $model = is_string($model) ? $model : $model::class;
+
+        foreach (explode('.', $path) as $segment) {
+            $model = static::forModel($model)->relation($segment)?->related;
+
+            if (! $model) {
+                return null;
+            }
+        }
+
+        return $model;
+    }
+
     protected static function attributeIsHidden(string $attribute, Model $model): bool
     {
         $hidden = $model->getHidden();

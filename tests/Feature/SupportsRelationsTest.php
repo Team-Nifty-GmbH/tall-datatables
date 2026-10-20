@@ -118,7 +118,7 @@ describe('SupportsRelations', function (): void {
 
             $result = $component->instance()->loadRelation(Post::class);
 
-            $cached = Cache::get('relation-tree-widget.' . App::getLocale() . '.' . Post::class);
+            $cached = Cache::get('relation-tree-widget.' . App::getLocale() . '.' . $component->instance()->getCacheKey() . '.' . Post::class . '.');
 
             expect($cached)->not->toBeNull()
                 ->toHaveKey('cols')
@@ -994,7 +994,7 @@ describe('SupportsRelations', function (): void {
                 ->toHaveKey('displayPath');
 
             // After fallback, cache should be populated
-            $cached = Cache::get('relation-tree-widget.' . App::getLocale() . '.' . Post::class);
+            $cached = Cache::get('relation-tree-widget.' . App::getLocale() . '.' . $component->instance()->getCacheKey() . '.' . Post::class . '.');
             expect($cached)->not->toBeNull();
         });
     });
@@ -1160,8 +1160,9 @@ describe('addDynamicJoin', function (): void {
         $query = Post::query();
         $method = new ReflectionMethod($instance, 'addDynamicJoin');
 
+        // a method that is no relation is rejected before it is ever called
         expect(fn () => $method->invoke($instance, $query, 'getLabel'))
-            ->toThrow(Exception::class, 'does not return a relation');
+            ->toThrow(Exception::class, "Relation 'getLabel' is not defined");
     });
 
     it('throws exception for non-existent relation', function (): void {
