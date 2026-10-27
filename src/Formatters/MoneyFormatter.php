@@ -26,12 +26,14 @@ class MoneyFormatter implements Formatter
         }
 
         $escaped = e($formatted);
+        // Not bccomp: a float like -1.3E-8 casts to scientific notation, which bcmath rejects.
+        $sign = (float) $value <=> 0.0;
 
-        if (bccomp((string) $value, '0', 10) === -1) {
+        if ($sign === -1) {
             return '<span class="text-red-600">' . $escaped . '</span>';
         }
 
-        if (bccomp((string) $value, '0', 10) === 1) {
+        if ($sign === 1) {
             return '<span class="text-green-600">' . $escaped . '</span>';
         }
 

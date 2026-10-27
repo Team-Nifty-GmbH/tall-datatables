@@ -79,6 +79,13 @@ describe('MoneyFormatter', function (): void {
             ->not->toContain('text-green-600');
     });
 
+    it('colors floats that cast to scientific notation', function (): void {
+        $formatter = new MoneyFormatter(colored: true);
+
+        expect($formatter->format(-1.3E-8))->toContain('text-red-600')
+            ->and($formatter->format(2.5E-9))->toContain('text-green-600');
+    });
+
     it('does not add color span when not colored', function (): void {
         $formatter = new MoneyFormatter(colored: false);
         $result = $formatter->format(-50.00);
