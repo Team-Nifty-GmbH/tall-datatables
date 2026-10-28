@@ -84,6 +84,9 @@ class DataTable extends Component
     public bool $hasNoRedirect = false;
 
     #[Locked]
+    public bool $hasRelevance = false;
+
+    #[Locked]
     public bool $hasSidebar = true;
 
     public bool $hasStickyCols = true;
@@ -570,10 +573,6 @@ class DataTable extends Component
             && $this->activeLayout !== 'kanban'
             && $this->islandCacheValid();
 
-        if ($useIslands) {
-            $this->skipRender();
-        }
-
         $query = $this->buildSearch();
         $baseQuery = $query->clone();
 
@@ -593,11 +592,7 @@ class DataTable extends Component
                     : [];
             }
 
-            if ($useIslands) {
-                $this->renderIsland('body');
-                $this->renderIsland('footer');
-                $this->renderIsland('badges');
-            }
+            $this->renderIslandsOrPage($useIslands);
 
             return;
         }
@@ -632,11 +627,7 @@ class DataTable extends Component
             array_shift($this->data['links']);
         }
 
-        if ($useIslands) {
-            $this->renderIsland('body');
-            $this->renderIsland('footer');
-            $this->renderIsland('badges');
-        }
+        $this->renderIslandsOrPage($useIslands);
     }
 
     #[Renderless]
@@ -1374,5 +1365,25 @@ class DataTable extends Component
         $this->userFilters = array_values(
             array_filter($this->userFilters, fn ($g) => is_array($g) && ! empty($g))
         );
+    }
+
+    private function renderIslandsOrPage(bool $useIslands): void
+    {
+        $hasRelevance = collect($this->data['data'] ?? [])->contains(fn (array $record): bool => isset($record['_relevance']));
+
+        if ($hasRelevance !== $this->hasRelevance) {
+            $this->hasRelevance = $hasRelevance;
+            $this->islandsHaveMounted = false;
+            $useIslands = false;
+        }
+
+        if (! $useIslands) {
+            return;
+        }
+
+        $this->skipRender();
+        $this->renderIsland('body');
+        $this->renderIsland('footer');
+        $this->renderIsland('badges');
     }
 }
