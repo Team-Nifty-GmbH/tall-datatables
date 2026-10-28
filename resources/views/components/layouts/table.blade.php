@@ -28,7 +28,7 @@
             x-effect="syncColWidths($el)"
         >
             @php
-                $hasRelevance = collect($this->data['data'] ?? [])->contains(fn ($r) => isset($r['_relevance']));
+                $hasRelevance = $this->hasRelevance;
             @endphp
             <thead style="z-index: 9">
                 @if ($hasHead)
@@ -393,7 +393,7 @@
                 @island(name: 'body')
                 @php extract($this->getIslandData()); @endphp
                 @php
-                    $hasRelevance = collect($this->data['data'] ?? [])->contains(fn ($r) => isset($r['_relevance']));
+                    $hasRelevance = $this->hasRelevance;
                 @endphp
                 @if (! $this->initialized)
                     <tr>
