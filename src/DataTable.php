@@ -328,9 +328,10 @@ class DataTable extends Component
             ? SchemaInfo::forModel($this->getModel())->attributes->pluck('name')->toArray()
             : $this->availableCols;
 
-        return array_values(array_unique(array_merge(
-            $this->enabledCols, $availableCols, [$this->modelKeyName]
-        )));
+        return array_values(array_filter(
+            array_unique(array_merge($this->enabledCols, $availableCols, [$this->modelKeyName])),
+            fn (string $column): bool => ! $this->isHiddenColumn($column)
+        ));
     }
 
     #[Renderless]

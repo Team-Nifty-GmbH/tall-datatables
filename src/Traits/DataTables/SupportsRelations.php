@@ -62,13 +62,17 @@ trait SupportsRelations
     {
         $modelInfo = SchemaInfo::forModel($this->getModel());
 
+        if ($relationName && $this->isHiddenOn($this->getModel(), $relationName)) {
+            return [];
+        }
+
         if ($relationName && $modelInfo->relation($relationName)?->related) {
             $modelInfo = SchemaInfo::forModel($modelInfo->relation($relationName)->related);
         }
 
         return $modelInfo
             ->attributes
-            ->filter(fn ($attribute) => ! $attribute->virtual)
+            ->filter(fn ($attribute) => ! $attribute->virtual && ! $this->isHiddenOn($modelInfo->class, $attribute->name))
             ->when(
                 $this->availableCols !== ['*'],
                 fn ($attributes) => $attributes->whereIn('name', $this->availableCols)
@@ -133,7 +137,10 @@ trait SupportsRelations
         $schemaInfo = SchemaInfo::forModel($model);
         $this->selectedRelations = $this->getAvailableModelRelations($model);
 
-        $selectedCols = $schemaInfo->attributes->pluck('name')->toArray();
+        $selectedCols = $schemaInfo->attributes
+            ->reject(fn (Attribute $attribute): bool => $this->isHiddenOn($model, $attribute->name))
+            ->pluck('name')
+            ->toArray();
 
         if ($this->availableCols !== ['*']) {
             $selectedCols = array_intersect($selectedCols, $this->availableCols);
@@ -586,6 +593,10 @@ trait SupportsRelations
         $modelQuery = app($schemaInfo->class);
         $modelRelations = [];
         foreach ($schemaInfo->relations as $relation) {
+            if ($this->isHiddenOn($schemaInfo->class, $relation->name)) {
+                continue;
+            }
+
             try {
                 if (! $modelQuery->relationResolver($schemaInfo->class, $relation->name)) {
                     $reflection = new ReflectionMethod($modelQuery, $relation->name);
