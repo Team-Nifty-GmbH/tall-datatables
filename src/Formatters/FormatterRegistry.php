@@ -125,7 +125,11 @@ class FormatterRegistry
             'duration' => new DurationFormatter(),
             'duration:seconds' => new DurationFormatter(showSeconds: true),
             'enum' => new EnumFormatter(),
-            default => $this->isEnum($castClass) ? new EnumFormatter($castClass) : new StringFormatter(),
+            default => match (true) {
+                $this->isEnum($castClass) => new EnumFormatter($castClass),
+                str_contains($castClass, ':') => $this->resolve(strstr($castClass, ':', true)),
+                default => new StringFormatter(),
+            },
         };
     }
 }
