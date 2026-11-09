@@ -126,6 +126,19 @@ describe('FormatterRegistry', function (): void {
             ->and($formatter->mode)->toBe('datetime');
     });
 
+    it('formats a date cast with format parameters as a localized date', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('date:y-m-d')->format('2026-11-09', ['_locale' => 'de']))->toBe('09.11.2026');
+    });
+
+    it('formats a datetime cast with format parameters as a localized datetime', function (): void {
+        $registry = new FormatterRegistry();
+
+        expect($registry->resolve('datetime:Y-m-d H:i')->format('2026-11-09 14:30:00', ['_locale' => 'de']))
+            ->toBe('09.11.2026 14:30');
+    });
+
     it('auto-detects image cast to ImageFormatter', function (): void {
         $registry = new FormatterRegistry();
 
