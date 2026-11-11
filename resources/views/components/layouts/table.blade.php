@@ -254,9 +254,10 @@
                                         </div>
                                     </template>
                                 </td>
-                                @if ($hasRelevance)
+                                {{-- Alpine cloned this row from its template, so a morph of the template never reaches it. --}}
+                                <template x-if="$wire.hasRelevance">
                                     <td class="dark:bg-secondary-700/30 border-b border-l border-gray-100 bg-gray-50/50 px-0 py-0 dark:border-secondary-700/50"></td>
-                                @endif
+                                </template>
                                 <template x-for="col in $wire.enabledCols" x-bind:key="'filter-' + rowIndex + '-' + col">
                                     <td
                                         class="group/cell dark:bg-secondary-700/30 border-b border-l border-gray-100 bg-gray-50/50 px-0 py-0 dark:border-secondary-700/50"

@@ -3,9 +3,11 @@
 namespace Tests\Fixtures\Livewire;
 
 use Illuminate\Database\Eloquent\Builder;
+use Livewire\Attributes\Layout;
 use TeamNiftyGmbH\DataTable\DataTable;
 use Tests\Fixtures\Models\SearchablePost;
 
+#[Layout('components.layouts.app')]
 class RankingScoreSearchableDataTable extends DataTable
 {
     public array $enabledCols = [
