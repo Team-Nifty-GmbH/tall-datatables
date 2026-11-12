@@ -731,11 +731,14 @@ trait BuildsQueries
         $attribute = array_pop($segments);
 
         foreach ($segments as $segment) {
-            if ($this->isHiddenOn($model, $segment)) {
+            // Columns are written snake case (post_user.password), relations and their $hidden entries camel case.
+            $relation = Str::camel($segment);
+
+            if ($this->isHiddenOn($model, $relation)) {
                 return true;
             }
 
-            $model = SchemaInfo::forModel($model)->relation($segment)?->related;
+            $model = SchemaInfo::forModel($model)->relation($relation)?->related;
 
             if (! $model) {
                 return false;

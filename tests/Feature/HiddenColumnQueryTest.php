@@ -1,6 +1,7 @@
 <?php
 
 use Livewire\Livewire;
+use Tests\Fixtures\Livewire\CommentWithPostUserDataTable;
 use Tests\Fixtures\Livewire\PostDataTable;
 use Tests\Fixtures\Livewire\UserDataTable;
 use Tests\Fixtures\Models\User;
@@ -76,6 +77,20 @@ describe('hidden columns of a relation', function (): void {
             ->and(array_column($component->instance()->loadRelation(User::class, 'user')['cols'], 'col'))
             ->not->toContain('password')
             ->toContain('email');
+    });
+
+    it('cannot be used with a snake case relation path', function (): void {
+        $component = Livewire::test(CommentWithPostUserDataTable::class)
+            ->set('enabledCols', ['body', 'post_user.password'])
+            ->set('userFilters', [
+                [['column' => 'post_user.password', 'operator' => '=', 'value' => 'secret-a']],
+            ])
+            ->set('userOrderBy', 'post_user.password')
+            ->call('loadData');
+
+        expect($component->get('enabledCols'))->toBe(['body'])
+            ->and(json_encode($component->get('userFilters')))->not->toContain('password')
+            ->and($component->get('userOrderBy'))->toBe('');
     });
 
     it('cannot be used to filter or sort', function (): void {
