@@ -27,22 +27,24 @@ class SavedFilterQuery
      */
     public function resolve(string $dataTable, array $settings): Builder
     {
-        $filters = array_values(array_filter(
-            data_get($settings, 'userFilters', []),
-            fn ($group) => is_array($group) && $group !== []
-        ));
-
-        // A filter without conditions matches every row there is. Read as a
-        // source that is not an empty result, it is a missing one, and the
-        // difference decides whether a caller gets six digits of rows or none.
-        if ($filters === []) {
-            throw new InvalidArgumentException(__('The saved filter holds no condition.'));
-        }
-
         $table = app($dataTable);
 
         return Closure::bind(
-            function () use ($filters): Builder {
+            function () use ($settings): Builder {
+                // Conditions on hidden columns are dropped by the table, so they are
+                // dropped before counting what is left, not after.
+                $filters = array_values(array_filter(
+                    $this->withoutHiddenFilters(data_get($settings, 'userFilters', [])),
+                    fn ($group) => is_array($group) && $group !== []
+                ));
+
+                // A filter without conditions matches every row there is. Read as a
+                // source that is not an empty result, it is a missing one, and the
+                // difference decides whether a caller gets six digits of rows or none.
+                if ($filters === []) {
+                    throw new InvalidArgumentException(__('The saved filter holds no condition.'));
+                }
+
                 $this->mount();
 
                 // Isolated from whatever the interface cached under the table's
