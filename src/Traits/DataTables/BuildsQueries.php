@@ -357,6 +357,8 @@ trait BuildsQueries
      */
     protected function buildSearch(bool $unpaginated = false): Builder
     {
+        $this->removeHiddenColumns();
+
         /** @var Model $model */
         $model = $this->getModel();
 
@@ -722,6 +724,35 @@ trait BuildsQueries
         );
     }
 
+    protected function isHiddenColumn(string $column): bool
+    {
+        $model = $this->getModel();
+        $segments = explode('.', $column);
+        $attribute = array_pop($segments);
+
+        foreach ($segments as $segment) {
+            // Columns are written snake case (post_user.password), relations and their $hidden entries camel case.
+            $relation = Str::camel($segment);
+
+            if ($this->isHiddenOn($model, $relation)) {
+                return true;
+            }
+
+            $model = SchemaInfo::forModel($model)->relation($relation)?->related;
+
+            if (! $model) {
+                return false;
+            }
+        }
+
+        return $this->isHiddenOn($model, $attribute);
+    }
+
+    protected function isHiddenOn(string $model, string $attribute): bool
+    {
+        return in_array(strtolower($attribute), array_map('strtolower', app($model)->getHidden()), true);
+    }
+
     protected function itemToArray($item): array
     {
         if ($appends = $this->getAppends()) {
@@ -910,6 +941,48 @@ trait BuildsQueries
             || $relation instanceof BelongsToMany
             || $relation instanceof MorphMany
             || $relation instanceof MorphToMany;
+    }
+
+    protected function removeHiddenColumns(): void
+    {
+        $isVisible = fn (mixed $column): bool => ! is_string($column) || ! $this->isHiddenColumn($column);
+
+        $this->enabledCols = array_values(array_filter($this->enabledCols, $isVisible));
+        $this->aggregatableCols = array_map(
+            fn (array|string $columns): array => array_values(array_filter(Arr::wrap($columns), $isVisible)),
+            $this->aggregatableCols
+        );
+        $this->userFilters = $this->withoutHiddenFilters($this->userFilters);
+        $this->userMultiSort = array_values(
+            array_filter($this->userMultiSort, fn (mixed $sort): bool => $isVisible(data_get($sort, 'column')))
+        );
+
+        if (! $isVisible($this->userOrderBy)) {
+            $this->userOrderBy = '';
+        }
+
+        if (! $isVisible($this->groupBy)) {
+            $this->groupBy = null;
+        }
+    }
+
+    protected function withoutHiddenFilters(array $filters): array
+    {
+        foreach ($filters as $key => $filter) {
+            $column = match (true) {
+                is_array($filter) && array_key_exists('column', $filter) => $filter['column'],
+                is_string($key) && ! is_array($filter) => $key,
+                default => null,
+            };
+
+            if (is_string($column) && $this->isHiddenColumn($column)) {
+                unset($filters[$key]);
+            } elseif (is_array($filter) && is_null($column)) {
+                $filters[$key] = $this->withoutHiddenFilters($filter);
+            }
+        }
+
+        return $filters;
     }
 
     private function applyFallbackSearch(Builder $query, string $search): void

@@ -59,4 +59,15 @@ test('a filter without any condition is refused instead of quietly matching ever
     'no filters' => [['userFilters' => []]],
     'only empty groups' => [['userFilters' => [[]]]],
     'no key at all' => [[]],
+    'only hidden columns' => [['userFilters' => [[['column' => 'user.password', 'operator' => '=', 'value' => 'x']]]]],
 ]);
+
+test('a group holding only hidden columns does not widen the others', function (): void {
+    $match = ($this->post)('Keep');
+    ($this->post)('Leave');
+
+    expect(($this->resolve)([
+        [['column' => 'user.password', 'operator' => 'like', 'value' => '%']],
+        [['column' => 'title', 'operator' => '=', 'value' => 'Keep']],
+    ]))->toBe([$match->getKey()]);
+});
