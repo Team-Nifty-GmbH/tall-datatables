@@ -329,7 +329,11 @@ class DataTable extends Component
             : $this->availableCols;
 
         return array_values(array_filter(
-            array_unique(array_merge($this->enabledCols, $availableCols, [$this->modelKeyName])),
+            array_unique(array_merge(
+                $this->enabledCols,
+                $availableCols,
+                [$this->modelKeyName ?? app($this->getModel())->getKeyName()]
+            )),
             fn (string $column): bool => ! $this->isHiddenColumn($column)
         ));
     }
