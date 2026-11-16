@@ -945,6 +945,13 @@ describe('getAvailableCols', function (): void {
         expect($availableCols)->toContain('title');
         expect($availableCols)->toContain('id');
     });
+
+    it('includes the model key before the table is mounted', function (): void {
+        $availableCols = (new PostDataTable())->getAvailableCols();
+
+        expect($availableCols)->toContain('title')
+            ->and($availableCols)->toContain('id');
+    });
 });
 
 describe('formatFilterBadgeValue', function (): void {
