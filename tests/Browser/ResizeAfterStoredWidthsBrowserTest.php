@@ -64,44 +64,45 @@ it('lets a column be dragged again once a width is stored', function (): void {
     // itself, and the event goes to whatever actually sits there. A handle that
     // has ended up underneath something else fails here the way it fails for a
     // real hand on a real mouse.
-    $result = $page->script('() => {
-        const drag = (distance) => {
-            const handle = document.querySelectorAll(".cursor-col-resize")[0];
-            if (! handle) return { error: "no handle" };
+    // Each drag is a script call of its own and the wait between them happens
+    // here: a script running past a second is retried by the browser plugin,
+    // and a retry would drag the column once more.
+    $drag = '() => {
+        const distance = 120;
+        const handle = document.querySelectorAll(".cursor-col-resize")[0];
+        if (! handle) return { error: "no handle" };
 
-            const th = handle.closest("th");
-            const rect = handle.getBoundingClientRect();
-            const x = rect.left + rect.width / 2;
-            const y = rect.top + rect.height / 2;
-            const target = document.elementFromPoint(x, y);
-            const before = th.offsetWidth;
+        const th = handle.closest("th");
+        const rect = handle.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        const target = document.elementFromPoint(x, y);
+        const before = th.offsetWidth;
 
-            target.dispatchEvent(new MouseEvent("mousedown", { clientX: x, clientY: y, bubbles: true }));
-            document.dispatchEvent(new MouseEvent("mousemove", { clientX: x + distance, clientY: y, bubbles: true }));
-            document.dispatchEvent(new MouseEvent("mouseup", { clientX: x + distance, clientY: y, bubbles: true }));
+        target.dispatchEvent(new MouseEvent("mousedown", { clientX: x, clientY: y, bubbles: true }));
+        document.dispatchEvent(new MouseEvent("mousemove", { clientX: x + distance, clientY: y, bubbles: true }));
+        document.dispatchEvent(new MouseEvent("mouseup", { clientX: x + distance, clientY: y, bubbles: true }));
 
-            return {
-                handleHit: target === handle,
-                topmost: target ? target.tagName + "." + (target.className || "") : null,
-                before,
-                after: th.offsetWidth,
-            };
+        return {
+            handleHit: target === handle,
+            topmost: target ? target.tagName + "." + (target.className || "") : null,
+            before,
+            after: th.offsetWidth,
         };
+    }';
 
-        return new Promise((resolve) => {
-            const first = drag(120);
+    $first = $page->script($drag);
 
-            // Long enough for the round trip that stores the width and for the
-            // re-render that follows it.
-            setTimeout(() => {
-                const second = drag(120);
+    // Long enough for the round trip that stores the width and for the
+    // re-render that follows it.
+    $page->wait(2.5);
 
-                setTimeout(() => resolve({ first, second }), 1500);
-            }, 2500);
-        });
-    }');
+    $second = $page->script($drag);
 
-    $data = is_array($result) && isset($result[0]) ? $result[0] : $result;
+    $data = [
+        'first' => is_array($first) && isset($first[0]) ? $first[0] : $first,
+        'second' => is_array($second) && isset($second[0]) ? $second[0] : $second,
+    ];
 
     expect($data['first']['handleHit'])->toBeTrue()
         ->and($data['first']['after'])->toBeGreaterThan($data['first']['before']);

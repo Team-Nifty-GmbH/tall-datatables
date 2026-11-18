@@ -36,7 +36,9 @@ describe('Options sidebar on demand', function (): void {
 
         $page->wait(2);
 
-        $result = $page->script('async () => {
+        // Every script call is kept below a second: a slower one is retried by
+        // the browser plugin, and a retry would click the opener twice.
+        $before = $page->script('() => {
             const before = document.querySelectorAll(\'[x-data^="datatableOptions"]\').length;
 
             const button = [...document.querySelectorAll("[x-on\\\\:click]")]
@@ -47,8 +49,17 @@ describe('Options sidebar on demand', function (): void {
             }
 
             button.click();
-            await new Promise((resolve) => setTimeout(resolve, 2500));
 
+            return before;
+        }');
+
+        $before = is_array($before) && isset($before[0]) ? $before[0] : $before;
+
+        expect($before)->toBe(0);
+
+        $page->wait(2.5);
+
+        $result = $page->script('() => {
             const el = document.querySelector(\'[x-data^="datatableOptions"]\');
 
             if (! el) {
@@ -58,7 +69,6 @@ describe('Options sidebar on demand', function (): void {
             const options = window.Alpine.$data(el);
 
             return JSON.stringify({
-                before,
                 cols: options.enabledCols.length,
                 // teleported: the slide is a direct child of body, not part of
                 // the livewire root the button sits in
@@ -69,13 +79,11 @@ describe('Options sidebar on demand', function (): void {
 
         $raw = is_array($result) && isset($result[0]) ? $result[0] : $result;
 
-        expect($raw)->not->toBe('no-opener')
-            ->and($raw)->not->toBe('no-options-component');
+        expect($raw)->not->toBe('no-options-component');
 
         $state = json_decode((string) $raw, true);
 
-        expect($state['before'])->toBe(0)
-            ->and($state['cols'])->toBeGreaterThan(0)
+        expect($state['cols'])->toBeGreaterThan(0)
             ->and($state['outsideRoot'])->toBeTrue()
             ->and($state['visible'])->toBeTrue();
     });
@@ -85,15 +93,15 @@ describe('Options sidebar on demand', function (): void {
 
         $page->wait(2);
 
-        $result = $page->script('async () => {
-            const wire = window.Livewire.all()[0].$wire;
+        $clickOpener = '() => [...document.querySelectorAll("[x-on\\\\:click]")]
+            .find((el) => (el.getAttribute("x-on:click") || "").includes("showSidebar"))
+            .click()';
 
-            const opener = () => [...document.querySelectorAll("[x-on\\\\:click]")]
-                .find((el) => (el.getAttribute("x-on:click") || "").includes("showSidebar"));
+        // One click per script call, see above.
+        $page->script($clickOpener);
+        $page->wait(2.5);
 
-            opener().click();
-            await new Promise((resolve) => setTimeout(resolve, 2500));
-
+        $closed = $page->script('() => {
             const closer = [...document.querySelectorAll("[x-on\\\\:click]")]
                 .find((el) => (el.getAttribute("x-on:click") || "").includes("$tsui.close.slide"));
 
@@ -102,11 +110,20 @@ describe('Options sidebar on demand', function (): void {
             }
 
             closer.click();
-            await new Promise((resolve) => setTimeout(resolve, 800));
 
-            opener().click();
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            return "closed";
+        }');
 
+        $closed = is_array($closed) && isset($closed[0]) ? $closed[0] : $closed;
+
+        expect($closed)->not->toBe('no-close-button');
+
+        $page->wait(0.8);
+        $page->script($clickOpener);
+        $page->wait(1.5);
+
+        $result = $page->script('() => {
+            const wire = window.Livewire.all()[0].$wire;
             const el = document.querySelector(\'[x-data^="datatableOptions"]\');
 
             if (! el) {
@@ -124,8 +141,7 @@ describe('Options sidebar on demand', function (): void {
 
         $raw = is_array($result) && isset($result[0]) ? $result[0] : $result;
 
-        expect($raw)->not->toBe('no-close-button')
-            ->and($raw)->not->toBe('options-gone-after-reopen');
+        expect($raw)->not->toBe('options-gone-after-reopen');
 
         $state = json_decode((string) $raw, true);
 
