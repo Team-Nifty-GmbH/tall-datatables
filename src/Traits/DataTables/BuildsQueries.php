@@ -336,9 +336,13 @@ trait BuildsQueries
                 continue;
             }
 
-            // Use ArrayFormatter for array values when StringFormatter would fail
-            if (is_array($raw) && $formatter instanceof StringFormatter) {
-                $formatter = new ArrayFormatter();
+            // A column reached through a to-many relation holds one value per related
+            // row. Only an ArrayFormatter reads an array, every other formatter
+            // formats the elements one by one.
+            if (is_array($raw) && ! $formatter instanceof ArrayFormatter) {
+                $formatter = new ArrayFormatter(
+                    $formatter instanceof StringFormatter ? null : $formatter
+                );
             }
 
             $display = $formatter->format($raw, $context);
