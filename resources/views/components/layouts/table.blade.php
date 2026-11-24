@@ -324,7 +324,7 @@
                                                 <button
                                                     type="button"
                                                     class="shrink-0 cursor-pointer px-1 text-xs font-bold transition-colors"
-                                                    x-bind:class="negated ? 'text-red-500' : 'text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400'"
+                                                    x-bind:class="negated ? 'text-red-500' : 'text-gray-300 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-300'"
                                                     x-on:click="
                                                         negated = !negated;
                                                         let sel = $el.parentElement.querySelector('select');
