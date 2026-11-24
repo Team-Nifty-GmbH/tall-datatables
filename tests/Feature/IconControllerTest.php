@@ -91,3 +91,17 @@ describe('IconController route constraints', function (): void {
         $response->assertOk();
     });
 });
+
+describe('IconController color scheme', function (): void {
+    test('lightens the icon when the embedding page uses a dark color scheme', function (): void {
+        $response = $this->get(route('tall-datatables.icons', ['name' => 'check']));
+
+        $response->assertOk();
+        expect($response->getContent())
+            ->toMatch('/<svg\b[^>]*><style>@media \(prefers-color-scheme: dark\) \{ svg \{ color: #cbd5e1; \} \}<\/style>/');
+    });
+
+    test('marks the icon url with the color scheme aware variant', function (): void {
+        expect(TeamNiftyGmbH\DataTable\Helpers\Icon::make('check')->getUrl())->toContain('scheme=auto');
+    });
+});

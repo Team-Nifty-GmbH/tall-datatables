@@ -30,11 +30,11 @@ class MoneyFormatter implements Formatter
         $sign = (float) $value <=> 0.0;
 
         if ($sign === -1) {
-            return '<span class="text-red-600">' . $escaped . '</span>';
+            return '<span class="text-red-600 dark:text-red-400">' . $escaped . '</span>';
         }
 
         if ($sign === 1) {
-            return '<span class="text-green-600">' . $escaped . '</span>';
+            return '<span class="text-green-600 dark:text-green-400">' . $escaped . '</span>';
         }
 
         return $escaped;

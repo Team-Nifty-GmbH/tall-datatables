@@ -92,6 +92,8 @@ describe('BadgeFormatter', function (): void {
         expect($result)
             ->toContain($bgClass)
             ->toContain($textClass)
+            ->toContain("dark:bg-{$color}-900/50")
+            ->toContain("dark:text-{$color}-200")
             ->toContain('Status');
     })->with([
         'red' => ['red', 'bg-red-100', 'text-red-800'],
@@ -122,7 +124,9 @@ describe('BadgeFormatter', function (): void {
 
         expect($result)
             ->toContain('bg-gray-100')
-            ->toContain('text-gray-800');
+            ->toContain('text-gray-800')
+            ->toContain('dark:bg-gray-900/50')
+            ->toContain('dark:text-gray-200');
     });
 
     it('formats integer values as badge', function (): void {
@@ -202,7 +206,7 @@ describe('BadgeFormatter', function (): void {
         $result = $formatter->format('done');
 
         expect($result)->toBe(
-            '<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800">Done</span>'
+            '<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200">Done</span>'
         );
     });
 

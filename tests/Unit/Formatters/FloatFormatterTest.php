@@ -34,14 +34,14 @@ describe('FloatFormatter', function (): void {
         $formatter = new FloatFormatter(colored: true);
         $result = $formatter->format(-42.5);
 
-        expect($result)->toContain('text-red-600');
+        expect($result)->toContain('text-red-600')->toContain('dark:text-red-400');
     });
 
     it('wraps positive in green span when colored', function (): void {
         $formatter = new FloatFormatter(colored: true);
         $result = $formatter->format(42.5);
 
-        expect($result)->toContain('text-green-600');
+        expect($result)->toContain('text-green-600')->toContain('dark:text-green-400');
     });
 
     it('does not color zero', function (): void {
