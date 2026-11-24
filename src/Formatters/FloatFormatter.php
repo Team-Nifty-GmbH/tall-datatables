@@ -24,11 +24,11 @@ class FloatFormatter implements Formatter
         }
 
         if ($floatValue < 0) {
-            return '<span class="text-red-600">' . $formatted . '</span>';
+            return '<span class="text-red-600 dark:text-red-400">' . $formatted . '</span>';
         }
 
         if ($floatValue > 0) {
-            return '<span class="text-green-600">' . $formatted . '</span>';
+            return '<span class="text-green-600 dark:text-green-400">' . $formatted . '</span>';
         }
 
         return $formatted;

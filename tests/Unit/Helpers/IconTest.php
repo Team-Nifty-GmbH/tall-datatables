@@ -144,12 +144,12 @@ describe('Icon', function (): void {
             expect($response->headers->get('Cache-Control'))->toContain('max-age=31536000');
         });
 
-        it('response content matches getView output', function (): void {
+        it('response content is the svg view with a dark color scheme style', function (): void {
             $icon = Icon::make('check');
             $request = new Illuminate\Http\Request();
             $response = $icon->toResponse($request);
 
-            expect($response->getContent())->toBe($icon->getView());
+            expect(str_replace('<style>@media (prefers-color-scheme: dark) { svg { color: #cbd5e1; } }</style>', '', $response->getContent()))->toBe($icon->getView());
         });
     });
 

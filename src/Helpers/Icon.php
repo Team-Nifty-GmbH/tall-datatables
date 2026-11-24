@@ -62,7 +62,7 @@ class Icon implements Htmlable, Responsable
 
     public function getUrl(): string
     {
-        return route('tall-datatables.icons', ['name' => $this->name, 'variant' => $this->variant]);
+        return route('tall-datatables.icons', ['name' => $this->name, 'variant' => $this->variant, 'scheme' => 'auto']);
     }
 
     /**
@@ -99,7 +99,14 @@ class Icon implements Htmlable, Responsable
      */
     public function toResponse($request): Response
     {
-        return response($this->getView())
+        $svg = preg_replace(
+            '/<svg\b[^>]*>/',
+            '$0<style>@media (prefers-color-scheme: dark) { svg { color: #cbd5e1; } }</style>',
+            $this->getView(),
+            1
+        );
+
+        return response($svg)
             ->withHeaders([
                 'Content-Type' => 'image/svg+xml; charset=utf-8',
                 'Cache-Control' => 'public, only-if-cached, max-age=31536000',

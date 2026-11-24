@@ -60,14 +60,14 @@ describe('MoneyFormatter', function (): void {
         $formatter = new MoneyFormatter(colored: true);
         $result = $formatter->format(-50.00);
 
-        expect($result)->toContain('text-red-600');
+        expect($result)->toContain('text-red-600')->toContain('dark:text-red-400');
     });
 
     it('wraps positive values in green span when colored', function (): void {
         $formatter = new MoneyFormatter(colored: true);
         $result = $formatter->format(50.00);
 
-        expect($result)->toContain('text-green-600');
+        expect($result)->toContain('text-green-600')->toContain('dark:text-green-400');
     });
 
     it('does not wrap zero in color span when colored', function (): void {

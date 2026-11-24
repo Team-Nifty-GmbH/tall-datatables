@@ -156,8 +156,8 @@ describe('LinkFormatter', function (): void {
         $emailResult = $emailFormatter->format('test@test.com');
         $telResult = $telFormatter->format('+49123');
 
-        expect($linkResult)->toContain('text-blue-600');
-        expect($emailResult)->toContain('text-blue-600');
+        expect($linkResult)->toContain('text-blue-600')->toContain('dark:text-blue-400');
+        expect($emailResult)->toContain('text-blue-600')->toContain('dark:text-blue-400');
         expect($telResult)->toContain('text-blue-600');
     });
 });

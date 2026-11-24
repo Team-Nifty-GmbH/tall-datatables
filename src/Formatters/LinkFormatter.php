@@ -24,11 +24,11 @@ class LinkFormatter implements Formatter
                 return $label;
             }
 
-            return '<a href="' . $url . '"' . $target . ' class="text-blue-600 hover:text-blue-800 underline">' . $label . '</a>';
+            return '<a href="' . $url . '"' . $target . ' class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline">' . $label . '</a>';
         }
 
         $stringValue = (string) $value;
-        $cssClasses = 'text-blue-600 hover:text-blue-800 underline';
+        $cssClasses = 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline';
 
         return match ($this->type) {
             'email' => '<a href="mailto:' . e($stringValue) . '" class="' . $cssClasses . '">' . e($stringValue) . '</a>',
