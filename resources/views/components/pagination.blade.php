@@ -4,6 +4,7 @@
             color="secondary"
             flat
             sm
+            class="dark:text-secondary-400"
             :text="__('Previous')"
             :disabled="($this->data['current_page'] ?? 1) <= 1"
             wire:click="gotoPage({{ ($this->data['current_page'] ?? 1) - 1 }})"
@@ -12,6 +13,7 @@
             color="secondary"
             flat
             sm
+            class="dark:text-secondary-400"
             :text="__('Next')"
             :disabled="($this->data['current_page'] ?? 1) >= ($this->data['last_page'] ?? 1)"
             wire:click="gotoPage({{ ($this->data['current_page'] ?? 1) + 1 }})"
@@ -50,6 +52,7 @@
                     color="secondary"
                     flat
                     sm
+                    class="dark:[&_svg]:text-secondary-400"
                     :disabled="($this->data['current_page'] ?? 1) <= 1"
                     wire:click="gotoPage({{ ($this->data['current_page'] ?? 1) - 1 }})"
                     icon="chevron-left"
@@ -62,13 +65,14 @@
                         :disabled="$link['active'] || $link['url'] === null"
                         :text="$link['label']"
                         wire:click="{{ $link['url'] !== null && !$link['active'] ? 'gotoPage(' . $link['label'] . ')' : '' }}"
-                        :class="$link['active'] ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : ''"
+                        :class="$link['active'] ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'dark:text-secondary-400'"
                     />
                 @endforeach
                 <x-button
                     color="secondary"
                     flat
                     sm
+                    class="dark:[&_svg]:text-secondary-400"
                     :disabled="($this->data['current_page'] ?? 1) >= ($this->data['last_page'] ?? 1)"
                     wire:click="gotoPage({{ ($this->data['current_page'] ?? 1) + 1 }})"
                     icon="chevron-right"
